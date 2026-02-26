@@ -6,3 +6,8 @@ coverage/
 *.msi
 .DS_Store
 Thumbs.db
+
+# Environment files
+.env
+.env.local
+backup/
