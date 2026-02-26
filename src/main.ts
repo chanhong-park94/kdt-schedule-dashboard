@@ -3895,7 +3895,9 @@ function downloadCohortCSV(): void {
     return;
   }
 
-  const csv = exportHrdCsvForCohort(sessions, cohort);
+  const generatedDays =
+    cohort === generatedScheduleCohort && generatedScheduleResult ? generatedScheduleResult.days : undefined;
+  const csv = exportHrdCsvForCohort(sessions, cohort, { generatedDays });
   const blob = createCsvBlob(csv);
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);

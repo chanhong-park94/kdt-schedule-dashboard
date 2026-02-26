@@ -1,4 +1,5 @@
-import { HRD_EXPORT_COLUMNS, Session } from "./types";
+import { buildHrdRowsForCohort } from "./hrdRows";
+import { HRD_EXPORT_COLUMNS, ScheduleDay, Session } from "./types";
 import { normalizeClassroomCode, normalizeInstructorCode, normalizeSubjectCode } from "./standardize";
 
 function escapeCsv(value: string): string {
@@ -6,19 +7,29 @@ function escapeCsv(value: string): string {
   return /[\r\n,"]/.test(escaped) ? `"${escaped}"` : escaped;
 }
 
-export function exportHrdCsvForCohort(sessions: Session[], cohort: string): string {
-  const subset = sessions.filter((session) => session.과정기수 === cohort);
+type ExportHrdOptions = {
+  generatedDays?: ScheduleDay[];
+};
+
+export function exportHrdCsvForCohort(sessions: Session[], cohort: string, options?: ExportHrdOptions): string {
+  const rows = buildHrdRowsForCohort({
+    sessions,
+    cohort,
+    generatedDays: options?.generatedDays
+  });
   const header = HRD_EXPORT_COLUMNS.join(",");
 
-  const lines = subset.map((session) => {
-    const normalized: Session = {
-      ...session,
-      훈련강사코드: normalizeInstructorCode(session.훈련강사코드),
-      "교육장소(강의실)코드": normalizeClassroomCode(session["교육장소(강의실)코드"]),
-      "교과목(및 능력단위)코드": normalizeSubjectCode(session["교과목(및 능력단위)코드"])
+  const lines = rows.map((row) => {
+    const normalized = {
+      ...row,
+      훈련강사코드: normalizeInstructorCode(row.훈련강사코드),
+      "교육장소(강의실)코드": normalizeClassroomCode(row["교육장소(강의실)코드"]),
+      "교과목(및 능력단위)코드": normalizeSubjectCode(row.교과목코드)
     };
 
-    return HRD_EXPORT_COLUMNS.map((column) => escapeCsv(normalized[column] ?? "")).join(",");
+    return HRD_EXPORT_COLUMNS.map((column) => {
+      return escapeCsv(normalized[column] ?? "");
+    }).join(",");
   });
 
   return [header, ...lines].join("\r\n");
