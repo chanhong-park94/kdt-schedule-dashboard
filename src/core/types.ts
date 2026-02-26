@@ -77,6 +77,12 @@ export type ParseError = {
   message: string;
 };
 
+export type InstructorDirectoryEntry = {
+  instructorCode: string;
+  name: string;
+  memo: string;
+};
+
 export type Holiday = {
   date: string;
   localName: string;

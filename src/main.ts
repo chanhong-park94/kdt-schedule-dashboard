@@ -67,8 +67,16 @@ import {
   StaffAssignment,
   StaffAssignmentInput,
   StaffOverlap,
+  type InstructorDirectoryEntry,
   TrackType
 } from "./core/types";
+import {
+  deleteInstructorFromCloud,
+  isInstructorCloudEnabled,
+  loadInstructorDirectoryFromCloud,
+  mergeWithLocalInstructorDirectory,
+  upsertInstructorInCloud
+} from "./core/instructorSync";
 
 type ConflictTab = "time" | "instructor_day" | "fo_day";
 type ViewMode = AppViewMode;
@@ -101,12 +109,6 @@ type NotificationItem = {
   assignee?: string;
   date?: string;
   details?: string[];
-};
-
-type InstructorDirectoryEntry = {
-  instructorCode: string;
-  name: string;
-  memo: string;
 };
 
 type SubjectDirectoryEntry = {
@@ -280,6 +282,7 @@ let staffingMode: StaffingMode = "manager";
 let showAdvanced = false;
 let hasPrunedBasicModeSections = false;
 let activeDrawer: "notification" | "instructor" | null = null;
+let instructorDirectoryCloudWarning = "";
 
 let isUploadProcessing = false;
 let isConflictComputing = false;
@@ -1176,16 +1179,18 @@ function renderInstructorDirectory(): void {
     const removeButton = document.createElement("button");
     removeButton.type = "button";
     removeButton.textContent = "삭제";
-    removeButton.addEventListener("click", () => {
-      instructorDirectory = instructorDirectory.filter((item) => item.instructorCode !== entry.instructorCode);
+    removeButton.addEventListener("click", async () => {
+      const removedCode = entry.instructorCode;
+      instructorDirectory = instructorDirectory.filter((item) => item.instructorCode !== removedCode);
       for (const [key, value] of subjectInstructorMappings.entries()) {
-        if (value === entry.instructorCode) {
+        if (value === removedCode) {
           subjectInstructorMappings.delete(key);
         }
       }
       renderInstructorDirectory();
       renderSubjectMappingTable();
       scheduleAutoSave();
+      await syncInstructorDirectoryCloud("delete", removedCode);
     });
 
     actionTd.appendChild(editButton);
@@ -1195,6 +1200,35 @@ function renderInstructorDirectory(): void {
     tr.appendChild(memoTd);
     tr.appendChild(actionTd);
     instructorDirectoryBody.appendChild(tr);
+  }
+}
+
+async function syncInstructorDirectoryCloud(mode: "upsert" | "delete", instructorCode: string, payload?: InstructorDirectoryEntry): Promise<void> {
+  if (!isInstructorCloudEnabled()) {
+    instructorDirectoryCloudWarning =
+      "클라우드 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
+    renderGlobalWarnings();
+    return;
+  }
+
+  try {
+    if (mode === "upsert") {
+      if (!payload) {
+        return;
+      }
+      await upsertInstructorInCloud(payload);
+    } else {
+      await deleteInstructorFromCloud(instructorCode);
+    }
+    instructorDirectoryCloudWarning = "";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    instructorDirectoryCloudWarning =
+      mode === "upsert"
+        ? `클라우드 강사 동기화(추가/수정) 실패: ${message}. 로컬 데이터는 유지됩니다.`
+        : `클라우드 강사 동기화(삭제) 실패: ${message}. 로컬 데이터는 유지됩니다.`;
+  } finally {
+    renderGlobalWarnings();
   }
 }
 
@@ -1400,6 +1434,7 @@ function upsertInstructorDirectoryEntry(): void {
   renderInstructorDirectory();
   renderSubjectMappingTable();
   scheduleAutoSave();
+  void syncInstructorDirectoryCloud("upsert", instructorCode, { instructorCode, name, memo });
 }
 
 function applySubjectMappingsToSessions(): void {
@@ -1839,6 +1874,7 @@ function renderGlobalWarnings(): void {
   const warnings: string[] = [];
   const trackTypeMissing = getTrackTypeMissingCohorts();
   const unassignedModules = getUnassignedInstructorModules();
+  const cloudWarning = instructorDirectoryCloudWarning.trim();
 
   if (trackTypeMissing.length > 0) {
     warnings.push(`trackType 미설정 코호트: ${trackTypeMissing.join(", ")}`);
@@ -1856,6 +1892,10 @@ function renderGlobalWarnings(): void {
 
   if (cohortSelect.value && hrdValidationErrors.length > 0) {
     warnings.push(`HRD 검증 오류 ${hrdValidationErrors.length}건 (기수: ${cohortSelect.value})`);
+  }
+
+  if (cloudWarning) {
+    warnings.push(`강사 동기화: ${cloudWarning}`);
   }
 
   globalWarningList.innerHTML = "";
@@ -2301,6 +2341,75 @@ function collectSavedStaffingCells(): SavedStaffCell[] {
   return cells;
 }
 
+function normalizeInstructorDirectoryEntries(rawInstructors: unknown): InstructorDirectoryEntry[] {
+  if (!Array.isArray(rawInstructors)) {
+    return [];
+  }
+
+  const entries: InstructorDirectoryEntry[] = [];
+  for (const item of rawInstructors) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const record = item as Partial<{ instructorCode: string; name: string; memo: string }>;
+    const instructorCode = normalizeInstructorCode(record.instructorCode ?? "");
+    if (!instructorCode) {
+      continue;
+    }
+
+    entries.push({
+      instructorCode,
+      name: typeof record.name === "string" ? record.name.trim() : "",
+      memo: typeof record.memo === "string" ? record.memo.trim() : ""
+    });
+  }
+
+  return entries;
+}
+
+function mergeInstructorDirectoryWarning(sizeWarning: string): string {
+  const cloudWarning = instructorDirectoryCloudWarning;
+  if (!sizeWarning && !cloudWarning) {
+    return "";
+  }
+  if (!sizeWarning) {
+    return cloudWarning;
+  }
+  if (!cloudWarning) {
+    return sizeWarning;
+  }
+  return `${sizeWarning} / ${cloudWarning}`;
+}
+
+async function loadInstructorDirectoryWithCloudFallback(
+  localInstructors: InstructorDirectoryEntry[]
+): Promise<InstructorDirectoryEntry[]> {
+  if (!isInstructorCloudEnabled()) {
+    instructorDirectoryCloudWarning =
+      "클라우드 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
+    return localInstructors;
+  }
+
+  try {
+    const cloudInstructors = await loadInstructorDirectoryFromCloud();
+    if (cloudInstructors.length > 0) {
+      instructorDirectoryCloudWarning = localInstructors.length > 0
+        ? "클라우드 강사 목록을 병합했습니다."
+        : "클라우드 강사 목록을 가져와 적용했습니다.";
+    } else {
+      instructorDirectoryCloudWarning = localInstructors.length > 0
+        ? ""
+        : "클라우드에 저장된 강사 목록이 없습니다. 로컬 데이터를 사용합니다.";
+    }
+    return mergeWithLocalInstructorDirectory(localInstructors, cloudInstructors);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    instructorDirectoryCloudWarning = `클라우드 강사 목록 동기화 실패: ${message}. 로컬 데이터를 사용합니다.`;
+    return localInstructors;
+  }
+}
+
 function getStorageWarningMessage(bytes: number): string {
   if (bytes < STORAGE_WARN_BYTES) {
     return "";
@@ -2411,7 +2520,7 @@ function saveProjectToLocalStorage(showMessage = false): void {
   }
 }
 
-function applyLoadedProjectState(raw: unknown): void {
+function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: InstructorDirectoryEntry[]): void {
   const migrated = migrateState(raw);
   const state = migrated.state;
   setStateMigrationWarnings(migrated.warnings);
@@ -2487,16 +2596,23 @@ function applyLoadedProjectState(raw: unknown): void {
       }
     }
 
-    const rawInstructors = Array.isArray(state.instructorRegistry)
-      ? state.instructorRegistry
-      : Array.isArray(state.instructorDirectory)
-        ? state.instructorDirectory
-        : [];
-    instructorDirectory = rawInstructors.map((item) => ({
-          instructorCode: normalizeInstructorCode(item.instructorCode),
-          name: item.name ?? "",
-          memo: item.memo ?? ""
-        }));
+    const instructorSource = Array.isArray(instructorDirectoryOverride)
+      ? instructorDirectoryOverride
+      : normalizeInstructorDirectoryEntries(
+          Array.isArray(state.instructorRegistry)
+            ? state.instructorRegistry
+            : Array.isArray(state.instructorDirectory)
+              ? state.instructorDirectory
+              : []
+        );
+    instructorDirectory = instructorSource
+      .map((item) => ({
+        instructorCode: normalizeInstructorCode(item.instructorCode),
+        name: item.name ?? "",
+        memo: item.memo ?? ""
+      }))
+      .filter((item) => item.instructorCode.length > 0)
+      .sort((a, b) => a.instructorCode.localeCompare(b.instructorCode));
 
     courseRegistry = Array.isArray(state.courseRegistry)
       ? state.courseRegistry.map((item) => ({
@@ -2525,11 +2641,7 @@ function applyLoadedProjectState(raw: unknown): void {
     }
 
     subjectInstructorMappings.clear();
-    const rawCourseMappings = Array.isArray(state.courseSubjectInstructorMapping)
-      ? state.courseSubjectInstructorMapping
-      : Array.isArray(state.subjectInstructorMappings)
-        ? state.subjectInstructorMappings
-        : [];
+    const rawCourseMappings = state.courseSubjectInstructorMapping;
     for (const row of rawCourseMappings) {
       const parsed = parseCourseSubjectKey(row.moduleKey ?? "");
       const rawCourseId = normalizeCourseId(row.courseId ?? parsed.courseId);
@@ -2540,6 +2652,16 @@ function applyLoadedProjectState(raw: unknown): void {
           continue;
         }
         subjectInstructorMappings.set(moduleKey, instructorCode);
+    }
+    for (const row of state.subjectInstructorMappings) {
+      const parsed = parseCourseSubjectKey(row.moduleKey ?? "");
+      const courseId = normalizeCourseId(parseCourseGroupFromCohortName(parsed.courseId).course);
+      const moduleKey = toCourseSubjectKey(courseId, parsed.subjectCode);
+      const instructorCode = normalizeInstructorCode(row.instructorCode ?? "");
+      if (!moduleKey || !instructorCode) {
+        continue;
+      }
+      subjectInstructorMappings.set(moduleKey, instructorCode);
     }
     courseTemplates = Array.isArray(state.courseTemplates) ? state.courseTemplates : [];
 
@@ -2575,7 +2697,7 @@ function applyLoadedProjectState(raw: unknown): void {
   }
 }
 
-function loadProjectStateFromLocalStorage(): void {
+async function loadProjectStateFromLocalStorage(): Promise<void> {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
     stateStorageStatus.textContent = "자동저장 대기";
@@ -2584,11 +2706,22 @@ function loadProjectStateFromLocalStorage(): void {
     return;
   }
 
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(raw) as unknown;
-    applyLoadedProjectState(parsed);
+    parsed = JSON.parse(raw) as unknown;
+    const stateLike = parsed as { instructorRegistry?: unknown; instructorDirectory?: unknown };
+    const localInstructors = normalizeInstructorDirectoryEntries(
+      Array.isArray(stateLike.instructorRegistry)
+        ? stateLike.instructorRegistry
+        : Array.isArray(stateLike.instructorDirectory)
+          ? stateLike.instructorDirectory
+          : []
+    );
+    const resolvedInstructorDirectory = await loadInstructorDirectoryWithCloudFallback(localInstructors);
+    applyLoadedProjectState(parsed, resolvedInstructorDirectory);
     const bytes = estimateUtf8SizeBytes(raw);
-    stateStorageWarning.textContent = getStorageWarningMessage(bytes);
+    const sizeWarning = getStorageWarningMessage(bytes);
+    stateStorageWarning.textContent = mergeInstructorDirectoryWarning(sizeWarning);
     stateStorageStatus.textContent = `자동저장 상태 복원 (${formatBytes(bytes)})`;
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
@@ -6103,7 +6236,7 @@ renderScheduleTemplateOptions();
 scheduleTemplateStatus.textContent = "템플릿 준비 완료";
 
 if (localStorage.getItem(STORAGE_KEY)) {
-  loadProjectStateFromLocalStorage();
+  void loadProjectStateFromLocalStorage();
 } else {
   renderInitialUiState();
 }
