@@ -24,6 +24,19 @@
 npm install
 ```
 
+## 환경 변수 설정
+
+Supabase 동기화를 사용하려면 아래 값을 설정하세요.
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+예시: `.env.example`을 복사해서 `.env`를 만들고 값을 채웁니다.
+
+```bash
+cp .env.example .env
+```
+
 ## 런타임 정책
 
 - 팀 배포 기준 Node: LTS 라인만 사용 (`22.x` 권장, `24.x` 허용)
@@ -35,6 +48,28 @@ npm install
 - 프로덕션 빌드: `npm run build`
 - 빌드 결과 미리보기: `npm run preview`
 - 테스트 실행: `npm run test` (Vitest가 `tests/**/*.test.ts`를 실제 실행)
+
+### 강사 동기화 검증 체크리스트
+
+1. `.env`에 Supabase 키를 넣고 `npm run dev`로 실행
+2. 강사 등록 후 저장 버튼 클릭
+3. 브라우저 네트워크 탭에서 `instructors` 테이블 요청(POST/DELETE) 확인
+4. Supabase Studio 또는 SQL Editor에서 아래 쿼리로 반영 확인
+
+```sql
+select *
+from instructors
+order by instructor_code
+limit 20;
+```
+
+5. 같은 `instructor_code` 재등록 시 기존 값이 upsert로 갱신되는지 확인
+6. 강사 삭제 시 해당 row가 삭제되는지 확인
+
+### 강사 동기화가 404(PGRST205)로 실패할 때
+
+`Could not find the table 'public.instructors' in the schema cache` 오류가 보이면,
+Supabase SQL Editor에서 `spec/sql/001_create_instructors.sql`을 1회 실행해 테이블/정책을 생성하세요.
 
 ## 타임라인 보기 방식 (View)
 
