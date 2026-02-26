@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KDT 학사일정 관리 대시보드</title>
+  </head>
+  <body>
+    <div class="app-shell">
+    <header class="app-header">
+      <div class="app-header-title">KDT 학사일정 관리 대시보드</div>
+      <div class="app-header-actions">
+        <button
+          id="openNotificationDrawer"
+          class="icon-btn"
+          type="button"
+          aria-label="알림"
+          data-tooltip="알림"
+        >
+          🔔
+        </button>
+        <button
+          id="openInstructorDrawer"
+          class="icon-btn"
+          type="button"
+          aria-label="관리(과정/교과목/강사/템플릿)"
+          data-tooltip="관리(과정/교과목/강사/템플릿)"
+        >
+          📋
+        </button>
+      </div>
+    </header>
+
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+    <aside id="notificationDrawer" class="drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <strong>알림</strong>
+        <button class="drawer-close" data-close-drawer type="button">닫기</button>
+      </div>
+      <div class="muted">최근 작업 처리 로그 5개를 표시합니다.</div>
+      <div class="row" style="margin-top: 10px; align-items: center; justify-content: space-between;">
+        <div class="muted">충돌 탐지는 항상 유지됩니다.</div>
+        <button id="openConflictDetailModal" class="btn-secondary" type="button">충돌 상세 보기</button>
+      </div>
+      <div id="notificationStatusList" style="margin-top: 10px;"></div>
+    </aside>
+
+    <dialog id="conflictDetailModal">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <strong id="conflictDetailTitle">충돌 상세</strong>
+        <button id="closeConflictDetailModal" type="button">닫기</button>
+      </div>
+      <div id="conflictDetailContent" style="margin-top: 10px;"></div>
+    </dialog>
+
+    <aside id="instructorDrawer" class="drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <strong>관리</strong>
+        <button class="drawer-close" data-close-drawer type="button">닫기</button>
+      </div>
+      <div class="drawer-tab-row" style="margin-top: 10px;">
+        <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
+        <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
+        <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
+        <button id="instructorTabMapping" class="tab-btn" type="button">강사 매핑</button>
+      </div>
+
+      <div id="instructorCoursePanel" style="margin-top: 10px;">
+        <div class="row" style="align-items: center;">
+          <div>
+            <label>과정 ID(필수)</label>
+            <input id="courseIdInput" type="text" placeholder="예: EDATA" />
+          </div>
+          <div>
+            <label>과정명(필수)</label>
+            <input id="courseNameInput" type="text" placeholder="예: 데이터 분석 과정" />
+          </div>
+          <div>
+            <label>메모(선택)</label>
+            <input id="courseMemoInput" type="text" placeholder="예: 야간 운영" />
+          </div>
+          <button id="upsertCourseButton" type="button">과정 저장</button>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>과정 목록</strong>
+          <table id="courseRegistryTable">
+            <thead>
+              <tr>
+                <th>과정 ID</th>
+                <th>과정명</th>
+                <th>메모</th>
+                <th>작업</th>
+              </tr>
+            </thead>
+            <tbody id="courseRegistryBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>과정 템플릿</strong>
+          <div class="muted">과정별 시간 템플릿/휴강일/교과목/강사매핑을 저장/적용합니다.</div>
+          <div class="row" style="margin-top: 8px; align-items: center;">
+            <div>
+              <label>과정 선택</label>
+              <select id="courseTemplateCourseSelect"></select>
+            </div>
+            <div>
+              <label>템플릿명</label>
+              <input id="courseTemplateNameInput" type="text" placeholder="예: EDATA 운영 표준 v1" />
+            </div>
+            <button id="saveCourseTemplateButton" type="button">템플릿 저장</button>
+          </div>
+          <div class="row" style="margin-top: 8px; align-items: center;">
+            <div>
+              <label>저장 템플릿</label>
+              <select id="courseTemplateSelect"></select>
+            </div>
+            <button id="loadCourseTemplateButton" type="button">템플릿 불러오기</button>
+            <button id="deleteCourseTemplateButton" type="button">삭제</button>
+          </div>
+          <div id="courseTemplateStatus" class="muted template-status"></div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>고급 기능</strong>
+          <div class="muted">기존에 확정된 시간표를 가져와 타임라인/충돌/HRD 다운로드에 활용</div>
+          <label style="margin-top: 8px;">수업시간표 CSV 업로드 (예: KDT_master_sessions.csv)</label>
+          <input id="file" type="file" accept=".csv" />
+          <div class="muted" id="uploadStatus" style="margin-top: 6px;">대기중</div>
+          <div id="standardizeStatus" class="muted" style="display: none; margin-top: 6px;">
+            <span class="pill">표준화 적용됨</span>
+            <a href="#standardizeHelp" class="muted-link">규칙 보기</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="instructorRegisterPanel" style="display: none; margin-top: 10px;">
+        <div class="row" style="align-items: center;">
+          <div>
+            <label>강사코드(필수)</label>
+            <input id="instructorCodeInput" type="text" placeholder="예: TCH-1001" />
+          </div>
+          <div>
+            <label>이름(선택)</label>
+            <input id="instructorNameInput" type="text" placeholder="예: 홍길동" />
+          </div>
+          <div>
+            <label>메모(선택)</label>
+            <input id="instructorMemoInput" type="text" placeholder="예: 야간 가능" />
+          </div>
+          <button id="upsertInstructorButton" type="button">강사 저장</button>
+        </div>
+      </div>
+
+      <div id="instructorMappingPanel" style="display: none; margin-top: 10px;">
+        <div>
+          <strong>강사 목록</strong>
+          <table id="instructorDirectoryTable">
+            <thead>
+              <tr>
+                <th>강사코드</th>
+                <th>이름</th>
+                <th>메모</th>
+                <th>작업</th>
+              </tr>
+            </thead>
+            <tbody id="instructorDirectoryBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>교과목 강사 매핑</strong>
+          <div class="muted">과정 선택 후 교과목별 강사를 지정하고, 선택된 기수에 일괄 적용합니다.</div>
+          <div class="row" style="margin-top: 8px; align-items: center;">
+            <div>
+              <label>과정 선택</label>
+              <select id="mappingCourseSelect"></select>
+            </div>
+            <button id="applySubjectMappingsButton" type="button">매핑 일괄 적용</button>
+          </div>
+          <div id="subjectMappingContainer" style="margin-top: 8px;"></div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>빠른 수정</strong>
+          <div class="muted">교과목 강사를 즉시 바꾸고 시간 충돌을 다시 계산합니다.</div>
+          <div id="staffModuleManagerContainer" style="margin-top: 10px;"></div>
+        </div>
+      </div>
+
+      <div id="instructorSubjectPanel" style="display: none; margin-top: 10px;">
+        <div class="row" style="align-items: center;">
+          <div>
+            <label>과정 선택</label>
+            <select id="subjectCourseSelect"></select>
+          </div>
+          <div>
+            <label>교과목코드(필수)</label>
+            <input id="subjectCodeInput" type="text" placeholder="예: NCS_SUBJ_01" />
+          </div>
+          <div>
+            <label>교과목명(선택)</label>
+            <input id="subjectNameInput" type="text" placeholder="예: 데이터 분석 기초" />
+          </div>
+          <div>
+            <label>메모(선택)</label>
+            <input id="subjectMemoInput" type="text" placeholder="예: 운영매니저 지정 과목" />
+          </div>
+          <button id="upsertSubjectButton" type="button">교과목 저장</button>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>교과목 목록</strong>
+          <table id="subjectDirectoryTable">
+            <thead>
+              <tr>
+                <th>교과목코드</th>
+                <th>교과목명</th>
+                <th>메모</th>
+                <th>작업</th>
+              </tr>
+            </thead>
+            <tbody id="subjectDirectoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+    <main class="page">
+      <div class="grid">
+    <div id="stateMigrationBanner" class="warning-box" style="display: none; margin-top: 8px;">
+      <strong>상태 파일 마이그레이션 알림</strong>
+      <ul id="stateMigrationList" class="error-list"></ul>
+    </div>
+
+    <div id="globalWarningPanel" class="warning-box simple-hidden" style="display: none; margin-top: 8px;">
+      <strong>운영 주의</strong>
+      <ul id="globalWarningList" class="error-list"></ul>
+    </div>
+
+    <div class="card card-span-12 admin-only" id="sectionRiskSummary" style="margin-top: 14px;">
+      <div class="card-header row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <div class="card-title">리스크 요약 카드</div>
+          <div class="card-subtitle muted">팀장이 현재 운영 리스크를 빠르게 판단할 수 있는 통합 지표입니다.</div>
+        </div>
+      </div>
+      <div class="risk-grid" style="margin-top: 10px;">
+        <div class="risk-card" id="riskCardTime"><div class="risk-title">강사 시간 충돌</div><div class="risk-value" id="riskTimeConflict">미계산</div></div>
+        <div class="risk-card" id="riskCardInstructorDay"><div class="risk-title">강사 배치(일) 충돌</div><div class="risk-value" id="riskInstructorDayConflict">0</div></div>
+        <div class="risk-card" id="riskCardFoDay"><div class="risk-title">퍼실/운영 배치(일) 충돌</div><div class="risk-value" id="riskFoDayConflict">0</div></div>
+        <div class="risk-card" id="riskCardHrd"><div class="risk-title">HRD 검증</div><div class="risk-value" id="riskHrdValidation">미통과</div></div>
+        <div class="risk-card" id="riskCardHoliday"><div class="risk-title">공휴일 적용</div><div class="risk-value" id="riskHolidayApplied">미적용</div></div>
+      </div>
+    </div>
+
+    <div class="card card-span-12 timeline-hero card--timeline" id="sectionTimeline" style="margin-top: 14px;">
+      <div class="card-header row" style="justify-content: space-between; align-items: center;">
+        <div class="card-title">KDT 학사일정 타임라인</div>
+        <div class="muted" id="timelineRange">기간: -</div>
+      </div>
+      <div class="row" style="margin-top: 8px; align-items: center;">
+        <div>
+          <label>보기 방식</label>
+          <select id="timelineViewTypeSelect">
+            <option value="COHORT_TIMELINE" selected>기수별 타임라인</option>
+            <option value="COURSE_GROUPED">과정별 그룹</option>
+            <option value="ASSIGNEE_TIMELINE">강사/담당자별</option>
+            <option value="WEEK_GRID">주간 보기</option>
+            <option value="MONTH_CALENDAR">월간 캘린더</option>
+          </select>
+        </div>
+
+        <div id="assigneeTimelineControls" style="display: none;">
+          <label>대상</label>
+          <div class="drawer-tab-row">
+            <button id="assigneeModeInstructor" class="tab-btn active" type="button">강사</button>
+            <button id="assigneeModeStaff" class="tab-btn" type="button">담당자</button>
+          </div>
+        </div>
+
+        <div id="weekGridControls" style="display: none;">
+          <label>주간 이동</label>
+          <div class="row" style="align-items: center;">
+            <button id="weekPrevButton" type="button">이전 주</button>
+            <span id="weekLabel" class="muted">-</span>
+            <button id="weekNextButton" type="button">다음 주</button>
+          </div>
+        </div>
+
+        <div id="monthCalendarControls" style="display: none;">
+          <label>월간 이동</label>
+          <div class="row" style="align-items: center;">
+            <button id="monthPrevButton" type="button">이전 달</button>
+            <span id="monthLabel" class="muted">-</span>
+            <button id="monthNextButton" type="button">다음 달</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="muted" id="timelineEmpty" style="margin-top: 8px;">수업시간표를 불러오면 타임라인이 생성됩니다.</div>
+      <div id="timelineDetailPanel" class="warning-box" style="display: none; margin-top: 8px;"></div>
+      <div id="timelineList" class="timeline-list"></div>
+    </div>
+
+    <div class="card card-span-12 card--schedule" id="sectionScheduleGenerate" style="margin-top: 14px;">
+      <div class="card-header row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <div class="card-title">기수 일정 생성기</div>
+          <div class="card-subtitle muted">날짜/시간/휴강 규칙으로 학사일정을 자동 생성합니다.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 10px;">
+        <div>
+          <label>과정기수명</label>
+          <input id="scheduleCohort" type="text" placeholder="예: KDT-14기" />
+        </div>
+        <div>
+          <label>개강일</label>
+          <input id="scheduleStartDate" type="date" />
+        </div>
+        <div>
+          <label>총 훈련시간</label>
+          <input id="scheduleTotalHours" type="number" min="1" step="0.5" value="30" />
+        </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label>요일별 시간대 템플릿 (기본 1블록 + 선택 break)</label>
+        <table id="dayTemplateTable" class="template-table">
+          <thead>
+            <tr>
+              <th>요일</th>
+              <th>수업 시작</th>
+              <th>수업 종료</th>
+              <th>break 시작(선택)</th>
+              <th>break 종료(선택)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-weekday="1">
+              <td>월</td>
+              <td><input class="tpl-start" type="time" /></td>
+              <td><input class="tpl-end" type="time" /></td>
+              <td><input class="tpl-break-start" type="time" /></td>
+              <td><input class="tpl-break-end" type="time" /></td>
+            </tr>
+            <tr data-weekday="2">
+              <td>화</td>
+              <td><input class="tpl-start" type="time" value="20:00" /></td>
+              <td><input class="tpl-end" type="time" value="22:30" /></td>
+              <td><input class="tpl-break-start" type="time" /></td>
+              <td><input class="tpl-break-end" type="time" /></td>
+            </tr>
+            <tr data-weekday="3">
+              <td>수</td>
+              <td><input class="tpl-start" type="time" value="20:00" /></td>
+              <td><input class="tpl-end" type="time" value="22:30" /></td>
+              <td><input class="tpl-break-start" type="time" /></td>
+              <td><input class="tpl-break-end" type="time" /></td>
+            </tr>
+            <tr data-weekday="4">
+              <td>목</td>
+              <td><input class="tpl-start" type="time" value="20:00" /></td>
+              <td><input class="tpl-end" type="time" value="22:30" /></td>
+              <td><input class="tpl-break-start" type="time" /></td>
+              <td><input class="tpl-break-end" type="time" /></td>
+            </tr>
+            <tr data-weekday="5">
+              <td>금</td>
+              <td><input class="tpl-start" type="time" value="20:00" /></td>
+              <td><input class="tpl-end" type="time" value="22:30" /></td>
+              <td><input class="tpl-break-start" type="time" /></td>
+              <td><input class="tpl-break-end" type="time" /></td>
+            </tr>
+            <tr data-weekday="6">
+              <td>토</td>
+              <td><input class="tpl-start" type="time" value="10:00" placeholder="10:00" /></td>
+              <td><input class="tpl-end" type="time" value="18:00" placeholder="18:00" /></td>
+              <td><input class="tpl-break-start" type="time" value="13:00" placeholder="13:00" /></td>
+              <td><input class="tpl-break-end" type="time" value="14:00" placeholder="14:00" /></td>
+            </tr>
+            <tr data-weekday="0">
+              <td>일</td>
+              <td><input class="tpl-start" type="time" /></td>
+              <td><input class="tpl-end" type="time" /></td>
+              <td><input class="tpl-break-start" type="time" /></td>
+              <td><input class="tpl-break-end" type="time" /></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="row template-preset-row">
+          <div>
+            <label>저장된 템플릿</label>
+            <select id="scheduleTemplateSelect"></select>
+          </div>
+          <button id="loadScheduleTemplateButton" class="btn-secondary" type="button">불러오기</button>
+          <div>
+            <label>현재 설정 저장(이름)</label>
+            <input id="scheduleTemplateName" type="text" placeholder="예: 재직자 LLM" />
+          </div>
+          <button id="saveScheduleTemplateButton" class="btn-secondary" type="button">저장</button>
+          <button id="deleteScheduleTemplateButton" class="btn-danger" type="button">삭제</button>
+        </div>
+        <div id="scheduleTemplateStatus" class="muted template-status"></div>
+      </div>
+
+      <div class="row" id="holidaySection" style="margin-top: 10px; align-items: flex-start;">
+        <div class="date-block">
+          <label>공휴일 추가</label>
+          <div class="row date-input-row">
+            <input id="holidayDateInput" type="date" />
+            <button id="addHolidayButton" class="btn-secondary" type="button">추가</button>
+            <button id="loadPublicHolidaysButton" class="btn-secondary" type="button">공휴일 불러오기(대한민국)</button>
+          </div>
+          <div class="row date-action-row">
+            <button id="clearHolidaysButton" type="button" class="small-btn">전체 삭제</button>
+            <button id="dedupeHolidaysButton" type="button" class="small-btn">중복 제거</button>
+            <div class="holiday-load-wrap">
+              <span id="holidayLoadSpinner" class="spinner" style="display: none;"></span>
+              <span id="holidayLoadStatus" class="muted"></span>
+            </div>
+          </div>
+          <ul id="holidayList" class="date-list"></ul>
+        </div>
+
+        <div class="date-block">
+          <label>자체휴강 추가</label>
+          <div class="row date-input-row">
+            <input id="customBreakDateInput" type="date" />
+            <button id="addCustomBreakButton" class="btn-secondary" type="button">추가</button>
+          </div>
+          <ul id="customBreakList" class="date-list"></ul>
+        </div>
+      </div>
+
+      <input id="scheduleInstructorCode" type="hidden" value="" />
+      <input id="scheduleClassroomCode" type="hidden" value="AUTO-ROOM" />
+      <input id="scheduleSubjectCode" type="hidden" value="AUTO-SUBJECT" />
+
+      <div class="row" style="margin-top: 10px; align-items: center;">
+        <button id="generateScheduleButton" class="btn-primary" type="button">일정 생성</button>
+        <label class="inline-check">
+          <input id="pushScheduleToConflicts" type="checkbox" />
+          충돌 확인 대상에 포함
+        </label>
+        <button id="appendScheduleButton" class="btn-primary" type="button" disabled>생성 결과 반영</button>
+      </div>
+
+      <div id="scheduleError" class="error-box" style="display: none;"></div>
+
+      <div id="scheduleResult" style="display: none; margin-top: 10px;">
+        <div class="muted" id="scheduleSummary"></div>
+        <div class="muted" id="scheduleSkippedSummary" style="margin-top: 4px;"></div>
+        <div id="scheduleSkippedDetails" class="skipped-details"></div>
+        <div class="muted" id="scheduleDaysInfo" style="margin-top: 4px;"></div>
+        <ul id="scheduleDaysPreview" class="schedule-preview-list"></ul>
+        <div class="muted" id="scheduleAppendStatus"></div>
+      </div>
+
+      <div class="card" id="hrdDownloadCard" style="margin-top: 12px;">
+        <label>HRD 업로드용 CSV 다운로드</label>
+        <div class="row" style="margin-top: 8px; align-items: center;">
+          <div>
+            <label>과정 기수 선택</label>
+            <select id="cohort"></select>
+          </div>
+          <button id="download" class="btn-primary" disabled>선택한 기수 CSV 다운로드</button>
+        </div>
+        <div class="muted" id="cohortInfo" style="margin-top: 6px;"></div>
+        <div class="muted" style="margin-top: 6px;">
+          컬럼: 훈련일자, 훈련시작시간, 훈련종료시간, 방학/원격여부, 시작시간, 시간구분, 훈련강사코드,
+          교육장소(강의실)코드, 교과목(및 능력단위)코드
+        </div>
+        <div id="hrdValidationPanel" class="error-box" style="display: none; margin-top: 8px;">
+          <strong>다운로드 검증 결과</strong>
+          <ul id="hrdValidationList" class="error-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-span-12 admin-only" id="sectionStaffingAssign" style="margin-top: 14px;">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>Staffing 배치관리 (v7-E)</strong>
+          <div class="muted">운영매니저는 교과목(모듈)별 강사코드만 입력하면 자동 배정됩니다.</div>
+        </div>
+        <div>
+          <label>배치 모드</label>
+          <select id="staffingModeSelect">
+            <option value="manager" selected>운영매니저 모드</option>
+            <option value="advanced">고급 모드</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="staffingModeHint" class="muted" style="margin-top: 6px;">
+        운영매니저 모드에서는 리소스타입이 INSTRUCTOR로 고정됩니다.
+      </div>
+
+      <div id="staffModuleManagerContainerAdmin" style="margin-top: 10px;"></div>
+
+      <div id="staffAdvancedContainer" style="margin-top: 10px;">
+        <div class="row" id="staffingAutoModuleRow" style="margin-top: 10px; align-items: center;">
+          <div class="muted">업무일수 정책: 실업자(월~금), 재직자(월~토)</div>
+          <div>
+            <label>P1 기본 주수(X)</label>
+            <input id="staffP1Weeks" type="number" min="1" step="1" value="6" />
+          </div>
+          <div>
+            <label>365 기본 주수(Y)</label>
+            <input id="staff365Weeks" type="number" min="1" step="1" value="4" />
+          </div>
+          <button id="staffAutoFill" type="button">일정에서 자동 채우기</button>
+          <button id="staffRefresh" type="button">배치 계산</button>
+          <div>
+            <label>내보내기 모드</label>
+            <select id="staffExportMode">
+              <option value="v7e_strict">v7e_strict</option>
+              <option value="modules_generic">modules_generic</option>
+            </select>
+          </div>
+          <label class="inline-check">
+            <input id="staffExportIncludeDetails" type="checkbox" />
+            strict 상세 CSV 포함
+          </label>
+          <button id="staffExportCsv" type="button">배치 CSV 내보내기</button>
+        </div>
+        <div id="staffExportModeHint" class="muted" style="margin-top: 6px;">
+          v7e_strict는 P1/P2/365 프리셋 기간이 적용된 경우에만 활성화됩니다.
+        </div>
+        <label class="inline-check" style="margin-top: 6px; display: inline-flex;">
+          <input id="staffExportWarningsAgree" type="checkbox" />
+          내보내기 경고를 확인했고 계속 진행합니다.
+        </label>
+        <div id="staffExportValidationPanel" class="error-box" style="display: none; margin-top: 8px;">
+          <strong>내보내기 검증 결과</strong>
+          <ul id="staffExportValidationList" class="error-list"></ul>
+        </div>
+
+        <div id="staffMatrixContainer" style="margin-top: 10px;"></div>
+
+        <div style="margin-top: 12px;">
+          <strong>전체 과정 간트</strong>
+          <div class="staff-gantt" id="staffCohortGantt"></div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>담당자별 간트</strong>
+          <div class="staff-gantt" id="staffAssigneeGantt"></div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>담당자 KPI</strong>
+          <table id="staffKpiTable">
+            <thead>
+              <tr>
+                <th>담당자</th>
+                <th>리소스유형</th>
+                <th>총 배치일수</th>
+                <th>P1 일수</th>
+                <th>P2 일수</th>
+                <th>365 일수</th>
+                <th>겹침일수</th>
+              </tr>
+            </thead>
+            <tbody id="staffKpiBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <strong>담당자별 상세</strong>
+          <div id="staffDetailContainer"></div>
+        </div>
+      </div>
+
+      <div class="muted" id="staffingStatus" style="margin-top: 6px;">코호트 요약을 기준으로 배치표가 생성됩니다.</div>
+    </div>
+
+    <div class="card card-span-12 admin-only simple-hidden" id="sectionParseErrors" style="margin-top: 14px;">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>파싱 에러</strong>
+          <span class="pill" id="errorCount">총 0건</span>
+        </div>
+        <div class="muted">상위 10건만 표시됩니다.</div>
+      </div>
+      <ul id="errorList" class="error-list"></ul>
+      <div class="muted" id="errorEmpty">에러가 없습니다.</div>
+    </div>
+
+    <div class="card card-span-12 admin-only simple-hidden" id="sectionConflicts" style="margin-top: 14px;">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>겹침(충돌) 탐지</strong>
+          <span class="pill warn" id="confCount"></span>
+          <div class="muted">기준: 동일 일자 + 동일 강의실/강사 + 시간구간 overlap (중복행은 자동 제거)</div>
+        </div>
+        <div class="muted">프로토타입: 훈련시작시간~훈련종료시간 기반</div>
+      </div>
+      <div class="row" style="margin-top: 10px; align-items: center;">
+        <button id="tabTimeConflicts" class="tab-btn active" type="button">강사 시간 충돌</button>
+        <button id="tabInstructorDayConflicts" class="tab-btn" type="button">강사 배치(일) 충돌</button>
+        <button id="tabFoDayConflicts" class="tab-btn" type="button">퍼실/운영 배치(일) 충돌</button>
+      </div>
+
+      <div id="timeConflictPanel" style="margin-top: 8px;">
+        <div class="muted">산정 기준: 세션 시간 구간 기준 (INSTRUCTOR)</div>
+        <div class="row" style="margin-top: 10px; align-items: center;">
+          <button id="computeConflicts" disabled>충돌 계산</button>
+
+          <div>
+            <label>키 검색</label>
+            <input id="keySearch" type="text" placeholder="강사 코드 검색" />
+          </div>
+
+          <button id="downloadTimeConflicts" disabled>CSV 내보내기</button>
+        </div>
+        <div class="muted schema-note">내보내기 스키마: 기준, 일자, 키, 과정A, A시간, A교과목, 과정B, B시간, B교과목</div>
+        <table id="confTable">
+          <thead>
+            <tr>
+              <th>기준</th>
+              <th>일자</th>
+              <th>키</th>
+              <th>과정A</th>
+              <th>A시간</th>
+              <th>A교과목</th>
+              <th>과정B</th>
+              <th>B시간</th>
+              <th>B교과목</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="muted" id="confRenderNotice" style="margin-top: 6px;"></div>
+      </div>
+
+      <div id="instructorDayConflictPanel" style="display: none; margin-top: 8px;">
+        <div class="muted">산정 기준: 업무일수 산정 기준(강사 배치, Staffing, resourceType=INSTRUCTOR)</div>
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <div>
+            <strong>강사 배치 충돌</strong>
+            <span class="pill warn" id="instructorDayOverlapCount">총 0건</span>
+          </div>
+          <div class="row" style="align-items: center;">
+            <div>
+              <label>검색</label>
+              <input id="instructorDaySearch" type="text" placeholder="담당자/과정/모듈 검색" />
+            </div>
+            <button id="downloadInstructorDayConflicts" disabled>CSV 내보내기</button>
+          </div>
+        </div>
+        <div class="muted schema-note">
+          내보내기 스키마: 담당자, 리소스타입, 과정A, 모듈A, 시작A, 종료A, 과정B, 모듈B, 시작B, 종료B, 겹침일수(정책반영)
+        </div>
+        <table id="instructorDayOverlapTable">
+          <thead>
+            <tr>
+              <th>담당자</th>
+              <th>리소스타입</th>
+              <th>과정A</th>
+              <th>모듈A</th>
+              <th>시작A</th>
+              <th>종료A</th>
+              <th>과정B</th>
+              <th>모듈B</th>
+              <th>시작B</th>
+              <th>종료B</th>
+              <th>겹침일수(정책반영)</th>
+            </tr>
+          </thead>
+          <tbody id="instructorDayOverlapBody"></tbody>
+        </table>
+        <div class="muted" id="instructorDayRenderNotice" style="margin-top: 6px;"></div>
+      </div>
+
+      <div id="foDayConflictPanel" style="display: none; margin-top: 8px;">
+        <div class="muted">산정 기준: 업무일수 산정 기준(월~금/월~토, 코호트 설정)</div>
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <div>
+            <strong>퍼실/운영 배치 충돌</strong>
+            <span class="pill warn" id="foOverlapCount">총 0건</span>
+          </div>
+          <div class="row" style="align-items: center;">
+            <div>
+              <label>검색</label>
+              <input id="foDaySearch" type="text" placeholder="담당자/유형/과정/모듈 검색" />
+            </div>
+            <button id="downloadFoDayConflicts" disabled>CSV 내보내기</button>
+          </div>
+        </div>
+        <div class="muted schema-note">
+          내보내기 스키마: 담당자, 리소스타입, 과정A, 모듈A, 시작A, 종료A, 과정B, 모듈B, 시작B, 종료B, 겹침일수(정책반영)
+        </div>
+        <table id="foOverlapTable">
+          <thead>
+            <tr>
+              <th>담당자</th>
+              <th>리소스타입</th>
+              <th>과정A</th>
+              <th>모듈A</th>
+              <th>시작A</th>
+              <th>종료A</th>
+              <th>과정B</th>
+              <th>모듈B</th>
+              <th>시작B</th>
+              <th>종료B</th>
+              <th>겹침일수(정책반영)</th>
+            </tr>
+          </thead>
+          <tbody id="foOverlapBody"></tbody>
+        </table>
+        <div class="muted" id="foDayRenderNotice" style="margin-top: 6px;"></div>
+      </div>
+    </div>
+
+    <div class="card card-span-12 admin-only simple-hidden" id="sectionStateManagement" style="margin-top: 14px;">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>프로젝트 상태 관리</strong>
+          <div class="muted">localStorage 자동저장(500ms debounce) + JSON 저장/불러오기</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 10px; align-items: center;">
+        <button id="saveProjectButton" type="button">프로젝트 저장(JSON 다운로드)</button>
+        <button id="loadProjectButton" type="button">프로젝트 불러오기(JSON 업로드)</button>
+        <button id="resetProjectButton" type="button">초기화(전체 삭제)</button>
+        <button id="printReportButton" type="button">프린트(출력/PDF)</button>
+        <input id="loadProjectInput" type="file" accept="application/json,.json" style="display: none;" />
+      </div>
+      <div id="stateStorageStatus" class="muted" style="margin-top: 6px;">자동저장 대기</div>
+      <div id="stateStorageWarning" class="muted" style="margin-top: 4px;"></div>
+
+      <div id="demoSampleSection" style="display: none; margin-top: 10px;">
+        <div class="row" style="align-items: center;">
+          <div>
+            <label>샘플 불러오기</label>
+            <select id="demoSampleSelect">
+              <option value="state_unemployed_demo_v2.json">실업자 샘플(v2)</option>
+              <option value="state_employed_demo_v2.json">재직자 샘플(v2)</option>
+            </select>
+          </div>
+          <button id="loadDemoSampleButton" type="button">샘플 적용</button>
+          <button id="restorePreviousStateButton" type="button" disabled>되돌리기</button>
+        </div>
+        <div id="demoSampleBanner" class="warning-box" style="display: none; margin-top: 6px;"></div>
+      </div>
+    </div>
+
+    <div class="card card-span-12 admin-only simple-hidden" id="sectionChecklist" style="margin-top: 14px;">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>운영 체크리스트</strong>
+          <div class="muted">운영 전 필수 점검 항목</div>
+        </div>
+      </div>
+      <ul id="opsChecklistList" class="checklist-list" style="margin-top: 8px;"></ul>
+    </div>
+
+    <div class="card card-span-12 admin-only simple-hidden" id="standardizeHelp" style="margin-top: 14px;">
+      <strong>코드 표준화 규칙</strong>
+      <div class="muted" style="margin-top: 6px;">
+        trim, 연속 공백 축소, 제어문자 제거, 구분자(괄호/언더스코어/대시 등) 일관화(단일 "_")를 적용합니다.
+      </div>
+      <div class="muted" style="margin-top: 4px;">문서: `spec/standardize.md`</div>
+    </div>
+
+    <div id="printReportCard" class="card card-span-12" style="display: none; margin-top: 14px;">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <strong>운영 리포트 프린트</strong>
+          <div class="muted" id="printReportMeta">-</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <strong>전체 과정 간트</strong>
+        <div class="staff-gantt" id="printCohortGantt"></div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <strong>담당자별 간트</strong>
+        <div class="staff-gantt" id="printAssigneeGantt"></div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <strong>담당자 KPI 요약</strong>
+        <div id="printKpiContainer"></div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <strong id="printConflictTitle">선택 충돌 탭 상위 50건</strong>
+        <div id="printConflictContainer"></div>
+      </div>
+    </div>
+
+      </div>
+    </main>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
