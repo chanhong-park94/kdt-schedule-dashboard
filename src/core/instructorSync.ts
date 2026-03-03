@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { InstructorDirectoryEntry } from "./types";
+import { readClientEnv } from "./env";
 
 type InstructorRow = {
   instructor_code: string;
@@ -15,8 +16,8 @@ type InstructorPayload = {
 
 const TABLE_NAME = "instructors";
 
-const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const rawSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawSupabaseUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
+const rawSupabaseAnonKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
 
 const hasSupabaseConfig =
   typeof rawSupabaseUrl === "string" &&

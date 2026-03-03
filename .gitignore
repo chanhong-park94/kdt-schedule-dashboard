@@ -1,7 +1,11 @@
 node_modules/
 dist/
+out/
 coverage/
 .vite/
+.next/
+tsconfig.tsbuildinfo
+nul
 *.log
 *.msi
 .DS_Store

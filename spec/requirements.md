@@ -32,7 +32,7 @@
 
 ## 완료 정의 (Definition of Done)
 
-- Vite + TypeScript 프로젝트가 `npm run dev`, `npm run build`, `npm run preview`, `npm run test`로 실행 가능하다.
+- Next.js + TypeScript 프로젝트가 `npm run dev`, `npm run build`, `npm run start`, `npm run test`로 실행 가능하다.
 - CSV 업로드, 기수 선택, 요약 표시, 충돌 탐지, CSV 다운로드가 브라우저에서 동작한다.
 - export CSV 헤더가 HRD 9개 컬럼 순서로 고정되고 `과정기수`는 제외된다.
 - `spec/requirements.md`, `spec/data_contract.md`, `spec/conflict_rules.md` 문서가 작성되어 있다.

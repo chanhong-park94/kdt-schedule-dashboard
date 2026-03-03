@@ -3,6 +3,7 @@ import v7eLegacyRaw from "../public/mappings/v7e_legacy.json";
 import v7eStrictRaw from "../public/mappings/v7e_strict.json";
 import mappingSchemaRaw from "./mapping.schema.json";
 import { InternalV7ERecord } from "./schema";
+import { isDevRuntime } from "./env";
 
 export type ExportFormatKey = "v7e_strict" | "v7e_legacy" | "modules_generic";
 
@@ -163,7 +164,7 @@ function ensureHeaderAliases(
 }
 
 function parseMappingConfig(raw: unknown, fileName: string): MappingDefinition {
-  if (import.meta.env.DEV) {
+  if (isDevRuntime()) {
     const schemaErrors = validateAgainstJsonSchema(raw, fileName);
     if (schemaErrors.length > 0) {
       throw new Error(`매핑 JSON 스키마 검증 실패:\n- ${schemaErrors.join("\n- ")}`);

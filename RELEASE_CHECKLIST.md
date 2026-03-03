@@ -18,7 +18,7 @@
 
 ## 배포 산출물
 
-- [ ] 파일명 규칙 확인: `academic-schedule-manager_v0.1.0_dist.zip`
+- [ ] 파일명 규칙 확인: `academic-schedule-manager_v0.1.0_out.zip`
 - [ ] 생성 명령 실행 후 zip 파일 무결성 확인
 
 ## 보안 알림

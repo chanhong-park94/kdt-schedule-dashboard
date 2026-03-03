@@ -1,5 +1,3 @@
-import "./style.css";
-
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
 import { applyCourseTemplateToState } from "./core/courseTemplateApply";
@@ -51,6 +49,7 @@ import { buildCohortSummaries } from "./core/summary";
 import {
   validateHrdExportForCohortDetailed
 } from "./core/hrdValidation";
+import { isDevRuntime, isProdRuntime } from "./core/env";
 import {
   AssigneeSummary,
   CohortSummary,
@@ -77,6 +76,17 @@ import {
   mergeWithLocalInstructorDirectory,
   upsertInstructorInCloud
 } from "./core/instructorSync";
+import {
+  createCourse,
+  createSubject,
+  deleteCourseTemplate,
+  isManagementCloudEnabled,
+  listCourseTemplates,
+  listCourses,
+  listSubjects,
+  saveCourseTemplate,
+  type CourseTemplateRecord
+} from "./core/supabaseManagement";
 
 type ConflictTab = "time" | "instructor_day" | "fo_day";
 type ViewMode = AppViewMode;
@@ -210,6 +220,8 @@ const DAY_CONFLICT_COLUMNS = [
 ] as const;
 
 const STORAGE_KEY = "academic_schedule_manager_state_v1";
+const AUTH_SESSION_KEY = "academic_schedule_manager_auth_v2";
+const AUTH_CODE_V2 = "v2";
 const STORAGE_WARN_BYTES = 4_500_000;
 const AUTO_SAVE_DEBOUNCE_MS = 500;
 const PRINT_CONFLICT_LIMIT = 50;
@@ -282,7 +294,11 @@ let staffingMode: StaffingMode = "manager";
 let showAdvanced = false;
 let hasPrunedBasicModeSections = false;
 let activeDrawer: "notification" | "instructor" | null = null;
+let managementInlineMode = false;
 let instructorDirectoryCloudWarning = "";
+let managementCloudWarning = "";
+let isAuthVerified = false;
+let hasAppBootstrapped = false;
 
 let isUploadProcessing = false;
 let isConflictComputing = false;
@@ -313,6 +329,10 @@ const collapsedCourseGroups = new Set<string>();
 const fileInput = getRequiredElement<HTMLInputElement>("#file");
 const uploadStatus = getRequiredElement<HTMLElement>("#uploadStatus");
 const standardizeStatus = getRequiredElement<HTMLElement>("#standardizeStatus");
+const authGate = getRequiredElement<HTMLElement>("#authGate");
+const authCodeInput = getRequiredElement<HTMLInputElement>("#authCodeInput");
+const authLoginButton = getRequiredElement<HTMLButtonElement>("#authLoginButton");
+const authStatus = getRequiredElement<HTMLElement>("#authStatus");
 
 const stateMigrationBanner = getRequiredElement<HTMLElement>("#stateMigrationBanner");
 const stateMigrationList = getRequiredElement<HTMLUListElement>("#stateMigrationList");
@@ -323,8 +343,32 @@ const adminModeToggle = document.querySelector<HTMLInputElement>("#adminModeTogg
 const drawerBackdrop = getRequiredElement<HTMLElement>("#drawerBackdrop");
 const notificationDrawer = getRequiredElement<HTMLElement>("#notificationDrawer");
 const instructorDrawer = getRequiredElement<HTMLElement>("#instructorDrawer");
+const headerRuntimePanel = getRequiredElement<HTMLElement>(".header-runtime-panel");
+const headerCurrentTime = getRequiredElement<HTMLElement>("#headerCurrentTime");
+const headerSyncState = getRequiredElement<HTMLElement>("#headerSyncState");
 const openNotificationDrawerButton = getRequiredElement<HTMLButtonElement>("#openNotificationDrawer");
 const openInstructorDrawerButton = getRequiredElement<HTMLButtonElement>("#openInstructorDrawer");
+const quickNavCourseButton = getRequiredElement<HTMLButtonElement>("#quickNavCourse");
+const quickNavSubjectButton = getRequiredElement<HTMLButtonElement>("#quickNavSubject");
+const quickNavInstructorButton = getRequiredElement<HTMLButtonElement>("#quickNavInstructor");
+const quickNavMappingButton = getRequiredElement<HTMLButtonElement>("#quickNavMapping");
+const quickNavCourseMeta = getRequiredElement<HTMLElement>("#quickNavCourseMeta");
+const quickNavSubjectMeta = getRequiredElement<HTMLElement>("#quickNavSubjectMeta");
+const quickNavInstructorMeta = getRequiredElement<HTMLElement>("#quickNavInstructorMeta");
+const quickNavMappingMeta = getRequiredElement<HTMLElement>("#quickNavMappingMeta");
+const jibbleRightMemberText = document.querySelector<HTMLElement>("#jibbleRightMemberText");
+const jibbleRightStatInstructor = document.querySelector<HTMLElement>("#jibbleRightStatInstructor");
+const jibbleRightStatCohort = document.querySelector<HTMLElement>("#jibbleRightStatCohort");
+const jibbleRightStatConflict = document.querySelector<HTMLElement>("#jibbleRightStatConflict");
+const jibbleOpsStatus = document.querySelector<HTMLElement>("#jibbleOpsStatus");
+const jibbleOpsSummary = document.querySelector<HTMLElement>("#jibbleOpsSummary");
+const jibbleManagementSubmenu = document.querySelector<HTMLElement>("#jibbleManagementSubmenu");
+const jibbleSubCourseButton = document.querySelector<HTMLButtonElement>("#jibbleSubCourse");
+const jibbleSubSubjectButton = document.querySelector<HTMLButtonElement>("#jibbleSubSubject");
+const jibbleSubInstructorButton = document.querySelector<HTMLButtonElement>("#jibbleSubInstructor");
+const jibbleSidebarNavButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>(".jibble-nav-item[data-scroll-target]")
+);
 const openConflictDetailModalButton = getRequiredElement<HTMLButtonElement>("#openConflictDetailModal");
 const conflictDetailModal = getRequiredElement<HTMLDialogElement>("#conflictDetailModal");
 const conflictDetailTitle = getRequiredElement<HTMLElement>("#conflictDetailTitle");
@@ -523,6 +567,63 @@ function getRequiredElement<T extends Element>(selector: string): T {
     throw new Error(`Required element is missing: ${selector}`);
   }
   return element as T;
+}
+
+function isCloudAccessAllowed(): boolean {
+  return isAuthVerified;
+}
+
+function applyAuthGate(authenticated: boolean): void {
+  isAuthVerified = authenticated;
+  document.body.classList.toggle("auth-locked", !authenticated);
+  authGate.setAttribute("aria-hidden", authenticated ? "true" : "false");
+
+  if (authenticated) {
+    authStatus.textContent = "";
+    authCodeInput.value = "";
+    return;
+  }
+
+  authStatus.textContent = "";
+  authCodeInput.value = "";
+  window.setTimeout(() => {
+    authCodeInput.focus();
+  }, 0);
+}
+
+async function bootstrapAppAfterAuthLogin(): Promise<void> {
+  if (!isCloudAccessAllowed() || hasAppBootstrapped) {
+    return;
+  }
+
+  hasAppBootstrapped = true;
+  holidayLoadStatus.textContent = "자동 불러오기 미실행";
+  demoSampleSection.style.display = isDemoModeEnabled() ? "block" : "none";
+  restorePreviousStateButton.disabled = true;
+  loadScheduleTemplatesFromLocalStorage();
+  renderScheduleTemplateOptions();
+  scheduleTemplateStatus.textContent = "템플릿 준비 완료";
+
+  if (localStorage.getItem(STORAGE_KEY)) {
+    await loadProjectStateFromLocalStorage();
+    return;
+  }
+
+  renderInitialUiState();
+  await loadManagementDataFromCloudFallback();
+}
+
+function submitAuthCode(): void {
+  const code = authCodeInput.value.trim();
+  if (code === AUTH_CODE_V2) {
+    sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
+    applyAuthGate(true);
+    void bootstrapAppAfterAuthLogin();
+    return;
+  }
+
+  authStatus.textContent = "인증코드가 올바르지 않습니다.";
+  authCodeInput.select();
 }
 
 function parseCompactDate(value: string): Date | null {
@@ -1150,7 +1251,9 @@ function upsertCourseRegistryEntry(): void {
   renderCourseSelectOptions();
   renderSubjectDirectory();
   renderSubjectMappingTable();
+  markQuickNavUpdated("course");
   scheduleAutoSave();
+  void syncCourseRegistryCloud({ courseId, courseName, memo });
 }
 
 function renderInstructorDirectory(): void {
@@ -1204,6 +1307,10 @@ function renderInstructorDirectory(): void {
 }
 
 async function syncInstructorDirectoryCloud(mode: "upsert" | "delete", instructorCode: string, payload?: InstructorDirectoryEntry): Promise<void> {
+  if (!isCloudAccessAllowed()) {
+    return;
+  }
+
   if (!isInstructorCloudEnabled()) {
     instructorDirectoryCloudWarning =
       "클라우드 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
@@ -1227,6 +1334,269 @@ async function syncInstructorDirectoryCloud(mode: "upsert" | "delete", instructo
       mode === "upsert"
         ? `클라우드 강사 동기화(추가/수정) 실패: ${message}. 로컬 데이터는 유지됩니다.`
         : `클라우드 강사 동기화(삭제) 실패: ${message}. 로컬 데이터는 유지됩니다.`;
+  } finally {
+    renderGlobalWarnings();
+  }
+}
+
+function toCourseTemplateFromCloudRecord(record: CourseTemplateRecord): CourseTemplate {
+  const raw = record.templateJson;
+  const source = typeof raw === "object" && raw !== null ? raw : {};
+  const sourceRecord = source as Record<string, unknown>;
+
+  const readStringList = (value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.filter((item): item is string => typeof item === "string").map((item) => item.trim());
+  };
+
+  const readTemplateRows = (value: unknown): TemplateRowState[] => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    const rows: TemplateRowState[] = [];
+    for (const item of value) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+      const row = item as Partial<TemplateRowState>;
+      const weekday = typeof row.weekday === "number" ? row.weekday : Number.NaN;
+      if (!Number.isFinite(weekday) || weekday < 0 || weekday > 6) {
+        continue;
+      }
+      rows.push({
+        weekday,
+        start: typeof row.start === "string" ? row.start : "",
+        end: typeof row.end === "string" ? row.end : "",
+        breakStart: typeof row.breakStart === "string" ? row.breakStart : "",
+        breakEnd: typeof row.breakEnd === "string" ? row.breakEnd : ""
+      });
+    }
+    return rows;
+  };
+
+  const readSubjectList = (value: unknown): Array<{ subjectCode: string; subjectName: string; memo: string }> => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    const rows: Array<{ subjectCode: string; subjectName: string; memo: string }> = [];
+    for (const item of value) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+      const row = item as Record<string, unknown>;
+      const subjectCode = normalizeSubjectCode(typeof row.subjectCode === "string" ? row.subjectCode : "").toUpperCase();
+      if (!subjectCode) {
+        continue;
+      }
+      rows.push({
+        subjectCode,
+        subjectName: typeof row.subjectName === "string" ? row.subjectName.trim() : "",
+        memo: typeof row.memo === "string" ? row.memo.trim() : ""
+      });
+    }
+    return rows;
+  };
+
+  const readSubjectInstructorMapping = (value: unknown): Array<{ key: string; instructorCode: string }> => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    const rows: Array<{ key: string; instructorCode: string }> = [];
+    for (const item of value) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+      const row = item as Record<string, unknown>;
+      const key = typeof row.key === "string" ? row.key.trim() : "";
+      const instructorCode = normalizeInstructorCode(typeof row.instructorCode === "string" ? row.instructorCode : "");
+      if (!key || !instructorCode) {
+        continue;
+      }
+      rows.push({ key, instructorCode });
+    }
+    return rows;
+  };
+
+  const templateCourseId = normalizeCourseId(
+    typeof sourceRecord.courseId === "string" ? sourceRecord.courseId : record.courseId
+  );
+
+  return {
+    name: record.templateName,
+    version: typeof sourceRecord.version === "string" && sourceRecord.version.trim() ? sourceRecord.version.trim() : "v1",
+    courseId: templateCourseId,
+    dayTemplates: readTemplateRows(sourceRecord.dayTemplates),
+    holidays: dedupeAndSortDates(readStringList(sourceRecord.holidays)),
+    customBreaks: dedupeAndSortDates(readStringList(sourceRecord.customBreaks)),
+    subjectList: readSubjectList(sourceRecord.subjectList),
+    subjectInstructorMapping: readSubjectInstructorMapping(sourceRecord.subjectInstructorMapping)
+  };
+}
+
+async function syncCourseRegistryCloud(entry: CourseRegistryEntry): Promise<void> {
+  if (!isCloudAccessAllowed()) {
+    return;
+  }
+
+  if (!isManagementCloudEnabled()) {
+    managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    renderGlobalWarnings();
+    return;
+  }
+
+  try {
+    await createCourse({ courseId: entry.courseId, courseName: entry.courseName });
+    managementCloudWarning = "";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    managementCloudWarning = `과정 동기화 실패: ${message}`;
+  } finally {
+    renderGlobalWarnings();
+  }
+}
+
+async function syncSubjectDirectoryCloud(entry: SubjectDirectoryEntry): Promise<void> {
+  if (!isCloudAccessAllowed()) {
+    return;
+  }
+
+  if (!isManagementCloudEnabled()) {
+    managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    renderGlobalWarnings();
+    return;
+  }
+
+  try {
+    await createSubject({
+      courseId: entry.courseId,
+      subjectCode: entry.subjectCode,
+      subjectName: entry.subjectName
+    });
+    managementCloudWarning = "";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    managementCloudWarning = `교과목 동기화 실패: ${message}`;
+  } finally {
+    renderGlobalWarnings();
+  }
+}
+
+async function syncCourseTemplateCloud(template: CourseTemplate): Promise<void> {
+  if (!isCloudAccessAllowed()) {
+    return;
+  }
+
+  if (!isManagementCloudEnabled()) {
+    managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    renderGlobalWarnings();
+    return;
+  }
+
+  try {
+    await saveCourseTemplate({
+      courseId: template.courseId,
+      templateName: template.name,
+      templateJson: {
+        version: template.version,
+        courseId: template.courseId,
+        dayTemplates: template.dayTemplates,
+        holidays: template.holidays,
+        customBreaks: template.customBreaks,
+        subjectList: template.subjectList,
+        subjectInstructorMapping: template.subjectInstructorMapping
+      }
+    });
+    managementCloudWarning = "";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    managementCloudWarning = `템플릿 동기화 실패: ${message}`;
+  } finally {
+    renderGlobalWarnings();
+  }
+}
+
+async function syncDeleteCourseTemplateCloud(courseId: string, templateName: string): Promise<void> {
+  if (!isCloudAccessAllowed()) {
+    return;
+  }
+
+  if (!isManagementCloudEnabled()) {
+    return;
+  }
+
+  try {
+    await deleteCourseTemplate(courseId, templateName);
+    managementCloudWarning = "";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    managementCloudWarning = `템플릿 삭제 동기화 실패: ${message}`;
+  } finally {
+    renderGlobalWarnings();
+  }
+}
+
+async function loadManagementDataFromCloudFallback(): Promise<void> {
+  if (!isCloudAccessAllowed()) {
+    return;
+  }
+
+  if (!isManagementCloudEnabled()) {
+    return;
+  }
+
+  try {
+    let hasChanged = false;
+    if (courseRegistry.length === 0) {
+      const cloudCourses = await listCourses();
+      if (cloudCourses.length > 0) {
+        courseRegistry = cloudCourses.map((item) => ({
+          courseId: normalizeCourseId(item.courseId),
+          courseName: item.courseName,
+          memo: ""
+        }));
+        hasChanged = true;
+      }
+    }
+
+    if (subjectDirectory.length === 0 && courseRegistry.length > 0) {
+      const byCourse = await Promise.all(courseRegistry.map((course) => listSubjects(course.courseId)));
+      const merged = byCourse.flat();
+      if (merged.length > 0) {
+        subjectDirectory = merged.map((item) => ({
+          courseId: normalizeCourseId(item.courseId),
+          subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
+          subjectName: item.subjectName,
+          memo: ""
+        }));
+        hasChanged = true;
+      }
+    }
+
+    if (courseTemplates.length === 0) {
+      const cloudTemplates = await listCourseTemplates();
+      if (cloudTemplates.length > 0) {
+        courseTemplates = cloudTemplates.map(toCourseTemplateFromCloudRecord);
+        hasChanged = true;
+      }
+    }
+
+    if (hasChanged) {
+      renderCourseRegistry();
+      renderCourseSelectOptions();
+      renderSubjectDirectory();
+      renderSubjectMappingTable();
+      renderCourseTemplateOptions();
+      scheduleAutoSave();
+      stateStorageStatus.textContent = `클라우드 관리 데이터 동기화 완료 (${new Date().toLocaleTimeString()})`;
+    }
+
+    managementCloudWarning = "";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    managementCloudWarning = `클라우드 관리 데이터 동기화 실패: ${message}`;
   } finally {
     renderGlobalWarnings();
   }
@@ -1314,7 +1684,9 @@ function upsertSubjectDirectoryEntry(): void {
   subjectMemoInput.value = "";
   renderSubjectDirectory();
   renderSubjectMappingTable();
+  markQuickNavUpdated("subject");
   scheduleAutoSave();
+  void syncSubjectDirectoryCloud({ courseId, subjectCode, subjectName, memo });
 }
 
 function renderSubjectMappingTable(): void {
@@ -1433,6 +1805,7 @@ function upsertInstructorDirectoryEntry(): void {
   instructorMemoInput.value = "";
   renderInstructorDirectory();
   renderSubjectMappingTable();
+  markQuickNavUpdated("instructor");
   scheduleAutoSave();
   void syncInstructorDirectoryCloud("upsert", instructorCode, { instructorCode, name, memo });
 }
@@ -1525,6 +1898,7 @@ function applySubjectMappingsToSessions(): void {
     );
   }
   pushRecentActionLog("INFO", `강사 매핑 적용: 교과목 ${normalizedMappings.length}개 업데이트`, "instructorDrawer");
+  markQuickNavUpdated("mapping");
 }
 
 function buildNotifications(): NotificationItem[] {
@@ -1689,8 +2063,8 @@ function resolveShowAdvanced(savedShowAdvanced: boolean | undefined): boolean {
   return resolveShowAdvancedPolicy({
     savedShowAdvanced,
     search: window.location.search,
-    isDev: import.meta.env.DEV,
-    isProd: import.meta.env.PROD
+    isDev: isDevRuntime(),
+    isProd: isProdRuntime()
   });
 }
 
@@ -1706,22 +2080,104 @@ function applyShowAdvancedMode(enabled: boolean): void {
   }
 }
 
+function resolveManagementInlineMode(): boolean {
+  return true;
+}
+
+function applyManagementInlineMode(): void {
+  managementInlineMode = resolveManagementInlineMode();
+  document.body.classList.toggle("management-inline-mode", managementInlineMode);
+
+  if (managementInlineMode) {
+    instructorDrawer.classList.add("open");
+    instructorDrawer.setAttribute("aria-hidden", "false");
+    drawerBackdrop.classList.remove("open");
+    if (activeDrawer === "instructor") {
+      activeDrawer = null;
+    }
+    return;
+  }
+
+  if (activeDrawer !== "instructor") {
+    instructorDrawer.classList.remove("open");
+    instructorDrawer.setAttribute("aria-hidden", "true");
+  }
+}
+
+function renderHeaderRuntimeStatus(): void {
+  headerCurrentTime.textContent = new Date().toLocaleTimeString("ko-KR", { hour12: false });
+
+  const cloudEnabled = isInstructorCloudEnabled();
+  const hasWarning = instructorDirectoryCloudWarning.trim().length > 0;
+  const isHealthy = cloudEnabled && !hasWarning;
+
+  headerRuntimePanel.classList.remove("runtime-online", "runtime-warning");
+  headerSyncState.classList.remove("runtime-online", "runtime-warning");
+  if (isHealthy) {
+    headerSyncState.textContent = "클라우드 동기화 정상";
+    headerSyncState.classList.add("runtime-online");
+    headerRuntimePanel.classList.add("runtime-online");
+    return;
+  }
+
+  if (cloudEnabled) {
+    headerSyncState.textContent = "동기화 점검 필요";
+  } else {
+    headerSyncState.textContent = "로컬 모드";
+  }
+  headerSyncState.classList.add("runtime-warning");
+  headerRuntimePanel.classList.add("runtime-warning");
+}
+
+function markQuickNavUpdated(target: "course" | "subject" | "instructor" | "mapping"): void {
+  const stamp = new Date().toLocaleString("ko-KR", { hour12: false });
+  const text = `최근 수정: ${stamp}`;
+  if (target === "course") {
+    quickNavCourseMeta.textContent = text;
+    return;
+  }
+  if (target === "subject") {
+    quickNavSubjectMeta.textContent = text;
+    return;
+  }
+  if (target === "instructor") {
+    quickNavInstructorMeta.textContent = text;
+    return;
+  }
+  quickNavMappingMeta.textContent = text;
+}
+
 function closeDrawers(): void {
   activeDrawer = null;
   drawerBackdrop.classList.remove("open");
   notificationDrawer.classList.remove("open");
-  instructorDrawer.classList.remove("open");
   notificationDrawer.setAttribute("aria-hidden", "true");
+
+  if (managementInlineMode) {
+    instructorDrawer.classList.add("open");
+    instructorDrawer.setAttribute("aria-hidden", "false");
+    return;
+  }
+
+  instructorDrawer.classList.remove("open");
   instructorDrawer.setAttribute("aria-hidden", "true");
 }
 
 function openDrawer(target: "notification" | "instructor"): void {
   closeDrawers();
   activeDrawer = target;
-  drawerBackdrop.classList.add("open");
-  const drawer = target === "notification" ? notificationDrawer : instructorDrawer;
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
+  if (target === "notification") {
+    drawerBackdrop.classList.add("open");
+    notificationDrawer.classList.add("open");
+    notificationDrawer.setAttribute("aria-hidden", "false");
+    return;
+  }
+
+  instructorDrawer.classList.add("open");
+  instructorDrawer.setAttribute("aria-hidden", "false");
+  if (!managementInlineMode) {
+    drawerBackdrop.classList.add("open");
+  }
 }
 
 function switchInstructorDrawerTab(tab: "course" | "register" | "mapping" | "subject"): void {
@@ -1733,10 +2189,30 @@ function switchInstructorDrawerTab(tab: "course" | "register" | "mapping" | "sub
   instructorTabRegister.classList.toggle("active", register);
   instructorTabMapping.classList.toggle("active", mapping);
   instructorTabSubject.classList.toggle("active", subject);
+  quickNavCourseButton.classList.toggle("is-active", course);
+  quickNavSubjectButton.classList.toggle("is-active", subject);
+  quickNavInstructorButton.classList.toggle("is-active", register);
+  quickNavMappingButton.classList.toggle("is-active", mapping);
   instructorCoursePanel.style.display = course ? "block" : "none";
   instructorRegisterPanel.style.display = register ? "block" : "none";
   instructorMappingPanel.style.display = mapping ? "block" : "none";
   instructorSubjectPanel.style.display = subject ? "block" : "none";
+
+  if (course) {
+    setJibbleManagementSubmenuActive("course");
+  } else if (subject) {
+    setJibbleManagementSubmenuActive("subject");
+  } else if (register) {
+    setJibbleManagementSubmenuActive("instructor");
+  }
+}
+
+function openInstructorDrawerWithTab(tab: "course" | "register" | "mapping" | "subject"): void {
+  openDrawer("instructor");
+  switchInstructorDrawerTab(tab);
+  if (managementInlineMode) {
+    instructorDrawer.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function setNotificationFocus(focus: { cohort?: string; assignee?: string; date?: string } | null): void {
@@ -1804,6 +2280,118 @@ function applyStaffingMode(mode: StaffingMode): void {
 function scrollToSection(sectionId: string): void {
   const target = document.getElementById(sectionId);
   target?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setJibbleManagementSubmenuVisible(visible: boolean): void {
+  if (!jibbleManagementSubmenu) {
+    return;
+  }
+
+  jibbleManagementSubmenu.classList.toggle("u-hidden", !visible);
+}
+
+function setJibbleManagementSubmenuActive(tab: "course" | "subject" | "instructor"): void {
+  jibbleSubCourseButton?.classList.toggle("is-active", tab === "course");
+  jibbleSubSubjectButton?.classList.toggle("is-active", tab === "subject");
+  jibbleSubInstructorButton?.classList.toggle("is-active", tab === "instructor");
+}
+
+function setJibbleSidebarActive(sectionId: string): void {
+  for (const button of jibbleSidebarNavButtons) {
+    const targetId = button.dataset.scrollTarget?.trim() ?? "";
+    button.classList.toggle("is-active", targetId === sectionId);
+  }
+}
+
+function setupJibbleSidebarNavigation(): void {
+  if (jibbleSidebarNavButtons.length === 0) {
+    return;
+  }
+
+  const sectionIds = Array.from(
+    new Set(
+      jibbleSidebarNavButtons
+        .map((button) => button.dataset.scrollTarget?.trim() ?? "")
+        .filter((sectionId) => sectionId.length > 0)
+    )
+  );
+
+  for (const button of jibbleSidebarNavButtons) {
+    button.addEventListener("click", () => {
+      const targetId = button.dataset.scrollTarget?.trim() ?? "";
+      const navKey = button.dataset.navKey?.trim() ?? "";
+      if (!targetId) {
+        return;
+      }
+
+      setJibbleSidebarActive(targetId);
+
+      if (navKey === "management") {
+        setJibbleManagementSubmenuVisible(true);
+        setJibbleManagementSubmenuActive("course");
+        openInstructorDrawerWithTab("course");
+        return;
+      }
+
+      setJibbleManagementSubmenuVisible(false);
+      scrollToSection(targetId);
+    });
+  }
+
+  const firstTarget = jibbleSidebarNavButtons[0]?.dataset.scrollTarget?.trim() ?? "";
+  const firstNavKey = jibbleSidebarNavButtons[0]?.dataset.navKey?.trim() ?? "";
+  if (firstTarget) {
+    setJibbleSidebarActive(firstTarget);
+  }
+  setJibbleManagementSubmenuVisible(firstNavKey === "management");
+
+  if (!("IntersectionObserver" in window) || sectionIds.length === 0) {
+    return;
+  }
+
+  const visibleSections = new Map<string, number>();
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const section = entry.target as HTMLElement;
+        if (entry.isIntersecting) {
+          visibleSections.set(section.id, entry.intersectionRatio);
+          continue;
+        }
+
+        visibleSections.delete(section.id);
+      }
+
+      let activeId = "";
+      let maxRatio = 0;
+      for (const [sectionId, ratio] of visibleSections.entries()) {
+        if (ratio <= maxRatio) {
+          continue;
+        }
+
+        maxRatio = ratio;
+        activeId = sectionId;
+      }
+
+      if (activeId) {
+        setJibbleSidebarActive(activeId);
+      }
+    },
+    {
+      root: null,
+      threshold: [0.2, 0.4, 0.6],
+      rootMargin: "-20% 0px -55% 0px"
+    }
+  );
+
+  for (const sectionId of sectionIds) {
+    const section = document.getElementById(sectionId);
+    if (!section) {
+      continue;
+    }
+
+    observer.observe(section);
+  }
 }
 
 function getTrackTypeMissingCohorts(): string[] {
@@ -1875,6 +2463,7 @@ function renderGlobalWarnings(): void {
   const trackTypeMissing = getTrackTypeMissingCohorts();
   const unassignedModules = getUnassignedInstructorModules();
   const cloudWarning = instructorDirectoryCloudWarning.trim();
+  const managementWarning = managementCloudWarning.trim();
 
   if (trackTypeMissing.length > 0) {
     warnings.push(`trackType 미설정 코호트: ${trackTypeMissing.join(", ")}`);
@@ -1898,10 +2487,15 @@ function renderGlobalWarnings(): void {
     warnings.push(`강사 동기화: ${cloudWarning}`);
   }
 
+  if (managementWarning) {
+    warnings.push(`관리 데이터 동기화: ${managementWarning}`);
+  }
+
   globalWarningList.innerHTML = "";
 
   if (warnings.length === 0) {
     globalWarningPanel.style.display = "none";
+    renderHeaderRuntimeStatus();
     return;
   }
 
@@ -1911,6 +2505,7 @@ function renderGlobalWarnings(): void {
     li.textContent = warning;
     globalWarningList.appendChild(li);
   }
+  renderHeaderRuntimeStatus();
 }
 
 function setRiskCardState(card: HTMLElement, valueElement: HTMLElement, text: string, tone: "ok" | "warn" | "error"): void {
@@ -1966,6 +2561,57 @@ function renderRiskSummary(): void {
     isHolidayApplied() ? "적용" : "미적용",
     isHolidayApplied() ? "ok" : "warn"
   );
+}
+
+function renderJibbleRightRail(): void {
+  if (
+    !jibbleRightMemberText ||
+    !jibbleRightStatInstructor ||
+    !jibbleRightStatCohort ||
+    !jibbleRightStatConflict ||
+    !jibbleOpsStatus ||
+    !jibbleOpsSummary
+  ) {
+    return;
+  }
+
+  const instructorCount = instructorDirectory.length;
+  const cohortCount = summaries.length;
+  const conflictCount = hasComputedConflicts ? allConflicts.length : -1;
+  const unassignedCount = getUnassignedInstructorModules().length;
+
+  jibbleRightMemberText.textContent = `강사 ${instructorCount}명 등록`;
+  jibbleRightStatInstructor.textContent = String(instructorCount);
+  jibbleRightStatCohort.textContent = String(cohortCount);
+  jibbleRightStatConflict.textContent = conflictCount >= 0 ? String(conflictCount) : "-";
+
+  if (!cohortSelect.value) {
+    jibbleOpsStatus.textContent = "검토중";
+    jibbleOpsSummary.textContent = "기수를 선택하면 운영 상태를 계산합니다.";
+    return;
+  }
+
+  if (!hasComputedConflicts) {
+    jibbleOpsStatus.textContent = "분석대기";
+    jibbleOpsSummary.textContent = `${cohortSelect.value} · 시간 충돌 계산 전`;
+    return;
+  }
+
+  if (isHrdChecklistPassed()) {
+    jibbleOpsStatus.textContent = "안정";
+    jibbleOpsSummary.textContent = `${cohortSelect.value} · HRD 점검 통과 준비 완료`;
+    return;
+  }
+
+  if (allConflicts.length > 0 || instructorDayOverlaps.length > 0 || unassignedCount > 0) {
+    jibbleOpsStatus.textContent = "점검필요";
+    jibbleOpsSummary.textContent =
+      `${cohortSelect.value} · 시간충돌 ${allConflicts.length}건 / 일충돌 ${instructorDayOverlaps.length}건 / 미배정 ${unassignedCount}건`;
+    return;
+  }
+
+  jibbleOpsStatus.textContent = "검토중";
+  jibbleOpsSummary.textContent = `${cohortSelect.value} · 운영 체크리스트 점검 중`;
 }
 
 function clearGanttHighlights(): void {
@@ -2252,6 +2898,7 @@ function saveCurrentCourseTemplate(): void {
   courseTemplateStatus.textContent = `템플릿 저장 완료: ${courseId} / ${name}`;
   pushRecentActionLog("INFO", `템플릿 저장 완료: ${courseId}`, "instructorDrawer");
   scheduleAutoSave();
+  void syncCourseTemplateCloud(template);
 }
 
 function applySelectedCourseTemplate(): void {
@@ -2315,6 +2962,7 @@ function deleteSelectedCourseTemplate(): void {
   renderCourseTemplateOptions();
   courseTemplateStatus.textContent = `템플릿 삭제 완료: ${selected.courseId} / ${selected.name}`;
   scheduleAutoSave();
+  void syncDeleteCourseTemplateCloud(selected.courseId, selected.name);
 }
 
 function collectSavedStaffingCells(): SavedStaffCell[] {
@@ -2385,6 +3033,10 @@ function mergeInstructorDirectoryWarning(sizeWarning: string): string {
 async function loadInstructorDirectoryWithCloudFallback(
   localInstructors: InstructorDirectoryEntry[]
 ): Promise<InstructorDirectoryEntry[]> {
+  if (!isCloudAccessAllowed()) {
+    return localInstructors;
+  }
+
   if (!isInstructorCloudEnabled()) {
     instructorDirectoryCloudWarning =
       "클라우드 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
@@ -2719,6 +3371,7 @@ async function loadProjectStateFromLocalStorage(): Promise<void> {
     );
     const resolvedInstructorDirectory = await loadInstructorDirectoryWithCloudFallback(localInstructors);
     applyLoadedProjectState(parsed, resolvedInstructorDirectory);
+    await loadManagementDataFromCloudFallback();
     const bytes = estimateUtf8SizeBytes(raw);
     const sizeWarning = getStorageWarningMessage(bytes);
     stateStorageWarning.textContent = mergeInstructorDirectoryWarning(sizeWarning);
@@ -2914,6 +3567,7 @@ function updateActionStates(): void {
   renderNotificationCenter();
   renderTimeline();
   renderRiskSummary();
+  renderJibbleRightRail();
   renderOpsChecklist();
 }
 
@@ -5966,8 +6620,19 @@ conflictDetailModal.addEventListener("click", (event) => {
   }
 });
 openInstructorDrawerButton.addEventListener("click", () => {
-  openDrawer("instructor");
-  switchInstructorDrawerTab("course");
+  openInstructorDrawerWithTab("course");
+});
+quickNavCourseButton.addEventListener("click", () => {
+  openInstructorDrawerWithTab("course");
+});
+quickNavSubjectButton.addEventListener("click", () => {
+  openInstructorDrawerWithTab("subject");
+});
+quickNavInstructorButton.addEventListener("click", () => {
+  openInstructorDrawerWithTab("register");
+});
+quickNavMappingButton.addEventListener("click", () => {
+  openInstructorDrawerWithTab("mapping");
 });
 timelineViewTypeSelect.addEventListener("change", () => {
   setTimelineViewType(parseTimelineViewType(timelineViewTypeSelect.value));
@@ -6025,6 +6690,7 @@ window.addEventListener("keydown", (event) => {
     closeDrawers();
   }
 });
+window.addEventListener("resize", applyManagementInlineMode);
 
 computeConflictsButton.addEventListener("click", () => {
   void computeConflicts();
@@ -6126,6 +6792,28 @@ if (adminModeToggle) {
     scheduleAutoSave();
   });
 }
+
+jibbleSubCourseButton?.addEventListener("click", () => {
+  setJibbleManagementSubmenuVisible(true);
+  setJibbleManagementSubmenuActive("course");
+  setJibbleSidebarActive("instructorDrawer");
+  openInstructorDrawerWithTab("course");
+});
+
+jibbleSubSubjectButton?.addEventListener("click", () => {
+  setJibbleManagementSubmenuVisible(true);
+  setJibbleManagementSubmenuActive("subject");
+  setJibbleSidebarActive("instructorDrawer");
+  openInstructorDrawerWithTab("subject");
+});
+
+jibbleSubInstructorButton?.addEventListener("click", () => {
+  setJibbleManagementSubmenuVisible(true);
+  setJibbleManagementSubmenuActive("instructor");
+  setJibbleSidebarActive("instructorDrawer");
+  openInstructorDrawerWithTab("register");
+});
+
 instructorTabCourse.addEventListener("click", () => switchInstructorDrawerTab("course"));
 instructorTabRegister.addEventListener("click", () => switchInstructorDrawerTab("register"));
 instructorTabMapping.addEventListener("click", () => switchInstructorDrawerTab("mapping"));
@@ -6193,6 +6881,13 @@ loadDemoSampleButton.addEventListener("click", async () => {
 });
 
 restorePreviousStateButton.addEventListener("click", restoreStateBeforeSampleLoad);
+authLoginButton.addEventListener("click", submitAuthCode);
+authCodeInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    submitAuthCode();
+  }
+});
 
 const scheduleInputsForAutoSave: Array<HTMLInputElement> = [
   scheduleCohortInput,
@@ -6222,21 +6917,20 @@ if (!scheduleStartDateInput.value) {
   scheduleStartDateInput.value = getTodayIsoDate();
 }
 
+applyManagementInlineMode();
+renderHeaderRuntimeStatus();
+window.setInterval(renderHeaderRuntimeStatus, 1000);
+
 applyViewMode("full");
 setTimelineViewType("COHORT_TIMELINE");
 applyStaffingMode(staffingModeSelect.value === "advanced" ? "advanced" : "manager");
 applyShowAdvancedMode(resolveShowAdvanced(false));
 switchInstructorDrawerTab("course");
+setupJibbleSidebarNavigation();
 
-holidayLoadStatus.textContent = "자동 불러오기 미실행";
-demoSampleSection.style.display = isDemoModeEnabled() ? "block" : "none";
-restorePreviousStateButton.disabled = true;
-loadScheduleTemplatesFromLocalStorage();
-renderScheduleTemplateOptions();
-scheduleTemplateStatus.textContent = "템플릿 준비 완료";
+const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
+applyAuthGate(hasAuthSession);
 
-if (localStorage.getItem(STORAGE_KEY)) {
-  void loadProjectStateFromLocalStorage();
-} else {
-  renderInitialUiState();
+if (hasAuthSession) {
+  void bootstrapAppAfterAuthLogin();
 }
