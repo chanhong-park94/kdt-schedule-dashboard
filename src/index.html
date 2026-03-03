@@ -23,12 +23,62 @@
     <div class="app-shell app-shell--jibble">
     <aside class="jibble-sidebar" aria-label="주요 메뉴">
       <div class="jibble-logo">🧑‍🏫 KDT manager</div>
-      <nav class="jibble-nav">
-        <button class="jibble-nav-item is-active" type="button" data-scroll-target="sectionTimeline" data-nav-key="timeline">📅 학사일정</button>
-        <button class="jibble-nav-item" type="button" data-scroll-target="instructorDrawer" data-nav-key="management">📄 과정 정보입력</button>
-        <button class="jibble-nav-item" type="button" data-scroll-target="sectionScheduleGenerate" data-nav-key="generator">🛠️ 기수 일정 생성기</button>
-        <button class="jibble-nav-item" type="button" data-scroll-target="sectionConflicts">🧾 보고서</button>
-        <button class="jibble-nav-item" type="button" data-scroll-target="sectionStateManagement">⚙️ 설정</button>
+      <nav id="jibbleMainNav" class="jibble-nav" aria-label="메인 메뉴">
+        <button
+          class="jibble-nav-item is-active"
+          type="button"
+          data-scroll-target="sectionTimeline"
+          data-nav-key="timeline"
+          data-nav-icon="📅"
+          data-default-label="학사일정"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">📅</span>
+          <span class="jibble-nav-label">학사일정</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
+          data-scroll-target="instructorDrawer"
+          data-nav-key="management"
+          data-nav-icon="📄"
+          data-default-label="과정 정보입력"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">📄</span>
+          <span class="jibble-nav-label">과정 정보입력</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
+          data-scroll-target="sectionScheduleGenerate"
+          data-nav-key="generator"
+          data-nav-icon="🛠️"
+          data-default-label="기수 일정 생성기"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">🛠️</span>
+          <span class="jibble-nav-label">기수 일정 생성기</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
+          data-scroll-target="sectionConflicts"
+          data-nav-key="reports"
+          data-nav-icon="🧾"
+          data-default-label="보고서"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">🧾</span>
+          <span class="jibble-nav-label">보고서</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
+          data-scroll-target="sectionStateManagement"
+          data-nav-key="settings"
+          data-nav-icon="⚙️"
+          data-default-label="설정"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">⚙️</span>
+          <span class="jibble-nav-label">설정</span>
+        </button>
       </nav>
       <div class="jibble-sidebar-divider"></div>
       <nav class="jibble-nav jibble-nav-sub">
@@ -94,7 +144,12 @@
       </div>
     </section>
 
-    <section id="jibbleManagementSubmenu" class="jibble-management-submenu u-hidden" aria-label="정보 입력 서브 메뉴">
+    <section
+      id="jibbleManagementSubmenu"
+      class="jibble-management-submenu u-hidden"
+      aria-label="정보 입력 서브 메뉴"
+      data-page-group="management"
+    >
       <div class="jibble-management-title">🧾 정보 입력</div>
       <div class="jibble-management-tabs" role="tablist" aria-label="정보 입력 분류">
         <button id="jibbleSubCourse" class="jibble-management-tab is-active" type="button">과정 관리</button>
@@ -103,7 +158,7 @@
       </div>
     </section>
 
-    <section class="quick-admin-index u-hidden" aria-label="정보 입력 바로가기">
+    <section class="quick-admin-index u-hidden" aria-label="정보 입력 바로가기" data-page-group="management">
       <div class="quick-admin-index-head">
         <strong>입력 바로가기</strong>
         <span class="muted">과정/교과목/강사 정보와 매핑 화면을 바로 여세요.</span>
@@ -167,7 +222,7 @@
       <div id="conflictDetailContent" class="u-mt-10"></div>
     </dialog>
 
-    <aside id="instructorDrawer" class="drawer" aria-hidden="true">
+    <aside id="instructorDrawer" class="drawer" aria-hidden="true" data-page-group="management">
       <div class="drawer-header">
         <strong>🧾 정보 입력</strong>
         <button class="drawer-close" data-close-drawer type="button">닫기</button>
@@ -352,7 +407,7 @@
       <ul id="globalWarningList" class="error-list"></ul>
     </div>
 
-    <div class="card card-span-12 admin-only u-mt-14" id="sectionRiskSummary">
+    <div class="card card-span-12 admin-only u-mt-14" id="sectionRiskSummary" data-page-group="timeline">
       <div class="card-header row u-row-between u-row-center">
         <div>
         <div class="card-title">🚦 리스크 요약 카드</div>
@@ -368,7 +423,7 @@
       </div>
     </div>
 
-    <div class="card card-span-12 timeline-hero card--timeline u-mt-14" id="sectionTimeline">
+    <div class="card card-span-12 timeline-hero card--timeline u-mt-14" id="sectionTimeline" data-page-group="timeline">
       <div class="card-header row u-row-between u-row-center">
         <div class="card-title">📅 KDT 학사일정 타임라인</div>
         <div class="muted" id="timelineRange">기간: -</div>
@@ -417,7 +472,7 @@
       <div id="timelineList" class="timeline-list"></div>
     </div>
 
-    <div class="card card-span-12 card--schedule u-mt-14" id="sectionScheduleGenerate">
+    <div class="card card-span-12 card--schedule u-mt-14" id="sectionScheduleGenerate" data-page-group="generator">
       <div class="card-header row u-row-between u-row-center">
         <div>
           <div class="card-title">🛠️ 기수 일정 생성기 정보</div>
@@ -594,7 +649,7 @@
       </div>
     </div>
 
-    <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign">
+    <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign" data-page-group="reports">
       <div class="row u-row-between u-row-center">
         <div>
             <strong>👥 Staffing 배치관리 (v7-E)</strong>
@@ -692,7 +747,7 @@
       <div class="muted u-mt-6" id="staffingStatus">코호트 요약을 기준으로 배치표가 생성됩니다.</div>
     </div>
 
-    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionParseErrors">
+    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionParseErrors" data-page-group="reports">
       <div class="row u-row-between u-row-center">
         <div>
           <strong>파싱 에러</strong>
@@ -704,7 +759,7 @@
       <div class="muted" id="errorEmpty">에러가 없습니다.</div>
     </div>
 
-    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionConflicts">
+    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionConflicts" data-page-group="reports">
       <div class="row u-row-between u-row-center">
         <div>
           <strong>🚨 겹침(충돌) 탐지</strong>
@@ -830,7 +885,7 @@
       </div>
     </div>
 
-    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionStateManagement">
+    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionStateManagement" data-page-group="settings">
       <div class="row u-row-between u-row-center">
         <div>
           <strong>💾 프로젝트 상태 관리</strong>
@@ -846,6 +901,17 @@
       </div>
       <div id="stateStorageStatus" class="muted u-mt-6">자동저장 대기</div>
       <div id="stateStorageWarning" class="muted u-mt-4"></div>
+
+      <div id="menuConfigCard" class="menu-config-card u-mt-10">
+        <strong>사이드 메뉴 설정</strong>
+        <div class="muted u-mt-4">메뉴 이모지, 이름, 순서를 직접 바꿔서 저장할 수 있습니다.</div>
+        <div id="menuConfigList" class="menu-config-list u-mt-8"></div>
+        <div class="row u-mt-8 u-row-center">
+          <button id="saveMenuConfigButton" class="btn-secondary" type="button">메뉴 설정 저장</button>
+          <button id="resetMenuConfigButton" class="btn-secondary" type="button">기본값 복원</button>
+        </div>
+        <div id="menuConfigStatus" class="muted u-mt-6">설정 변경 후 저장해 주세요.</div>
+      </div>
 
       <div id="demoSampleSection" class="u-hidden u-mt-10">
         <div class="row u-row-center">
@@ -863,7 +929,7 @@
       </div>
     </div>
 
-    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionChecklist">
+    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionChecklist" data-page-group="settings">
       <div class="row u-row-between u-row-center">
         <div>
           <strong>운영 체크리스트</strong>
@@ -873,7 +939,7 @@
       <ul id="opsChecklistList" class="checklist-list u-mt-8"></ul>
     </div>
 
-    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="standardizeHelp">
+    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="standardizeHelp" data-page-group="settings">
       <strong>코드 표준화 규칙</strong>
       <div class="muted u-mt-6">
         trim, 연속 공백 축소, 제어문자 제거, 구분자(괄호/언더스코어/대시 등) 일관화(단일 "_")를 적용합니다.

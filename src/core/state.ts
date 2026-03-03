@@ -12,6 +12,14 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
+export type AppSidebarNavKey = "timeline" | "management" | "generator" | "reports" | "settings";
+
+export type AppSidebarMenuConfig = {
+  order: AppSidebarNavKey[];
+  labels: Record<AppSidebarNavKey, string>;
+  icons: Record<AppSidebarNavKey, string>;
+};
+
 export type TemplateRowState = {
   weekday: number;
   start: string;
@@ -75,6 +83,7 @@ type AppStateShared = {
     keySearch: string;
     instructorDaySearch: string;
     foDaySearch: string;
+    sidebarMenu: AppSidebarMenuConfig | null;
   };
 };
 
@@ -140,6 +149,83 @@ function toTimelineViewType(value: unknown): AppTimelineViewType {
     return value;
   }
   return "COHORT_TIMELINE";
+}
+
+function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
+  return (
+    value === "timeline" ||
+    value === "management" ||
+    value === "generator" ||
+    value === "reports" ||
+    value === "settings"
+  );
+}
+
+function toSidebarLabel(value: unknown, fallback: string): string {
+  const normalized = toStringValue(value).trim();
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+function toSidebarIcon(value: unknown, fallback: string): string {
+  const normalized = toStringValue(value).trim();
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const row = value as {
+    order?: unknown;
+    labels?: Record<string, unknown>;
+    icons?: Record<string, unknown>;
+  };
+
+  const defaultOrder: AppSidebarNavKey[] = [
+    "timeline",
+    "management",
+    "generator",
+    "reports",
+    "settings"
+  ];
+
+  const order: AppSidebarNavKey[] = [];
+  if (Array.isArray(row.order)) {
+    for (const item of row.order) {
+      if (!isSidebarNavKey(item) || order.includes(item)) {
+        continue;
+      }
+      order.push(item);
+    }
+  }
+
+  for (const navKey of defaultOrder) {
+    if (!order.includes(navKey)) {
+      order.push(navKey);
+    }
+  }
+
+  const labelsSource = row.labels ?? {};
+  const iconsSource = row.icons ?? {};
+
+  return {
+    order,
+    labels: {
+      timeline: toSidebarLabel(labelsSource.timeline, "학사일정"),
+      management: toSidebarLabel(labelsSource.management, "과정 정보입력"),
+      generator: toSidebarLabel(labelsSource.generator, "기수 일정 생성기"),
+      reports: toSidebarLabel(labelsSource.reports, "보고서"),
+      settings: toSidebarLabel(labelsSource.settings, "설정")
+    },
+    icons: {
+      timeline: toSidebarIcon(iconsSource.timeline, "📅"),
+      management: toSidebarIcon(iconsSource.management, "📄"),
+      generator: toSidebarIcon(iconsSource.generator, "🛠️"),
+      reports: toSidebarIcon(iconsSource.reports, "🧾"),
+      settings: toSidebarIcon(iconsSource.settings, "⚙️")
+    }
+  };
 }
 
 function normalizeSession(raw: unknown): Session | null {
@@ -511,7 +597,8 @@ function normalizeStateLike(input: Record<string, unknown>): AppStateV1 {
       showAdvanced: toBooleanValue(uiRaw.showAdvanced),
       keySearch: toStringValue(uiRaw.keySearch),
       instructorDaySearch: toStringValue(uiRaw.instructorDaySearch),
-      foDaySearch: toStringValue(uiRaw.foDaySearch)
+      foDaySearch: toStringValue(uiRaw.foDaySearch),
+      sidebarMenu: normalizeSidebarMenuConfig(uiRaw.sidebarMenu)
     }
   };
 }

@@ -2642,6 +2642,9 @@ tbody tr:hover {
 }
 
 .app-shell--jibble .jibble-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   min-height: 40px;
   justify-content: flex-start;
@@ -2651,6 +2654,16 @@ tbody tr:hover {
   font-size: 14px;
   font-weight: 600;
   padding: 0 10px;
+}
+
+.app-shell--jibble .jibble-nav-icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.app-shell--jibble .jibble-nav-label {
+  min-width: 0;
 }
 
 .app-shell--jibble .jibble-nav-item:hover {
@@ -2791,6 +2804,79 @@ tbody tr:hover {
   background: #fff7f1;
 }
 
+.app-shell--jibble .jibble-page-hidden {
+  display: none !important;
+}
+
+.menu-config-card {
+  border: 1px solid #dce6f4;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.menu-config-list {
+  display: grid;
+  gap: 8px;
+}
+
+.menu-config-row {
+  display: grid;
+  grid-template-columns: 30px 56px minmax(0, 1fr) 34px 34px;
+  gap: 6px;
+  align-items: center;
+}
+
+.menu-config-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #eef3ff;
+  border: 1px solid #d3def5;
+}
+
+.menu-config-input {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid #c7d2e7;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background: #ffffff;
+}
+
+.menu-config-icon-input {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid #c7d2e7;
+  padding: 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  background: #ffffff;
+  text-align: center;
+}
+
+.menu-config-move {
+  min-height: 34px;
+  width: 34px;
+  border-radius: 8px;
+  border: 1px solid #cdd8ea;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.menu-config-move:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .app-shell--jibble .jibble-toolbar-left {
   display: flex;
   align-items: center;
@@ -2904,5 +2990,9 @@ tbody tr:hover {
 
   .app-shell--jibble .jibble-management-tab {
     width: 100%;
+  }
+
+  .menu-config-row {
+    grid-template-columns: 30px 52px minmax(0, 1fr) 30px 30px;
   }
 }

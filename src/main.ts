@@ -26,6 +26,8 @@ import { buildSessions } from "./core/sessions";
 import {
   CURRENT_SCHEMA_VERSION,
   migrateState,
+  type AppSidebarMenuConfig,
+  type AppSidebarNavKey,
   type AppStateVCurrent,
   type AppTimelineViewType,
   type AppViewMode,
@@ -93,6 +95,14 @@ type ViewMode = AppViewMode;
 type TimelineViewType = AppTimelineViewType;
 type StaffingMode = "manager" | "advanced";
 type AssigneeTimelineKind = "INSTRUCTOR" | "STAFF";
+type PrimarySidebarNavKey = AppSidebarNavKey;
+
+type SidebarMenuConfig = AppSidebarMenuConfig;
+
+type ActivatePrimaryPageOptions = {
+  scrollToTop?: boolean;
+  openManagementTab?: boolean;
+};
 
 type ModuleAssignSummary = {
   moduleKey: string;
@@ -226,6 +236,31 @@ const STORAGE_WARN_BYTES = 4_500_000;
 const AUTO_SAVE_DEBOUNCE_MS = 500;
 const PRINT_CONFLICT_LIMIT = 50;
 const TABLE_RENDER_LIMIT = 1000;
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v1";
+
+const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
+  "timeline",
+  "management",
+  "generator",
+  "reports",
+  "settings"
+];
+
+const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
+  timeline: "학사일정",
+  management: "과정 정보입력",
+  generator: "기수 일정 생성기",
+  reports: "보고서",
+  settings: "설정"
+};
+
+const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
+  timeline: "📅",
+  management: "📄",
+  generator: "🛠️",
+  reports: "🧾",
+  settings: "⚙️"
+};
 
 const DEFAULT_DOWNLOAD_LABEL = "선택한 기수 CSV 다운로드";
 const DEFAULT_COMPUTE_LABEL = "충돌 계산";
@@ -299,6 +334,9 @@ let instructorDirectoryCloudWarning = "";
 let managementCloudWarning = "";
 let isAuthVerified = false;
 let hasAppBootstrapped = false;
+let activePrimarySidebarPage: PrimarySidebarNavKey = "timeline";
+let sidebarMenuConfig = loadSidebarMenuConfig();
+let sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
 
 let isUploadProcessing = false;
 let isConflictComputing = false;
@@ -366,9 +404,18 @@ const jibbleManagementSubmenu = document.querySelector<HTMLElement>("#jibbleMana
 const jibbleSubCourseButton = document.querySelector<HTMLButtonElement>("#jibbleSubCourse");
 const jibbleSubSubjectButton = document.querySelector<HTMLButtonElement>("#jibbleSubSubject");
 const jibbleSubInstructorButton = document.querySelector<HTMLButtonElement>("#jibbleSubInstructor");
-const jibbleSidebarNavButtons = Array.from(
-  document.querySelectorAll<HTMLButtonElement>(".jibble-nav-item[data-scroll-target]")
+const jibbleMainNav = document.querySelector<HTMLElement>("#jibbleMainNav");
+const jibblePrimaryNavButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]")
 );
+const jibbleSubNavButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>(".jibble-nav-sub .jibble-nav-item[data-scroll-target]")
+);
+const jibblePageGroupElements = Array.from(document.querySelectorAll<HTMLElement>("[data-page-group]"));
+const menuConfigList = getRequiredElement<HTMLElement>("#menuConfigList");
+const saveMenuConfigButton = getRequiredElement<HTMLButtonElement>("#saveMenuConfigButton");
+const resetMenuConfigButton = getRequiredElement<HTMLButtonElement>("#resetMenuConfigButton");
+const menuConfigStatus = getRequiredElement<HTMLElement>("#menuConfigStatus");
 const openConflictDetailModalButton = getRequiredElement<HTMLButtonElement>("#openConflictDetailModal");
 const conflictDetailModal = getRequiredElement<HTMLDialogElement>("#conflictDetailModal");
 const conflictDetailTitle = getRequiredElement<HTMLElement>("#conflictDetailTitle");
@@ -2277,9 +2324,361 @@ function applyStaffingMode(mode: StaffingMode): void {
     : "고급 모드: 코호트별 P1/P2/365, resourceType, 기간 정책까지 상세 편집합니다.";
 }
 
+function isPrimarySidebarNavKey(value: string): value is PrimarySidebarNavKey {
+  return PRIMARY_SIDEBAR_NAV_KEYS.includes(value as PrimarySidebarNavKey);
+}
+
+function normalizeSidebarMenuLabel(navKey: PrimarySidebarNavKey, value: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_PRIMARY_SIDEBAR_LABELS[navKey];
+}
+
+function normalizeSidebarMenuIcon(navKey: PrimarySidebarNavKey, value: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_PRIMARY_SIDEBAR_ICONS[navKey];
+}
+
+function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
+  return {
+    order: [...config.order],
+    labels: {
+      timeline: config.labels.timeline,
+      management: config.labels.management,
+      generator: config.labels.generator,
+      reports: config.labels.reports,
+      settings: config.labels.settings
+    },
+    icons: {
+      timeline: config.icons.timeline,
+      management: config.icons.management,
+      generator: config.icons.generator,
+      reports: config.icons.reports,
+      settings: config.icons.settings
+    }
+  };
+}
+
+function normalizeSidebarMenuOrder(orderValue: unknown): PrimarySidebarNavKey[] {
+  if (!Array.isArray(orderValue)) {
+    return [...PRIMARY_SIDEBAR_NAV_KEYS];
+  }
+
+  const deduped: PrimarySidebarNavKey[] = [];
+  for (const value of orderValue) {
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    if (!isPrimarySidebarNavKey(value) || deduped.includes(value)) {
+      continue;
+    }
+
+    deduped.push(value);
+  }
+
+  for (const navKey of PRIMARY_SIDEBAR_NAV_KEYS) {
+    if (!deduped.includes(navKey)) {
+      deduped.push(navKey);
+    }
+  }
+
+  return deduped;
+}
+
+function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
+  return {
+    order: normalizeSidebarMenuOrder(config.order),
+    labels: {
+      timeline: normalizeSidebarMenuLabel("timeline", config.labels.timeline),
+      management: normalizeSidebarMenuLabel("management", config.labels.management),
+      generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
+      reports: normalizeSidebarMenuLabel("reports", config.labels.reports),
+      settings: normalizeSidebarMenuLabel("settings", config.labels.settings)
+    },
+    icons: {
+      timeline: normalizeSidebarMenuIcon("timeline", config.icons.timeline),
+      management: normalizeSidebarMenuIcon("management", config.icons.management),
+      generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
+      reports: normalizeSidebarMenuIcon("reports", config.icons.reports),
+      settings: normalizeSidebarMenuIcon("settings", config.icons.settings)
+    }
+  };
+}
+
+function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
+  return {
+    order: [...PRIMARY_SIDEBAR_NAV_KEYS],
+    labels: {
+      timeline: DEFAULT_PRIMARY_SIDEBAR_LABELS.timeline,
+      management: DEFAULT_PRIMARY_SIDEBAR_LABELS.management,
+      generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
+      reports: DEFAULT_PRIMARY_SIDEBAR_LABELS.reports,
+      settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings
+    },
+    icons: {
+      timeline: DEFAULT_PRIMARY_SIDEBAR_ICONS.timeline,
+      management: DEFAULT_PRIMARY_SIDEBAR_ICONS.management,
+      generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
+      reports: DEFAULT_PRIMARY_SIDEBAR_ICONS.reports,
+      settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings
+    }
+  };
+}
+
+function loadSidebarMenuConfig(): SidebarMenuConfig {
+  const fallback = getDefaultSidebarMenuConfig();
+  const raw = localStorage.getItem(SIDEBAR_MENU_CONFIG_KEY);
+  if (!raw) {
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      order?: unknown;
+      labels?: Record<string, unknown>;
+      icons?: Record<string, unknown>;
+    };
+
+    const order = normalizeSidebarMenuOrder(parsed.order);
+    const labels = {
+      timeline: normalizeSidebarMenuLabel(
+        "timeline",
+        typeof parsed.labels?.timeline === "string"
+          ? parsed.labels.timeline
+          : fallback.labels.timeline
+      ),
+      management: normalizeSidebarMenuLabel(
+        "management",
+        typeof parsed.labels?.management === "string"
+          ? parsed.labels.management
+          : fallback.labels.management
+      ),
+      generator: normalizeSidebarMenuLabel(
+        "generator",
+        typeof parsed.labels?.generator === "string"
+          ? parsed.labels.generator
+          : fallback.labels.generator
+      ),
+      reports: normalizeSidebarMenuLabel(
+        "reports",
+        typeof parsed.labels?.reports === "string"
+          ? parsed.labels.reports
+          : fallback.labels.reports
+      ),
+      settings: normalizeSidebarMenuLabel(
+        "settings",
+        typeof parsed.labels?.settings === "string"
+          ? parsed.labels.settings
+          : fallback.labels.settings
+      )
+    };
+
+    const icons = {
+      timeline: normalizeSidebarMenuIcon(
+        "timeline",
+        typeof parsed.icons?.timeline === "string"
+          ? parsed.icons.timeline
+          : fallback.icons.timeline
+      ),
+      management: normalizeSidebarMenuIcon(
+        "management",
+        typeof parsed.icons?.management === "string"
+          ? parsed.icons.management
+          : fallback.icons.management
+      ),
+      generator: normalizeSidebarMenuIcon(
+        "generator",
+        typeof parsed.icons?.generator === "string"
+          ? parsed.icons.generator
+          : fallback.icons.generator
+      ),
+      reports: normalizeSidebarMenuIcon(
+        "reports",
+        typeof parsed.icons?.reports === "string"
+          ? parsed.icons.reports
+          : fallback.icons.reports
+      ),
+      settings: normalizeSidebarMenuIcon(
+        "settings",
+        typeof parsed.icons?.settings === "string"
+          ? parsed.icons.settings
+          : fallback.icons.settings
+      )
+    };
+
+    return { order, labels, icons };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveSidebarMenuConfig(config: SidebarMenuConfig): void {
+  localStorage.setItem(SIDEBAR_MENU_CONFIG_KEY, JSON.stringify(config));
+}
+
+function getPrimarySidebarButtonByKey(navKey: PrimarySidebarNavKey): HTMLButtonElement | undefined {
+  return jibblePrimaryNavButtons.find((button) => button.dataset.navKey?.trim() === navKey);
+}
+
+function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
+  if (jibbleMainNav) {
+    for (const navKey of config.order) {
+      const button = getPrimarySidebarButtonByKey(navKey);
+      if (button) {
+        jibbleMainNav.appendChild(button);
+      }
+    }
+  }
+
+  for (const navKey of PRIMARY_SIDEBAR_NAV_KEYS) {
+    const button = getPrimarySidebarButtonByKey(navKey);
+    if (!button) {
+      continue;
+    }
+
+    const iconElement = button.querySelector<HTMLElement>(".jibble-nav-icon");
+    const icon = normalizeSidebarMenuIcon(navKey, config.icons[navKey]);
+    button.dataset.navIcon = icon;
+    if (iconElement) {
+      iconElement.textContent = icon;
+    }
+
+    const labelElement = button.querySelector<HTMLElement>(".jibble-nav-label");
+    const label = normalizeSidebarMenuLabel(navKey, config.labels[navKey]);
+    if (labelElement) {
+      labelElement.textContent = label;
+    }
+  }
+
+  setJibbleSidebarActive(activePrimarySidebarPage);
+}
+
+function moveSidebarMenuDraft(navKey: PrimarySidebarNavKey, direction: -1 | 1): void {
+  const currentIndex = sidebarMenuDraft.order.indexOf(navKey);
+  if (currentIndex < 0) {
+    return;
+  }
+
+  const nextIndex = currentIndex + direction;
+  if (nextIndex < 0 || nextIndex >= sidebarMenuDraft.order.length) {
+    return;
+  }
+
+  const nextOrder = [...sidebarMenuDraft.order];
+  const [moved] = nextOrder.splice(currentIndex, 1);
+  nextOrder.splice(nextIndex, 0, moved);
+  sidebarMenuDraft = {
+    ...sidebarMenuDraft,
+    order: nextOrder
+  };
+
+  applySidebarMenuConfigToSidebar(sidebarMenuDraft);
+  renderSidebarMenuConfigEditor();
+  menuConfigStatus.textContent = "메뉴 설정이 변경되었습니다. 저장 버튼을 눌러 반영하세요.";
+}
+
+function renderSidebarMenuConfigEditor(): void {
+  menuConfigList.innerHTML = "";
+
+  const total = sidebarMenuDraft.order.length;
+  for (const [index, navKey] of sidebarMenuDraft.order.entries()) {
+    const row = document.createElement("div");
+    row.className = "menu-config-row";
+
+    const icon = document.createElement("span");
+    icon.className = "menu-config-icon";
+    icon.textContent = normalizeSidebarMenuIcon(navKey, sidebarMenuDraft.icons[navKey]);
+    row.appendChild(icon);
+
+    const iconInput = document.createElement("input");
+    iconInput.className = "menu-config-icon-input";
+    iconInput.type = "text";
+    iconInput.maxLength = 4;
+    iconInput.value = sidebarMenuDraft.icons[navKey];
+    iconInput.setAttribute("aria-label", `${navKey} 아이콘`);
+    iconInput.addEventListener("input", () => {
+      sidebarMenuDraft.icons[navKey] = iconInput.value;
+      icon.textContent = normalizeSidebarMenuIcon(navKey, iconInput.value);
+      applySidebarMenuConfigToSidebar(sidebarMenuDraft);
+      menuConfigStatus.textContent = "메뉴 설정이 변경되었습니다. 저장 버튼을 눌러 반영하세요.";
+    });
+    row.appendChild(iconInput);
+
+    const input = document.createElement("input");
+    input.className = "menu-config-input";
+    input.type = "text";
+    input.maxLength = 20;
+    input.value = sidebarMenuDraft.labels[navKey];
+    input.addEventListener("input", () => {
+      sidebarMenuDraft.labels[navKey] = input.value;
+      applySidebarMenuConfigToSidebar(sidebarMenuDraft);
+      menuConfigStatus.textContent = "메뉴 설정이 변경되었습니다. 저장 버튼을 눌러 반영하세요.";
+    });
+    row.appendChild(input);
+
+    const upButton = document.createElement("button");
+    upButton.type = "button";
+    upButton.className = "menu-config-move";
+    upButton.textContent = "↑";
+    upButton.disabled = index === 0;
+    upButton.addEventListener("click", () => moveSidebarMenuDraft(navKey, -1));
+    row.appendChild(upButton);
+
+    const downButton = document.createElement("button");
+    downButton.type = "button";
+    downButton.className = "menu-config-move";
+    downButton.textContent = "↓";
+    downButton.disabled = index === total - 1;
+    downButton.addEventListener("click", () => moveSidebarMenuDraft(navKey, 1));
+    row.appendChild(downButton);
+
+    menuConfigList.appendChild(row);
+  }
+}
+
+function setPageGroupVisibility(activePage: PrimarySidebarNavKey): void {
+  for (const element of jibblePageGroupElements) {
+    const group = element.dataset.pageGroup?.trim() ?? "";
+    if (!group) {
+      continue;
+    }
+
+    element.classList.toggle("jibble-page-hidden", group !== activePage);
+  }
+}
+
+function activatePrimarySidebarPage(
+  navKey: PrimarySidebarNavKey,
+  options: ActivatePrimaryPageOptions = {}
+): void {
+  activePrimarySidebarPage = navKey;
+  setJibbleSidebarActive(navKey);
+  setPageGroupVisibility(navKey);
+
+  const showManagement = navKey === "management";
+  setJibbleManagementSubmenuVisible(showManagement);
+  if (showManagement && options.openManagementTab !== false) {
+    setJibbleManagementSubmenuActive("course");
+    openInstructorDrawerWithTab("course");
+  }
+
+  if (options.scrollToTop !== false) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
 function scrollToSection(sectionId: string): void {
   const target = document.getElementById(sectionId);
-  target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!target) {
+    return;
+  }
+
+  const pageGroup = target.dataset.pageGroup?.trim() ?? "";
+  if (isPrimarySidebarNavKey(pageGroup) && pageGroup !== activePrimarySidebarPage) {
+    activatePrimarySidebarPage(pageGroup, { scrollToTop: false, openManagementTab: false });
+  }
+
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function setJibbleManagementSubmenuVisible(visible: boolean): void {
@@ -2296,102 +2695,53 @@ function setJibbleManagementSubmenuActive(tab: "course" | "subject" | "instructo
   jibbleSubInstructorButton?.classList.toggle("is-active", tab === "instructor");
 }
 
-function setJibbleSidebarActive(sectionId: string): void {
-  for (const button of jibbleSidebarNavButtons) {
-    const targetId = button.dataset.scrollTarget?.trim() ?? "";
-    button.classList.toggle("is-active", targetId === sectionId);
+function setJibbleSidebarActive(navKey: PrimarySidebarNavKey): void {
+  for (const button of jibblePrimaryNavButtons) {
+    const currentKey = button.dataset.navKey?.trim() ?? "";
+    button.classList.toggle("is-active", currentKey === navKey);
   }
 }
 
 function setupJibbleSidebarNavigation(): void {
-  if (jibbleSidebarNavButtons.length === 0) {
+  if (jibblePrimaryNavButtons.length === 0) {
     return;
   }
 
-  const sectionIds = Array.from(
-    new Set(
-      jibbleSidebarNavButtons
-        .map((button) => button.dataset.scrollTarget?.trim() ?? "")
-        .filter((sectionId) => sectionId.length > 0)
-    )
-  );
+  for (const button of jibblePrimaryNavButtons) {
+    button.addEventListener("click", () => {
+      const navKeyRaw = button.dataset.navKey?.trim() ?? "";
+      if (!isPrimarySidebarNavKey(navKeyRaw)) {
+        return;
+      }
 
-  for (const button of jibbleSidebarNavButtons) {
+      activatePrimarySidebarPage(navKeyRaw, {
+        scrollToTop: true,
+        openManagementTab: navKeyRaw === "management"
+      });
+    });
+  }
+
+  for (const button of jibbleSubNavButtons) {
     button.addEventListener("click", () => {
       const targetId = button.dataset.scrollTarget?.trim() ?? "";
-      const navKey = button.dataset.navKey?.trim() ?? "";
       if (!targetId) {
         return;
       }
 
-      setJibbleSidebarActive(targetId);
-
-      if (navKey === "management") {
-        setJibbleManagementSubmenuVisible(true);
-        setJibbleManagementSubmenuActive("course");
-        openInstructorDrawerWithTab("course");
-        return;
-      }
-
-      setJibbleManagementSubmenuVisible(false);
       scrollToSection(targetId);
     });
   }
 
-  const firstTarget = jibbleSidebarNavButtons[0]?.dataset.scrollTarget?.trim() ?? "";
-  const firstNavKey = jibbleSidebarNavButtons[0]?.dataset.navKey?.trim() ?? "";
-  if (firstTarget) {
-    setJibbleSidebarActive(firstTarget);
-  }
-  setJibbleManagementSubmenuVisible(firstNavKey === "management");
+  const activeButton =
+    jibblePrimaryNavButtons.find((button) => button.classList.contains("is-active")) ||
+    jibblePrimaryNavButtons[0];
+  const initialNavKeyRaw = activeButton?.dataset.navKey?.trim() ?? "timeline";
+  const initialNavKey = isPrimarySidebarNavKey(initialNavKeyRaw) ? initialNavKeyRaw : "timeline";
 
-  if (!("IntersectionObserver" in window) || sectionIds.length === 0) {
-    return;
-  }
-
-  const visibleSections = new Map<string, number>();
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        const section = entry.target as HTMLElement;
-        if (entry.isIntersecting) {
-          visibleSections.set(section.id, entry.intersectionRatio);
-          continue;
-        }
-
-        visibleSections.delete(section.id);
-      }
-
-      let activeId = "";
-      let maxRatio = 0;
-      for (const [sectionId, ratio] of visibleSections.entries()) {
-        if (ratio <= maxRatio) {
-          continue;
-        }
-
-        maxRatio = ratio;
-        activeId = sectionId;
-      }
-
-      if (activeId) {
-        setJibbleSidebarActive(activeId);
-      }
-    },
-    {
-      root: null,
-      threshold: [0.2, 0.4, 0.6],
-      rootMargin: "-20% 0px -55% 0px"
-    }
-  );
-
-  for (const sectionId of sectionIds) {
-    const section = document.getElementById(sectionId);
-    if (!section) {
-      continue;
-    }
-
-    observer.observe(section);
-  }
+  activatePrimarySidebarPage(initialNavKey, {
+    scrollToTop: false,
+    openManagementTab: false
+  });
 }
 
 function getTrackTypeMissingCohorts(): string[] {
@@ -3134,7 +3484,8 @@ function serializeProjectState(): AppStateVCurrent {
       showAdvanced,
       keySearch: keySearchInput.value,
       instructorDaySearch: instructorDaySearchInput.value,
-      foDaySearch: foDaySearchInput.value
+      foDaySearch: foDaySearchInput.value,
+      sidebarMenu: normalizeSidebarMenuConfig(sidebarMenuDraft)
     }
   };
 }
@@ -3322,6 +3673,20 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
     computeConflictsButton.textContent = DEFAULT_COMPUTE_LABEL;
 
     const ui = state.ui;
+    const loadedSidebarMenu = ui?.sidebarMenu;
+    if (loadedSidebarMenu) {
+      sidebarMenuConfig = normalizeSidebarMenuConfig({
+        order: loadedSidebarMenu.order,
+        labels: loadedSidebarMenu.labels,
+        icons: loadedSidebarMenu.icons
+      });
+    } else {
+      sidebarMenuConfig = getDefaultSidebarMenuConfig();
+    }
+    sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
+    applySidebarMenuConfigToSidebar(sidebarMenuConfig);
+    saveSidebarMenuConfig(sidebarMenuConfig);
+
     applyViewMode(ui?.viewMode === "simple" ? "simple" : "full");
     setTimelineViewType(ui?.timelineViewType ?? "COHORT_TIMELINE");
     applyStaffingMode(staffingModeSelect.value === "advanced" ? "advanced" : "manager");
@@ -6620,18 +6985,38 @@ conflictDetailModal.addEventListener("click", (event) => {
   }
 });
 openInstructorDrawerButton.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   openInstructorDrawerWithTab("course");
 });
 quickNavCourseButton.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   openInstructorDrawerWithTab("course");
 });
 quickNavSubjectButton.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   openInstructorDrawerWithTab("subject");
 });
 quickNavInstructorButton.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   openInstructorDrawerWithTab("register");
 });
 quickNavMappingButton.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   openInstructorDrawerWithTab("mapping");
 });
 timelineViewTypeSelect.addEventListener("change", () => {
@@ -6793,24 +7178,51 @@ if (adminModeToggle) {
   });
 }
 
+saveMenuConfigButton.addEventListener("click", () => {
+  sidebarMenuConfig = normalizeSidebarMenuConfig(sidebarMenuDraft);
+  sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
+  applySidebarMenuConfigToSidebar(sidebarMenuConfig);
+  saveSidebarMenuConfig(sidebarMenuConfig);
+  renderSidebarMenuConfigEditor();
+  menuConfigStatus.textContent = `메뉴 설정 저장 완료 (${new Date().toLocaleTimeString()})`;
+});
+
+resetMenuConfigButton.addEventListener("click", () => {
+  sidebarMenuConfig = getDefaultSidebarMenuConfig();
+  sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
+  applySidebarMenuConfigToSidebar(sidebarMenuConfig);
+  saveSidebarMenuConfig(sidebarMenuConfig);
+  renderSidebarMenuConfigEditor();
+  menuConfigStatus.textContent = "기본 메뉴 설정으로 복원했습니다.";
+});
+
 jibbleSubCourseButton?.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("course");
-  setJibbleSidebarActive("instructorDrawer");
   openInstructorDrawerWithTab("course");
 });
 
 jibbleSubSubjectButton?.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("subject");
-  setJibbleSidebarActive("instructorDrawer");
   openInstructorDrawerWithTab("subject");
 });
 
 jibbleSubInstructorButton?.addEventListener("click", () => {
+  activatePrimarySidebarPage("management", {
+    scrollToTop: false,
+    openManagementTab: false
+  });
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("instructor");
-  setJibbleSidebarActive("instructorDrawer");
   openInstructorDrawerWithTab("register");
 });
 
@@ -6925,6 +7337,11 @@ applyViewMode("full");
 setTimelineViewType("COHORT_TIMELINE");
 applyStaffingMode(staffingModeSelect.value === "advanced" ? "advanced" : "manager");
 applyShowAdvancedMode(resolveShowAdvanced(false));
+sidebarMenuConfig = normalizeSidebarMenuConfig(sidebarMenuConfig);
+sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
+applySidebarMenuConfigToSidebar(sidebarMenuConfig);
+renderSidebarMenuConfigEditor();
+menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();
 
