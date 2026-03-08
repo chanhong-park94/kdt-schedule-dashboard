@@ -30,6 +30,11 @@ export async function withRetry<T>(
   throw lastError;
 }
 
+/**
+ * Fetches all pages from a paginated data source.
+ * `from` and `to` passed to `fetcher` are both inclusive row indices (matching Supabase .range() semantics).
+ * A page with fewer than `pageSize` items signals the last page.
+ */
 export async function paginateAll<T>(
   fetcher: (from: number, to: number) => Promise<T[]>,
   pageSize: number
@@ -119,6 +124,8 @@ export async function loadInstructorDirectoryFromCloud(): Promise<InstructorDire
   }
 
   const PAGE_SIZE = 1000;
+  // withRetry wraps the full pagination sequence: a transient failure on any page
+  // retries the entire fetch from page 0 to ensure a consistent result set.
   const rawRows = await withRetry(
     () =>
       paginateAll(async (from, to) => {

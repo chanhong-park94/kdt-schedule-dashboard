@@ -79,8 +79,7 @@ describe("paginateAll", () => {
 
   it("pageSize=0이면 무한루프 없이 RangeError를 던진다", async () => {
     const fetcher = vi.fn().mockResolvedValue([]);
-    // pageSize=0 would cause infinite loop; guard should prevent it
-    // If no guard exists, this test documents the expected behavior
+    // pageSize=0 would cause an infinite loop; the RangeError guard prevents it.
     await expect(paginateAll(fetcher, 0)).rejects.toThrow(RangeError);
   });
 });
