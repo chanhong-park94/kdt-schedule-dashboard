@@ -95,6 +95,7 @@ describe("checkHrdRowLimit", () => {
     const warning = checkHrdRowLimit(rows);
     expect(warning).not.toBeNull();
     expect(warning).toContain("10,000");
+    expect(warning).toContain("Excel에서 열기 어려울 수 있습니다");
   });
 
   it("HRD_MAX_ROWS_WARNING 상수는 10000이다", () => {
