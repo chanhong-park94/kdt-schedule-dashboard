@@ -33,4 +33,16 @@ describe("withRetry", () => {
     expect(Date.now() - start).toBeLessThan(100);
     expect(result).toBe("fast");
   });
+
+  it("maxAttempts=1이면 재시도 없이 즉시 오류를 던진다", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error("단발 오류"));
+    await expect(withRetry(fn, 1, 0)).rejects.toThrow("단발 오류");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("maxAttempts=0이면 RangeError를 던진다", async () => {
+    const fn = vi.fn();
+    await expect(withRetry(fn, 0, 0)).rejects.toThrow(RangeError);
+    expect(fn).toHaveBeenCalledTimes(0);
+  });
 });

@@ -8,17 +8,14 @@ type InstructorRow = {
   memo: string | null;
 };
 
-type InstructorPayload = {
-  instructor_code: string;
-  name: string | null;
-  memo: string | null;
-};
-
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxAttempts: number,
   baseDelayMs: number = 300
 ): Promise<T> {
+  if (maxAttempts < 1) {
+    throw new RangeError(`withRetry: maxAttempts must be >= 1, got ${maxAttempts}`);
+  }
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -129,7 +126,7 @@ export async function upsertInstructorInCloud(entry: InstructorDirectoryEntry): 
     return;
   }
 
-  const payload: InstructorPayload = {
+  const payload: InstructorRow = {
     instructor_code: entry.instructorCode,
     name: entry.name || null,
     memo: entry.memo || null
@@ -169,8 +166,9 @@ export function mergeWithLocalInstructorDirectory(
 
   const map = mergeRows(local);
   for (const row of cloud) {
-    if (!map.has(row.instructorCode)) {
-      map.set(row.instructorCode, row);
+    const normalizedCode = row.instructorCode.trim().toUpperCase();
+    if (!map.has(normalizedCode)) {
+      map.set(normalizedCode, { ...row, instructorCode: normalizedCode });
     }
   }
 
