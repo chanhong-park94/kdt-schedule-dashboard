@@ -137,14 +137,31 @@ import {
   getPolicyLabel,
   toCourseSubjectKey
 } from "./ui/utils/format";
-type ViewMode = AppViewMode;
-type TimelineViewType = AppTimelineViewType;
-type StaffingMode = "manager" | "advanced";
-type AssigneeTimelineKind = "INSTRUCTOR" | "STAFF";
-type PrimarySidebarNavKey = AppSidebarNavKey;
-
-type SidebarMenuConfig = AppSidebarMenuConfig;
-
+import {
+  appState,
+  cohortTrackType,
+  collapsedCourseGroups,
+  generatedCohortRanges,
+  holidayNameByDate,
+  moduleInstructorDraft,
+  skipExpanded,
+  staffingCellState,
+  subjectInstructorMappingDraft,
+  subjectInstructorMappings,
+  type CohortRange,
+  type CourseRegistryEntry,
+  type CourseTemplate,
+  type NotificationItem,
+  type RecentActionLog,
+  type SidebarMenuConfig,
+  type StaffCellState,
+  type StaffingMode,
+  type AssigneeTimelineKind,
+  type SubjectDirectoryEntry,
+  type ViewMode,
+  type TimelineViewType,
+  type PrimarySidebarNavKey
+} from "./ui/appState";
 type ActivatePrimaryPageOptions = {
   scrollToTop?: boolean;
   openManagementTab?: boolean;
@@ -159,68 +176,6 @@ type ModuleAssignSummary = {
   sessionCount: number;
   instructorCodes: string[];
   missingInstructorSessions: number;
-};
-
-type NotificationSeverity = "INFO" | "WARNING" | "ERROR";
-type NotificationSource = "PARSE_ERROR" | "CONFLICT_TIME" | "HRD_VALIDATION" | "MISSING_INSTRUCTOR";
-
-type NotificationItem = {
-  id: string;
-  severity: NotificationSeverity;
-  source: NotificationSource;
-  title: string;
-  message: string;
-  cohort?: string;
-  moduleKey?: string;
-  assignee?: string;
-  date?: string;
-  details?: string[];
-};
-
-type SubjectDirectoryEntry = {
-  courseId: string;
-  subjectCode: string;
-  subjectName: string;
-  memo: string;
-};
-
-type CourseRegistryEntry = {
-  courseId: string;
-  courseName: string;
-  memo: string;
-};
-
-type RecentActionLog = {
-  id: string;
-  severity: "INFO" | "WARNING" | "ERROR";
-  message: string;
-  focusSectionId?: string;
-  createdAt: string;
-};
-
-type CourseTemplate = {
-  name: string;
-  version: string;
-  courseId: string;
-  dayTemplates: TemplateRowState[];
-  holidays: string[];
-  customBreaks: string[];
-  subjectList: Array<{ subjectCode: string; subjectName: string; memo: string }>;
-  subjectInstructorMapping: Array<{ key: string; instructorCode: string }>;
-};
-
-type CohortRange = {
-  cohort: string;
-  startDate: string;
-  endDate: string;
-  trackType: TrackType;
-};
-
-type StaffCellState = {
-  assignee: string;
-  startDate: string;
-  endDate: string;
-  resourceType: ResourceType;
 };
 
 const PHASES: Phase[] = ["P1", "P2", "365"];
@@ -316,92 +271,6 @@ const TIMELINE_VIEW_ORDER: TimelineViewType[] = [
 ];
 const TIMELINE_RENDER_LIMIT = 600;
 
-let sessions: Session[] = [];
-let summaries: CohortSummary[] = [];
-let parseErrors: ParseError[] = [];
-let hrdValidationErrors: string[] = [];
-let hrdValidationWarnings: string[] = [];
-
-let allConflicts: Conflict[] = [];
-let visibleConflicts: Conflict[] = [];
-
-let generatedScheduleResult: GenerateScheduleResult | null = null;
-let generatedScheduleCohort = "";
-
-let holidayDates: string[] = [];
-let customBreakDates: string[] = [];
-
-const holidayNameByDate = new Map<string, string>();
-
-const skipExpanded: Record<SkippedDay["reason"], boolean> = {
-  holiday: false,
-  custom_break: false,
-  weekday_excluded: false
-};
-
-const staffingCellState = new Map<string, StaffCellState>();
-const cohortTrackType = new Map<string, TrackType>();
-const generatedCohortRanges = new Map<string, { cohort: string; startDate: string; endDate: string }>();
-
-let staffingCohortRanges: CohortRange[] = [];
-let staffingAssignments: StaffAssignment[] = [];
-let facilitatorOperationOverlaps: StaffOverlap[] = [];
-let instructorDayOverlaps: StaffOverlap[] = [];
-let visibleInstructorDayOverlaps: StaffOverlap[] = [];
-let visibleFoDayOverlaps: StaffOverlap[] = [];
-let staffingSummaries: AssigneeSummary[] = [];
-let instructorSummaries: AssigneeSummary[] = [];
-let hasLoadedPublicHoliday = false;
-let stateMigrationWarnings: string[] = [];
-let autoSaveTimer: number | undefined;
-let isApplyingProjectState = false;
-let previousStateBeforeSampleLoad: AppStateVCurrent | null = null;
-let viewMode: ViewMode = "full";
-let timelineViewType: TimelineViewType = "COHORT_TIMELINE";
-let assigneeTimelineKind: AssigneeTimelineKind = "INSTRUCTOR";
-let weekGridStartDate = getTodayIsoDate();
-let monthCalendarCursor = getTodayIsoDate().slice(0, 7);
-let ganttHighlightTimer: number | undefined;
-
-let activeConflictTab: ConflictTab = "time";
-let staffingMode: StaffingMode = "manager";
-let showAdvanced = false;
-let hasPrunedBasicModeSections = false;
-let activeDrawer: "notification" | "instructor" | null = null;
-let managementInlineMode = false;
-let instructorDirectoryCloudWarning = "";
-let managementCloudWarning = "";
-let isAuthVerified = false;
-let hasAppBootstrapped = false;
-let activePrimarySidebarPage: PrimarySidebarNavKey = "timeline";
-let sidebarMenuConfig = loadSidebarMenuConfig();
-let sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
-
-let isUploadProcessing = false;
-let isConflictComputing = false;
-let hasComputedConflicts = false;
-let isHolidayLoading = false;
-let keySearchTimer: number | undefined;
-let instructorDaySearchTimer: number | undefined;
-let foDaySearchTimer: number | undefined;
-const moduleInstructorDraft = new Map<string, string>();
-const subjectInstructorMappingDraft = new Map<string, string>();
-let instructorDirectory: InstructorDirectoryEntry[] = [];
-let courseRegistry: CourseRegistryEntry[] = [];
-let subjectDirectory: SubjectDirectoryEntry[] = [];
-const subjectInstructorMappings = new Map<string, string>();
-let notificationItems: NotificationItem[] = [];
-let scheduleTemplates: NamedScheduleTemplate[] = [];
-let recentActionLogs: RecentActionLog[] = [];
-let courseTemplates: CourseTemplate[] = [];
-let notificationFocus:
-  | {
-      cohort?: string;
-      assignee?: string;
-      date?: string;
-    }
-  | null = null;
-const collapsedCourseGroups = new Set<string>();
 
 const fileInput = getRequiredElement<HTMLInputElement>("#file");
 const uploadStatus = getRequiredElement<HTMLElement>("#uploadStatus");
@@ -648,11 +517,11 @@ const instructorMappingPanel = getRequiredElement<HTMLElement>("#instructorMappi
 const instructorSubjectPanel = getRequiredElement<HTMLElement>("#instructorSubjectPanel");
 
 function isCloudAccessAllowed(): boolean {
-  return isAuthVerified;
+  return appState.isAuthVerified;
 }
 
 function applyAuthGate(authenticated: boolean): void {
-  isAuthVerified = authenticated;
+  appState.isAuthVerified = authenticated;
   document.body.classList.toggle("auth-locked", !authenticated);
   authGate.setAttribute("aria-hidden", authenticated ? "true" : "false");
 
@@ -670,11 +539,11 @@ function applyAuthGate(authenticated: boolean): void {
 }
 
 async function bootstrapAppAfterAuthLogin(): Promise<void> {
-  if (!isCloudAccessAllowed() || hasAppBootstrapped) {
+  if (!isCloudAccessAllowed() || appState.hasAppBootstrapped) {
     return;
   }
 
-  hasAppBootstrapped = true;
+  appState.hasAppBootstrapped = true;
   holidayLoadStatus.textContent = "자동 불러오기 미실행";
   demoSampleSection.style.display = isDemoModeEnabled() ? "block" : "none";
   restorePreviousStateButton.disabled = true;
@@ -706,7 +575,7 @@ function submitAuthCode(): void {
 
 
 function buildModuleAssignSummaries(): ModuleAssignSummary[] {
-  const ranges = deriveModuleRangesFromSessions(sessions);
+  const ranges = deriveModuleRangesFromSessions(appState.sessions);
   const map = new Map<
     string,
     ModuleAssignSummary & {
@@ -781,11 +650,11 @@ function isModuleInstructorApplied(summary: ModuleAssignSummary): boolean {
 function buildConflictModuleKeySet(): Set<string> {
   const keys = new Set<string>();
 
-  if (!hasComputedConflicts) {
+  if (!appState.hasComputedConflicts) {
     return keys;
   }
 
-  for (const conflict of allConflicts) {
+  for (const conflict of appState.allConflicts) {
     const moduleA = normalizeSubjectCode(conflict.A교과목);
     const moduleB = normalizeSubjectCode(conflict.B교과목);
     const cohortA = conflict.과정A.trim();
@@ -803,8 +672,8 @@ function buildConflictModuleKeySet(): Set<string> {
 }
 
 function recomputeTimeConflictsImmediate(): void {
-  allConflicts = detectConflicts(sessions, { resourceTypes: ["INSTRUCTOR"] });
-  hasComputedConflicts = true;
+  appState.allConflicts = detectConflicts(appState.sessions, { resourceTypes: ["INSTRUCTOR"] });
+  appState.hasComputedConflicts = true;
   computeConflictsButton.textContent = RECOMPUTE_LABEL;
   applyConflictFilters();
 }
@@ -816,7 +685,7 @@ function applyInstructorToModuleSummary(summary: ModuleAssignSummary, rawInstruc
     return;
   }
 
-  const beforeTargets = sessions.filter(
+  const beforeTargets = appState.sessions.filter(
     (session) =>
       session.과정기수.trim() === summary.cohort &&
       normalizeSubjectCode(session["교과목(및 능력단위)코드"]) === summary.module
@@ -832,8 +701,8 @@ function applyInstructorToModuleSummary(summary: ModuleAssignSummary, rawInstruc
     return beforeCode.length > 0 && beforeCode !== normalizedCode;
   }).length;
 
-  sessions = assignInstructorToModule({
-    sessions,
+  appState.sessions = assignInstructorToModule({
+    sessions: appState.sessions,
     moduleKey: summary.moduleKey,
     instructorCode: normalizedCode
   });
@@ -946,7 +815,7 @@ function renderStaffModuleManagerTable(isBusy = false): void {
     tr.appendChild(statusCell);
 
     const conflictCell = document.createElement("td");
-    if (!hasComputedConflicts) {
+    if (!appState.hasComputedConflicts) {
       conflictCell.textContent = "⚠ 충돌 미계산";
       conflictCell.className = "module-assign-status-warn";
     } else if (hasConflict) {
@@ -967,12 +836,12 @@ function renderStaffModuleManagerTable(isBusy = false): void {
 }
 
 function ensureCourseRegistryDefaults(): void {
-  if (courseRegistry.length > 0) {
+  if (appState.courseRegistry.length > 0) {
     return;
   }
 
   const inferred = new Set<string>();
-  for (const session of sessions) {
+  for (const session of appState.sessions) {
     const parsed = parseCourseGroupFromCohortName(session.과정기수);
     const normalizedCourseId = normalizeCourseId(parsed.course);
     if (normalizedCourseId) {
@@ -984,11 +853,11 @@ function ensureCourseRegistryDefaults(): void {
     return;
   }
 
-  courseRegistry = Array.from(inferred).map((courseId) => ({ courseId, courseName: courseId, memo: "" }));
+  appState.courseRegistry = Array.from(inferred).map((courseId) => ({ courseId, courseName: courseId, memo: "" }));
 }
 
 function renderCourseSelectOptions(): void {
-  const sortedCourses = [...courseRegistry].sort((a, b) => a.courseId.localeCompare(b.courseId));
+  const sortedCourses = [...appState.courseRegistry].sort((a, b) => a.courseId.localeCompare(b.courseId));
   const optionTargets = [subjectCourseSelect, mappingCourseSelect, courseTemplateCourseSelect];
 
   for (const select of optionTargets) {
@@ -1020,7 +889,7 @@ function renderCourseRegistry(): void {
   ensureCourseRegistryDefaults();
   courseRegistryBody.innerHTML = "";
 
-  const sorted = [...courseRegistry].sort((a, b) => a.courseId.localeCompare(b.courseId));
+  const sorted = [...appState.courseRegistry].sort((a, b) => a.courseId.localeCompare(b.courseId));
   for (const entry of sorted) {
     const tr = document.createElement("tr");
     const courseIdTd = document.createElement("td");
@@ -1044,8 +913,8 @@ function renderCourseRegistry(): void {
     removeButton.type = "button";
     removeButton.textContent = "삭제";
     removeButton.addEventListener("click", () => {
-      courseRegistry = courseRegistry.filter((item) => item.courseId !== entry.courseId);
-      subjectDirectory = subjectDirectory.filter((item) => item.courseId !== entry.courseId);
+      appState.courseRegistry = appState.courseRegistry.filter((item) => item.courseId !== entry.courseId);
+      appState.subjectDirectory = appState.subjectDirectory.filter((item) => item.courseId !== entry.courseId);
       for (const key of Array.from(subjectInstructorMappings.keys())) {
         const parsed = parseCourseSubjectKey(key);
         if (parsed.courseId === entry.courseId) {
@@ -1079,12 +948,12 @@ function upsertCourseRegistryEntry(): void {
     return;
   }
 
-  const existing = courseRegistry.find((item) => item.courseId === courseId);
+  const existing = appState.courseRegistry.find((item) => item.courseId === courseId);
   if (existing) {
     existing.courseName = courseName;
     existing.memo = memo;
   } else {
-    courseRegistry.push({ courseId, courseName, memo });
+    appState.courseRegistry.push({ courseId, courseName, memo });
   }
 
   courseIdInput.value = "";
@@ -1102,7 +971,7 @@ function upsertCourseRegistryEntry(): void {
 function renderInstructorDirectory(): void {
   instructorDirectoryBody.innerHTML = "";
 
-  const sorted = [...instructorDirectory].sort((a, b) => a.instructorCode.localeCompare(b.instructorCode));
+  const sorted = [...appState.instructorDirectory].sort((a, b) => a.instructorCode.localeCompare(b.instructorCode));
   for (const entry of sorted) {
     const tr = document.createElement("tr");
     const codeTd = document.createElement("td");
@@ -1127,7 +996,7 @@ function renderInstructorDirectory(): void {
     removeButton.textContent = "삭제";
     removeButton.addEventListener("click", async () => {
       const removedCode = entry.instructorCode;
-      instructorDirectory = instructorDirectory.filter((item) => item.instructorCode !== removedCode);
+      appState.instructorDirectory = appState.instructorDirectory.filter((item) => item.instructorCode !== removedCode);
       for (const [key, value] of subjectInstructorMappings.entries()) {
         if (value === removedCode) {
           subjectInstructorMappings.delete(key);
@@ -1155,7 +1024,7 @@ async function syncInstructorDirectoryCloud(mode: "upsert" | "delete", instructo
   }
 
   if (!isInstructorCloudEnabled()) {
-    instructorDirectoryCloudWarning =
+    appState.instructorDirectoryCloudWarning =
       "클라우드 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
     renderGlobalWarnings();
     return;
@@ -1170,10 +1039,10 @@ async function syncInstructorDirectoryCloud(mode: "upsert" | "delete", instructo
     } else {
       await deleteInstructorFromCloud(instructorCode);
     }
-    instructorDirectoryCloudWarning = "";
+    appState.instructorDirectoryCloudWarning = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    instructorDirectoryCloudWarning =
+    appState.instructorDirectoryCloudWarning =
       mode === "upsert"
         ? `클라우드 강사 동기화(추가/수정) 실패: ${message}. 로컬 데이터는 유지됩니다.`
         : `클라우드 강사 동기화(삭제) 실패: ${message}. 로컬 데이터는 유지됩니다.`;
@@ -1285,17 +1154,17 @@ async function syncCourseRegistryCloud(entry: CourseRegistryEntry): Promise<void
   }
 
   if (!isManagementCloudEnabled()) {
-    managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    appState.managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
     renderGlobalWarnings();
     return;
   }
 
   try {
     await createCourse({ courseId: entry.courseId, courseName: entry.courseName });
-    managementCloudWarning = "";
+    appState.managementCloudWarning = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    managementCloudWarning = `과정 동기화 실패: ${message}`;
+    appState.managementCloudWarning = `과정 동기화 실패: ${message}`;
   } finally {
     renderGlobalWarnings();
   }
@@ -1307,7 +1176,7 @@ async function syncSubjectDirectoryCloud(entry: SubjectDirectoryEntry): Promise<
   }
 
   if (!isManagementCloudEnabled()) {
-    managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    appState.managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
     renderGlobalWarnings();
     return;
   }
@@ -1318,10 +1187,10 @@ async function syncSubjectDirectoryCloud(entry: SubjectDirectoryEntry): Promise<
       subjectCode: entry.subjectCode,
       subjectName: entry.subjectName
     });
-    managementCloudWarning = "";
+    appState.managementCloudWarning = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    managementCloudWarning = `교과목 동기화 실패: ${message}`;
+    appState.managementCloudWarning = `교과목 동기화 실패: ${message}`;
   } finally {
     renderGlobalWarnings();
   }
@@ -1333,7 +1202,7 @@ async function syncCourseTemplateCloud(template: CourseTemplate): Promise<void> 
   }
 
   if (!isManagementCloudEnabled()) {
-    managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    appState.managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
     renderGlobalWarnings();
     return;
   }
@@ -1352,10 +1221,10 @@ async function syncCourseTemplateCloud(template: CourseTemplate): Promise<void> 
         subjectInstructorMapping: template.subjectInstructorMapping
       }
     });
-    managementCloudWarning = "";
+    appState.managementCloudWarning = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    managementCloudWarning = `템플릿 동기화 실패: ${message}`;
+    appState.managementCloudWarning = `템플릿 동기화 실패: ${message}`;
   } finally {
     renderGlobalWarnings();
   }
@@ -1372,10 +1241,10 @@ async function syncDeleteCourseTemplateCloud(courseId: string, templateName: str
 
   try {
     await deleteCourseTemplate(courseId, templateName);
-    managementCloudWarning = "";
+    appState.managementCloudWarning = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    managementCloudWarning = `템플릿 삭제 동기화 실패: ${message}`;
+    appState.managementCloudWarning = `템플릿 삭제 동기화 실패: ${message}`;
   } finally {
     renderGlobalWarnings();
   }
@@ -1392,10 +1261,10 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
 
   try {
     let hasChanged = false;
-    if (courseRegistry.length === 0) {
+    if (appState.courseRegistry.length === 0) {
       const cloudCourses = await listCourses();
       if (cloudCourses.length > 0) {
-        courseRegistry = cloudCourses.map((item) => ({
+        appState.courseRegistry = cloudCourses.map((item) => ({
           courseId: normalizeCourseId(item.courseId),
           courseName: item.courseName,
           memo: ""
@@ -1404,11 +1273,11 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
       }
     }
 
-    if (subjectDirectory.length === 0 && courseRegistry.length > 0) {
-      const byCourse = await Promise.all(courseRegistry.map((course) => listSubjects(course.courseId)));
+    if (appState.subjectDirectory.length === 0 && appState.courseRegistry.length > 0) {
+      const byCourse = await Promise.all(appState.courseRegistry.map((course) => listSubjects(course.courseId)));
       const merged = byCourse.flat();
       if (merged.length > 0) {
-        subjectDirectory = merged.map((item) => ({
+        appState.subjectDirectory = merged.map((item) => ({
           courseId: normalizeCourseId(item.courseId),
           subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
           subjectName: item.subjectName,
@@ -1418,10 +1287,10 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
       }
     }
 
-    if (courseTemplates.length === 0) {
+    if (appState.courseTemplates.length === 0) {
       const cloudTemplates = await listCourseTemplates();
       if (cloudTemplates.length > 0) {
-        courseTemplates = cloudTemplates.map(toCourseTemplateFromCloudRecord);
+        appState.courseTemplates = cloudTemplates.map(toCourseTemplateFromCloudRecord);
         hasChanged = true;
       }
     }
@@ -1436,10 +1305,10 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
       stateStorageStatus.textContent = `클라우드 관리 데이터 동기화 완료 (${new Date().toLocaleTimeString()})`;
     }
 
-    managementCloudWarning = "";
+    appState.managementCloudWarning = "";
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    managementCloudWarning = `클라우드 관리 데이터 동기화 실패: ${message}`;
+    appState.managementCloudWarning = `클라우드 관리 데이터 동기화 실패: ${message}`;
   } finally {
     renderGlobalWarnings();
   }
@@ -1448,7 +1317,7 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
 function renderSubjectDirectory(): void {
   subjectDirectoryBody.innerHTML = "";
   const selectedCourseId = normalizeCourseId(subjectCourseSelect.value);
-  const rows = subjectDirectory
+  const rows = appState.subjectDirectory
     .filter((item) => item.courseId === selectedCourseId)
     .sort((a, b) => a.subjectCode.localeCompare(b.subjectCode));
 
@@ -1479,7 +1348,7 @@ function renderSubjectDirectory(): void {
     deleteButton.type = "button";
     deleteButton.textContent = "삭제";
     deleteButton.addEventListener("click", () => {
-      subjectDirectory = subjectDirectory.filter(
+      appState.subjectDirectory = appState.subjectDirectory.filter(
         (item) => !(item.courseId === entry.courseId && item.subjectCode === entry.subjectCode)
       );
       subjectInstructorMappings.delete(toCourseSubjectKey(entry.courseId, entry.subjectCode));
@@ -1514,12 +1383,12 @@ function upsertSubjectDirectoryEntry(): void {
 
   const subjectName = subjectNameInput.value.trim();
   const memo = subjectMemoInput.value.trim();
-  const existing = subjectDirectory.find((item) => item.courseId === courseId && item.subjectCode === subjectCode);
+  const existing = appState.subjectDirectory.find((item) => item.courseId === courseId && item.subjectCode === subjectCode);
   if (existing) {
     existing.subjectName = subjectName;
     existing.memo = memo;
   } else {
-    subjectDirectory.push({ courseId, subjectCode, subjectName, memo });
+    appState.subjectDirectory.push({ courseId, subjectCode, subjectName, memo });
   }
 
   subjectCodeInput.value = "";
@@ -1573,7 +1442,7 @@ function renderSubjectMappingTable(): void {
     const cohortTd = document.createElement("td");
     cohortTd.textContent = summary.cohort;
     const moduleTd = document.createElement("td");
-    const subjectEntry = subjectDirectory.find(
+    const subjectEntry = appState.subjectDirectory.find(
       (item) => item.courseId === selectedCourseId && item.subjectCode === summary.module
     );
     moduleTd.textContent = subjectEntry?.subjectName
@@ -1588,7 +1457,7 @@ function renderSubjectMappingTable(): void {
     autoOption.value = "";
     autoOption.textContent = "선택 안함";
     select.appendChild(autoOption);
-    for (const entry of instructorDirectory) {
+    for (const entry of appState.instructorDirectory) {
       const option = document.createElement("option");
       option.value = entry.instructorCode;
       option.textContent = `${entry.instructorCode}${entry.name ? ` (${entry.name})` : ""}`;
@@ -1600,7 +1469,7 @@ function renderSubjectMappingTable(): void {
     input.type = "text";
     const current = subjectInstructorMappingDraft.get(mappingKey) ?? subjectInstructorMappings.get(mappingKey) ?? "";
     input.value = current;
-    select.value = instructorDirectory.some((item) => item.instructorCode === current) ? current : "";
+    select.value = appState.instructorDirectory.some((item) => item.instructorCode === current) ? current : "";
 
     select.addEventListener("change", () => {
       if (select.value) {
@@ -1635,12 +1504,12 @@ function upsertInstructorDirectoryEntry(): void {
 
   const name = instructorNameInput.value.trim();
   const memo = instructorMemoInput.value.trim();
-  const existing = instructorDirectory.find((item) => item.instructorCode === instructorCode);
+  const existing = appState.instructorDirectory.find((item) => item.instructorCode === instructorCode);
   if (existing) {
     existing.name = name;
     existing.memo = memo;
   } else {
-    instructorDirectory.push({ instructorCode, name, memo });
+    appState.instructorDirectory.push({ instructorCode, name, memo });
   }
 
   instructorCodeInput.value = "";
@@ -1667,10 +1536,10 @@ function applySubjectMappingsToSessions(): void {
     return;
   }
 
-  const courseSubjects = subjectDirectory.filter((item) => item.courseId === selectedCourseId);
+  const courseSubjects = appState.subjectDirectory.filter((item) => item.courseId === selectedCourseId);
   const subjectDirectoryCodes = new Set(courseSubjects.map((item) => item.subjectCode));
   const cohortSessionSubjects = new Set(
-    sessions
+    appState.sessions
       .filter((session) => session.과정기수.trim() === selectedCohort)
       .map((session) => normalizeSubjectCode(session["교과목(및 능력단위)코드"]).toUpperCase())
       .filter((value) => value.length > 0)
@@ -1701,7 +1570,7 @@ function applySubjectMappingsToSessions(): void {
   }
 
   const applyResult = applyCourseSubjectInstructorMappingsToCohortSessions(
-    sessions,
+    appState.sessions,
     selectedCohort,
     normalizedMappings.map((item) => ({
       courseId: selectedCourseId,
@@ -1718,7 +1587,7 @@ function applySubjectMappingsToSessions(): void {
     return;
   }
 
-  sessions = applyResult.sessions.map((session) => ({
+  appState.sessions = applyResult.sessions.map((session) => ({
     ...session,
     "교과목(및 능력단위)코드": normalizeSubjectCode(session["교과목(및 능력단위)코드"]).toUpperCase()
   }));
@@ -1745,7 +1614,7 @@ function applySubjectMappingsToSessions(): void {
 }
 
 function buildNotifications(): NotificationItem[] {
-  return recentActionLogs.map((log) => ({
+  return appState.recentActionLogs.map((log) => ({
     id: log.id,
     severity: log.severity,
     source: "HRD_VALIDATION",
@@ -1755,8 +1624,8 @@ function buildNotifications(): NotificationItem[] {
 }
 
 function refreshNotificationItems(): NotificationItem[] {
-  notificationItems = buildNotifications();
-  return notificationItems;
+  appState.notificationItems = buildNotifications();
+  return appState.notificationItems;
 }
 
 function getCohortNotificationCountMap(items: NotificationItem[]): Map<string, { warning: number; error: number }> {
@@ -1770,7 +1639,7 @@ function renderNotificationCenter(): void {
   notificationStatusList.innerHTML = "";
   const wrap = document.createElement("div");
   wrap.className = "notification-list";
-  const logs = [...recentActionLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
+  const logs = [...appState.recentActionLogs].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
   if (logs.length === 0) {
     const empty = document.createElement("div");
     empty.className = "muted";
@@ -1812,7 +1681,7 @@ function pushRecentActionLog(
   message: string,
   focusSectionId?: string
 ): void {
-  recentActionLogs = [
+  appState.recentActionLogs = [
     {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       severity,
@@ -1820,12 +1689,12 @@ function pushRecentActionLog(
       focusSectionId,
       createdAt: new Date().toISOString()
     },
-    ...recentActionLogs
+    ...appState.recentActionLogs
   ].slice(0, 5);
 }
 
 function applyViewMode(mode: ViewMode): void {
-  viewMode = mode;
+  appState.viewMode = mode;
   document.body.classList.toggle("simple-mode", mode === "simple");
 }
 
@@ -1839,11 +1708,11 @@ function resolveShowAdvanced(savedShowAdvanced: boolean | undefined): boolean {
 }
 
 function applyShowAdvancedMode(enabled: boolean): void {
-  showAdvanced = enabled;
+  appState.showAdvanced = enabled;
   document.body.classList.toggle("admin-mode", enabled);
-  if (!enabled && !hasPrunedBasicModeSections) {
+  if (!enabled && !appState.hasPrunedBasicModeSections) {
     removeBasicModeSections(document);
-    hasPrunedBasicModeSections = true;
+    appState.hasPrunedBasicModeSections = true;
   }
   if (adminModeToggle) {
     adminModeToggle.checked = enabled;
@@ -1855,20 +1724,20 @@ function resolveManagementInlineMode(): boolean {
 }
 
 function applyManagementInlineMode(): void {
-  managementInlineMode = resolveManagementInlineMode();
-  document.body.classList.toggle("management-inline-mode", managementInlineMode);
+  appState.managementInlineMode = resolveManagementInlineMode();
+  document.body.classList.toggle("management-inline-mode", appState.managementInlineMode);
 
-  if (managementInlineMode) {
+  if (appState.managementInlineMode) {
     instructorDrawer.classList.add("open");
     instructorDrawer.setAttribute("aria-hidden", "false");
     drawerBackdrop.classList.remove("open");
-    if (activeDrawer === "instructor") {
-      activeDrawer = null;
+    if (appState.activeDrawer === "instructor") {
+      appState.activeDrawer = null;
     }
     return;
   }
 
-  if (activeDrawer !== "instructor") {
+  if (appState.activeDrawer !== "instructor") {
     instructorDrawer.classList.remove("open");
     instructorDrawer.setAttribute("aria-hidden", "true");
   }
@@ -1878,7 +1747,7 @@ function renderHeaderRuntimeStatus(): void {
   headerCurrentTime.textContent = new Date().toLocaleTimeString("ko-KR", { hour12: false });
 
   const cloudEnabled = isInstructorCloudEnabled();
-  const hasWarning = instructorDirectoryCloudWarning.trim().length > 0;
+  const hasWarning = appState.instructorDirectoryCloudWarning.trim().length > 0;
   const isHealthy = cloudEnabled && !hasWarning;
 
   headerRuntimePanel.classList.remove("runtime-online", "runtime-warning");
@@ -1918,12 +1787,12 @@ function markQuickNavUpdated(target: "course" | "subject" | "instructor" | "mapp
 }
 
 function closeDrawers(): void {
-  activeDrawer = null;
+  appState.activeDrawer = null;
   drawerBackdrop.classList.remove("open");
   notificationDrawer.classList.remove("open");
   notificationDrawer.setAttribute("aria-hidden", "true");
 
-  if (managementInlineMode) {
+  if (appState.managementInlineMode) {
     instructorDrawer.classList.add("open");
     instructorDrawer.setAttribute("aria-hidden", "false");
     return;
@@ -1935,7 +1804,7 @@ function closeDrawers(): void {
 
 function openDrawer(target: "notification" | "instructor"): void {
   closeDrawers();
-  activeDrawer = target;
+  appState.activeDrawer = target;
   if (target === "notification") {
     drawerBackdrop.classList.add("open");
     notificationDrawer.classList.add("open");
@@ -1945,7 +1814,7 @@ function openDrawer(target: "notification" | "instructor"): void {
 
   instructorDrawer.classList.add("open");
   instructorDrawer.setAttribute("aria-hidden", "false");
-  if (!managementInlineMode) {
+  if (!appState.managementInlineMode) {
     drawerBackdrop.classList.add("open");
   }
 }
@@ -1980,21 +1849,21 @@ function switchInstructorDrawerTab(tab: "course" | "register" | "mapping" | "sub
 function openInstructorDrawerWithTab(tab: "course" | "register" | "mapping" | "subject"): void {
   openDrawer("instructor");
   switchInstructorDrawerTab(tab);
-  if (managementInlineMode) {
+  if (appState.managementInlineMode) {
     instructorDrawer.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
 function setNotificationFocus(focus: { cohort?: string; assignee?: string; date?: string } | null): void {
-  notificationFocus = focus;
+  appState.notificationFocus = focus;
 }
 
 function setTimelineViewType(nextView: TimelineViewType): void {
-  timelineViewType = TIMELINE_VIEW_ORDER.includes(nextView) ? nextView : "COHORT_TIMELINE";
-  timelineViewTypeSelect.value = timelineViewType;
-  assigneeTimelineControls.style.display = timelineViewType === "ASSIGNEE_TIMELINE" ? "block" : "none";
-  weekGridControls.style.display = timelineViewType === "WEEK_GRID" ? "block" : "none";
-  monthCalendarControls.style.display = timelineViewType === "MONTH_CALENDAR" ? "block" : "none";
+  appState.timelineViewType = TIMELINE_VIEW_ORDER.includes(nextView) ? nextView : "COHORT_TIMELINE";
+  timelineViewTypeSelect.value = appState.timelineViewType;
+  assigneeTimelineControls.style.display = appState.timelineViewType === "ASSIGNEE_TIMELINE" ? "block" : "none";
+  weekGridControls.style.display = appState.timelineViewType === "WEEK_GRID" ? "block" : "none";
+  monthCalendarControls.style.display = appState.timelineViewType === "MONTH_CALENDAR" ? "block" : "none";
 }
 
 function parseTimelineViewType(value: string): TimelineViewType {
@@ -2037,7 +1906,7 @@ function startOfWeekIso(isoDate: string): string {
 }
 
 function applyStaffingMode(mode: StaffingMode): void {
-  staffingMode = mode;
+  appState.staffingMode = mode;
   staffingModeSelect.value = mode;
   const managerMode = mode === "manager";
   staffModuleManagerContainer.style.display = managerMode ? "block" : "none";
@@ -2273,29 +2142,29 @@ function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
     }
   }
 
-  setJibbleSidebarActive(activePrimarySidebarPage);
+  setJibbleSidebarActive(appState.activePrimarySidebarPage);
 }
 
 function moveSidebarMenuDraft(navKey: PrimarySidebarNavKey, direction: -1 | 1): void {
-  const currentIndex = sidebarMenuDraft.order.indexOf(navKey);
+  const currentIndex = appState.sidebarMenuDraft.order.indexOf(navKey);
   if (currentIndex < 0) {
     return;
   }
 
   const nextIndex = currentIndex + direction;
-  if (nextIndex < 0 || nextIndex >= sidebarMenuDraft.order.length) {
+  if (nextIndex < 0 || nextIndex >= appState.sidebarMenuDraft.order.length) {
     return;
   }
 
-  const nextOrder = [...sidebarMenuDraft.order];
+  const nextOrder = [...appState.sidebarMenuDraft.order];
   const [moved] = nextOrder.splice(currentIndex, 1);
   nextOrder.splice(nextIndex, 0, moved);
-  sidebarMenuDraft = {
-    ...sidebarMenuDraft,
+  appState.sidebarMenuDraft = {
+    ...appState.sidebarMenuDraft,
     order: nextOrder
   };
 
-  applySidebarMenuConfigToSidebar(sidebarMenuDraft);
+  applySidebarMenuConfigToSidebar(appState.sidebarMenuDraft);
   renderSidebarMenuConfigEditor();
   menuConfigStatus.textContent = "메뉴 설정이 변경되었습니다. 저장 버튼을 눌러 반영하세요.";
 }
@@ -2303,26 +2172,26 @@ function moveSidebarMenuDraft(navKey: PrimarySidebarNavKey, direction: -1 | 1): 
 function renderSidebarMenuConfigEditor(): void {
   menuConfigList.innerHTML = "";
 
-  const total = sidebarMenuDraft.order.length;
-  for (const [index, navKey] of sidebarMenuDraft.order.entries()) {
+  const total = appState.sidebarMenuDraft.order.length;
+  for (const [index, navKey] of appState.sidebarMenuDraft.order.entries()) {
     const row = document.createElement("div");
     row.className = "menu-config-row";
 
     const icon = document.createElement("span");
     icon.className = "menu-config-icon";
-    icon.textContent = normalizeSidebarMenuIcon(navKey, sidebarMenuDraft.icons[navKey]);
+    icon.textContent = normalizeSidebarMenuIcon(navKey, appState.sidebarMenuDraft.icons[navKey]);
     row.appendChild(icon);
 
     const iconInput = document.createElement("input");
     iconInput.className = "menu-config-icon-input";
     iconInput.type = "text";
     iconInput.maxLength = 4;
-    iconInput.value = sidebarMenuDraft.icons[navKey];
+    iconInput.value = appState.sidebarMenuDraft.icons[navKey];
     iconInput.setAttribute("aria-label", `${navKey} 아이콘`);
     iconInput.addEventListener("input", () => {
-      sidebarMenuDraft.icons[navKey] = iconInput.value;
+      appState.sidebarMenuDraft.icons[navKey] = iconInput.value;
       icon.textContent = normalizeSidebarMenuIcon(navKey, iconInput.value);
-      applySidebarMenuConfigToSidebar(sidebarMenuDraft);
+      applySidebarMenuConfigToSidebar(appState.sidebarMenuDraft);
       menuConfigStatus.textContent = "메뉴 설정이 변경되었습니다. 저장 버튼을 눌러 반영하세요.";
     });
     row.appendChild(iconInput);
@@ -2331,10 +2200,10 @@ function renderSidebarMenuConfigEditor(): void {
     input.className = "menu-config-input";
     input.type = "text";
     input.maxLength = 20;
-    input.value = sidebarMenuDraft.labels[navKey];
+    input.value = appState.sidebarMenuDraft.labels[navKey];
     input.addEventListener("input", () => {
-      sidebarMenuDraft.labels[navKey] = input.value;
-      applySidebarMenuConfigToSidebar(sidebarMenuDraft);
+      appState.sidebarMenuDraft.labels[navKey] = input.value;
+      applySidebarMenuConfigToSidebar(appState.sidebarMenuDraft);
       menuConfigStatus.textContent = "메뉴 설정이 변경되었습니다. 저장 버튼을 눌러 반영하세요.";
     });
     row.appendChild(input);
@@ -2374,7 +2243,7 @@ function activatePrimarySidebarPage(
   navKey: PrimarySidebarNavKey,
   options: ActivatePrimaryPageOptions = {}
 ): void {
-  activePrimarySidebarPage = navKey;
+  appState.activePrimarySidebarPage = navKey;
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
 
@@ -2397,7 +2266,7 @@ function scrollToSection(sectionId: string): void {
   }
 
   const pageGroup = target.dataset.pageGroup?.trim() ?? "";
-  if (isPrimarySidebarNavKey(pageGroup) && pageGroup !== activePrimarySidebarPage) {
+  if (isPrimarySidebarNavKey(pageGroup) && pageGroup !== appState.activePrimarySidebarPage) {
     activatePrimarySidebarPage(pageGroup, { scrollToTop: false, openManagementTab: false });
   }
 
@@ -2468,13 +2337,13 @@ function setupJibbleSidebarNavigation(): void {
 }
 
 function getTrackTypeMissingCohorts(): string[] {
-  return summaries
+  return appState.summaries
     .map((summary) => summary.과정기수)
     .filter((cohort) => !isTrackType(cohortTrackType.get(cohort)));
 }
 
 function getUnassignedInstructorModules(): string[] {
-  if (staffingMode === "manager") {
+  if (appState.staffingMode === "manager") {
     return buildModuleAssignSummaries()
       .filter((item) => !isModuleInstructorApplied(item))
       .map((item) => item.moduleKey)
@@ -2483,9 +2352,9 @@ function getUnassignedInstructorModules(): string[] {
 
   const missing = new Set<string>();
 
-  const sessionCohorts = new Set(sessions.map((session) => session.과정기수));
+  const sessionCohorts = new Set(appState.sessions.map((session) => session.과정기수));
   for (const cohort of sessionCohorts) {
-    const hasInstructorAssignee = staffingAssignments.some(
+    const hasInstructorAssignee = appState.staffingAssignments.some(
       (assignment) =>
         assignment.cohort === cohort &&
         assignment.resourceType === "INSTRUCTOR" &&
@@ -2496,7 +2365,7 @@ function getUnassignedInstructorModules(): string[] {
     }
   }
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     for (const phase of PHASES) {
       const state = getStaffCellState(range.cohort, phase);
       if (state.resourceType !== "INSTRUCTOR") {
@@ -2513,18 +2382,18 @@ function getUnassignedInstructorModules(): string[] {
 }
 
 function isHolidayApplied(): boolean {
-  return hasLoadedPublicHoliday || holidayDates.length > 0;
+  return appState.hasLoadedPublicHoliday || appState.holidayDates.length > 0;
 }
 
 function isHrdChecklistPassed(): boolean {
   return (
-    sessions.length > 0 &&
+    appState.sessions.length > 0 &&
     Boolean(cohortSelect.value) &&
-    hrdValidationErrors.length === 0 &&
-    hasComputedConflicts &&
-    allConflicts.length === 0 &&
-    instructorDayOverlaps.length === 0 &&
-    facilitatorOperationOverlaps.length === 0 &&
+    appState.hrdValidationErrors.length === 0 &&
+    appState.hasComputedConflicts &&
+    appState.allConflicts.length === 0 &&
+    appState.instructorDayOverlaps.length === 0 &&
+    appState.facilitatorOperationOverlaps.length === 0 &&
     isHolidayApplied() &&
     getTrackTypeMissingCohorts().length === 0 &&
     getUnassignedInstructorModules().length === 0
@@ -2535,8 +2404,8 @@ function renderGlobalWarnings(): void {
   const warnings: string[] = [];
   const trackTypeMissing = getTrackTypeMissingCohorts();
   const unassignedModules = getUnassignedInstructorModules();
-  const cloudWarning = instructorDirectoryCloudWarning.trim();
-  const managementWarning = managementCloudWarning.trim();
+  const cloudWarning = appState.instructorDirectoryCloudWarning.trim();
+  const managementWarning = appState.managementCloudWarning.trim();
 
   if (trackTypeMissing.length > 0) {
     warnings.push(`trackType 미설정 코호트: ${trackTypeMissing.join(", ")}`);
@@ -2548,12 +2417,12 @@ function renderGlobalWarnings(): void {
     warnings.push(`강사 배정 안된 모듈/코호트: ${preview}${suffix}`);
   }
 
-  if (hasComputedConflicts && allConflicts.length > 0) {
-    warnings.push(`강사 시간 충돌 ${allConflicts.length}건`);
+  if (appState.hasComputedConflicts && appState.allConflicts.length > 0) {
+    warnings.push(`강사 시간 충돌 ${appState.allConflicts.length}건`);
   }
 
-  if (cohortSelect.value && hrdValidationErrors.length > 0) {
-    warnings.push(`HRD 검증 오류 ${hrdValidationErrors.length}건 (기수: ${cohortSelect.value})`);
+  if (cohortSelect.value && appState.hrdValidationErrors.length > 0) {
+    warnings.push(`HRD 검증 오류 ${appState.hrdValidationErrors.length}건 (기수: ${cohortSelect.value})`);
   }
 
   if (cloudWarning) {
@@ -2588,32 +2457,32 @@ function setRiskCardState(card: HTMLElement, valueElement: HTMLElement, text: st
 }
 
 function renderRiskSummary(): void {
-  if (!hasComputedConflicts) {
+  if (!appState.hasComputedConflicts) {
     setRiskCardState(riskCardTime, riskTimeConflict, "0 / 미계산", "warn");
   } else {
     setRiskCardState(
       riskCardTime,
       riskTimeConflict,
-      `0 / ${allConflicts.length}`,
-      allConflicts.length === 0 ? "ok" : "error"
+      `0 / ${appState.allConflicts.length}`,
+      appState.allConflicts.length === 0 ? "ok" : "error"
     );
   }
 
-  if (staffingAssignments.length === 0) {
+  if (appState.staffingAssignments.length === 0) {
     setRiskCardState(riskCardInstructorDay, riskInstructorDayConflict, "0 / 미계산", "warn");
     setRiskCardState(riskCardFoDay, riskFoDayConflict, "0 / 미계산", "warn");
   } else {
     setRiskCardState(
       riskCardInstructorDay,
       riskInstructorDayConflict,
-      `0 / ${instructorDayOverlaps.length}`,
-      instructorDayOverlaps.length === 0 ? "ok" : "error"
+      `0 / ${appState.instructorDayOverlaps.length}`,
+      appState.instructorDayOverlaps.length === 0 ? "ok" : "error"
     );
     setRiskCardState(
       riskCardFoDay,
       riskFoDayConflict,
-      `0 / ${facilitatorOperationOverlaps.length}`,
-      facilitatorOperationOverlaps.length === 0 ? "ok" : "error"
+      `0 / ${appState.facilitatorOperationOverlaps.length}`,
+      appState.facilitatorOperationOverlaps.length === 0 ? "ok" : "error"
     );
   }
 
@@ -2648,9 +2517,9 @@ function renderJibbleRightRail(): void {
     return;
   }
 
-  const instructorCount = instructorDirectory.length;
-  const cohortCount = summaries.length;
-  const conflictCount = hasComputedConflicts ? allConflicts.length : -1;
+  const instructorCount = appState.instructorDirectory.length;
+  const cohortCount = appState.summaries.length;
+  const conflictCount = appState.hasComputedConflicts ? appState.allConflicts.length : -1;
   const unassignedCount = getUnassignedInstructorModules().length;
 
   jibbleRightMemberText.textContent = `강사 ${instructorCount}명 등록`;
@@ -2664,7 +2533,7 @@ function renderJibbleRightRail(): void {
     return;
   }
 
-  if (!hasComputedConflicts) {
+  if (!appState.hasComputedConflicts) {
     jibbleOpsStatus.textContent = "분석대기";
     jibbleOpsSummary.textContent = `${cohortSelect.value} · 시간 충돌 계산 전`;
     return;
@@ -2676,10 +2545,10 @@ function renderJibbleRightRail(): void {
     return;
   }
 
-  if (allConflicts.length > 0 || instructorDayOverlaps.length > 0 || unassignedCount > 0) {
+  if (appState.allConflicts.length > 0 || appState.instructorDayOverlaps.length > 0 || unassignedCount > 0) {
     jibbleOpsStatus.textContent = "점검필요";
     jibbleOpsSummary.textContent =
-      `${cohortSelect.value} · 시간충돌 ${allConflicts.length}건 / 일충돌 ${instructorDayOverlaps.length}건 / 미배정 ${unassignedCount}건`;
+      `${cohortSelect.value} · 시간충돌 ${appState.allConflicts.length}건 / 일충돌 ${appState.instructorDayOverlaps.length}건 / 미배정 ${unassignedCount}건`;
     return;
   }
 
@@ -2717,10 +2586,10 @@ function highlightGanttByCohortModule(cohort: string, module?: string): void {
     matched[0].scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }
 
-  if (ganttHighlightTimer !== undefined) {
-    window.clearTimeout(ganttHighlightTimer);
+  if (appState.ganttHighlightTimer !== undefined) {
+    window.clearTimeout(appState.ganttHighlightTimer);
   }
-  ganttHighlightTimer = window.setTimeout(() => clearGanttHighlights(), 3500);
+  appState.ganttHighlightTimer = window.setTimeout(() => clearGanttHighlights(), 3500);
 }
 
 function collectTemplateRowsState(): TemplateRowState[] {
@@ -2787,7 +2656,7 @@ function applyTemplateRowsState(rows: TemplateRowState[] | undefined): void {
 
 function saveScheduleTemplatesToLocalStorage(): void {
   try {
-    localStorage.setItem(SCHEDULE_TEMPLATE_STORAGE_KEY, JSON.stringify(scheduleTemplates));
+    localStorage.setItem(SCHEDULE_TEMPLATE_STORAGE_KEY, JSON.stringify(appState.scheduleTemplates));
   } catch {
     scheduleTemplateStatus.textContent = "템플릿 저장 실패: 브라우저 저장소를 확인해 주세요.";
   }
@@ -2796,15 +2665,15 @@ function saveScheduleTemplatesToLocalStorage(): void {
 function loadScheduleTemplatesFromLocalStorage(): void {
   const raw = localStorage.getItem(SCHEDULE_TEMPLATE_STORAGE_KEY);
   if (!raw) {
-    scheduleTemplates = createDefaultScheduleTemplates();
+    appState.scheduleTemplates = createDefaultScheduleTemplates();
     saveScheduleTemplatesToLocalStorage();
     return;
   }
 
   try {
-    scheduleTemplates = mergeScheduleTemplates(JSON.parse(raw) as unknown);
+    appState.scheduleTemplates = mergeScheduleTemplates(JSON.parse(raw) as unknown);
   } catch {
-    scheduleTemplates = createDefaultScheduleTemplates();
+    appState.scheduleTemplates = createDefaultScheduleTemplates();
     saveScheduleTemplatesToLocalStorage();
   }
 }
@@ -2813,14 +2682,14 @@ function renderScheduleTemplateOptions(preferredName = ""): void {
   const previous = preferredName || scheduleTemplateSelect.value;
   scheduleTemplateSelect.innerHTML = "";
 
-  for (const preset of scheduleTemplates) {
+  for (const preset of appState.scheduleTemplates) {
     const option = document.createElement("option");
     option.value = preset.name;
     option.textContent = preset.builtIn ? `${preset.name} (기본)` : preset.name;
     scheduleTemplateSelect.appendChild(option);
   }
 
-  if (scheduleTemplates.length === 0) {
+  if (appState.scheduleTemplates.length === 0) {
     const option = document.createElement("option");
     option.value = "";
     option.textContent = "저장된 템플릿 없음";
@@ -2830,17 +2699,17 @@ function renderScheduleTemplateOptions(preferredName = ""): void {
     return;
   }
 
-  const selected = scheduleTemplates.some((item) => item.name === previous)
+  const selected = appState.scheduleTemplates.some((item) => item.name === previous)
     ? previous
-    : scheduleTemplates[0].name;
+    : appState.scheduleTemplates[0].name;
   scheduleTemplateSelect.value = selected;
-  const selectedTemplate = findScheduleTemplate(scheduleTemplates, selected);
+  const selectedTemplate = findScheduleTemplate(appState.scheduleTemplates, selected);
   deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn);
   updateActionStates();
 }
 
 function applySelectedScheduleTemplate(): void {
-  const selected = findScheduleTemplate(scheduleTemplates, scheduleTemplateSelect.value);
+  const selected = findScheduleTemplate(appState.scheduleTemplates, scheduleTemplateSelect.value);
   if (!selected) {
     scheduleTemplateStatus.textContent = "선택한 템플릿을 찾을 수 없습니다.";
     return;
@@ -2860,7 +2729,7 @@ function saveCurrentScheduleTemplate(): void {
   }
 
   const rows = collectTemplateRowsState();
-  scheduleTemplates = upsertScheduleTemplate(scheduleTemplates, name, rows);
+  appState.scheduleTemplates = upsertScheduleTemplate(appState.scheduleTemplates, name, rows);
   saveScheduleTemplatesToLocalStorage();
   renderScheduleTemplateOptions(name);
   scheduleTemplateNameInput.value = "";
@@ -2870,7 +2739,7 @@ function saveCurrentScheduleTemplate(): void {
 
 function deleteSelectedScheduleTemplate(): void {
   const selected = scheduleTemplateSelect.value;
-  const template = findScheduleTemplate(scheduleTemplates, selected);
+  const template = findScheduleTemplate(appState.scheduleTemplates, selected);
   if (!template) {
     scheduleTemplateStatus.textContent = "삭제할 템플릿을 찾을 수 없습니다.";
     return;
@@ -2881,7 +2750,7 @@ function deleteSelectedScheduleTemplate(): void {
     return;
   }
 
-  scheduleTemplates = removeScheduleTemplate(scheduleTemplates, template.name);
+  appState.scheduleTemplates = removeScheduleTemplate(appState.scheduleTemplates, template.name);
   saveScheduleTemplatesToLocalStorage();
   renderScheduleTemplateOptions();
   scheduleTemplateStatus.textContent = `템플릿 삭제 완료: ${template.name}`;
@@ -2905,7 +2774,7 @@ function renderCourseTemplateOptions(preferredValue = ""): void {
   const previous = preferredValue || courseTemplateSelect.value;
   courseTemplateSelect.innerHTML = "";
 
-  const templates = courseTemplates
+  const templates = appState.courseTemplates
     .filter((item) => item.courseId === selectedCourseId)
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -2939,7 +2808,7 @@ function saveCurrentCourseTemplate(): void {
     return;
   }
 
-  const subjectList = subjectDirectory
+  const subjectList = appState.subjectDirectory
     .filter((item) => item.courseId === courseId)
     .map((item) => ({ subjectCode: item.subjectCode, subjectName: item.subjectName, memo: item.memo }));
 
@@ -2952,17 +2821,17 @@ function saveCurrentCourseTemplate(): void {
     version: "v1",
     courseId,
     dayTemplates: collectTemplateRowsState(),
-    holidays: [...holidayDates],
-    customBreaks: [...customBreakDates],
+    holidays: [...appState.holidayDates],
+    customBreaks: [...appState.customBreakDates],
     subjectList,
     subjectInstructorMapping
   };
 
-  const existingIndex = courseTemplates.findIndex((item) => item.courseId === courseId && item.name === name);
+  const existingIndex = appState.courseTemplates.findIndex((item) => item.courseId === courseId && item.name === name);
   if (existingIndex >= 0) {
-    courseTemplates[existingIndex] = template;
+    appState.courseTemplates[existingIndex] = template;
   } else {
-    courseTemplates.push(template);
+    appState.courseTemplates.push(template);
   }
 
   courseTemplateNameInput.value = "";
@@ -2976,7 +2845,7 @@ function saveCurrentCourseTemplate(): void {
 
 function applySelectedCourseTemplate(): void {
   const selected = parseCourseTemplateOptionValue(courseTemplateSelect.value);
-  const template = courseTemplates.find(
+  const template = appState.courseTemplates.find(
     (item) => item.courseId === selected.courseId && item.name === selected.name
   );
   if (!template) {
@@ -2985,7 +2854,7 @@ function applySelectedCourseTemplate(): void {
   }
 
   const applied = applyCourseTemplateToState({
-    subjectDirectory,
+    subjectDirectory: appState.subjectDirectory,
     subjectInstructorMappings: Array.from(subjectInstructorMappings.entries()).map(([key, instructorCode]) => ({
       key,
       instructorCode
@@ -2994,10 +2863,10 @@ function applySelectedCourseTemplate(): void {
   });
 
   applyTemplateRowsState(applied.dayTemplates);
-  holidayDates = dedupeAndSortDates(applied.holidays);
-  customBreakDates = dedupeAndSortDates(applied.customBreaks);
+  appState.holidayDates = dedupeAndSortDates(applied.holidays);
+  appState.customBreakDates = dedupeAndSortDates(applied.customBreaks);
   renderHolidayAndBreakLists();
-  subjectDirectory = applied.subjectDirectory;
+  appState.subjectDirectory = applied.subjectDirectory;
   subjectInstructorMappings.clear();
   for (const row of applied.subjectInstructorMappings) {
     subjectInstructorMappings.set(row.key, row.instructorCode);
@@ -3023,15 +2892,15 @@ function deleteSelectedCourseTemplate(): void {
     return;
   }
 
-  const nextTemplates = courseTemplates.filter(
+  const nextTemplates = appState.courseTemplates.filter(
     (item) => !(item.courseId === selected.courseId && item.name === selected.name)
   );
-  if (nextTemplates.length === courseTemplates.length) {
+  if (nextTemplates.length === appState.courseTemplates.length) {
     courseTemplateStatus.textContent = "삭제할 템플릿을 찾지 못했습니다.";
     return;
   }
 
-  courseTemplates = nextTemplates;
+  appState.courseTemplates = nextTemplates;
   renderCourseTemplateOptions();
   courseTemplateStatus.textContent = `템플릿 삭제 완료: ${selected.courseId} / ${selected.name}`;
   scheduleAutoSave();
@@ -3041,7 +2910,7 @@ function deleteSelectedCourseTemplate(): void {
 function collectSavedStaffingCells(): SavedStaffCell[] {
   const cells: SavedStaffCell[] = [];
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     for (const phase of PHASES) {
       const state = getStaffCellState(range.cohort, phase);
       if (!state.assignee && !state.startDate && !state.endDate) {
@@ -3090,7 +2959,7 @@ function normalizeInstructorDirectoryEntries(rawInstructors: unknown): Instructo
 }
 
 function mergeInstructorDirectoryWarning(sizeWarning: string): string {
-  const cloudWarning = instructorDirectoryCloudWarning;
+  const cloudWarning = appState.instructorDirectoryCloudWarning;
   if (!sizeWarning && !cloudWarning) {
     return "";
   }
@@ -3111,7 +2980,7 @@ async function loadInstructorDirectoryWithCloudFallback(
   }
 
   if (!isInstructorCloudEnabled()) {
-    instructorDirectoryCloudWarning =
+    appState.instructorDirectoryCloudWarning =
       "클라우드 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정을 확인해 주세요.";
     return localInstructors;
   }
@@ -3119,18 +2988,18 @@ async function loadInstructorDirectoryWithCloudFallback(
   try {
     const cloudInstructors = await loadInstructorDirectoryFromCloud();
     if (cloudInstructors.length > 0) {
-      instructorDirectoryCloudWarning = localInstructors.length > 0
+      appState.instructorDirectoryCloudWarning = localInstructors.length > 0
         ? "클라우드 강사 목록을 병합했습니다."
         : "클라우드 강사 목록을 가져와 적용했습니다.";
     } else {
-      instructorDirectoryCloudWarning = localInstructors.length > 0
+      appState.instructorDirectoryCloudWarning = localInstructors.length > 0
         ? ""
         : "클라우드에 저장된 강사 목록이 없습니다. 로컬 데이터를 사용합니다.";
     }
     return mergeWithLocalInstructorDirectory(localInstructors, cloudInstructors);
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    instructorDirectoryCloudWarning = `클라우드 강사 목록 동기화 실패: ${message}. 로컬 데이터를 사용합니다.`;
+    appState.instructorDirectoryCloudWarning = `클라우드 강사 목록 동기화 실패: ${message}. 로컬 데이터를 사용합니다.`;
     return localInstructors;
   }
 }
@@ -3152,7 +3021,7 @@ function serializeProjectState(): AppStateVCurrent {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     savedAt: new Date().toISOString(),
-    sessions,
+    sessions: appState.sessions,
     cohortTrackTypes,
     generatedCohortRanges: Array.from(generatedCohortRanges.values()),
     scheduleGenerator: {
@@ -3164,18 +3033,18 @@ function serializeProjectState(): AppStateVCurrent {
       subjectCode: scheduleSubjectCodeInput.value,
       pushToConflicts: pushScheduleToConflicts.checked,
       dayTemplates: collectTemplateRowsState(),
-      holidays: [...holidayDates],
-      customBreaks: [...customBreakDates],
-      generatedResult: generatedScheduleResult,
-      generatedCohort: generatedScheduleCohort,
-      publicHolidayLoaded: hasLoadedPublicHoliday
+      holidays: [...appState.holidayDates],
+      customBreaks: [...appState.customBreakDates],
+      generatedResult: appState.generatedScheduleResult,
+      generatedCohort: appState.generatedScheduleCohort,
+      publicHolidayLoaded: appState.hasLoadedPublicHoliday
     },
     staffingCells: collectSavedStaffingCells(),
-    instructorDirectory,
-    instructorRegistry: instructorDirectory,
-    courseRegistry,
-    subjectDirectory,
-    subjectRegistryByCourse: subjectDirectory.map((item) => ({
+    instructorDirectory: appState.instructorDirectory,
+    instructorRegistry: appState.instructorDirectory,
+    courseRegistry: appState.courseRegistry,
+    subjectDirectory: appState.subjectDirectory,
+    subjectRegistryByCourse: appState.subjectDirectory.map((item) => ({
       courseId: item.courseId,
       subjectCode: item.subjectCode,
       subjectName: item.subjectName,
@@ -3199,30 +3068,30 @@ function serializeProjectState(): AppStateVCurrent {
         };
       })
       .filter((item) => item.courseId.length > 0 && item.moduleKey.length > 0 && item.instructorCode.length > 0),
-    courseTemplates,
+    courseTemplates: appState.courseTemplates,
     ui: {
-      activeConflictTab,
-      viewMode,
-      timelineViewType,
-      showAdvanced,
+      activeConflictTab: appState.activeConflictTab,
+      viewMode: appState.viewMode,
+      timelineViewType: appState.timelineViewType,
+      showAdvanced: appState.showAdvanced,
       keySearch: keySearchInput.value,
       instructorDaySearch: instructorDaySearchInput.value,
       foDaySearch: foDaySearchInput.value,
-      sidebarMenu: normalizeSidebarMenuConfig(sidebarMenuDraft)
+      sidebarMenu: normalizeSidebarMenuConfig(appState.sidebarMenuDraft)
     }
   };
 }
 
 function scheduleAutoSave(): void {
-  if (isApplyingProjectState) {
+  if (appState.isApplyingProjectState) {
     return;
   }
 
-  if (autoSaveTimer !== undefined) {
-    window.clearTimeout(autoSaveTimer);
+  if (appState.autoSaveTimer !== undefined) {
+    window.clearTimeout(appState.autoSaveTimer);
   }
 
-  autoSaveTimer = window.setTimeout(() => {
+  appState.autoSaveTimer = window.setTimeout(() => {
     saveProjectToLocalStorage();
   }, AUTO_SAVE_DEBOUNCE_MS);
 }
@@ -3251,19 +3120,19 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
   const state = migrated.state;
   setStateMigrationWarnings(migrated.warnings);
 
-  isApplyingProjectState = true;
+  appState.isApplyingProjectState = true;
   try {
-    sessions = Array.isArray(state.sessions) ? (state.sessions as Session[]) : [];
+    appState.sessions = Array.isArray(state.sessions) ? (state.sessions as Session[]) : [];
     moduleInstructorDraft.clear();
     subjectInstructorMappingDraft.clear();
-    parseErrors = [];
+    appState.parseErrors = [];
 
     const scheduleState = state.scheduleGenerator;
-    holidayDates = dedupeAndSortDates(Array.isArray(scheduleState?.holidays) ? scheduleState.holidays : []);
-    customBreakDates = dedupeAndSortDates(Array.isArray(scheduleState?.customBreaks) ? scheduleState.customBreaks : []);
-    generatedScheduleResult = (scheduleState?.generatedResult as GenerateScheduleResult | null | undefined) ?? null;
-    generatedScheduleCohort = scheduleState?.generatedCohort ?? "";
-    hasLoadedPublicHoliday = Boolean(scheduleState?.publicHolidayLoaded);
+    appState.holidayDates = dedupeAndSortDates(Array.isArray(scheduleState?.holidays) ? scheduleState.holidays : []);
+    appState.customBreakDates = dedupeAndSortDates(Array.isArray(scheduleState?.customBreaks) ? scheduleState.customBreaks : []);
+    appState.generatedScheduleResult = (scheduleState?.generatedResult as GenerateScheduleResult | null | undefined) ?? null;
+    appState.generatedScheduleCohort = scheduleState?.generatedCohort ?? "";
+    appState.hasLoadedPublicHoliday = Boolean(scheduleState?.publicHolidayLoaded);
 
     scheduleCohortInput.value = scheduleState?.cohort ?? "";
     scheduleStartDateInput.value = scheduleState?.startDate ?? scheduleStartDateInput.value;
@@ -3331,7 +3200,7 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
               ? state.instructorDirectory
               : []
         );
-    instructorDirectory = instructorSource
+    appState.instructorDirectory = instructorSource
       .map((item) => ({
         instructorCode: normalizeInstructorCode(item.instructorCode),
         name: item.name ?? "",
@@ -3340,7 +3209,7 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
       .filter((item) => item.instructorCode.length > 0)
       .sort((a, b) => a.instructorCode.localeCompare(b.instructorCode));
 
-    courseRegistry = Array.isArray(state.courseRegistry)
+    appState.courseRegistry = Array.isArray(state.courseRegistry)
       ? state.courseRegistry.map((item) => ({
           courseId: normalizeCourseId(item.courseId),
           courseName: item.courseName ?? "",
@@ -3353,16 +3222,16 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
       : Array.isArray(state.subjectDirectory)
         ? state.subjectDirectory
         : [];
-    subjectDirectory = rawSubjects.map((item) => ({
+    appState.subjectDirectory = rawSubjects.map((item) => ({
           courseId: normalizeCourseId(item.courseId ?? ""),
           subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
           subjectName: item.subjectName ?? "",
           memo: item.memo ?? ""
         }));
-    subjectDirectory = subjectDirectory.filter((item) => item.courseId.length > 0 && item.subjectCode.length > 0);
-    for (const courseId of new Set(subjectDirectory.map((item) => item.courseId))) {
-      if (!courseRegistry.some((item) => item.courseId === courseId)) {
-        courseRegistry.push({ courseId, courseName: courseId, memo: "" });
+    appState.subjectDirectory = appState.subjectDirectory.filter((item) => item.courseId.length > 0 && item.subjectCode.length > 0);
+    for (const courseId of new Set(appState.subjectDirectory.map((item) => item.courseId))) {
+      if (!appState.courseRegistry.some((item) => item.courseId === courseId)) {
+        appState.courseRegistry.push({ courseId, courseName: courseId, memo: "" });
       }
     }
 
@@ -3389,7 +3258,7 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
       }
       subjectInstructorMappings.set(moduleKey, instructorCode);
     }
-    courseTemplates = Array.isArray(state.courseTemplates) ? state.courseTemplates : [];
+    appState.courseTemplates = Array.isArray(state.courseTemplates) ? state.courseTemplates : [];
 
     regenerateSummariesAndTimeline();
     resetConflictsBeforeCompute();
@@ -3398,17 +3267,17 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
     const ui = state.ui;
     const loadedSidebarMenu = ui?.sidebarMenu;
     if (loadedSidebarMenu) {
-      sidebarMenuConfig = normalizeSidebarMenuConfig({
+      appState.sidebarMenuConfig = normalizeSidebarMenuConfig({
         order: loadedSidebarMenu.order,
         labels: loadedSidebarMenu.labels,
         icons: loadedSidebarMenu.icons
       });
     } else {
-      sidebarMenuConfig = getDefaultSidebarMenuConfig();
+      appState.sidebarMenuConfig = getDefaultSidebarMenuConfig();
     }
-    sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
-    applySidebarMenuConfigToSidebar(sidebarMenuConfig);
-    saveSidebarMenuConfig(sidebarMenuConfig);
+    appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
+    applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
+    saveSidebarMenuConfig(appState.sidebarMenuConfig);
 
     applyViewMode(ui?.viewMode === "simple" ? "simple" : "full");
     setTimelineViewType(ui?.timelineViewType ?? "COHORT_TIMELINE");
@@ -3429,10 +3298,10 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
     const tab = ui?.activeConflictTab;
     setConflictTab(tab === "time" || tab === "instructor_day" || tab === "fo_day" ? tab : "time");
 
-    uploadStatus.textContent = sessions.length > 0 ? `현재 수업시간표 ${sessions.length}건` : "대기중";
+    uploadStatus.textContent = appState.sessions.length > 0 ? `현재 수업시간표 ${appState.sessions.length}건` : "대기중";
     stateStorageStatus.textContent = `프로젝트 불러오기 완료 (${new Date().toLocaleTimeString()})`;
   } finally {
-    isApplyingProjectState = false;
+    appState.isApplyingProjectState = false;
     updateActionStates();
   }
 }
@@ -3492,7 +3361,7 @@ function renderInitialUiState(): void {
 }
 
 function getDefaultTrackTypeForCohort(cohort: string): TrackType {
-  const hasSaturday = sessions.some((session) => {
+  const hasSaturday = appState.sessions.some((session) => {
     if (session.과정기수 !== cohort) {
       return false;
     }
@@ -3540,7 +3409,7 @@ function setStaffingStatus(message: string, isError = false): void {
 }
 
 function setConflictTab(tab: ConflictTab): void {
-  activeConflictTab = tab;
+  appState.activeConflictTab = tab;
 
   const isTime = tab === "time";
   const isInstructorDay = tab === "instructor_day";
@@ -3556,7 +3425,7 @@ function setConflictTab(tab: ConflictTab): void {
 }
 
 function setUploadProcessingState(processing: boolean): void {
-  isUploadProcessing = processing;
+  appState.isUploadProcessing = processing;
   uploadStatus.textContent = processing ? "처리중..." : uploadStatus.textContent;
 
   if (processing) {
@@ -3569,29 +3438,29 @@ function setUploadProcessingState(processing: boolean): void {
 }
 
 function setHolidayLoadingState(loading: boolean): void {
-  isHolidayLoading = loading;
+  appState.isHolidayLoading = loading;
   holidayLoadSpinner.style.display = loading ? "inline-block" : "none";
   loadPublicHolidaysButton.textContent = loading ? "불러오는 중..." : "공휴일 불러오기(대한민국)";
   updateActionStates();
 }
 
 function updateActionStates(): void {
-  const hasSessions = sessions.length > 0;
-  const canComputeConflicts = hasSessions && !isUploadProcessing;
-  const canUseConflictControls = hasComputedConflicts && !isConflictComputing && !isUploadProcessing;
-  const isBusy = isUploadProcessing || isConflictComputing || isHolidayLoading;
-  const advancedMode = staffingMode === "advanced";
-  const canDownloadHrd = hasSessions && !isUploadProcessing;
+  const hasSessions = appState.sessions.length > 0;
+  const canComputeConflicts = hasSessions && !appState.isUploadProcessing;
+  const canUseConflictControls = appState.hasComputedConflicts && !appState.isConflictComputing && !appState.isUploadProcessing;
+  const isBusy = appState.isUploadProcessing || appState.isConflictComputing || appState.isHolidayLoading;
+  const advancedMode = appState.staffingMode === "advanced";
+  const canDownloadHrd = hasSessions && !appState.isUploadProcessing;
 
-  fileInput.disabled = isUploadProcessing;
-  cohortSelect.disabled = !hasSessions || isUploadProcessing;
+  fileInput.disabled = appState.isUploadProcessing;
+  cohortSelect.disabled = !hasSessions || appState.isUploadProcessing;
   downloadButton.disabled = !canDownloadHrd;
 
-  computeConflictsButton.disabled = !canComputeConflicts || isConflictComputing;
+  computeConflictsButton.disabled = !canComputeConflicts || appState.isConflictComputing;
   keySearchInput.disabled = !canUseConflictControls;
-  downloadTimeConflictsButton.disabled = !canUseConflictControls || visibleConflicts.length === 0;
-  downloadInstructorDayConflictsButton.disabled = isBusy || visibleInstructorDayOverlaps.length === 0;
-  downloadFoDayConflictsButton.disabled = isBusy || visibleFoDayOverlaps.length === 0;
+  downloadTimeConflictsButton.disabled = !canUseConflictControls || appState.visibleConflicts.length === 0;
+  downloadInstructorDayConflictsButton.disabled = isBusy || appState.visibleInstructorDayOverlaps.length === 0;
+  downloadFoDayConflictsButton.disabled = isBusy || appState.visibleFoDayOverlaps.length === 0;
 
   generateScheduleButton.disabled = isBusy;
   addHolidayButton.disabled = isBusy;
@@ -3601,20 +3470,20 @@ function updateActionStates(): void {
   addCustomBreakButton.disabled = isBusy;
   scheduleTemplateSelect.disabled = isBusy;
   scheduleTemplateNameInput.disabled = isBusy;
-  loadScheduleTemplateButton.disabled = isBusy || scheduleTemplates.length === 0;
+  loadScheduleTemplateButton.disabled = isBusy || appState.scheduleTemplates.length === 0;
   saveScheduleTemplateButton.disabled = isBusy;
   if (isBusy) {
     deleteScheduleTemplateButton.disabled = true;
   } else {
-    const selectedTemplate = findScheduleTemplate(scheduleTemplates, scheduleTemplateSelect.value);
-    deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn) || scheduleTemplates.length === 0;
+    const selectedTemplate = findScheduleTemplate(appState.scheduleTemplates, scheduleTemplateSelect.value);
+    deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn) || appState.scheduleTemplates.length === 0;
   }
 
-  staffAutoFillButton.disabled = isBusy || staffingCohortRanges.length === 0 || !advancedMode;
+  staffAutoFillButton.disabled = isBusy || appState.staffingCohortRanges.length === 0 || !advancedMode;
   staffRefreshButton.disabled = isBusy || !advancedMode;
   const strictCheck = staffExportModeSelect.value === "v7e_strict" ? isV7eStrictReady() : { ok: true };
   const strictReady = strictCheck.ok;
-  staffExportCsvButton.disabled = isBusy || staffingCohortRanges.length === 0 || !strictReady || !advancedMode;
+  staffExportCsvButton.disabled = isBusy || appState.staffingCohortRanges.length === 0 || !strictReady || !advancedMode;
   staffExportCsvButton.title = !strictReady ? `v7e_strict 비활성: ${strictCheck.reason ?? "프리셋 미적용"}` : "";
   staffExportWarningsAgree.disabled = isBusy || !advancedMode;
   if (staffExportModeSelect.value === "v7e_strict") {
@@ -3630,15 +3499,15 @@ function updateActionStates(): void {
   printReportButton.disabled = isBusy;
   openConflictDetailModalButton.disabled = isBusy;
   loadDemoSampleButton.disabled = isBusy;
-  restorePreviousStateButton.disabled = isBusy || previousStateBeforeSampleLoad === null;
+  restorePreviousStateButton.disabled = isBusy || appState.previousStateBeforeSampleLoad === null;
   upsertCourseButton.disabled = isBusy;
   upsertInstructorButton.disabled = isBusy;
   upsertSubjectButton.disabled = isBusy;
-  applySubjectMappingsButton.disabled = isBusy || sessions.length === 0;
+  applySubjectMappingsButton.disabled = isBusy || appState.sessions.length === 0;
 
   const canAppendSchedule =
-    generatedScheduleResult !== null &&
-    generatedScheduleResult.days.length > 0 &&
+    appState.generatedScheduleResult !== null &&
+    appState.generatedScheduleResult.days.length > 0 &&
     pushScheduleToConflicts.checked &&
     !isBusy;
 
@@ -3681,12 +3550,12 @@ function setCohortOptions(cohortSummaries: CohortSummary[], preferredCohort = ""
 
 function updateCohortInfo(): void {
   const cohort = cohortSelect.value;
-  const summary = summaries.find((item) => item.과정기수 === cohort);
+  const summary = appState.summaries.find((item) => item.과정기수 === cohort);
 
   if (!summary) {
   cohortInfo.textContent = "기간:  ~  / 훈련일수: 0 / 수업시간표 건수: 0";
-    hrdValidationErrors = [];
-    hrdValidationWarnings = [];
+    appState.hrdValidationErrors = [];
+    appState.hrdValidationWarnings = [];
     renderHrdValidationErrors();
     updateActionStates();
     return;
@@ -3760,7 +3629,7 @@ function renderTimelineMonthAxis(globalStart: number, globalEnd: number): MonthA
 }
 
 function buildCohortTimelineItems(): Array<{ summary: CohortSummary; startDate: Date; endDate: Date }> {
-  return summaries
+  return appState.summaries
     .map((summary) => ({
       summary,
       startDate: parseCompactDate(summary.시작일),
@@ -4081,9 +3950,9 @@ function renderAssigneeTimelineView(): void {
   };
   const rows: AssigneeRow[] = [];
 
-  if (assigneeTimelineKind === "INSTRUCTOR") {
+  if (appState.assigneeTimelineKind === "INSTRUCTOR") {
     const byInstructor = new Map<string, { startDate: string; endDate: string; count: number }>();
-    for (const session of sessions) {
+    for (const session of appState.sessions) {
       const instructor = normalizeInstructorCode(session.훈련강사코드);
       const iso = getSessionIsoDate(session);
       if (!instructor || !iso) {
@@ -4100,7 +3969,7 @@ function renderAssigneeTimelineView(): void {
     }
 
     const conflictMap = new Map<string, number>();
-    for (const conflict of allConflicts) {
+    for (const conflict of appState.allConflicts) {
       const key = normalizeInstructorCode(conflict.키);
       if (!key) {
         continue;
@@ -4115,12 +3984,12 @@ function renderAssigneeTimelineView(): void {
         endDate: value.endDate,
         count: value.count,
         conflictCount: conflictMap.get(key) ?? 0,
-        conflictComputed: hasComputedConflicts
+        conflictComputed: appState.hasComputedConflicts
       });
     }
   } else {
     const byAssignee = new Map<string, { startDate: string; endDate: string; count: number }>();
-    for (const assignment of staffingAssignments) {
+    for (const assignment of appState.staffingAssignments) {
       const assignee = assignment.assignee.trim();
       if (!assignee || !parseIsoDate(assignment.startDate) || !parseIsoDate(assignment.endDate)) {
         continue;
@@ -4136,7 +4005,7 @@ function renderAssigneeTimelineView(): void {
     }
 
     const overlapMap = new Map<string, number>();
-    for (const overlap of [...instructorDayOverlaps, ...facilitatorOperationOverlaps]) {
+    for (const overlap of [...appState.instructorDayOverlaps, ...appState.facilitatorOperationOverlaps]) {
       const assignee = overlap.assignee.trim();
       if (!assignee) {
         continue;
@@ -4165,7 +4034,7 @@ function renderAssigneeTimelineView(): void {
   if (limited.length === 0) {
     timelineRange.textContent = "기간: -";
     timelineEmpty.style.display = "block";
-    timelineEmpty.textContent = assigneeTimelineKind === "INSTRUCTOR" ? "강사 기준 데이터가 없습니다." : "담당자 기준 데이터가 없습니다.";
+    timelineEmpty.textContent = appState.assigneeTimelineKind === "INSTRUCTOR" ? "강사 기준 데이터가 없습니다." : "담당자 기준 데이터가 없습니다.";
     return;
   }
 
@@ -4211,8 +4080,8 @@ function renderAssigneeTimelineView(): void {
 }
 
 function renderWeekGridView(): void {
-  const start = startOfWeekIso(weekGridStartDate);
-  weekGridStartDate = start;
+  const start = startOfWeekIso(appState.weekGridStartDate);
+  appState.weekGridStartDate = start;
 
   const dayNames = ["월", "화", "수", "목", "금", "토", "일"];
   const days = Array.from({ length: 7 }, (_, index) => addDaysToIso(start, index));
@@ -4223,16 +4092,16 @@ function renderWeekGridView(): void {
   grid.className = "timeline-grid";
 
   for (const [index, day] of days.entries()) {
-    const sessionsOnDay = sessions.filter((session) => getSessionIsoDate(session) === day);
+    const sessionsOnDay = appState.sessions.filter((session) => getSessionIsoDate(session) === day);
     const cell = document.createElement("div");
     cell.className = "timeline-grid-cell";
     if (sessionsOnDay.length > 0) {
       cell.classList.add("has-class");
     }
-    if (holidayDates.includes(day) || customBreakDates.includes(day)) {
+    if (appState.holidayDates.includes(day) || appState.customBreakDates.includes(day)) {
       cell.classList.add("holiday");
       const holidayName = holidayNameByDate.get(day);
-      const dayType = holidayName ? `공휴일: ${holidayName}` : customBreakDates.includes(day) ? "자체휴강" : "공휴일";
+      const dayType = holidayName ? `공휴일: ${holidayName}` : appState.customBreakDates.includes(day) ? "자체휴강" : "공휴일";
       cell.title = `${day} ${dayType}`;
     }
 
@@ -4262,14 +4131,14 @@ function renderWeekGridView(): void {
 }
 
 function renderMonthCalendarView(): void {
-  const parsedMonth = monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
+  const parsedMonth = appState.monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
   if (!parsedMonth) {
-    monthCalendarCursor = getTodayIsoDate().slice(0, 7);
+    appState.monthCalendarCursor = getTodayIsoDate().slice(0, 7);
   }
-  const [year, month] = monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
+  const [year, month] = appState.monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
   const first = new Date(Date.UTC(year, (month || 1) - 1, 1));
   const monthLabelText = `${first.getUTCFullYear()}-${String(first.getUTCMonth() + 1).padStart(2, "0")}`;
-  monthCalendarCursor = monthLabelText;
+  appState.monthCalendarCursor = monthLabelText;
   monthLabel.textContent = monthLabelText;
 
   const firstIso = formatDate(first);
@@ -4290,8 +4159,8 @@ function renderMonthCalendarView(): void {
 
   for (let i = 0; i < 42; i += 1) {
     const day = addDaysToIso(start, i);
-    const sessionsOnDay = sessions.filter((session) => getSessionIsoDate(session) === day);
-    const inCurrentMonth = day.slice(0, 7) === monthCalendarCursor;
+    const sessionsOnDay = appState.sessions.filter((session) => getSessionIsoDate(session) === day);
+    const inCurrentMonth = day.slice(0, 7) === appState.monthCalendarCursor;
     const dayOfWeek = parseIsoDate(day)?.getUTCDay() ?? 1;
 
     const cell = document.createElement("div");
@@ -4299,10 +4168,10 @@ function renderMonthCalendarView(): void {
     if (sessionsOnDay.length > 0) {
       cell.classList.add("has-class");
     }
-    if (holidayDates.includes(day) || customBreakDates.includes(day)) {
+    if (appState.holidayDates.includes(day) || appState.customBreakDates.includes(day)) {
       cell.classList.add("holiday");
       const holidayName = holidayNameByDate.get(day);
-      const dayType = holidayName ? `공휴일: ${holidayName}` : customBreakDates.includes(day) ? "자체휴강" : "공휴일";
+      const dayType = holidayName ? `공휴일: ${holidayName}` : appState.customBreakDates.includes(day) ? "자체휴강" : "공휴일";
       cell.title = `${day} ${dayType}`;
     }
     if (!inCurrentMonth) {
@@ -4345,20 +4214,20 @@ function renderMonthCalendarView(): void {
     grid.appendChild(cell);
   }
 
-  timelineRange.textContent = `월: ${monthCalendarCursor}`;
+  timelineRange.textContent = `월: ${appState.monthCalendarCursor}`;
   timelineList.appendChild(grid);
 }
 
 function renderTimeline(): void {
   timelineList.innerHTML = "";
   const cohortNotificationMap = getCohortNotificationCountMap(refreshNotificationItems());
-  const cohortInstructorMetaMap = buildCohortInstructorMetaMap(sessions);
+  const cohortInstructorMetaMap = buildCohortInstructorMetaMap(appState.sessions);
   const timelineItems = buildCohortTimelineItems();
 
   timelineDetailPanel.style.display = "none";
   timelineDetailPanel.textContent = "";
 
-  if (timelineItems.length === 0 && (timelineViewType === "COHORT_TIMELINE" || timelineViewType === "COURSE_GROUPED")) {
+  if (timelineItems.length === 0 && (appState.timelineViewType === "COHORT_TIMELINE" || appState.timelineViewType === "COURSE_GROUPED")) {
     timelineRange.textContent = "기간: -";
     timelineEmpty.style.display = "block";
     return;
@@ -4367,22 +4236,22 @@ function renderTimeline(): void {
   timelineEmpty.style.display = "none";
   timelineEmpty.textContent = "수업시간표를 불러오면 타임라인이 생성됩니다.";
 
-  if (timelineViewType === "COHORT_TIMELINE") {
+  if (appState.timelineViewType === "COHORT_TIMELINE") {
     renderCohortTimelineView(timelineItems, cohortNotificationMap, cohortInstructorMetaMap);
     return;
   }
 
-  if (timelineViewType === "COURSE_GROUPED") {
+  if (appState.timelineViewType === "COURSE_GROUPED") {
     renderCourseGroupedTimelineView(timelineItems, cohortNotificationMap, cohortInstructorMetaMap);
     return;
   }
 
-  if (timelineViewType === "ASSIGNEE_TIMELINE") {
+  if (appState.timelineViewType === "ASSIGNEE_TIMELINE") {
     renderAssigneeTimelineView();
     return;
   }
 
-  if (timelineViewType === "WEEK_GRID") {
+  if (appState.timelineViewType === "WEEK_GRID") {
     renderWeekGridView();
     return;
   }
@@ -4391,17 +4260,17 @@ function renderTimeline(): void {
 }
 
 function renderErrors(): void {
-  errorCount.textContent = `총 ${parseErrors.length}건`;
+  errorCount.textContent = `총 ${appState.parseErrors.length}건`;
   errorList.innerHTML = "";
 
-  if (parseErrors.length === 0) {
+  if (appState.parseErrors.length === 0) {
     errorEmpty.style.display = "block";
     return;
   }
 
   errorEmpty.style.display = "none";
 
-  const topErrors = parseErrors.slice(0, 10);
+  const topErrors = appState.parseErrors.slice(0, 10);
   for (const item of topErrors) {
     const li = document.createElement("li");
     li.textContent = `[행 ${item.rowIndex}] ${item.message}`;
@@ -4412,20 +4281,20 @@ function renderErrors(): void {
 function renderHrdValidationErrors(): void {
   hrdValidationList.innerHTML = "";
 
-  if (hrdValidationErrors.length === 0 && hrdValidationWarnings.length === 0) {
+  if (appState.hrdValidationErrors.length === 0 && appState.hrdValidationWarnings.length === 0) {
     hrdValidationPanel.style.display = "none";
     return;
   }
 
   hrdValidationPanel.style.display = "block";
 
-  for (const message of hrdValidationErrors) {
+  for (const message of appState.hrdValidationErrors) {
     const li = document.createElement("li");
     li.textContent = `[ERROR] ${message}`;
     hrdValidationList.appendChild(li);
   }
 
-  for (const message of hrdValidationWarnings) {
+  for (const message of appState.hrdValidationWarnings) {
     const li = document.createElement("li");
     li.textContent = `[WARN] ${message}`;
     hrdValidationList.appendChild(li);
@@ -4456,21 +4325,21 @@ function renderStaffExportValidation(errors: string[], warnings: string[]): void
 }
 
 function updateStandardizeStatus(): void {
-  const hasStandardizedData = sessions.length > 0 || (generatedScheduleResult?.days.length ?? 0) > 0;
+  const hasStandardizedData = appState.sessions.length > 0 || (appState.generatedScheduleResult?.days.length ?? 0) > 0;
   standardizeStatus.style.display = hasStandardizedData ? "block" : "none";
 }
 
 function renderStateMigrationWarnings(): void {
   stateMigrationList.innerHTML = "";
 
-  if (stateMigrationWarnings.length === 0) {
+  if (appState.stateMigrationWarnings.length === 0) {
     stateMigrationBanner.style.display = "none";
     return;
   }
 
   stateMigrationBanner.style.display = "block";
 
-  for (const warning of stateMigrationWarnings) {
+  for (const warning of appState.stateMigrationWarnings) {
     const li = document.createElement("li");
     li.textContent = warning;
     stateMigrationList.appendChild(li);
@@ -4478,7 +4347,7 @@ function renderStateMigrationWarnings(): void {
 }
 
 function setStateMigrationWarnings(warnings: string[]): void {
-  stateMigrationWarnings = [...warnings];
+  appState.stateMigrationWarnings = [...warnings];
   renderStateMigrationWarnings();
 }
 
@@ -4499,7 +4368,7 @@ function setDemoSampleBanner(message: string | null): void {
 
 async function loadDemoSampleState(): Promise<void> {
   const fileName = demoSampleSelect.value;
-  previousStateBeforeSampleLoad = serializeProjectState();
+  appState.previousStateBeforeSampleLoad = serializeProjectState();
 
   const response = await fetch(`samples/${fileName}`);
   if (!response.ok) {
@@ -4508,26 +4377,26 @@ async function loadDemoSampleState(): Promise<void> {
 
   const sampleState = (await response.json()) as unknown;
   applyLoadedProjectState(sampleState);
-  restorePreviousStateButton.disabled = previousStateBeforeSampleLoad === null;
+  restorePreviousStateButton.disabled = appState.previousStateBeforeSampleLoad === null;
   setDemoSampleBanner(`샘플 로드됨: ${fileName}`);
   scheduleAutoSave();
 }
 
 function restoreStateBeforeSampleLoad(): void {
-  if (!previousStateBeforeSampleLoad) {
+  if (!appState.previousStateBeforeSampleLoad) {
     return;
   }
 
-  applyLoadedProjectState(previousStateBeforeSampleLoad);
-  previousStateBeforeSampleLoad = null;
+  applyLoadedProjectState(appState.previousStateBeforeSampleLoad);
+  appState.previousStateBeforeSampleLoad = null;
   restorePreviousStateButton.disabled = true;
   setDemoSampleBanner("샘플 적용 전 상태로 복원했습니다.");
   scheduleAutoSave();
 }
 
 function validateHrdExportForCohortWithWarnings(cohort: string): { errors: string[]; warnings: string[] } {
-  const subjectCodes = new Set(subjectDirectory.map((item) => item.subjectCode));
-  return validateHrdExportForCohortDetailed(sessions, cohort, holidayDates, holidayNameByDate, subjectCodes);
+  const subjectCodes = new Set(appState.subjectDirectory.map((item) => item.subjectCode));
+  return validateHrdExportForCohortDetailed(appState.sessions, cohort, appState.holidayDates, holidayNameByDate, subjectCodes);
 }
 
 function refreshHrdValidation(): void {
@@ -4535,8 +4404,8 @@ function refreshHrdValidation(): void {
   const validation = cohort
     ? validateHrdExportForCohortWithWarnings(cohort)
     : { errors: [], warnings: [] };
-  hrdValidationErrors = validation.errors;
-  hrdValidationWarnings = validation.warnings;
+  appState.hrdValidationErrors = validation.errors;
+  appState.hrdValidationWarnings = validation.warnings;
   renderHrdValidationErrors();
   updateActionStates();
 }
@@ -4549,8 +4418,8 @@ function renderOpsChecklist(): void {
   const unassignedInstructorModules = getUnassignedInstructorModules();
   const trackTypeComplete =
     trackTypeMissing.length === 0 &&
-    (staffingCohortRanges.length === 0 ||
-      staffingCohortRanges.every((range) => isTrackType(range.trackType) && getPolicyForTrack(range.trackType).length > 0));
+    (appState.staffingCohortRanges.length === 0 ||
+      appState.staffingCohortRanges.every((range) => isTrackType(range.trackType) && getPolicyForTrack(range.trackType).length > 0));
 
   const items: Array<{ label: string; ok: boolean; warn?: boolean }> = [
     {
@@ -4559,31 +4428,31 @@ function renderOpsChecklist(): void {
       warn: true
     },
     {
-      label: hasComputedConflicts
-        ? `강사 시간 충돌 ${allConflicts.length === 0 ? "0건" : `${allConflicts.length}건`}`
+      label: appState.hasComputedConflicts
+        ? `강사 시간 충돌 ${appState.allConflicts.length === 0 ? "0건" : `${appState.allConflicts.length}건`}`
         : "강사 시간 충돌 미계산",
-      ok: hasComputedConflicts && allConflicts.length === 0,
+      ok: appState.hasComputedConflicts && appState.allConflicts.length === 0,
       warn: true
     },
     {
-      label: `강사 배치(일) 충돌 ${instructorDayOverlaps.length === 0 ? "0건" : `${instructorDayOverlaps.length}건`}`,
-      ok: instructorDayOverlaps.length === 0,
-      warn: staffingAssignments.length > 0
+      label: `강사 배치(일) 충돌 ${appState.instructorDayOverlaps.length === 0 ? "0건" : `${appState.instructorDayOverlaps.length}건`}`,
+      ok: appState.instructorDayOverlaps.length === 0,
+      warn: appState.staffingAssignments.length > 0
     },
     {
-      label: `퍼실/운영 배치(일) 충돌 ${facilitatorOperationOverlaps.length === 0 ? "0건" : `${facilitatorOperationOverlaps.length}건`}`,
-      ok: facilitatorOperationOverlaps.length === 0,
-      warn: staffingAssignments.length > 0
+      label: `퍼실/운영 배치(일) 충돌 ${appState.facilitatorOperationOverlaps.length === 0 ? "0건" : `${appState.facilitatorOperationOverlaps.length}건`}`,
+      ok: appState.facilitatorOperationOverlaps.length === 0,
+      warn: appState.staffingAssignments.length > 0
     },
     {
-      label: `공휴일 자동 로드 ${hasLoadedPublicHoliday ? "적용" : "미적용"}`,
-      ok: hasLoadedPublicHoliday,
+      label: `공휴일 자동 로드 ${appState.hasLoadedPublicHoliday ? "적용" : "미적용"}`,
+      ok: appState.hasLoadedPublicHoliday,
       warn: true
     },
     {
       label: `trackType 설정 ${trackTypeComplete ? "완료" : "누락"}`,
       ok: trackTypeComplete,
-      warn: staffingCohortRanges.length > 0
+      warn: appState.staffingCohortRanges.length > 0
     },
     {
       label:
@@ -4614,16 +4483,16 @@ function renderOpsChecklist(): void {
 function renderTimeConflicts(): void {
   confTableBody.innerHTML = "";
 
-  if (!hasComputedConflicts) {
+  if (!appState.hasComputedConflicts) {
     confCount.textContent = "계산 대기";
     confRenderNotice.textContent = "";
     return;
   }
 
-  confCount.textContent = `총 ${visibleConflicts.length}건`;
+  confCount.textContent = `총 ${appState.visibleConflicts.length}건`;
 
-  const preview = visibleConflicts.slice(0, TABLE_RENDER_LIMIT);
-  setRenderNotice(confRenderNotice, visibleConflicts.length, preview.length);
+  const preview = appState.visibleConflicts.slice(0, TABLE_RENDER_LIMIT);
+  setRenderNotice(confRenderNotice, appState.visibleConflicts.length, preview.length);
 
   for (const conflict of preview) {
     const tr = document.createElement("tr");
@@ -4660,8 +4529,8 @@ function renderTimeConflicts(): void {
 }
 
 function applyConflictFilters(): void {
-  if (!hasComputedConflicts) {
-    visibleConflicts = [];
+  if (!appState.hasComputedConflicts) {
+    appState.visibleConflicts = [];
     renderTimeConflicts();
     updateActionStates();
     return;
@@ -4669,7 +4538,7 @@ function applyConflictFilters(): void {
 
   const keyQuery = keySearchInput.value.trim().toLowerCase();
 
-  visibleConflicts = allConflicts
+  appState.visibleConflicts = appState.allConflicts
     .filter((conflict) => (keyQuery.length === 0 ? true : conflict.키.toLowerCase().includes(keyQuery)))
     .sort(
       (a, b) =>
@@ -4684,9 +4553,9 @@ function applyConflictFilters(): void {
 }
 
 function resetConflictsBeforeCompute(): void {
-  allConflicts = [];
-  visibleConflicts = [];
-  hasComputedConflicts = false;
+  appState.allConflicts = [];
+  appState.visibleConflicts = [];
+  appState.hasComputedConflicts = false;
 
   keySearchInput.value = "";
   renderTimeConflicts();
@@ -4694,11 +4563,11 @@ function resetConflictsBeforeCompute(): void {
 }
 
 async function computeConflicts(): Promise<void> {
-  if (sessions.length === 0 || isConflictComputing) {
+  if (appState.sessions.length === 0 || appState.isConflictComputing) {
     return;
   }
 
-  isConflictComputing = true;
+  appState.isConflictComputing = true;
   computeConflictsButton.textContent = "계산중...";
   confCount.textContent = "계산중...";
   updateActionStates();
@@ -4707,19 +4576,19 @@ async function computeConflicts(): Promise<void> {
     window.setTimeout(() => resolve(), 0);
   });
 
-  if (sessions.length >= 10000) {
-    console.warn(`[conflict-calc] 세션 수가 많습니다: ${sessions.length}건`);
+  if (appState.sessions.length >= 10000) {
+    console.warn(`[conflict-calc] 세션 수가 많습니다: ${appState.sessions.length}건`);
   }
 
   console.time("conflict-calc");
   try {
-    allConflicts = detectConflicts(sessions, { resourceTypes: ["INSTRUCTOR"] });
-    hasComputedConflicts = true;
+    appState.allConflicts = detectConflicts(appState.sessions, { resourceTypes: ["INSTRUCTOR"] });
+    appState.hasComputedConflicts = true;
   } finally {
     console.timeEnd("conflict-calc");
   }
 
-  isConflictComputing = false;
+  appState.isConflictComputing = false;
   computeConflictsButton.textContent = RECOMPUTE_LABEL;
   applyConflictFilters();
   scheduleAutoSave();
@@ -4732,8 +4601,8 @@ function downloadCohortCSV(): void {
   }
 
   const validation = validateHrdExportForCohortWithWarnings(cohort);
-  hrdValidationErrors = validation.errors;
-  hrdValidationWarnings = validation.warnings;
+  appState.hrdValidationErrors = validation.errors;
+  appState.hrdValidationWarnings = validation.warnings;
   renderHrdValidationErrors();
   if (validation.errors.length > 0) {
     updateActionStates();
@@ -4741,8 +4610,8 @@ function downloadCohortCSV(): void {
   }
 
   const generatedDays =
-    cohort === generatedScheduleCohort && generatedScheduleResult ? generatedScheduleResult.days : undefined;
-  const { csv, rowWarning } = exportHrdCsvForCohort(sessions, cohort, { generatedDays });
+    cohort === appState.generatedScheduleCohort && appState.generatedScheduleResult ? appState.generatedScheduleResult.days : undefined;
+  const { csv, rowWarning } = exportHrdCsvForCohort(appState.sessions, cohort, { generatedDays });
   if (rowWarning) {
     pushRecentActionLog("WARNING", rowWarning, "hrdDownloadCard");
   }
@@ -4763,11 +4632,11 @@ function downloadCohortCSV(): void {
 }
 
 function downloadVisibleTimeConflictsCsv(): void {
-  if (visibleConflicts.length === 0) {
+  if (appState.visibleConflicts.length === 0) {
     return;
   }
 
-  const rows = visibleConflicts.map((conflict) => [
+  const rows = appState.visibleConflicts.map((conflict) => [
     conflict.기준,
     conflict.일자,
     conflict.키,
@@ -4783,20 +4652,20 @@ function downloadVisibleTimeConflictsCsv(): void {
 }
 
 function downloadVisibleInstructorDayConflictsCsv(): void {
-  if (visibleInstructorDayOverlaps.length === 0) {
+  if (appState.visibleInstructorDayOverlaps.length === 0) {
     return;
   }
 
-  const rows = visibleInstructorDayOverlaps.map((overlap) => toDayConflictRow(overlap));
+  const rows = appState.visibleInstructorDayOverlaps.map((overlap) => toDayConflictRow(overlap));
   downloadCsvFile(`conflicts_instructor_day_${getTodayCompactDate()}.csv`, DAY_CONFLICT_COLUMNS, rows);
 }
 
 function downloadVisibleFoDayConflictsCsv(): void {
-  if (visibleFoDayOverlaps.length === 0) {
+  if (appState.visibleFoDayOverlaps.length === 0) {
     return;
   }
 
-  const rows = visibleFoDayOverlaps.map((overlap) => toDayConflictRow(overlap));
+  const rows = appState.visibleFoDayOverlaps.map((overlap) => toDayConflictRow(overlap));
   downloadCsvFile(`conflicts_facil_ops_day_${getTodayCompactDate()}.csv`, DAY_CONFLICT_COLUMNS, rows);
 }
 
@@ -4808,7 +4677,7 @@ function renderConflictDetailModalContent(): void {
     {
       label: "강사 시간 충돌",
       columns: CONFLICT_COLUMNS,
-      rows: allConflicts.map((conflict) => [
+      rows: appState.allConflicts.map((conflict) => [
         conflict.기준,
         conflict.일자,
         conflict.키,
@@ -4823,12 +4692,12 @@ function renderConflictDetailModalContent(): void {
     {
       label: "강사 배치(일) 충돌",
       columns: DAY_CONFLICT_COLUMNS,
-      rows: instructorDayOverlaps.map((overlap) => toDayConflictRow(overlap))
+      rows: appState.instructorDayOverlaps.map((overlap) => toDayConflictRow(overlap))
     },
     {
       label: "퍼실/운영 배치(일) 충돌",
       columns: DAY_CONFLICT_COLUMNS,
-      rows: facilitatorOperationOverlaps.map((overlap) => toDayConflictRow(overlap))
+      rows: appState.facilitatorOperationOverlaps.map((overlap) => toDayConflictRow(overlap))
     }
   ];
 
@@ -4924,7 +4793,7 @@ function resetAllStateWithConfirm(): void {
 }
 
 function buildPrintReport(): void {
-  printReportMeta.textContent = `생성시각: ${new Date().toLocaleString()} / 선택 탭: ${getConflictTabLabel(activeConflictTab)}`;
+  printReportMeta.textContent = `생성시각: ${new Date().toLocaleString()} / 선택 탭: ${getConflictTabLabel(appState.activeConflictTab)}`;
   printCohortGantt.innerHTML = staffCohortGantt.innerHTML;
   printAssigneeGantt.innerHTML = staffAssigneeGantt.innerHTML;
 
@@ -4937,9 +4806,9 @@ function buildPrintReport(): void {
   let conflictColumns: readonly string[];
   let conflictRows: string[][];
 
-  if (activeConflictTab === "time") {
+  if (appState.activeConflictTab === "time") {
     conflictColumns = CONFLICT_COLUMNS;
-    conflictRows = visibleConflicts.slice(0, PRINT_CONFLICT_LIMIT).map((conflict) => [
+    conflictRows = appState.visibleConflicts.slice(0, PRINT_CONFLICT_LIMIT).map((conflict) => [
       conflict.기준,
       conflict.일자,
       conflict.키,
@@ -4950,15 +4819,15 @@ function buildPrintReport(): void {
       conflict.B시간,
       conflict.B교과목
     ]);
-  } else if (activeConflictTab === "instructor_day") {
+  } else if (appState.activeConflictTab === "instructor_day") {
     conflictColumns = DAY_CONFLICT_COLUMNS;
-    conflictRows = visibleInstructorDayOverlaps.slice(0, PRINT_CONFLICT_LIMIT).map((item) => toDayConflictRow(item));
+    conflictRows = appState.visibleInstructorDayOverlaps.slice(0, PRINT_CONFLICT_LIMIT).map((item) => toDayConflictRow(item));
   } else {
     conflictColumns = DAY_CONFLICT_COLUMNS;
-    conflictRows = visibleFoDayOverlaps.slice(0, PRINT_CONFLICT_LIMIT).map((item) => toDayConflictRow(item));
+    conflictRows = appState.visibleFoDayOverlaps.slice(0, PRINT_CONFLICT_LIMIT).map((item) => toDayConflictRow(item));
   }
 
-  printConflictTitle.textContent = `${getConflictTabLabel(activeConflictTab)} 상위 ${PRINT_CONFLICT_LIMIT}건`;
+  printConflictTitle.textContent = `${getConflictTabLabel(appState.activeConflictTab)} 상위 ${PRINT_CONFLICT_LIMIT}건`;
   printConflictContainer.innerHTML = "";
   printConflictContainer.appendChild(createTableElement(conflictColumns, conflictRows));
 }
@@ -5010,17 +4879,17 @@ function getHolidayDisplayLabel(date: string): string {
 }
 
 function renderHolidayAndBreakLists(): void {
-  renderDateList(holidayList, holidayDates, (value) => {
+  renderDateList(holidayList, appState.holidayDates, (value) => {
     return getHolidayDisplayLabel(value);
   }, (value) => {
-    holidayDates = holidayDates.filter((item) => item !== value);
+    appState.holidayDates = appState.holidayDates.filter((item) => item !== value);
     renderHolidayAndBreakLists();
   });
 
-  renderDateList(customBreakList, customBreakDates, (value) => {
+  renderDateList(customBreakList, appState.customBreakDates, (value) => {
     return value;
   }, (value) => {
-    customBreakDates = customBreakDates.filter((item) => item !== value);
+    appState.customBreakDates = appState.customBreakDates.filter((item) => item !== value);
     renderHolidayAndBreakLists();
   });
 
@@ -5037,7 +4906,7 @@ function addDateToList(input: HTMLInputElement, target: "holiday" | "customBreak
   }
 
   const normalized = formatDate(parsed);
-  const source = target === "holiday" ? holidayDates : customBreakDates;
+  const source = target === "holiday" ? appState.holidayDates : appState.customBreakDates;
   if (source.includes(normalized)) {
     setScheduleError("이미 추가된 날짜입니다.");
     return;
@@ -5174,8 +5043,8 @@ function readScheduleConfigFromUi(): { cohort: string; config: ScheduleConfig } 
       startDate,
       totalHours,
       weekdays: parsedTemplate.weekdays,
-      holidays: [...holidayDates],
-      customBreaks: [...customBreakDates],
+      holidays: [...appState.holidayDates],
+      customBreaks: [...appState.customBreakDates],
       dayTemplates: parsedTemplate.dayTemplates
     }
   };
@@ -5276,7 +5145,7 @@ function renderSkippedDetails(skipped: SkippedDay[]): void {
 }
 
 function renderGeneratedScheduleResult(): void {
-  if (!generatedScheduleResult) {
+  if (!appState.generatedScheduleResult) {
     scheduleResult.style.display = "none";
     scheduleSummary.textContent = "";
     scheduleSkippedSummary.textContent = "";
@@ -5288,14 +5157,14 @@ function renderGeneratedScheduleResult(): void {
 
   scheduleResult.style.display = "block";
 
-  const skippedSummary = summarizeSkipped(generatedScheduleResult.skipped);
-  const previewDays = generatedScheduleResult.days.slice(-20);
+  const skippedSummary = summarizeSkipped(appState.generatedScheduleResult.skipped);
+  const previewDays = appState.generatedScheduleResult.days.slice(-20);
 
-  scheduleSummary.textContent = `종강일: ${generatedScheduleResult.endDate} / 총 수업일수: ${generatedScheduleResult.totalDays} / 계획 총시간: ${formatHours(generatedScheduleResult.totalHoursPlanned)}시간`;
+  scheduleSummary.textContent = `종강일: ${appState.generatedScheduleResult.endDate} / 총 수업일수: ${appState.generatedScheduleResult.totalDays} / 계획 총시간: ${formatHours(appState.generatedScheduleResult.totalHoursPlanned)}시간`;
   scheduleSkippedSummary.textContent = `스킵 요약 - 공휴일: ${skippedSummary.holiday}, 자체휴강: ${skippedSummary.customBreak}, 요일제외: ${skippedSummary.weekdayExcluded}`;
-  renderSkippedDetails(generatedScheduleResult.skipped);
+  renderSkippedDetails(appState.generatedScheduleResult.skipped);
 
-  scheduleDaysInfo.textContent = `생성된 수업일 ${generatedScheduleResult.days.length}건 중 최근 ${previewDays.length}건 미리보기`;
+  scheduleDaysInfo.textContent = `생성된 수업일 ${appState.generatedScheduleResult.days.length}건 중 최근 ${previewDays.length}건 미리보기`;
 
   scheduleDaysPreview.innerHTML = "";
   for (const day of previewDays) {
@@ -5324,7 +5193,7 @@ function getHolidayFetchYears(startDate: string): number[] {
 }
 
 function mergeFetchedHolidays(holidays: Holiday[]): number {
-  const existing = new Set(holidayDates);
+  const existing = new Set(appState.holidayDates);
   const before = existing.size;
 
   for (const holiday of holidays) {
@@ -5338,8 +5207,8 @@ function mergeFetchedHolidays(holidays: Holiday[]): number {
     holidayNameByDate.set(date, holiday.localName || holiday.name);
   }
 
-  holidayDates = Array.from(existing).sort((a, b) => a.localeCompare(b));
-  return holidayDates.length - before;
+  appState.holidayDates = Array.from(existing).sort((a, b) => a.localeCompare(b));
+  return appState.holidayDates.length - before;
 }
 
 async function loadPublicHolidays(): Promise<void> {
@@ -5363,7 +5232,7 @@ async function loadPublicHolidays(): Promise<void> {
     const responses = await Promise.all(years.map((year) => fetchPublicHolidaysKR(year)));
     const holidays = responses.flat();
     const added = mergeFetchedHolidays(holidays);
-    hasLoadedPublicHoliday = holidays.length > 0;
+    appState.hasLoadedPublicHoliday = holidays.length > 0;
 
     renderHolidayAndBreakLists();
     holidayLoadStatus.textContent = `${years.join(", ")}년 공휴일 ${holidays.length}건 조회, ${added}건 추가`;
@@ -5377,19 +5246,19 @@ async function loadPublicHolidays(): Promise<void> {
 }
 
 function clearHolidayList(): void {
-  holidayDates = [];
+  appState.holidayDates = [];
   holidayNameByDate.clear();
-  hasLoadedPublicHoliday = false;
+  appState.hasLoadedPublicHoliday = false;
   renderHolidayAndBreakLists();
   holidayLoadStatus.textContent = "공휴일 목록을 초기화했습니다.";
 }
 
 function dedupeHolidayList(): void {
-  const before = holidayDates.length;
-  holidayDates = dedupeAndSortDates(holidayDates);
+  const before = appState.holidayDates.length;
+  appState.holidayDates = dedupeAndSortDates(appState.holidayDates);
   renderHolidayAndBreakLists();
 
-  const removed = before - holidayDates.length;
+  const removed = before - appState.holidayDates.length;
   holidayLoadStatus.textContent = removed > 0 ? `중복 ${removed}건 제거` : "중복된 날짜가 없습니다.";
 }
 
@@ -5415,7 +5284,7 @@ function upsertCohortRange<T extends { cohort: string; startDate: string; endDat
 function rebuildStaffingCohortRanges(): void {
   const rangeMap = new Map<string, Omit<CohortRange, "trackType">>();
 
-  for (const summary of summaries) {
+  for (const summary of appState.summaries) {
     const startDate = compactToIso(summary.시작일);
     const endDate = compactToIso(summary.종료일);
     if (!startDate || !endDate) {
@@ -5435,14 +5304,14 @@ function rebuildStaffingCohortRanges(): void {
 
   const mergedRanges = Array.from(rangeMap.values()).sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-  staffingCohortRanges = mergedRanges.map((range) => {
+  appState.staffingCohortRanges = mergedRanges.map((range) => {
     const existingTrack = cohortTrackType.get(range.cohort);
     const trackType = existingTrack ?? getDefaultTrackTypeForCohort(range.cohort);
     cohortTrackType.set(range.cohort, trackType);
     return { ...range, trackType };
   });
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     for (const phase of PHASES) {
       const key = staffCellKey(range.cohort, phase);
       if (!staffingCellState.has(key)) {
@@ -5455,7 +5324,7 @@ function rebuildStaffingCohortRanges(): void {
 function renderStaffingMatrix(): void {
   staffMatrixContainer.innerHTML = "";
 
-  if (staffingCohortRanges.length === 0) {
+  if (appState.staffingCohortRanges.length === 0) {
     const empty = document.createElement("div");
     empty.className = "muted";
     empty.textContent = "코호트 데이터가 없어 배치표를 표시할 수 없습니다.";
@@ -5478,7 +5347,7 @@ function renderStaffingMatrix(): void {
 
   const tbody = document.createElement("tbody");
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     const tr = document.createElement("tr");
 
     const cohortCell = document.createElement("td");
@@ -5499,7 +5368,7 @@ function renderStaffingMatrix(): void {
     trackSelect.addEventListener("change", () => {
       const nextTrack = trackSelect.value as TrackType;
       cohortTrackType.set(range.cohort, nextTrack);
-      const nextRange = staffingCohortRanges.find((item) => item.cohort === range.cohort);
+      const nextRange = appState.staffingCohortRanges.find((item) => item.cohort === range.cohort);
       if (nextRange) {
         nextRange.trackType = nextTrack;
       }
@@ -5625,7 +5494,7 @@ function renderStaffingMatrix(): void {
 function collectStaffingInputs(): StaffAssignmentInput[] {
   const inputs: StaffAssignmentInput[] = [];
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     const trackType = range.trackType ?? cohortTrackType.get(range.cohort) ?? getDefaultTrackTypeForCohort(range.cohort);
 
     for (const phase of PHASES) {
@@ -5679,11 +5548,11 @@ function overlapToSearchText(overlap: StaffOverlap): string {
 
 function renderInstructorDayOverlapPanel(): void {
   instructorDayOverlapBody.innerHTML = "";
-  instructorDayOverlapCount.textContent = `총 ${visibleInstructorDayOverlaps.length}건`;
-  const preview = visibleInstructorDayOverlaps.slice(0, TABLE_RENDER_LIMIT);
-  setRenderNotice(instructorDayRenderNotice, visibleInstructorDayOverlaps.length, preview.length);
+  instructorDayOverlapCount.textContent = `총 ${appState.visibleInstructorDayOverlaps.length}건`;
+  const preview = appState.visibleInstructorDayOverlaps.slice(0, TABLE_RENDER_LIMIT);
+  setRenderNotice(instructorDayRenderNotice, appState.visibleInstructorDayOverlaps.length, preview.length);
 
-  if (visibleInstructorDayOverlaps.length === 0) {
+  if (appState.visibleInstructorDayOverlaps.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 11;
@@ -5767,11 +5636,11 @@ function renderInstructorDayOverlapPanel(): void {
 
 function renderFoDayOverlapPanel(): void {
   foOverlapBody.innerHTML = "";
-  foOverlapCount.textContent = `총 ${visibleFoDayOverlaps.length}건`;
-  const preview = visibleFoDayOverlaps.slice(0, TABLE_RENDER_LIMIT);
-  setRenderNotice(foDayRenderNotice, visibleFoDayOverlaps.length, preview.length);
+  foOverlapCount.textContent = `총 ${appState.visibleFoDayOverlaps.length}건`;
+  const preview = appState.visibleFoDayOverlaps.slice(0, TABLE_RENDER_LIMIT);
+  setRenderNotice(foDayRenderNotice, appState.visibleFoDayOverlaps.length, preview.length);
 
-  if (visibleFoDayOverlaps.length === 0) {
+  if (appState.visibleFoDayOverlaps.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 11;
@@ -5856,7 +5725,7 @@ function renderFoDayOverlapPanel(): void {
 function applyInstructorDayFilters(): void {
   const query = instructorDaySearchInput.value.trim().toLowerCase();
 
-  visibleInstructorDayOverlaps = instructorDayOverlaps
+  appState.visibleInstructorDayOverlaps = appState.instructorDayOverlaps
     .filter((overlap) => (query.length === 0 ? true : overlapToSearchText(overlap).includes(query)))
     .sort(
       (a, b) =>
@@ -5872,7 +5741,7 @@ function applyInstructorDayFilters(): void {
 function applyFoDayFilters(): void {
   const query = foDaySearchInput.value.trim().toLowerCase();
 
-  visibleFoDayOverlaps = facilitatorOperationOverlaps
+  appState.visibleFoDayOverlaps = appState.facilitatorOperationOverlaps
     .filter((overlap) => (query.length === 0 ? true : overlapToSearchText(overlap).includes(query)))
     .sort(
       (a, b) =>
@@ -5964,7 +5833,7 @@ function renderStaffGantt(
 function buildOverlapDayMapByAssignment(): Map<StaffAssignment, number> {
   const map = new Map<StaffAssignment, Set<string>>();
 
-  for (const overlap of [...instructorDayOverlaps, ...facilitatorOperationOverlaps]) {
+  for (const overlap of [...appState.instructorDayOverlaps, ...appState.facilitatorOperationOverlaps]) {
     const start = parseIsoDate(overlap.overlapStartDate);
     const end = parseIsoDate(overlap.overlapEndDate);
     if (!start || !end) {
@@ -6012,7 +5881,7 @@ function getPolicyLabelsForAssignee(assignee: string, resourceType: ResourceType
 
   const set = new Set<string>();
 
-  for (const assignment of staffingAssignments) {
+  for (const assignment of appState.staffingAssignments) {
     if (assignment.assignee !== assignee || assignment.resourceType !== resourceType) {
       continue;
     }
@@ -6025,7 +5894,7 @@ function getPolicyLabelsForAssignee(assignee: string, resourceType: ResourceType
 function renderStaffKpiAndDetails(): void {
   staffKpiBody.innerHTML = "";
 
-  const kpiRows = [...instructorSummaries, ...staffingSummaries].sort(
+  const kpiRows = [...appState.instructorSummaries, ...appState.staffingSummaries].sort(
     (a, b) =>
       RESOURCE_TYPE_ORDER[a.resourceType] - RESOURCE_TYPE_ORDER[b.resourceType] ||
       a.assignee.localeCompare(b.assignee)
@@ -6089,7 +5958,7 @@ function renderStaffKpiAndDetails(): void {
   staffDetailContainer.innerHTML = "";
   const overlapDayMap = buildOverlapDayMapByAssignment();
 
-  for (const summary of instructorSummaries) {
+  for (const summary of appState.instructorSummaries) {
     const group = document.createElement("div");
     group.className = "staff-detail-group";
 
@@ -6106,7 +5975,7 @@ function renderStaffKpiAndDetails(): void {
     staffDetailContainer.appendChild(group);
   }
 
-  for (const summary of staffingSummaries) {
+  for (const summary of appState.staffingSummaries) {
     const group = document.createElement("div");
     group.className = "staff-detail-group";
 
@@ -6136,7 +6005,7 @@ function renderStaffKpiAndDetails(): void {
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    const rows = staffingAssignments
+    const rows = appState.staffingAssignments
       .filter(
         (assignment) => assignment.assignee === summary.assignee && assignment.resourceType === summary.resourceType
       )
@@ -6190,20 +6059,20 @@ function renderStaffKpiAndDetails(): void {
 function refreshStaffingAnalytics(showStatus = true): void {
   try {
     const inputs = collectStaffingInputs();
-    staffingAssignments = buildAssignments(inputs);
-    const allOverlaps = detectStaffOverlaps(staffingAssignments);
-    instructorDayOverlaps = allOverlaps.filter((item) => item.resourceType === "INSTRUCTOR");
-    facilitatorOperationOverlaps = allOverlaps.filter((item) => item.resourceType !== "INSTRUCTOR");
+    appState.staffingAssignments = buildAssignments(inputs);
+    const allOverlaps = detectStaffOverlaps(appState.staffingAssignments);
+    appState.instructorDayOverlaps = allOverlaps.filter((item) => item.resourceType === "INSTRUCTOR");
+    appState.facilitatorOperationOverlaps = allOverlaps.filter((item) => item.resourceType !== "INSTRUCTOR");
 
-    const allSummaries = summarizeWorkload(staffingAssignments);
-    instructorSummaries = allSummaries.filter((item) => item.resourceType === "INSTRUCTOR");
-    staffingSummaries = allSummaries.filter((item) => item.resourceType !== "INSTRUCTOR");
+    const allSummaries = summarizeWorkload(appState.staffingAssignments);
+    appState.instructorSummaries = allSummaries.filter((item) => item.resourceType === "INSTRUCTOR");
+    appState.staffingSummaries = allSummaries.filter((item) => item.resourceType !== "INSTRUCTOR");
 
     applyInstructorDayFilters();
     applyFoDayFilters();
 
     const byCohort = new Map<string, StaffAssignment[]>();
-    for (const assignment of staffingAssignments) {
+    for (const assignment of appState.staffingAssignments) {
       if (!byCohort.has(assignment.cohort)) {
         byCohort.set(assignment.cohort, []);
       }
@@ -6216,7 +6085,7 @@ function refreshStaffingAnalytics(showStatus = true): void {
     );
 
     const byAssignee = new Map<string, StaffAssignment[]>();
-    for (const assignment of staffingAssignments) {
+    for (const assignment of appState.staffingAssignments) {
       if (!byAssignee.has(assignment.assignee)) {
         byAssignee.set(assignment.assignee, []);
       }
@@ -6231,22 +6100,22 @@ function refreshStaffingAnalytics(showStatus = true): void {
     renderStaffKpiAndDetails();
 
     if (showStatus) {
-      const kpiTarget = instructorSummaries.length + staffingSummaries.length;
+      const kpiTarget = appState.instructorSummaries.length + appState.staffingSummaries.length;
       setStaffingStatus(
-        `배치 ${staffingAssignments.length}건 / 강사 일충돌 ${instructorDayOverlaps.length}건 / 퍼실·운영 일충돌 ${facilitatorOperationOverlaps.length}건 / KPI ${kpiTarget}명`
+        `배치 ${appState.staffingAssignments.length}건 / 강사 일충돌 ${appState.instructorDayOverlaps.length}건 / 퍼실·운영 일충돌 ${appState.facilitatorOperationOverlaps.length}건 / KPI ${kpiTarget}명`
       );
     }
 
     staffExportWarningsAgree.checked = false;
     renderStaffExportValidation([], []);
   } catch (error) {
-    staffingAssignments = [];
-    facilitatorOperationOverlaps = [];
-    instructorDayOverlaps = [];
-    visibleInstructorDayOverlaps = [];
-    visibleFoDayOverlaps = [];
-    staffingSummaries = [];
-    instructorSummaries = [];
+    appState.staffingAssignments = [];
+    appState.facilitatorOperationOverlaps = [];
+    appState.instructorDayOverlaps = [];
+    appState.visibleInstructorDayOverlaps = [];
+    appState.visibleFoDayOverlaps = [];
+    appState.staffingSummaries = [];
+    appState.instructorSummaries = [];
 
     renderInstructorDayOverlapPanel();
     renderFoDayOverlapPanel();
@@ -6270,7 +6139,7 @@ function renderStaffingSection(): void {
   renderStaffingMatrix();
   refreshStaffingAnalytics(false);
 
-  if (staffingMode === "manager") {
+  if (appState.staffingMode === "manager") {
     const moduleRows = buildModuleAssignSummaries();
     if (moduleRows.length === 0) {
       setStaffingStatus("수업시간표가 없어 운영매니저 교과목 배치표를 표시할 수 없습니다.");
@@ -6280,15 +6149,15 @@ function renderStaffingSection(): void {
     return;
   }
 
-  if (staffingCohortRanges.length === 0) {
+  if (appState.staffingCohortRanges.length === 0) {
     setStaffingStatus("코호트 데이터가 없어 고급 배치표를 표시할 수 없습니다.");
   } else {
-    setStaffingStatus(`코호트 ${staffingCohortRanges.length}개를 기준으로 배치표를 구성했습니다.`);
+    setStaffingStatus(`코호트 ${appState.staffingCohortRanges.length}개를 기준으로 배치표를 구성했습니다.`);
   }
 }
 
 function autoFillStaffingFromCohorts(): void {
-  if (staffingCohortRanges.length === 0) {
+  if (appState.staffingCohortRanges.length === 0) {
     setStaffingStatus("자동 채울 코호트가 없습니다.", true);
     return;
   }
@@ -6301,7 +6170,7 @@ function autoFillStaffingFromCohorts(): void {
     return;
   }
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     const p1EndCandidate = addDaysToIso(range.startDate, p1Weeks * 7 - 1);
     const p1End = p1EndCandidate < range.endDate ? p1EndCandidate : range.endDate;
 
@@ -6344,7 +6213,7 @@ function autoFillStaffingFromCohorts(): void {
 }
 
 function isV7eStrictReady(): { ok: boolean; reason?: string } {
-  if (staffingCohortRanges.length === 0) {
+  if (appState.staffingCohortRanges.length === 0) {
     return { ok: false, reason: "코호트 데이터가 없습니다." };
   }
 
@@ -6354,7 +6223,7 @@ function isV7eStrictReady(): { ok: boolean; reason?: string } {
     return { ok: false, reason: "P1/365 기본 주수가 올바르지 않습니다." };
   }
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     const p1State = getStaffCellState(range.cohort, "P1");
     const p2State = getStaffCellState(range.cohort, "P2");
     const d365State = getStaffCellState(range.cohort, "365");
@@ -6387,7 +6256,7 @@ function isV7eStrictReady(): { ok: boolean; reason?: string } {
 function buildStrictExportRecords(): InternalV7ERecord[] {
   const records: InternalV7ERecord[] = [];
 
-  for (const range of staffingCohortRanges) {
+  for (const range of appState.staffingCohortRanges) {
     const p1 = getStaffCellState(range.cohort, "P1");
     const p2 = getStaffCellState(range.cohort, "P2");
     const d365 = getStaffCellState(range.cohort, "365");
@@ -6409,7 +6278,7 @@ function buildStrictExportRecords(): InternalV7ERecord[] {
 }
 
 function buildModulesGenericExportRecords(): InternalV7ERecord[] {
-  const moduleRanges = deriveModuleRangesFromSessions(sessions);
+  const moduleRanges = deriveModuleRangesFromSessions(appState.sessions);
 
   return moduleRanges.map((range) => ({
     cohort: range.cohort,
@@ -6425,7 +6294,7 @@ function buildModulesGenericExportRecords(): InternalV7ERecord[] {
 }
 
 function downloadStaffingCsv(): void {
-  if (staffingCohortRanges.length === 0) {
+  if (appState.staffingCohortRanges.length === 0) {
     setStaffingStatus("내보낼 배치 데이터가 없습니다.", true);
     return;
   }
@@ -6466,7 +6335,7 @@ function downloadStaffingCsv(): void {
   downloadCsvText(fileName, csv);
 
   if (mode === "v7e_strict" && staffExportIncludeDetails.checked) {
-    const detailRows = staffingAssignments
+    const detailRows = appState.staffingAssignments
       .sort(
         (a, b) =>
           a.assignee.localeCompare(b.assignee) ||
@@ -6491,8 +6360,8 @@ function downloadStaffingCsv(): void {
 }
 
 function regenerateSummariesAndTimeline(preferredCohort = ""): void {
-  summaries = buildCohortSummaries(sessions);
-  setCohortOptions(summaries, preferredCohort);
+  appState.summaries = buildCohortSummaries(appState.sessions);
+  setCohortOptions(appState.summaries, preferredCohort);
   renderTimeline();
   renderStaffingSection();
 }
@@ -6504,18 +6373,18 @@ function generateScheduleFromUi(): void {
   }
 
   try {
-    generatedScheduleResult = generateSchedule(prepared.config);
-    generatedScheduleCohort = prepared.cohort;
+    appState.generatedScheduleResult = generateSchedule(prepared.config);
+    appState.generatedScheduleCohort = prepared.cohort;
     scheduleAppendStatus.textContent = "";
     skipExpanded.holiday = false;
     skipExpanded.custom_break = false;
     skipExpanded.weekday_excluded = false;
 
-    if (generatedScheduleResult.days.length > 0) {
-      generatedCohortRanges.set(generatedScheduleCohort, {
-        cohort: generatedScheduleCohort,
-        startDate: generatedScheduleResult.days[0].date,
-        endDate: generatedScheduleResult.endDate
+    if (appState.generatedScheduleResult.days.length > 0) {
+      generatedCohortRanges.set(appState.generatedScheduleCohort, {
+        cohort: appState.generatedScheduleCohort,
+        startDate: appState.generatedScheduleResult.days[0].date,
+        endDate: appState.generatedScheduleResult.endDate
       });
       renderStaffingSection();
     }
@@ -6524,13 +6393,13 @@ function generateScheduleFromUi(): void {
     renderGeneratedScheduleResult();
     pushRecentActionLog(
       "INFO",
-      `일정 생성 완료: ${generatedScheduleCohort} (종강 ${generatedScheduleResult.endDate})`,
+      `일정 생성 완료: ${appState.generatedScheduleCohort} (종강 ${appState.generatedScheduleResult.endDate})`,
       "sectionScheduleGenerate"
     );
     updateActionStates();
     scheduleAutoSave();
   } catch (error) {
-    generatedScheduleResult = null;
+    appState.generatedScheduleResult = null;
     renderGeneratedScheduleResult();
     updateActionStates();
 
@@ -6543,7 +6412,7 @@ function generateScheduleFromUi(): void {
 }
 
 function appendGeneratedScheduleToSessions(): void {
-  if (!generatedScheduleResult || generatedScheduleResult.days.length === 0) {
+  if (!appState.generatedScheduleResult || appState.generatedScheduleResult.days.length === 0) {
     setScheduleError("먼저 일정을 생성해 주세요.");
     return;
   }
@@ -6555,27 +6424,27 @@ function appendGeneratedScheduleToSessions(): void {
 
   try {
     const createdSessions = fromScheduleDaysToSessions({
-      cohort: generatedScheduleCohort,
-      days: generatedScheduleResult.days,
+      cohort: appState.generatedScheduleCohort,
+      days: appState.generatedScheduleResult.days,
       instructorCode: scheduleInstructorCodeInput.value,
       classroomCode: scheduleClassroomCodeInput.value,
       subjectCode: scheduleSubjectCodeInput.value
     });
 
-    sessions = [...sessions, ...createdSessions];
+    appState.sessions = [...appState.sessions, ...createdSessions];
     moduleInstructorDraft.clear();
     subjectInstructorMappingDraft.clear();
-    regenerateSummariesAndTimeline(generatedScheduleCohort);
+    regenerateSummariesAndTimeline(appState.generatedScheduleCohort);
 
     resetConflictsBeforeCompute();
     computeConflictsButton.textContent = DEFAULT_COMPUTE_LABEL;
 
-    uploadStatus.textContent = `현재 수업시간표 ${sessions.length}건 (CSV + 생성 일정 합산)`;
-    scheduleAppendStatus.textContent = `${generatedScheduleCohort} 일정 ${createdSessions.length}건을 충돌 검토 대상에 추가했습니다.`;
+    uploadStatus.textContent = `현재 수업시간표 ${appState.sessions.length}건 (CSV + 생성 일정 합산)`;
+    scheduleAppendStatus.textContent = `${appState.generatedScheduleCohort} 일정 ${createdSessions.length}건을 충돌 검토 대상에 추가했습니다.`;
     setScheduleError(null);
     pushRecentActionLog(
       "INFO",
-      `일정 반영 완료: ${generatedScheduleCohort} ${createdSessions.length}건 추가`,
+      `일정 반영 완료: ${appState.generatedScheduleCohort} ${createdSessions.length}건 추가`,
       "sectionTimeline"
     );
     updateActionStates();
@@ -6608,20 +6477,20 @@ fileInput.addEventListener("change", async () => {
     const rows = parseCsv(text);
     const built = buildSessions(rows);
 
-    sessions = built.sessions;
+    appState.sessions = built.sessions;
     moduleInstructorDraft.clear();
     subjectInstructorMappingDraft.clear();
-    parseErrors = built.errors;
+    appState.parseErrors = built.errors;
 
     regenerateSummariesAndTimeline();
     resetConflictsBeforeCompute();
     computeConflictsButton.textContent = DEFAULT_COMPUTE_LABEL;
 
     renderErrors();
-    uploadStatus.textContent = `처리 완료: 수업시간표 ${sessions.length}건 / 에러 ${parseErrors.length}건`;
+    uploadStatus.textContent = `처리 완료: 수업시간표 ${appState.sessions.length}건 / 에러 ${appState.parseErrors.length}건`;
 
-    if (parseErrors.length > 0) {
-      console.warn("CSV 파싱 중 오류가 발견되었습니다.", parseErrors);
+    if (appState.parseErrors.length > 0) {
+      console.warn("CSV 파싱 중 오류가 발견되었습니다.", appState.parseErrors);
     }
 
     scheduleAutoSave();
@@ -6698,45 +6567,45 @@ timelineViewTypeSelect.addEventListener("change", () => {
   scheduleAutoSave();
 });
 assigneeModeInstructorButton.addEventListener("click", () => {
-  assigneeTimelineKind = "INSTRUCTOR";
+  appState.assigneeTimelineKind = "INSTRUCTOR";
   assigneeModeInstructorButton.classList.add("active");
   assigneeModeStaffButton.classList.remove("active");
   renderTimeline();
   scheduleAutoSave();
 });
 assigneeModeStaffButton.addEventListener("click", () => {
-  assigneeTimelineKind = "STAFF";
+  appState.assigneeTimelineKind = "STAFF";
   assigneeModeStaffButton.classList.add("active");
   assigneeModeInstructorButton.classList.remove("active");
   renderTimeline();
   scheduleAutoSave();
 });
 weekPrevButton.addEventListener("click", () => {
-  weekGridStartDate = addDaysToIso(startOfWeekIso(weekGridStartDate), -7);
+  appState.weekGridStartDate = addDaysToIso(startOfWeekIso(appState.weekGridStartDate), -7);
   renderTimeline();
 });
 weekNextButton.addEventListener("click", () => {
-  weekGridStartDate = addDaysToIso(startOfWeekIso(weekGridStartDate), 7);
+  appState.weekGridStartDate = addDaysToIso(startOfWeekIso(appState.weekGridStartDate), 7);
   renderTimeline();
 });
 monthPrevButton.addEventListener("click", () => {
-  const parsed = monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
+  const parsed = appState.monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
   if (!parsed) {
-    monthCalendarCursor = getTodayIsoDate().slice(0, 7);
+    appState.monthCalendarCursor = getTodayIsoDate().slice(0, 7);
   }
-  const [year, month] = monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
+  const [year, month] = appState.monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
   const prev = new Date(Date.UTC(year, (month || 1) - 2, 1));
-  monthCalendarCursor = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}`;
+  appState.monthCalendarCursor = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}`;
   renderTimeline();
 });
 monthNextButton.addEventListener("click", () => {
-  const parsed = monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
+  const parsed = appState.monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
   if (!parsed) {
-    monthCalendarCursor = getTodayIsoDate().slice(0, 7);
+    appState.monthCalendarCursor = getTodayIsoDate().slice(0, 7);
   }
-  const [year, month] = monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
+  const [year, month] = appState.monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
   const next = new Date(Date.UTC(year, month || 1, 1));
-  monthCalendarCursor = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
+  appState.monthCalendarCursor = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
   renderTimeline();
 });
 drawerBackdrop.addEventListener("click", closeDrawers);
@@ -6744,7 +6613,7 @@ for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>("[d
   button.addEventListener("click", closeDrawers);
 }
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && activeDrawer) {
+  if (event.key === "Escape" && appState.activeDrawer) {
     closeDrawers();
   }
 });
@@ -6755,33 +6624,33 @@ computeConflictsButton.addEventListener("click", () => {
 });
 
 keySearchInput.addEventListener("input", () => {
-  if (keySearchTimer !== undefined) {
-    window.clearTimeout(keySearchTimer);
+  if (appState.keySearchTimer !== undefined) {
+    window.clearTimeout(appState.keySearchTimer);
   }
 
-  keySearchTimer = window.setTimeout(() => {
+  appState.keySearchTimer = window.setTimeout(() => {
     applyConflictFilters();
     scheduleAutoSave();
   }, 300);
 });
 
 instructorDaySearchInput.addEventListener("input", () => {
-  if (instructorDaySearchTimer !== undefined) {
-    window.clearTimeout(instructorDaySearchTimer);
+  if (appState.instructorDaySearchTimer !== undefined) {
+    window.clearTimeout(appState.instructorDaySearchTimer);
   }
 
-  instructorDaySearchTimer = window.setTimeout(() => {
+  appState.instructorDaySearchTimer = window.setTimeout(() => {
     applyInstructorDayFilters();
     scheduleAutoSave();
   }, 300);
 });
 
 foDaySearchInput.addEventListener("input", () => {
-  if (foDaySearchTimer !== undefined) {
-    window.clearTimeout(foDaySearchTimer);
+  if (appState.foDaySearchTimer !== undefined) {
+    window.clearTimeout(appState.foDaySearchTimer);
   }
 
-  foDaySearchTimer = window.setTimeout(() => {
+  appState.foDaySearchTimer = window.setTimeout(() => {
     applyFoDayFilters();
     scheduleAutoSave();
   }, 300);
@@ -6819,7 +6688,7 @@ addCustomBreakButton.addEventListener("click", () => {
 });
 
 scheduleTemplateSelect.addEventListener("change", () => {
-  const selectedTemplate = findScheduleTemplate(scheduleTemplates, scheduleTemplateSelect.value);
+  const selectedTemplate = findScheduleTemplate(appState.scheduleTemplates, scheduleTemplateSelect.value);
   deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn);
 });
 loadScheduleTemplateButton.addEventListener("click", applySelectedScheduleTemplate);
@@ -6852,19 +6721,19 @@ if (adminModeToggle) {
 }
 
 saveMenuConfigButton.addEventListener("click", () => {
-  sidebarMenuConfig = normalizeSidebarMenuConfig(sidebarMenuDraft);
-  sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
-  applySidebarMenuConfigToSidebar(sidebarMenuConfig);
-  saveSidebarMenuConfig(sidebarMenuConfig);
+  appState.sidebarMenuConfig = normalizeSidebarMenuConfig(appState.sidebarMenuDraft);
+  appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
+  applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
+  saveSidebarMenuConfig(appState.sidebarMenuConfig);
   renderSidebarMenuConfigEditor();
   menuConfigStatus.textContent = `메뉴 설정 저장 완료 (${new Date().toLocaleTimeString()})`;
 });
 
 resetMenuConfigButton.addEventListener("click", () => {
-  sidebarMenuConfig = getDefaultSidebarMenuConfig();
-  sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
-  applySidebarMenuConfigToSidebar(sidebarMenuConfig);
-  saveSidebarMenuConfig(sidebarMenuConfig);
+  appState.sidebarMenuConfig = getDefaultSidebarMenuConfig();
+  appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
+  applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
+  saveSidebarMenuConfig(appState.sidebarMenuConfig);
   renderSidebarMenuConfigEditor();
   menuConfigStatus.textContent = "기본 메뉴 설정으로 복원했습니다.";
 });
@@ -7002,6 +6871,8 @@ if (!scheduleStartDateInput.value) {
   scheduleStartDateInput.value = getTodayIsoDate();
 }
 
+appState.sidebarMenuConfig = loadSidebarMenuConfig();
+appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
 applyManagementInlineMode();
 renderHeaderRuntimeStatus();
 window.setInterval(renderHeaderRuntimeStatus, 1000);
@@ -7010,9 +6881,9 @@ applyViewMode("full");
 setTimelineViewType("COHORT_TIMELINE");
 applyStaffingMode(staffingModeSelect.value === "advanced" ? "advanced" : "manager");
 applyShowAdvancedMode(resolveShowAdvanced(false));
-sidebarMenuConfig = normalizeSidebarMenuConfig(sidebarMenuConfig);
-sidebarMenuDraft = cloneSidebarMenuConfig(sidebarMenuConfig);
-applySidebarMenuConfigToSidebar(sidebarMenuConfig);
+appState.sidebarMenuConfig = normalizeSidebarMenuConfig(appState.sidebarMenuConfig);
+appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
+applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
 renderSidebarMenuConfigEditor();
 menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
