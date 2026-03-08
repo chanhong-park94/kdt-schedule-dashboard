@@ -1,3 +1,9 @@
+import {
+  createClickableCell,
+  createTableElement,
+  getRequiredElement,
+  setRenderNotice
+} from "./ui/utils/dom";
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
 import { applyCourseTemplateToState } from "./core/courseTemplateApply";
@@ -641,14 +647,6 @@ const instructorRegisterPanel = getRequiredElement<HTMLElement>("#instructorRegi
 const instructorMappingPanel = getRequiredElement<HTMLElement>("#instructorMappingPanel");
 const instructorSubjectPanel = getRequiredElement<HTMLElement>("#instructorSubjectPanel");
 
-function getRequiredElement<T extends Element>(selector: string): T {
-  const element = document.querySelector(selector);
-  if (!element) {
-    throw new Error(`Required element is missing: ${selector}`);
-  }
-  return element as T;
-}
-
 function isCloudAccessAllowed(): boolean {
   return isAuthVerified;
 }
@@ -706,29 +704,6 @@ function submitAuthCode(): void {
   authCodeInput.select();
 }
 
-
-function setRenderNotice(element: HTMLElement, total: number, rendered: number): void {
-  if (total === 0) {
-    element.textContent = "";
-    return;
-  }
-
-  if (total > rendered) {
-    element.textContent = `총 ${total}건 중 상위 ${rendered}건만 표시됩니다. CSV 내보내기에는 전체 건수가 포함됩니다.`;
-    return;
-  }
-
-  element.textContent = `총 ${total}건 표시 중`;
-}
-
-function createClickableCell(value: string, onClick: () => void): HTMLTableCellElement {
-  const td = document.createElement("td");
-  td.textContent = value;
-  td.classList.add("clickable-cell");
-  td.title = "클릭 시 간트에서 강조됩니다.";
-  td.addEventListener("click", onClick);
-  return td;
-}
 
 function buildModuleAssignSummaries(): ModuleAssignSummary[] {
   const ranges = deriveModuleRangesFromSessions(sessions);
@@ -4946,35 +4921,6 @@ function resetAllStateWithConfirm(): void {
 
   localStorage.removeItem(STORAGE_KEY);
   window.location.reload();
-}
-
-function createTableElement(columns: readonly string[], rows: string[][]): HTMLTableElement {
-  const table = document.createElement("table");
-  const thead = document.createElement("thead");
-  const headRow = document.createElement("tr");
-
-  for (const column of columns) {
-    const th = document.createElement("th");
-    th.textContent = column;
-    headRow.appendChild(th);
-  }
-
-  thead.appendChild(headRow);
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  for (const row of rows) {
-    const tr = document.createElement("tr");
-    for (const value of row) {
-      const td = document.createElement("td");
-      td.textContent = value;
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-
-  table.appendChild(tbody);
-  return table;
 }
 
 function buildPrintReport(): void {
