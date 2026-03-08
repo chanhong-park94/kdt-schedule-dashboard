@@ -89,6 +89,21 @@ import {
   saveCourseTemplate,
   type CourseTemplateRecord
 } from "./core/supabaseManagement";
+import {
+  DAY_MS,
+  addDaysToIso,
+  dedupeAndSortDates,
+  formatCompactDate,
+  formatDate,
+  formatShortDateFromCompact,
+  formatShortDateFromIso,
+  getTodayCompactDate,
+  getTodayIsoDate,
+  isDateInsideRange,
+  parseCompactDate,
+  parseIsoDate,
+  toCompactDateFromIso
+} from "./ui/utils/date";
 
 type ConflictTab = "time" | "instructor_day" | "fo_day";
 type ViewMode = AppViewMode;
@@ -265,8 +280,6 @@ const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
 const DEFAULT_DOWNLOAD_LABEL = "선택한 기수 CSV 다운로드";
 const DEFAULT_COMPUTE_LABEL = "충돌 계산";
 const RECOMPUTE_LABEL = "충돌 다시 계산";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const TIMELINE_VIEW_ORDER: TimelineViewType[] = [
   "COHORT_TIMELINE",
@@ -673,76 +686,6 @@ function submitAuthCode(): void {
   authCodeInput.select();
 }
 
-function parseCompactDate(value: string): Date | null {
-  if (!/^\d{8}$/.test(value)) {
-    return null;
-  }
-
-  const year = Number.parseInt(value.slice(0, 4), 10);
-  const month = Number.parseInt(value.slice(4, 6), 10);
-  const day = Number.parseInt(value.slice(6, 8), 10);
-
-  const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
-
-  return validDate ? date : null;
-}
-
-function parseIsoDate(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return null;
-  }
-
-  const year = Number.parseInt(value.slice(0, 4), 10);
-  const month = Number.parseInt(value.slice(5, 7), 10);
-  const day = Number.parseInt(value.slice(8, 10), 10);
-
-  const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
-
-  return validDate ? date : null;
-}
-
-function addDaysToIso(value: string, amount: number): string {
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    throw new Error(`날짜 형식이 올바르지 않습니다: ${value}`);
-  }
-  const next = new Date(parsed.getTime() + amount * DAY_MS);
-  return formatDate(next);
-}
-
-function formatCompactDate(value: string): string {
-  if (!/^\d{8}$/.test(value)) {
-    return value;
-  }
-  return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
-}
-
-function formatDate(date: Date): string {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function toCompactDateFromIso(value: string): string {
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    return value;
-  }
-  const year = parsed.getUTCFullYear();
-  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getUTCDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
-}
-
 function parseCourseGroupFromCohortName(cohortName: string): { course: string; cohortLabel: string } {
   const trimmed = cohortName.trim();
   const matched = trimmed.match(/^(.*?)(\d+기)$/);
@@ -798,22 +741,6 @@ function normalizeTimeInputToHHMM(value: string): string | null {
   }
 
   return normalizeHHMM(trimmed);
-}
-
-function getTodayCompactDate(): string {
-  const now = new Date();
-  const year = String(now.getFullYear());
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
-}
-
-function getTodayIsoDate(): string {
-  const now = new Date();
-  const year = String(now.getFullYear());
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function csvEscape(value: string): string {
@@ -877,13 +804,6 @@ function getOverlapRangeLabel(overlap: StaffOverlap): string {
     return overlap.overlapStartDate;
   }
   return `${overlap.overlapStartDate}~${overlap.overlapEndDate}`;
-}
-
-function isDateInsideRange(date: string, start: string, end: string): boolean {
-  if (!parseIsoDate(date) || !parseIsoDate(start) || !parseIsoDate(end)) {
-    return false;
-  }
-  return date >= start && date <= end;
 }
 
 function setRenderNotice(element: HTMLElement, total: number, rendered: number): void {
@@ -2040,20 +1960,6 @@ function formatBytes(bytes: number): string {
 
 function estimateUtf8SizeBytes(value: string): number {
   return new TextEncoder().encode(value).length;
-}
-
-function dedupeAndSortDates(values: string[]): string[] {
-  const normalized = new Set<string>();
-
-  for (const value of values) {
-    const parsed = parseIsoDate(value);
-    if (!parsed) {
-      continue;
-    }
-    normalized.add(formatDate(parsed));
-  }
-
-  return Array.from(normalized).sort((a, b) => a.localeCompare(b));
 }
 
 function normalizePolicyDays(days: number[]): number[] {
@@ -3980,20 +3886,6 @@ function appendTimelineNotice(message: string): void {
   notice.textContent = message;
   notice.style.marginBottom = "6px";
   timelineList.appendChild(notice);
-}
-
-function formatShortDateFromCompact(value: string): string {
-  if (!/^\d{8}$/.test(value)) {
-    return value;
-  }
-  return `${value.slice(4, 6)}/${value.slice(6, 8)}`;
-}
-
-function formatShortDateFromIso(value: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return value;
-  }
-  return `${value.slice(5, 7)}/${value.slice(8, 10)}`;
 }
 
 type MonthAxisItem = {
@@ -6925,10 +6817,16 @@ function appendGeneratedScheduleToSessions(): void {
   }
 }
 
+const CSV_UPLOAD_WARN_BYTES = 5 * 1024 * 1024;
+
 fileInput.addEventListener("change", async () => {
   const file = fileInput.files?.[0];
   if (!file) {
     return;
+  }
+
+  if (file.size > CSV_UPLOAD_WARN_BYTES) {
+    uploadStatus.textContent = `경고: 파일 크기가 ${(file.size / 1024 / 1024).toFixed(1)}MB입니다. 처리하는 중...`;
   }
 
   setUploadProcessingState(true);
