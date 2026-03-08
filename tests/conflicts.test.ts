@@ -148,14 +148,32 @@ describe("detectConflicts", () => {
 
     const conflicts = detectConflicts(sessions, { resourceTypes: ["INSTRUCTOR"] });
 
-    expect(conflicts.length).toBeGreaterThanOrEqual(2);
+    // 20260314에서 KDT-B vs KDT-C, 20260315에서 KDT-A vs KDT-Z
+    expect(conflicts).toHaveLength(2);
 
-    // Verify output is sorted by 일자 ascending
+    // 일자 기준: 20260314 이 20260315보다 먼저
+    expect(conflicts[0].일자).toBe("20260314");
+    expect(conflicts[1].일자).toBe("20260315");
+
+    // 과정A는 버킷 내 startMin 기준 첫 번째 세션: 20260314→KDT-B(0900), 20260315→KDT-Z(1000)
+    expect(conflicts[0].과정A).toBe("KDT-B");
+    expect(conflicts[1].과정A).toBe("KDT-Z");
+  });
+
+  it("같은 일자·키에서 과정A 알파벳 순으로 정렬된다", () => {
+    // 같은 날, 같은 강사, 서로 다른 세 과정이 각각 충돌
+    const sessions: Session[] = [
+      makeSession({ 과정기수: "ZZZ-과정", 훈련강사코드: "TCH-X", startMin: 540, endMin: 660 }),
+      makeSession({ 과정기수: "AAA-과정", 훈련강사코드: "TCH-X", startMin: 600, endMin: 720 }),
+      makeSession({ 과정기수: "MMM-과정", 훈련강사코드: "TCH-X", startMin: 570, endMin: 690 })
+    ];
+
+    const conflicts = detectConflicts(sessions, { resourceTypes: ["INSTRUCTOR"] });
+
+    expect(conflicts.length).toBeGreaterThan(0);
+    // 과정A 오름차순 정렬 확인
     for (let i = 1; i < conflicts.length; i++) {
-      const prev = conflicts[i - 1];
-      const curr = conflicts[i];
-      const cmp = prev.일자.localeCompare(curr.일자);
-      expect(cmp).toBeLessThanOrEqual(0);
+      expect(conflicts[i - 1].과정A.localeCompare(conflicts[i].과정A)).toBeLessThanOrEqual(0);
     }
   });
 });
