@@ -97,8 +97,8 @@ function mergeRows(existing: InstructorDirectoryEntry[]): Map<string, Instructor
     }
     map.set(normalizedCode, {
       instructorCode: normalizedCode,
-      name: row.name.trim(),
-      memo: row.memo.trim()
+      name: toText(row.name),
+      memo: toText(row.memo)
     });
   }
   return map;
