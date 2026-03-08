@@ -30,6 +30,26 @@ export async function withRetry<T>(
   throw lastError;
 }
 
+export async function paginateAll<T>(
+  fetcher: (from: number, to: number) => Promise<T[]>,
+  pageSize: number
+): Promise<T[]> {
+  if (pageSize < 1) {
+    throw new RangeError(`paginateAll: pageSize must be >= 1, got ${pageSize}`);
+  }
+  const all: T[] = [];
+  let offset = 0;
+  while (true) {
+    const page = await fetcher(offset, offset + pageSize - 1);
+    all.push(...page);
+    if (page.length < pageSize) {
+      break;
+    }
+    offset += pageSize;
+  }
+  return all;
+}
+
 const TABLE_NAME = "instructors";
 
 const rawSupabaseUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
@@ -98,21 +118,23 @@ export async function loadInstructorDirectoryFromCloud(): Promise<InstructorDire
     return [];
   }
 
-  const data = await withRetry(async () => {
-    const res = await client!
-      .from(TABLE_NAME)
-      .select("instructor_code,name,memo")
-      .order("instructor_code", { ascending: true, nullsFirst: false });
-    if (res.error) throw new Error(res.error.message);
-    return res.data;
-  }, 3);
-
-  if (!Array.isArray(data)) {
-    return [];
-  }
+  const PAGE_SIZE = 1000;
+  const rawRows = await withRetry(
+    () =>
+      paginateAll(async (from, to) => {
+        const res = await client!
+          .from(TABLE_NAME)
+          .select("instructor_code,name,memo")
+          .order("instructor_code", { ascending: true, nullsFirst: false })
+          .range(from, to);
+        if (res.error) throw new Error(res.error.message);
+        return Array.isArray(res.data) ? res.data : [];
+      }, PAGE_SIZE),
+    3
+  );
 
   const rows: InstructorDirectoryEntry[] = [];
-  for (const item of data) {
+  for (const item of rawRows) {
     const entry = toInstructorEntry(item);
     if (entry) {
       rows.push(entry);
