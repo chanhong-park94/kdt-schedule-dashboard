@@ -88,5 +88,10 @@ export function detectConflicts(sessions: Session[], options: DetectConflictOpti
     }
   }
 
-  return conflicts;
+  return conflicts.sort(
+    (a, b) =>
+      a.일자.localeCompare(b.일자) ||
+      a.키.localeCompare(b.키) ||
+      a.과정A.localeCompare(b.과정A)
+  );
 }
