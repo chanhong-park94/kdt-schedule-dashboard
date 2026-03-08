@@ -60,6 +60,28 @@
         <button
           class="jibble-nav-item"
           type="button"
+          data-scroll-target="sectionKpiDashboard"
+          data-nav-key="kpi"
+          data-nav-icon="📊"
+          data-default-label="재직자 자율성과지표"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">📊</span>
+          <span class="jibble-nav-label">재직자 자율성과지표</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
+          data-scroll-target="sectionAttendance"
+          data-nav-key="attendance"
+          data-nav-icon="📋"
+          data-default-label="출결현황"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">📋</span>
+          <span class="jibble-nav-label">출결현황</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
           data-scroll-target="sectionConflicts"
           data-nav-key="reports"
           data-nav-icon="🧾"
@@ -83,10 +105,36 @@
       <div class="jibble-sidebar-divider"></div>
       <nav class="jibble-nav jibble-nav-sub">
         <button class="jibble-nav-item" type="button" data-scroll-target="sectionStaffingAssign">👥 사람</button>
-        <button class="jibble-nav-item" type="button" data-scroll-target="sectionScheduleGenerate">📅 근무 일정</button>
         <button class="jibble-nav-item" type="button" data-scroll-target="sectionChecklist">🧩 조직</button>
       </nav>
     </aside>
+
+    <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="모바일 메뉴">
+      <button class="mobile-bottom-nav-item is-active" type="button" data-mobile-nav="timeline">
+        <span class="mobile-bottom-nav-icon">📅</span>
+        <span class="mobile-bottom-nav-label">학사일정</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="management">
+        <span class="mobile-bottom-nav-icon">📄</span>
+        <span class="mobile-bottom-nav-label">정보입력</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="generator">
+        <span class="mobile-bottom-nav-icon">🛠️</span>
+        <span class="mobile-bottom-nav-label">일정생성</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="kpi">
+        <span class="mobile-bottom-nav-icon">📊</span>
+        <span class="mobile-bottom-nav-label">자율성과지표</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="attendance">
+        <span class="mobile-bottom-nav-icon">📋</span>
+        <span class="mobile-bottom-nav-label">출결현황</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="settings">
+        <span class="mobile-bottom-nav-icon">⚙️</span>
+        <span class="mobile-bottom-nav-label">설정</span>
+      </button>
+    </nav>
 
     <header class="app-header">
       <div class="app-header-brand">
@@ -124,7 +172,7 @@
       </div>
     </header>
 
-    <section class="jibble-toolbar" aria-label="대시보드 툴바">
+    <section id="jibbleToolbar" class="jibble-toolbar" aria-label="대시보드 툴바">
       <div class="jibble-toolbar-left">
         <div class="jibble-segmented" role="tablist" aria-label="기간 탭">
           <button class="jibble-segment is-active" type="button">일</button>
@@ -467,7 +515,14 @@
         </div>
       </div>
 
-      <div class="muted u-mt-8" id="timelineEmpty">수업시간표를 불러오면 타임라인이 생성됩니다.</div>
+      <div class="empty-guide u-mt-8" id="timelineEmpty">
+        <p class="empty-guide-title">📅 타임라인을 시작하려면</p>
+        <ol class="empty-guide-steps">
+          <li><strong>과정 정보입력</strong>에서 과정·교과목·강사를 등록하세요</li>
+          <li><strong>기수 일정 생성기</strong>에서 수업시간표 CSV를 업로드하거나 일정을 생성하세요</li>
+          <li>생성된 일정이 이 타임라인에 자동으로 표시됩니다</li>
+        </ol>
+      </div>
       <div id="timelineDetailPanel" class="warning-box u-hidden u-mt-8"></div>
       <div id="timelineList" class="timeline-list"></div>
     </div>
@@ -648,6 +703,376 @@
         </div>
       </div>
     </div>
+
+    <!-- ========== KPI 성과지표 페이지 ========== -->
+    <div class="card card-span-12 u-mt-14" id="sectionKpiDashboard" data-page-group="kpi">
+      <div class="kpi-header">
+        <div>
+          <strong>📊 KDT 자율성과지표 리포트</strong>
+          <span class="kpi-subtitle">성취평가 · 형성평가 · 현업적용평가 통합 현황</span>
+        </div>
+        <div class="kpi-header-actions">
+          <select id="kpiFilterCourse" class="kpi-filter-select"><option value="all">전체 과정</option></select>
+          <select id="kpiFilterCohort" class="kpi-filter-select"><option value="all">전체 기수</option></select>
+          <button id="kpiPdfBtn" class="btn-primary kpi-btn" type="button" style="background:#10b981;">📄 PDF 리포트</button>
+          <button id="kpiUploadBtn" class="btn-primary kpi-btn" type="button">📂 엑셀 업로드</button>
+          <button id="kpiClearBtn" class="btn-secondary kpi-btn" type="button">초기화</button>
+          <input id="kpiFileInput" type="file" accept=".xlsx,.xls" hidden />
+        </div>
+      </div>
+      <div id="kpiUploadStatus" class="kpi-upload-status"></div>
+
+      <!-- Empty state / Drop zone -->
+      <div id="kpiEmptyState" class="kpi-empty-state">
+        <div id="kpiDropZone" class="kpi-drop-zone">
+          <div class="kpi-drop-icon">📊</div>
+          <p class="kpi-drop-title">자율성과지표 엑셀 파일을 업로드하세요</p>
+          <p class="kpi-drop-desc">KDT_자율성과지표_운영_마스터시트.xlsx 파일을 드래그하거나 버튼을 클릭하세요</p>
+          <button class="btn btn--primary" type="button" onclick="document.getElementById('kpiFileInput').click()">파일 선택</button>
+        </div>
+      </div>
+
+      <!-- Dashboard content (hidden until data loaded) -->
+      <div id="kpiDashboardContent" style="display:none">
+        <!-- KPI Cards -->
+        <div class="kpi-cards">
+          <div class="kpi-card">
+            <div class="kpi-card-label">총 학습자</div>
+            <div class="kpi-card-value" id="kpiTotalStudents">-</div>
+            <div class="kpi-card-unit">명</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">성취평가 사전</div>
+            <div class="kpi-card-value" id="kpiPreAvg">-</div>
+            <div class="kpi-card-unit">점 / 30</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">성취평가 사후</div>
+            <div class="kpi-card-value kpi-card-value--accent" id="kpiPostAvg">-</div>
+            <div class="kpi-card-unit">점 / 30</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">평균 향상도</div>
+            <div class="kpi-card-value kpi-card-value--success" id="kpiImprovement">-</div>
+            <div class="kpi-card-unit">등급</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">형성평가 종합</div>
+            <div class="kpi-card-value" id="kpiFormativeAvg">-</div>
+            <div class="kpi-card-unit">점 / 5</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-label">현업적용 평균</div>
+            <div class="kpi-card-value" id="kpiFieldAppAvg">-</div>
+            <div class="kpi-card-unit">점 / 5</div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="kpi-charts-grid">
+          <div class="kpi-chart-box kpi-chart-box--wide">
+            <h4 class="kpi-chart-title">성취평가 사전/사후 비교</h4>
+            <div class="kpi-chart-canvas-wrap"><canvas id="kpiChartAchievement"></canvas></div>
+          </div>
+          <div class="kpi-chart-box">
+            <h4 class="kpi-chart-title">등급 분포 (사전)</h4>
+            <div class="kpi-chart-canvas-wrap kpi-chart-canvas-wrap--sq"><canvas id="kpiChartGradePre"></canvas></div>
+          </div>
+          <div class="kpi-chart-box">
+            <h4 class="kpi-chart-title">등급 분포 (사후)</h4>
+            <div class="kpi-chart-canvas-wrap kpi-chart-canvas-wrap--sq"><canvas id="kpiChartGradePost"></canvas></div>
+          </div>
+          <div class="kpi-chart-box kpi-chart-box--wide">
+            <h4 class="kpi-chart-title">형성평가 주차별 추이</h4>
+            <div class="kpi-chart-canvas-wrap"><canvas id="kpiChartFormative"></canvas></div>
+          </div>
+          <div class="kpi-chart-box">
+            <h4 class="kpi-chart-title">현업적용 역량 레이더</h4>
+            <div class="kpi-chart-canvas-wrap kpi-chart-canvas-wrap--sq"><canvas id="kpiChartRadar"></canvas></div>
+          </div>
+          <div class="kpi-chart-box">
+            <h4 class="kpi-chart-title">응답률 현황</h4>
+            <div class="kpi-chart-canvas-wrap kpi-chart-canvas-wrap--sq"><canvas id="kpiChartResponse"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Detail Tabs -->
+        <div class="kpi-detail-section">
+          <div id="kpiDetailTabs" class="kpi-tabs">
+            <button class="kpi-tab is-active" type="button" data-kpi-tab="summary">과정별 집계</button>
+            <button class="kpi-tab" type="button" data-kpi-tab="achievement">성취평가</button>
+            <button class="kpi-tab" type="button" data-kpi-tab="formative">형성평가</button>
+            <button class="kpi-tab" type="button" data-kpi-tab="fieldapp">현업적용</button>
+          </div>
+          <div data-kpi-panel="summary" id="kpiTableSummary"></div>
+          <div data-kpi-panel="achievement" id="kpiTableAchievement" class="u-hidden"></div>
+          <div data-kpi-panel="formative" id="kpiTableFormative" class="u-hidden"></div>
+          <div data-kpi-panel="fieldapp" id="kpiTableFieldApp" class="u-hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ 출결현황 대시보드 ═══════ -->
+    <div class="card card-span-12 u-mt-14" id="sectionAttendance" data-page-group="attendance">
+      <!-- 출결현황 / 하차방어율 탭 스위처 -->
+      <div class="att-page-tabs">
+        <button class="att-page-tab active" id="attTabAttendance" type="button" data-att-page="attendance">📋 출결현황</button>
+        <button class="att-page-tab" id="attTabDropout" type="button" data-att-page="dropout">🛡️ 하차방어율</button>
+      </div>
+
+      <!-- ═══ 출결현황 패널 ═══ -->
+      <div id="attPageAttendance" data-att-page-panel="attendance">
+      <div class="att-dashboard">
+        <!-- Header -->
+        <div class="att-header">
+          <div class="att-header-title">
+            <h3>📋 HRD 출결현황 대시보드</h3>
+            <span id="attLoadStatus" class="att-load-status"></span>
+          </div>
+          <div class="att-filters">
+            <select id="attFilterCourse" class="att-select"></select>
+            <select id="attFilterDegr" class="att-select att-select-sm"></select>
+            <input type="date" id="attFilterDate" class="att-input-date" />
+            <div class="att-view-modes">
+              <button class="att-view-btn active" data-att-view="all">전체</button>
+              <button class="att-view-btn" data-att-view="monthly">월별</button>
+              <button class="att-view-btn" data-att-view="weekly">주간</button>
+            </div>
+            <button id="attQueryBtn" class="btn-primary att-query-btn" type="button">조회</button>
+            <button id="attRiskBtn" class="att-risk-btn" type="button" disabled>🚨 관리대상 <span id="attRiskBadge" class="att-risk-count-badge">0</span></button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="attEmptyState" class="att-empty-state">
+          <div class="att-empty-icon">📋</div>
+          <div class="att-empty-title">출결 데이터 조회</div>
+          <div class="att-empty-desc">설정에서 과정을 등록한 후, 과정과 기수를 선택하고 조회 버튼을 클릭하세요.</div>
+        </div>
+
+        <!-- Content (hidden until data loaded) -->
+        <div id="attContent" style="display:none;">
+          <!-- Metric Cards -->
+          <div class="att-metrics">
+            <div class="att-metric-card att-mc-total">
+              <div class="att-mc-label">총 학습자</div>
+              <div class="att-mc-value" id="attTotal">0</div>
+              <div class="att-mc-bar"><div class="att-mc-bar-fill" style="width:100%"></div></div>
+            </div>
+            <div class="att-metric-card att-mc-present">
+              <div class="att-mc-label">출석</div>
+              <div class="att-mc-value" id="attPresent">0</div>
+              <div class="att-mc-bar"><div class="att-mc-bar-fill" id="attBarPresent" style="width:0%"></div></div>
+            </div>
+            <div class="att-metric-card att-mc-late">
+              <div class="att-mc-label">지각</div>
+              <div class="att-mc-value" id="attLate">0</div>
+              <div class="att-mc-bar"><div class="att-mc-bar-fill" id="attBarLate" style="width:0%"></div></div>
+            </div>
+            <div class="att-metric-card att-mc-absent">
+              <div class="att-mc-label">결석</div>
+              <div class="att-mc-value" id="attAbsent">0</div>
+              <div class="att-mc-bar"><div class="att-mc-bar-fill" id="attBarAbsent" style="width:0%"></div></div>
+            </div>
+            <div class="att-metric-card att-mc-early">
+              <div class="att-mc-label">조퇴·외출</div>
+              <div class="att-mc-value" id="attEarlyLeave">0</div>
+            </div>
+            <div class="att-metric-card att-mc-rate">
+              <div class="att-mc-label">출석률</div>
+              <div class="att-mc-value" id="attRate">0%</div>
+              <div class="att-mc-bar"><div class="att-mc-bar-fill" id="attBarRate" style="width:0%"></div></div>
+            </div>
+            <div class="att-metric-card att-mc-risk">
+              <div class="att-mc-label">위험군</div>
+              <div class="att-mc-value" id="attRisk">0</div>
+            </div>
+            <div class="att-metric-card att-mc-missing">
+              <div class="att-mc-label">퇴실 미체크</div>
+              <div class="att-mc-value" id="attMissing">0</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="att-charts-grid">
+            <div class="att-chart-box att-chart-wide">
+              <h4>출석률 주간 트렌드</h4>
+              <div class="att-chart-canvas-wrap"><canvas id="attChartTrend"></canvas></div>
+            </div>
+            <div class="att-chart-box">
+              <h4>요일별 출결 패턴</h4>
+              <div class="att-chart-canvas-wrap"><canvas id="attChartPattern"></canvas></div>
+            </div>
+            <div class="att-chart-box">
+              <h4>패턴 분석 인사이트</h4>
+              <div id="attPatternInsights" class="att-insights"></div>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="att-search-bar">
+            <input type="text" id="attSearch" class="att-search-input" placeholder="훈련생 이름 검색..." />
+            <span id="attTableMeta" class="att-table-meta"></span>
+          </div>
+
+          <!-- Table -->
+          <div class="att-table-wrap">
+            <table class="att-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>이름</th>
+                  <th>생년월일</th>
+                  <th>출결</th>
+                  <th>입실</th>
+                  <th>퇴실</th>
+                  <th>결석/허용</th>
+                  <th>위험도 (잔여)</th>
+                </tr>
+              </thead>
+              <tbody id="attTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    <!-- 학생 상세 모달 -->
+    <div id="attDetailModal" class="att-modal-backdrop">
+      <div class="att-modal-box">
+        <div class="att-modal-top">
+          <h3>📊 출결 이력</h3>
+          <button id="attDetailClose" class="att-modal-close" type="button">&times;</button>
+        </div>
+        <div class="att-modal-body">
+          <div class="att-detail-header">
+            <span class="att-detail-name" id="attDetailName"></span>
+            <span class="att-detail-birth" id="attDetailBirth"></span>
+            <span class="att-detail-risk" id="attDetailRisk"></span>
+            <span class="att-detail-rate">출석률: <strong id="attDetailRate"></strong></span>
+          </div>
+          <div class="att-detail-summary">
+            <div class="att-ds-card c1"><div class="att-ds-val" id="attDetailAttended">0</div><div class="att-ds-lbl">출석</div></div>
+            <div class="att-ds-card c2"><div class="att-ds-val" id="attDetailLate">0</div><div class="att-ds-lbl">지각</div></div>
+            <div class="att-ds-card c3"><div class="att-ds-val" id="attDetailAbsent">0</div><div class="att-ds-lbl">결석</div></div>
+            <div class="att-ds-card c4"><div class="att-ds-val" id="attDetailTotal">0</div><div class="att-ds-lbl">전체</div></div>
+          </div>
+          <div class="att-detail-scroll">
+            <table class="att-detail-table">
+              <thead><tr><th>날짜</th><th>요일</th><th>출결</th><th>입실</th><th>퇴실</th></tr></thead>
+              <tbody id="attDetailTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 관리대상 패널 -->
+    <div id="attRiskPanel" class="att-modal-backdrop">
+      <div class="att-modal-box att-risk-panel">
+        <div class="att-modal-top">
+          <h3>🚨 출결 관리대상 명단</h3>
+          <button id="attRiskPanelClose" class="att-modal-close" type="button">&times;</button>
+        </div>
+        <div class="att-risk-panel-summary">
+          <span class="att-rps-chip rps-danger">🔴 위험 <strong id="attRpsDanger">0</strong>명</span>
+          <span class="att-rps-chip rps-warning">🟠 경고 <strong id="attRpsWarning">0</strong>명</span>
+          <span class="att-rps-chip rps-caution">🟡 주의 <strong id="attRpsCaution">0</strong>명</span>
+          <span class="att-rps-chip rps-missing">⚠️ 퇴실미체크 <strong id="attRpsMissing">0</strong>명</span>
+        </div>
+        <div class="att-risk-panel-body">
+          <div id="attRiskListDanger" class="att-risk-group"></div>
+          <div id="attRiskListWarning" class="att-risk-group"></div>
+          <div id="attRiskListCaution" class="att-risk-group"></div>
+          <div id="attRiskListMissing" class="att-risk-group"></div>
+        </div>
+      </div>
+    </div>
+      </div><!-- /attPageAttendance -->
+
+      <!-- ═══ 하차방어율 패널 ═══ -->
+      <div id="attPageDropout" data-att-page-panel="dropout" style="display:none;">
+        <div class="do-dashboard">
+          <div class="do-header">
+            <h3>🛡️ 하차방어율 대시보드</h3>
+            <span id="doLoadStatus" class="att-load-status"></span>
+            <button id="doQueryBtn" class="btn-primary att-query-btn" type="button">전체 조회</button>
+          </div>
+
+          <!-- Empty -->
+          <div id="doEmptyState" class="att-empty-state">
+            <div class="att-empty-icon">🛡️</div>
+            <div class="att-empty-title">하차방어율 조회</div>
+            <div class="att-empty-desc">전체 조회 버튼을 클릭하면 모든 과정·기수의 하차방어율을 분석합니다.</div>
+          </div>
+
+          <!-- Content -->
+          <div id="doContent" style="display:none;">
+            <!-- Summary Cards -->
+            <div class="do-summary-cards">
+              <div class="do-card do-card-all">
+                <div class="do-card-label">전체 하차방어율</div>
+                <div class="do-card-rate" id="doAllRate">-</div>
+                <div class="do-card-sub">총 <span id="doAllTotal">0</span> / 이탈 <span id="doAllDrop">0</span></div>
+              </div>
+              <div class="do-card do-card-emp">
+                <div class="do-card-label">재직자 과정 <span class="do-card-target-badge">목표 75%</span></div>
+                <div class="do-card-rate" id="doEmpRate">-</div>
+                <div class="do-card-sub">총 <span id="doEmpTotal">0</span> / 이탈 <span id="doEmpDrop">0</span></div>
+                <div class="do-card-target" id="doEmpTarget"></div>
+              </div>
+              <div class="do-card do-card-unemp">
+                <div class="do-card-label">실업자 과정 <span class="do-card-target-badge">목표 85%</span></div>
+                <div class="do-card-rate" id="doUnempRate">-</div>
+                <div class="do-card-sub">총 <span id="doUnempTotal">0</span> / 이탈 <span id="doUnempDrop">0</span></div>
+                <div class="do-card-target" id="doUnempTarget"></div>
+              </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="do-charts-grid">
+              <div class="do-chart-box do-chart-wide">
+                <h4>과정별 하차방어율</h4>
+                <div class="do-chart-wrap"><canvas id="doChartCourse"></canvas></div>
+              </div>
+              <div class="do-chart-box">
+                <h4>재직자/실업자 비교</h4>
+                <div class="do-chart-wrap do-chart-sq"><canvas id="doChartCategory"></canvas></div>
+              </div>
+              <div class="do-chart-box do-chart-wide">
+                <h4>기수별 하차방어율 추이</h4>
+                <div class="do-chart-wrap"><canvas id="doChartDegr"></canvas></div>
+              </div>
+            </div>
+
+            <!-- Detail Tabs -->
+            <div class="do-detail-tabs">
+              <button class="do-tab active" data-do-tab="course" type="button">과정별 집계</button>
+              <button class="do-tab" data-do-tab="degr" type="button">기수별 상세</button>
+            </div>
+
+            <!-- Course Table -->
+            <div data-do-panel="course">
+              <table class="do-table">
+                <thead>
+                  <tr><th>구분</th><th>과정명</th><th>전체</th><th>이탈</th><th>재적</th><th>방어율</th><th>목표대비</th><th></th></tr>
+                </thead>
+                <tbody id="doCourseTbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Degr Table -->
+            <div data-do-panel="degr" style="display:none;">
+              <table class="do-table">
+                <thead>
+                  <tr><th>구분</th><th>과정명</th><th>기수</th><th>전체</th><th>이탈</th><th>재적</th><th>방어율</th><th>목표대비</th><th></th></tr>
+                </thead>
+                <tbody id="doDegrTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- /attPageDropout -->
+    </div><!-- /sectionAttendance -->
 
     <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign" data-page-group="reports">
       <div class="row u-row-between u-row-center">
@@ -885,7 +1310,69 @@
       </div>
     </div>
 
-    <div class="card card-span-12 admin-only simple-hidden u-mt-14" id="sectionStateManagement" data-page-group="settings">
+    <!-- HRD API 설정 -->
+    <div class="card card-span-12 u-mt-14" id="hrdSettingsSection" data-page-group="settings">
+      <div class="row u-row-between u-row-center">
+        <div>
+          <strong>🔗 HRD API 설정</strong>
+          <div class="muted">HRD-Net 출결 API 연동 설정 (authKey, 과정 등록, 프록시)</div>
+        </div>
+      </div>
+      <div class="hrd-settings-body u-mt-8">
+        <!-- API Key 비밀번호 게이트 -->
+        <div id="hrdKeyGate" class="hrd-key-gate">
+          <div class="hrd-key-gate-icon">🔒</div>
+          <div class="hrd-key-gate-text">API 키 설정은 관리자 비밀번호가 필요합니다</div>
+          <div class="hrd-key-gate-row">
+            <input type="password" id="hrdKeyGatePassword" class="hrd-input" placeholder="비밀번호 입력" autocomplete="off" />
+            <button id="hrdKeyGateUnlock" class="btn-sm" type="button" style="background:#6366f1;color:#fff;">잠금 해제</button>
+          </div>
+          <div id="hrdKeyGateError" class="hrd-key-gate-error" style="display:none;">비밀번호가 올바르지 않습니다</div>
+        </div>
+        <!-- Auth Key (잠금 해제 시 노출) -->
+        <div id="hrdKeySection" class="hrd-settings-row" style="display:none;">
+          <div class="hrd-field">
+            <label>Auth Key</label>
+            <input type="password" id="hrdAuthKey" class="hrd-input" placeholder="HRD-Net API 인증키" />
+          </div>
+          <div class="hrd-field">
+            <label>CORS 프록시 (선택)</label>
+            <input type="text" id="hrdProxy" class="hrd-input" placeholder="비워두면 자동 폴백" />
+          </div>
+          <div class="hrd-field-actions">
+            <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
+            <button id="hrdTestBtn" class="btn-sm" type="button" style="background:#6366f1;color:#fff;">연결 테스트</button>
+          </div>
+        </div>
+        <div id="hrdTestStatus" class="att-api-status" style="margin-top:8px;"></div>
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h4 style="margin:0;">과정 등록</h4>
+          <div style="display:flex;gap:6px;">
+            <button id="hrdResetDefaults" class="btn-sm" type="button" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">🔄 기본 과정 복원</button>
+            <button id="hrdDiscoverAll" class="btn-sm" type="button" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">🔍 전체 기수 자동탐색</button>
+          </div>
+        </div>
+        <div id="hrdDiscoverStatus" style="font-size:12px;color:#6b7280;margin-bottom:6px;display:none;"></div>
+        <div id="hrdCourseList" class="hrd-course-list"></div>
+        <div class="hrd-add-course">
+          <div class="hrd-add-row">
+            <input type="text" id="hrdNewCourseName" class="hrd-input" placeholder="과정명" />
+            <input type="text" id="hrdNewCourseId" class="hrd-input" placeholder="훈련과정ID (srchTrprId)" />
+            <input type="text" id="hrdNewCourseDegrs" class="hrd-input hrd-input-sm" placeholder="기수 (예: 1,2,3)" />
+          </div>
+          <div class="hrd-add-row u-mt-4">
+            <input type="date" id="hrdNewCourseStart" class="hrd-input" />
+            <input type="number" id="hrdNewCourseDays" class="hrd-input hrd-input-sm" placeholder="총 훈련일수" />
+            <input type="time" id="hrdNewCourseEndTime" class="hrd-input hrd-input-sm" value="18:00" />
+            <button id="hrdCourseAdd" class="btn-primary btn-sm" type="button">+ 추가</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-span-12 simple-hidden u-mt-14" id="sectionStateManagement" data-page-group="settings">
       <div class="row u-row-between u-row-center">
         <div>
           <strong>💾 프로젝트 상태 관리</strong>
@@ -902,7 +1389,7 @@
       <div id="stateStorageStatus" class="muted u-mt-6">자동저장 대기</div>
       <div id="stateStorageWarning" class="muted u-mt-4"></div>
 
-      <div id="menuConfigCard" class="menu-config-card u-mt-10">
+      <div id="menuConfigCard" class="menu-config-card admin-only u-mt-10">
         <strong>사이드 메뉴 설정</strong>
         <div class="muted u-mt-4">메뉴 이모지, 이름, 순서를 직접 바꿔서 저장할 수 있습니다.</div>
         <div id="menuConfigList" class="menu-config-list u-mt-8"></div>
