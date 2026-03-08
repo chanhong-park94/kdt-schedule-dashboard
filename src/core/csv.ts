@@ -60,3 +60,49 @@ export function parseCsv(text: string): Record<string, string>[] {
     return record;
   });
 }
+
+export type CsvParseWarning = {
+  row: number;
+  columnCount: number;
+  expectedCount: number;
+  message: string;
+};
+
+export type CsvParseResult = {
+  records: Record<string, string>[];
+  warnings: CsvParseWarning[];
+};
+
+export function parseCsvWithDiagnostics(text: string): CsvParseResult {
+  const rows = parseCsvRows(text);
+  if (rows.length === 0) {
+    return { records: [], warnings: [] };
+  }
+
+  const header = rows[0].map((column) => column.replace(/^\uFEFF/, "").trim());
+  const dataRows = rows.slice(1);
+  const expectedCount = header.length;
+
+  const records: Record<string, string>[] = [];
+  const warnings: CsvParseWarning[] = [];
+
+  dataRows.forEach((columns, index) => {
+    const rowNumber = index + 2; // header is row 1, data starts at row 2
+    if (columns.length < expectedCount) {
+      warnings.push({
+        row: rowNumber,
+        columnCount: columns.length,
+        expectedCount,
+        message: `${rowNumber}행: 열이 ${columns.length}개지만 헤더는 ${expectedCount}개입니다. 누락된 열은 빈 문자열로 처리됩니다.`
+      });
+    }
+
+    const record: Record<string, string> = {};
+    header.forEach((column, i) => {
+      record[column] = (columns[i] ?? "").trim();
+    });
+    records.push(record);
+  });
+
+  return { records, warnings };
+}
