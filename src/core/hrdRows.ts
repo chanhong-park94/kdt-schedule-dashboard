@@ -27,7 +27,8 @@ type DayCodeContext = {
   subjectCode: string;
 };
 
-type BreakRange = { startMin: number; endMin: number; startHHMM: string };
+/** Pre-parsed break range with minute values. Distinct from types.ts BreakRange which stores raw HHMM strings. */
+type ParsedBreakRange = { startMin: number; endMin: number; startHHMM: string };
 
 function toHHMM(minutes: number): string {
   const hour = Math.floor(minutes / 60);
@@ -91,8 +92,8 @@ function expandHourlyStarts(startHHMM: string, endHHMM: string): string[] {
   return starts;
 }
 
-function collectBreakRanges(breaks: ScheduleDay["breaks"]): BreakRange[] {
-  const result: BreakRange[] = [];
+function collectBreakRanges(breaks: ScheduleDay["breaks"]): ParsedBreakRange[] {
+  const result: ParsedBreakRange[] = [];
   for (const br of breaks) {
     const start = hhmmToMinutes(br.startHHMM);
     const end = hhmmToMinutes(br.endHHMM);
@@ -106,7 +107,7 @@ function collectBreakRanges(breaks: ScheduleDay["breaks"]): BreakRange[] {
 
 function buildClassRows(
   blocks: ScheduleDay["blocks"],
-  breakRanges: BreakRange[],
+  breakRanges: ParsedBreakRange[],
   compactDate: string,
   dayStart: string,
   dayEnd: string,
@@ -138,7 +139,7 @@ function buildClassRows(
 }
 
 function buildBreakRows(
-  breakRanges: BreakRange[],
+  breakRanges: ParsedBreakRange[],
   compactDate: string,
   dayStart: string,
   dayEnd: string,
