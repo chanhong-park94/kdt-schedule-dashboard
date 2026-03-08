@@ -15,6 +15,9 @@ export function readClientEnv(keys: string[]): string {
 }
 
 export function assertClientEnv(keys: string[]): string {
+  if (keys.length === 0) {
+    throw new RangeError("assertClientEnv: keys 배열이 비어 있습니다.");
+  }
   for (const key of keys) {
     const value = readProcessEnv(key);
     if (value.length > 0) {

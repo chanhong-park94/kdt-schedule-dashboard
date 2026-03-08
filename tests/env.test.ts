@@ -15,7 +15,13 @@ describe("assertClientEnv", () => {
   });
 
   it("에러 메시지에 모든 키 이름이 포함된다", () => {
-    expect(() => assertClientEnv(["__KEY_X__", "__KEY_Y__"])).toThrow("__KEY_X__");
+    const run = () => assertClientEnv(["__KEY_X__", "__KEY_Y__"]);
+    expect(run).toThrow("__KEY_X__");
+    expect(run).toThrow("__KEY_Y__");
+  });
+
+  it("빈 배열을 전달하면 RangeError를 던진다", () => {
+    expect(() => assertClientEnv([])).toThrow(RangeError);
   });
 
   it("여러 키 중 첫 번째로 값이 있는 키를 반환한다", () => {
