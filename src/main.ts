@@ -5049,7 +5049,10 @@ function downloadCohortCSV(): void {
 
   const generatedDays =
     cohort === generatedScheduleCohort && generatedScheduleResult ? generatedScheduleResult.days : undefined;
-  const csv = exportHrdCsvForCohort(sessions, cohort, { generatedDays });
+  const { csv, rowWarning } = exportHrdCsvForCohort(sessions, cohort, { generatedDays });
+  if (rowWarning) {
+    pushRecentActionLog("WARNING", rowWarning, "hrdDownloadCard");
+  }
   const blob = createCsvBlob(csv);
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);

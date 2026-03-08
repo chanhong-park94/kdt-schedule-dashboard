@@ -42,7 +42,7 @@ describe("hrd export snapshot", () => {
       })
     ];
 
-    const csv = exportHrdCsvForCohort(sessions, "KDT-A");
+    const { csv } = exportHrdCsvForCohort(sessions, "KDT-A");
     const lines = csv.split(/\r?\n/);
     const columnCounts = lines.map((line) => line.split(",").length);
 

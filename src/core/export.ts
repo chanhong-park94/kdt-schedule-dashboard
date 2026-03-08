@@ -1,4 +1,4 @@
-import { buildHrdRowsForCohort } from "./hrdRows";
+import { buildHrdRowsForCohort, checkHrdRowLimit } from "./hrdRows";
 import { HRD_EXPORT_COLUMNS, ScheduleDay, Session } from "./types";
 import { normalizeClassroomCode, normalizeInstructorCode, normalizeSubjectCode } from "./standardize";
 
@@ -11,7 +11,9 @@ type ExportHrdOptions = {
   generatedDays?: ScheduleDay[];
 };
 
-export function exportHrdCsvForCohort(sessions: Session[], cohort: string, options?: ExportHrdOptions): string {
+export type ExportHrdResult = { csv: string; rowWarning: string | null };
+
+export function exportHrdCsvForCohort(sessions: Session[], cohort: string, options?: ExportHrdOptions): ExportHrdResult {
   const rows = buildHrdRowsForCohort({
     sessions,
     cohort,
@@ -32,5 +34,5 @@ export function exportHrdCsvForCohort(sessions: Session[], cohort: string, optio
     }).join(",");
   });
 
-  return [header, ...lines].join("\r\n");
+  return { csv: [header, ...lines].join("\r\n"), rowWarning: checkHrdRowLimit(rows) };
 }

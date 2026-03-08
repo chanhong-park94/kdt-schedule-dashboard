@@ -79,7 +79,7 @@ describe("e2e samples", () => {
       const migrated = migrateState(sample).state;
       const targetCohort = migrated.generatedCohortRanges[0]?.cohort ?? migrated.sessions[0]?.과정기수 ?? "";
 
-      const hrdCsv = exportHrdCsvForCohort(migrated.sessions, targetCohort);
+      const { csv: hrdCsv } = exportHrdCsvForCohort(migrated.sessions, targetCohort);
       expect(hrdCsv.length).toBeGreaterThan(0);
       expect(hrdCsv.startsWith(HRD_EXPORT_COLUMNS.join(","))).toBe(true);
 
