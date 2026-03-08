@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { withRetry, paginateAll } from "../src/core/instructorSync";
+import { withRetry, paginateAll, mergeWithLocalInstructorDirectory } from "../src/core/instructorSync";
 
 describe("withRetry", () => {
   it("첫 시도에 성공하면 1번만 호출된다", async () => {
@@ -81,5 +81,50 @@ describe("paginateAll", () => {
     const fetcher = vi.fn().mockResolvedValue([]);
     // pageSize=0 would cause an infinite loop; the RangeError guard prevents it.
     await expect(paginateAll(fetcher, 0)).rejects.toThrow(RangeError);
+  });
+});
+
+describe("mergeWithLocalInstructorDirectory", () => {
+  it("클라우드가 비어있으면 로컬만 반환한다", () => {
+    const local = [
+      { instructorCode: "TCH-A", name: "김강사", memo: "" },
+      { instructorCode: "TCH-B", name: "이강사", memo: "" }
+    ];
+    const result = mergeWithLocalInstructorDirectory(local, []);
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.instructorCode)).toContain("TCH-A");
+  });
+
+  it("클라우드에만 있는 강사는 병합 결과에 추가된다", () => {
+    const local = [{ instructorCode: "TCH-A", name: "김강사", memo: "" }];
+    const cloud = [{ instructorCode: "TCH-B", name: "이강사", memo: "" }];
+    const result = mergeWithLocalInstructorDirectory(local, cloud);
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.instructorCode)).toContain("TCH-B");
+  });
+
+  it("로컬과 클라우드에 동일 코드가 있으면 로컬 값을 우선한다", () => {
+    const local = [{ instructorCode: "TCH-A", name: "로컬이름", memo: "로컬메모" }];
+    const cloud = [{ instructorCode: "TCH-A", name: "클라우드이름", memo: "클라우드메모" }];
+    const result = mergeWithLocalInstructorDirectory(local, cloud);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("로컬이름");
+  });
+
+  it("강사코드 대소문자가 다른 경우에도 동일로 처리한다", () => {
+    const local = [{ instructorCode: "tch-a", name: "로컬이름", memo: "" }];
+    const cloud = [{ instructorCode: "TCH-A", name: "클라우드이름", memo: "" }];
+    const result = mergeWithLocalInstructorDirectory(local, cloud);
+    expect(result).toHaveLength(1);
+  });
+
+  it("결과는 instructorCode 오름차순으로 정렬된다", () => {
+    const local = [
+      { instructorCode: "TCH-Z", name: "Z강사", memo: "" },
+      { instructorCode: "TCH-A", name: "A강사", memo: "" }
+    ];
+    const cloud = [{ instructorCode: "TCH-M", name: "M강사", memo: "" }];
+    const result = mergeWithLocalInstructorDirectory(local, cloud);
+    expect(result.map((r) => r.instructorCode)).toEqual(["TCH-A", "TCH-M", "TCH-Z"]);
   });
 });
