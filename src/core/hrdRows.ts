@@ -27,6 +27,8 @@ type DayCodeContext = {
   subjectCode: string;
 };
 
+type BreakRange = { startMin: number; endMin: number; startHHMM: string };
+
 function toHHMM(minutes: number): string {
   const hour = Math.floor(minutes / 60);
   const minute = minutes % 60;
@@ -89,53 +91,36 @@ function expandHourlyStarts(startHHMM: string, endHHMM: string): string[] {
   return starts;
 }
 
-function buildRowsFromGeneratedDay(
+function collectBreakRanges(breaks: ScheduleDay["breaks"]): BreakRange[] {
+  const result: BreakRange[] = [];
+  for (const br of breaks) {
+    const start = hhmmToMinutes(br.startHHMM);
+    const end = hhmmToMinutes(br.endHHMM);
+    if (start === null || end === null || start >= end) {
+      continue;
+    }
+    result.push({ startMin: start, endMin: end, startHHMM: toHHMM(start) });
+  }
+  return result;
+}
+
+function buildClassRows(
+  blocks: ScheduleDay["blocks"],
+  breakRanges: BreakRange[],
   compactDate: string,
-  day: ScheduleDay,
+  dayStart: string,
+  dayEnd: string,
   context: DayCodeContext
 ): HrdRow[] {
-  const rangePoints: number[] = [];
-  const breakRanges: Array<{ startMin: number; endMin: number; startHHMM: string }> = [];
-
-  for (const block of day.blocks) {
-    const start = hhmmToMinutes(block.startHHMM);
-    const end = hhmmToMinutes(block.endHHMM);
-    if (start === null || end === null || start >= end) {
-      continue;
-    }
-    rangePoints.push(start, end);
-  }
-
-  for (const breakRange of day.breaks) {
-    const start = hhmmToMinutes(breakRange.startHHMM);
-    const end = hhmmToMinutes(breakRange.endHHMM);
-    if (start === null || end === null || start >= end) {
-      continue;
-    }
-    rangePoints.push(start, end);
-    breakRanges.push({ startMin: start, endMin: end, startHHMM: toHHMM(start) });
-  }
-
-  if (rangePoints.length === 0) {
-    return [];
-  }
-
-  const dayStart = toHHMM(Math.min(...rangePoints));
-  const dayEnd = toHHMM(Math.max(...rangePoints));
-
   const rows: HrdRow[] = [];
-
-  for (const block of day.blocks) {
-    const slotStarts = expandHourlyStarts(block.startHHMM, block.endHHMM);
-    for (const slotStart of slotStarts) {
+  for (const block of blocks) {
+    for (const slotStart of expandHourlyStarts(block.startHHMM, block.endHHMM)) {
       const slotMinute = hhmmToMinutes(slotStart);
-      if (slotMinute === null) {
-        continue;
-      }
-      const inBreak = breakRanges.some((range) => slotMinute >= range.startMin && slotMinute < range.endMin);
-      if (inBreak) {
-        continue;
-      }
+      if (slotMinute === null) continue;
+      const inBreak = breakRanges.some(
+        (range) => slotMinute >= range.startMin && slotMinute < range.endMin
+      );
+      if (inBreak) continue;
       rows.push({
         훈련일자: compactDate,
         훈련시작시간: dayStart,
@@ -149,20 +134,57 @@ function buildRowsFromGeneratedDay(
       });
     }
   }
+  return rows;
+}
 
-  for (const breakRange of breakRanges) {
-    rows.push({
-      훈련일자: compactDate,
-      훈련시작시간: dayStart,
-      훈련종료시간: dayEnd,
-      "방학/원격여부": context.remoteType,
-      시작시간: breakRange.startHHMM,
-      시간구분: "2",
-      훈련강사코드: "",
-      "교육장소(강의실)코드": "",
-      교과목코드: ""
-    });
+function buildBreakRows(
+  breakRanges: BreakRange[],
+  compactDate: string,
+  dayStart: string,
+  dayEnd: string,
+  remoteType: string
+): HrdRow[] {
+  return breakRanges.map((br) => ({
+    훈련일자: compactDate,
+    훈련시작시간: dayStart,
+    훈련종료시간: dayEnd,
+    "방학/원격여부": remoteType,
+    시작시간: br.startHHMM,
+    시간구분: "2",
+    훈련강사코드: "",
+    "교육장소(강의실)코드": "",
+    교과목코드: ""
+  }));
+}
+
+function buildRowsFromGeneratedDay(
+  compactDate: string,
+  day: ScheduleDay,
+  context: DayCodeContext
+): HrdRow[] {
+  const blockPoints: number[] = [];
+  for (const block of day.blocks) {
+    const start = hhmmToMinutes(block.startHHMM);
+    const end = hhmmToMinutes(block.endHHMM);
+    if (start !== null && end !== null && start < end) {
+      blockPoints.push(start, end);
+    }
   }
+
+  const breakRanges = collectBreakRanges(day.breaks);
+  const allPoints = [...blockPoints, ...breakRanges.flatMap((br) => [br.startMin, br.endMin])];
+
+  if (allPoints.length === 0) {
+    return [];
+  }
+
+  const dayStart = toHHMM(Math.min(...allPoints));
+  const dayEnd = toHHMM(Math.max(...allPoints));
+
+  const rows = [
+    ...buildClassRows(day.blocks, breakRanges, compactDate, dayStart, dayEnd, context),
+    ...buildBreakRows(breakRanges, compactDate, dayStart, dayEnd, context.remoteType)
+  ];
 
   return sortRows(dedupeRows(rows));
 }
