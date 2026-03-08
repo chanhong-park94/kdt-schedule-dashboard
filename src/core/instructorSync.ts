@@ -14,6 +14,25 @@ type InstructorPayload = {
   memo: string | null;
 };
 
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number,
+  baseDelayMs: number = 300
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts && baseDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, baseDelayMs * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
+
 const TABLE_NAME = "instructors";
 
 const rawSupabaseUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
@@ -82,21 +101,21 @@ export async function loadInstructorDirectoryFromCloud(): Promise<InstructorDire
     return [];
   }
 
-  const response = await client
-    .from(TABLE_NAME)
-    .select("instructor_code,name,memo")
-    .order("instructor_code", { ascending: true, nullsFirst: false });
+  const data = await withRetry(async () => {
+    const res = await client!
+      .from(TABLE_NAME)
+      .select("instructor_code,name,memo")
+      .order("instructor_code", { ascending: true, nullsFirst: false });
+    if (res.error) throw new Error(res.error.message);
+    return res.data;
+  }, 3);
 
-  if (response.error) {
-    throw new Error(response.error.message);
-  }
-
-  if (!Array.isArray(response.data)) {
+  if (!Array.isArray(data)) {
     return [];
   }
 
   const rows: InstructorDirectoryEntry[] = [];
-  for (const item of response.data) {
+  for (const item of data) {
     const entry = toInstructorEntry(item);
     if (entry) {
       rows.push(entry);
@@ -116,13 +135,12 @@ export async function upsertInstructorInCloud(entry: InstructorDirectoryEntry): 
     memo: entry.memo || null
   };
 
-  const response = await client.from(TABLE_NAME).upsert(payload, {
-    onConflict: "instructor_code"
-  });
-
-  if (response.error) {
-    throw new Error(response.error.message);
-  }
+  await withRetry(async () => {
+    const res = await client!.from(TABLE_NAME).upsert(payload, {
+      onConflict: "instructor_code"
+    });
+    if (res.error) throw new Error(res.error.message);
+  }, 3);
 }
 
 export async function deleteInstructorFromCloud(instructorCode: string): Promise<void> {
@@ -135,10 +153,10 @@ export async function deleteInstructorFromCloud(instructorCode: string): Promise
     return;
   }
 
-  const response = await client.from(TABLE_NAME).delete().eq("instructor_code", normalizedCode);
-  if (response.error) {
-    throw new Error(response.error.message);
-  }
+  await withRetry(async () => {
+    const res = await client!.from(TABLE_NAME).delete().eq("instructor_code", normalizedCode);
+    if (res.error) throw new Error(res.error.message);
+  }, 3);
 }
 
 export function mergeWithLocalInstructorDirectory(
