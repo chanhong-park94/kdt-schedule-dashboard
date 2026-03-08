@@ -119,4 +119,31 @@ describe("state migration", () => {
 
     expect(migrated.state.ui.showAdvanced).toBe(true);
   });
+
+  it("세션이 5,000개인 대용량 상태도 오류 없이 마이그레이션된다", () => {
+    const sessions = Array.from({ length: 5000 }, (_, i) => ({
+      훈련일자: "20260101",
+      훈련시작시간: "0900",
+      훈련종료시간: "1800",
+      "방학/원격여부": "",
+      시작시간: String(i % 24).padStart(2, "0") + "00",
+      시간구분: "1",
+      훈련강사코드: `tch-${i % 100}`,
+      "교육장소(강의실)코드": `room-${i % 10}`,
+      "교과목(및 능력단위)코드": `subj-${i % 20}`,
+      과정기수: `cohort-${i % 5}`,
+      normalizedDate: "2026-01-01",
+      startMin: 540,
+      endMin: 1080
+    }));
+
+    const migrated = migrateState({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      savedAt: new Date().toISOString(),
+      sessions
+    });
+
+    expect(migrated.state.sessions).toHaveLength(5000);
+    expect(Array.isArray(migrated.state.courseRegistry)).toBe(true);
+  });
 });
