@@ -160,6 +160,29 @@ describe("detectConflicts", () => {
     expect(conflicts[1].과정A).toBe("KDT-Z");
   });
 
+  it("강사코드가 비어 있는 세션은 충돌 판정 대상에서 제외된다", () => {
+    // 빈 기준키 세션끼리는 "같은 빈 강사" 버킷으로 묶이면 안 된다
+    const sessions: Session[] = [
+      makeSession({ 과정기수: "KDT-A", 훈련강사코드: "", startMin: 540, endMin: 660 }),
+      makeSession({ 과정기수: "KDT-B", 훈련강사코드: "", startMin: 540, endMin: 660 })
+    ];
+
+    const conflicts = detectConflicts(sessions, { resourceTypes: ["INSTRUCTOR"] });
+
+    expect(conflicts).toHaveLength(0);
+  });
+
+  it("강의실코드가 비어 있는 세션은 충돌 판정 대상에서 제외된다", () => {
+    const sessions: Session[] = [
+      makeSession({ 과정기수: "KDT-A", "교육장소(강의실)코드": "", startMin: 540, endMin: 660 }),
+      makeSession({ 과정기수: "KDT-B", "교육장소(강의실)코드": "", startMin: 540, endMin: 660 })
+    ];
+
+    const conflicts = detectConflicts(sessions, { resourceTypes: ["OPERATION"] });
+
+    expect(conflicts).toHaveLength(0);
+  });
+
   it("같은 일자·키에서 과정A 알파벳 순으로 정렬된다", () => {
     // 같은 날, 같은 강사, 서로 다른 세 과정이 각각 충돌
     const sessions: Session[] = [

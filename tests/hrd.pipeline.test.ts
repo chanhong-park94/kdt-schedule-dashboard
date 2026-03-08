@@ -6,7 +6,12 @@ import { buildHrdRowsForCohort } from "../src/core/hrdRows";
 import { Session } from "../src/core/types";
 
 /**
- * CSV 문자열 → Session 배열로 변환하는 헬퍼 (실제 앱 파이프라인 모방)
+ * CSV 문자열 → Session 배열로 변환하는 헬퍼.
+ *
+ * NOTE: 이 헬퍼는 `normalizedDate`, `startMin`, `endMin` 필드를 CSV 컬럼에서
+ * 직접 읽는다. 실제 업로드 파이프라인에서는 이 필드들이 날짜/시간 파싱 로직으로
+ * 별도 계산된다. 따라서 이 테스트는 CSV→Session 정규화 단계를 검증하지 않으며,
+ * 검증(validate)과 HRD 행 빌드(buildHrdRowsForCohort) 두 단계만 커버한다.
  */
 function csvToSessions(csv: string): Session[] {
   const records = parseCsv(csv);

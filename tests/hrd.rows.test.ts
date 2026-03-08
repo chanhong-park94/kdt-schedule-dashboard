@@ -64,6 +64,61 @@ describe("hrd rows builder", () => {
   });
 });
 
+describe("buildHrdRowsForCohort — generatedDays 없는 경로 (buildRowsFromSessions)", () => {
+  it("generatedDays 없이 세션 원본에서 직접 HRD 행을 생성한다", () => {
+    const sessions: Session[] = [
+      makeSession({ 시작시간: "0900", 시간구분: "1" }),
+      makeSession({ 시작시간: "1000", 시간구분: "1" }),
+      makeSession({ 시작시간: "1300", 시간구분: "2" })
+    ];
+
+    // generatedDays 없이 호출
+    const rows = buildHrdRowsForCohort({ sessions, cohort: "리서처15기" });
+
+    expect(rows.length).toBeGreaterThan(0);
+    // 수업 행과 휴식 행이 모두 포함되어야 한다
+    expect(rows.some((row) => row.시간구분 === "1")).toBe(true);
+    expect(rows.some((row) => row.시간구분 === "2")).toBe(true);
+    // 날짜 고정
+    expect(rows.every((row) => row.훈련일자 === "20260311")).toBe(true);
+  });
+
+  it("휴식 행(시간구분=2)에는 강사코드/강의실코드/교과목코드가 비어 있다", () => {
+    const sessions: Session[] = [
+      makeSession({ 시작시간: "0900", 시간구분: "1" }),
+      makeSession({ 시작시간: "1300", 시간구분: "2" })
+    ];
+
+    const rows = buildHrdRowsForCohort({ sessions, cohort: "리서처15기" });
+
+    const breakRow = rows.find((row) => row.시간구분 === "2");
+    expect(breakRow).toBeDefined();
+    expect(breakRow?.훈련강사코드).toBe("");
+    expect(breakRow?.["교육장소(강의실)코드"]).toBe("");
+    expect(breakRow?.교과목코드).toBe("");
+  });
+
+  it("유효하지 않은 시작시간 세션은 건너뛴다", () => {
+    const sessions: Session[] = [
+      makeSession({ 시작시간: "0900", 시간구분: "1" }),
+      makeSession({ 시작시간: "", 시간구분: "1" })  // 빈 시작시간 → 건너뜀
+    ];
+
+    const rows = buildHrdRowsForCohort({ sessions, cohort: "리서처15기" });
+
+    // 유효한 세션만 포함
+    expect(rows.every((row) => row.시작시간 !== "")).toBe(true);
+  });
+
+  it("해당 기수 세션이 없으면 빈 배열을 반환한다", () => {
+    const sessions: Session[] = [makeSession({ 과정기수: "다른기수" })];
+
+    const rows = buildHrdRowsForCohort({ sessions, cohort: "리서처15기" });
+
+    expect(rows).toHaveLength(0);
+  });
+});
+
 describe("checkHrdRowLimit", () => {
   it("행 수가 10,000 미만이면 null을 반환한다", () => {
     const rows = Array.from({ length: 9999 }, (_, i) => ({
