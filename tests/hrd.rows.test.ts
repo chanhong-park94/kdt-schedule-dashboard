@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHrdRowsForCohort } from "../src/core/hrdRows";
+import { buildHrdRowsForCohort, checkHrdRowLimit, HRD_MAX_ROWS_WARNING } from "../src/core/hrdRows";
 import { ScheduleDay, Session } from "../src/core/types";
 
 function makeSession(overrides: Partial<Session>): Session {
@@ -61,5 +61,43 @@ describe("hrd rows builder", () => {
     expect(breakRow?.훈련강사코드).toBe("");
     expect(breakRow?.["교육장소(강의실)코드"]).toBe("");
     expect(breakRow?.교과목코드).toBe("");
+  });
+});
+
+describe("checkHrdRowLimit", () => {
+  it("행 수가 10,000 미만이면 null을 반환한다", () => {
+    const rows = Array.from({ length: 9999 }, (_, i) => ({
+      훈련일자: "20260101",
+      훈련시작시간: "0900",
+      훈련종료시간: "1800",
+      "방학/원격여부": "",
+      시작시간: String(i).padStart(4, "0"),
+      시간구분: "1" as const,
+      훈련강사코드: "TCH_001",
+      "교육장소(강의실)코드": "ROOM_01",
+      교과목코드: "SUBJ_01"
+    }));
+    expect(checkHrdRowLimit(rows)).toBeNull();
+  });
+
+  it("행 수가 10,000 이상이면 경고 문자열을 반환한다", () => {
+    const rows = Array.from({ length: 10000 }, (_, i) => ({
+      훈련일자: "20260101",
+      훈련시작시간: "0900",
+      훈련종료시간: "1800",
+      "방학/원격여부": "",
+      시작시간: String(i).padStart(4, "0"),
+      시간구분: "1" as const,
+      훈련강사코드: "TCH_001",
+      "교육장소(강의실)코드": "ROOM_01",
+      교과목코드: "SUBJ_01"
+    }));
+    const warning = checkHrdRowLimit(rows);
+    expect(warning).not.toBeNull();
+    expect(warning).toContain("10,000");
+  });
+
+  it("HRD_MAX_ROWS_WARNING 상수는 10000이다", () => {
+    expect(HRD_MAX_ROWS_WARNING).toBe(10000);
   });
 });

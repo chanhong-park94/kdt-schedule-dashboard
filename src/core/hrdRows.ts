@@ -272,3 +272,12 @@ export function buildHrdRowsForCohort(input: HrdRowsBuildInput): HrdRow[] {
 
   return sortRows(dedupeRows(allRows));
 }
+
+export const HRD_MAX_ROWS_WARNING = 10000;
+
+export function checkHrdRowLimit(rows: HrdRow[]): string | null {
+  if (rows.length >= HRD_MAX_ROWS_WARNING) {
+    return `내보낼 행 수가 ${rows.length.toLocaleString()}개입니다. ${HRD_MAX_ROWS_WARNING.toLocaleString()}행 이상이면 Excel에서 열기 어려울 수 있습니다.`;
+  }
+  return null;
+}
