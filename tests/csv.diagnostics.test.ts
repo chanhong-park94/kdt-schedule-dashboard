@@ -15,8 +15,10 @@ describe("parseCsvWithDiagnostics", () => {
     expect(records).toHaveLength(1);
     expect(warnings).toHaveLength(1);
     expect(warnings[0].row).toBe(2);
-    expect(warnings[0].message).toContain("3");
-    expect(warnings[0].message).toContain("2");
+    expect(warnings[0].columnCount).toBe(2);
+    expect(warnings[0].expectedCount).toBe(3);
+    expect(warnings[0].message).toContain("2개");
+    expect(warnings[0].message).toContain("3개");
   });
 
   it("여러 행이 짧으면 각각 경고를 생성한다", () => {
@@ -39,5 +41,17 @@ describe("parseCsvWithDiagnostics", () => {
     const { records } = parseCsvWithDiagnostics(csv);
     expect(records[0]["이름"]).toBe("홍길동");
     expect(records[0]["나이"]).toBe("");
+  });
+
+  it("헤더보다 열이 많은 행에 대해 경고를 생성한다", () => {
+    const csv = "이름,나이\n홍길동,30,서울";
+    const { records, warnings } = parseCsvWithDiagnostics(csv);
+    expect(records).toHaveLength(1);
+    expect(records[0]["이름"]).toBe("홍길동");
+    expect(records[0]["나이"]).toBe("30");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].columnCount).toBe(3);
+    expect(warnings[0].expectedCount).toBe(2);
+    expect(warnings[0].message).toContain("초과");
   });
 });
