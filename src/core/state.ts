@@ -12,7 +12,7 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
-export type AppSidebarNavKey = "timeline" | "management" | "generator" | "kpi" | "attendance" | "settings";
+export type AppSidebarNavKey = "timeline" | "generator" | "kpi" | "attendance" | "settings";
 
 export type AppSidebarMenuConfig = {
   order: AppSidebarNavKey[];
@@ -154,11 +154,9 @@ function toTimelineViewType(value: unknown): AppTimelineViewType {
 function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
   return (
     value === "timeline" ||
-    value === "management" ||
     value === "generator" ||
     value === "kpi" ||
     value === "attendance" ||
-    value === "reports" ||
     value === "settings"
   );
 }
@@ -186,7 +184,6 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
 
   const defaultOrder: AppSidebarNavKey[] = [
     "timeline",
-    "management",
     "generator",
     "kpi",
     "attendance",
@@ -216,15 +213,13 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     order,
     labels: {
       timeline: toSidebarLabel(labelsSource.timeline, "학사일정"),
-      management: toSidebarLabel(labelsSource.management, "과정 정보입력"),
-      generator: toSidebarLabel(labelsSource.generator, "기수 일정 생성기"),
+      generator: toSidebarLabel(labelsSource.generator, "HRD시간표 생성"),
       kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
       settings: toSidebarLabel(labelsSource.settings, "설정")
     },
     icons: {
       timeline: toSidebarIcon(iconsSource.timeline, "📅"),
-      management: toSidebarIcon(iconsSource.management, "📄"),
       generator: toSidebarIcon(iconsSource.generator, "🛠️"),
       kpi: toSidebarIcon(iconsSource.kpi, "📊"),
       attendance: toSidebarIcon(iconsSource.attendance, "📋"),

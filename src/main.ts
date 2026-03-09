@@ -266,7 +266,6 @@ const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v1";
 
 const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "timeline",
-  "management",
   "generator",
   "kpi",
   "attendance",
@@ -275,8 +274,7 @@ const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
 
 const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
   timeline: "학사일정",
-  management: "과정 정보입력",
-  generator: "기수 일정 생성기",
+  generator: "HRD시간표 생성",
   kpi: "재직자 자율성과지표",
   attendance: "출결현황",
   settings: "설정"
@@ -284,7 +282,6 @@ const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
 
 const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
   timeline: "📅",
-  management: "📄",
   generator: "🛠️",
   kpi: "📊",
   attendance: "📋",
@@ -1917,7 +1914,6 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
     order: [...config.order],
     labels: {
       timeline: config.labels.timeline,
-      management: config.labels.management,
       generator: config.labels.generator,
       kpi: config.labels.kpi,
       attendance: config.labels.attendance,
@@ -1925,7 +1921,6 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
     },
     icons: {
       timeline: config.icons.timeline,
-      management: config.icons.management,
       generator: config.icons.generator,
       kpi: config.icons.kpi,
       attendance: config.icons.attendance,
@@ -1966,7 +1961,6 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
     order: normalizeSidebarMenuOrder(config.order),
     labels: {
       timeline: normalizeSidebarMenuLabel("timeline", config.labels.timeline),
-      management: normalizeSidebarMenuLabel("management", config.labels.management),
       generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
       kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
@@ -1974,7 +1968,6 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
     },
     icons: {
       timeline: normalizeSidebarMenuIcon("timeline", config.icons.timeline),
-      management: normalizeSidebarMenuIcon("management", config.icons.management),
       generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
       kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
@@ -1988,7 +1981,6 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
     order: [...PRIMARY_SIDEBAR_NAV_KEYS],
     labels: {
       timeline: DEFAULT_PRIMARY_SIDEBAR_LABELS.timeline,
-      management: DEFAULT_PRIMARY_SIDEBAR_LABELS.management,
       generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
@@ -1996,7 +1988,6 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
     },
     icons: {
       timeline: DEFAULT_PRIMARY_SIDEBAR_ICONS.timeline,
-      management: DEFAULT_PRIMARY_SIDEBAR_ICONS.management,
       generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
@@ -2026,12 +2017,6 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
         typeof parsed.labels?.timeline === "string"
           ? parsed.labels.timeline
           : fallback.labels.timeline
-      ),
-      management: normalizeSidebarMenuLabel(
-        "management",
-        typeof parsed.labels?.management === "string"
-          ? parsed.labels.management
-          : fallback.labels.management
       ),
       generator: normalizeSidebarMenuLabel(
         "generator",
@@ -2065,12 +2050,6 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
         typeof parsed.icons?.timeline === "string"
           ? parsed.icons.timeline
           : fallback.icons.timeline
-      ),
-      management: normalizeSidebarMenuIcon(
-        "management",
-        typeof parsed.icons?.management === "string"
-          ? parsed.icons.management
-          : fallback.icons.management
       ),
       generator: normalizeSidebarMenuIcon(
         "generator",
@@ -2247,7 +2226,8 @@ function activatePrimarySidebarPage(
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
 
-  const showManagement = navKey === "management";
+  // 설정 페이지에 과정 정보입력(management) 콘텐츠가 통합됨
+  const showManagement = navKey === "settings";
   setJibbleManagementSubmenuVisible(showManagement);
   if (showManagement && options.openManagementTab !== false) {
     setJibbleManagementSubmenuActive("course");
@@ -2308,7 +2288,7 @@ function setupJibbleSidebarNavigation(): void {
 
       activatePrimarySidebarPage(navKeyRaw, {
         scrollToTop: true,
-        openManagementTab: navKeyRaw === "management"
+        openManagementTab: navKeyRaw === "settings"
       });
     });
   }
@@ -2349,7 +2329,7 @@ function setupJibbleSidebarNavigation(): void {
       // Also sync desktop sidebar
       activatePrimarySidebarPage(navKeyRaw, {
         scrollToTop: true,
-        openManagementTab: navKeyRaw === "management"
+        openManagementTab: navKeyRaw === "settings"
       });
     });
   }
@@ -4325,7 +4305,7 @@ function handleConflictModalClick(event: MouseEvent): void {
 }
 
 function handleOpenInstructorDrawer(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4333,7 +4313,7 @@ function handleOpenInstructorDrawer(): void {
 }
 
 function handleQuickNavCourse(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4341,7 +4321,7 @@ function handleQuickNavCourse(): void {
 }
 
 function handleQuickNavSubject(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4349,7 +4329,7 @@ function handleQuickNavSubject(): void {
 }
 
 function handleQuickNavInstructor(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4357,7 +4337,7 @@ function handleQuickNavInstructor(): void {
 }
 
 function handleQuickNavMapping(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4531,7 +4511,7 @@ function handleResetMenuConfig(): void {
 }
 
 function handleJibbleSubCourse(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4541,7 +4521,7 @@ function handleJibbleSubCourse(): void {
 }
 
 function handleJibbleSubSubject(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });
@@ -4551,7 +4531,7 @@ function handleJibbleSubSubject(): void {
 }
 
 function handleJibbleSubInstructor(): void {
-  activatePrimarySidebarPage("management", {
+  activatePrimarySidebarPage("settings", {
     scrollToTop: false,
     openManagementTab: false
   });

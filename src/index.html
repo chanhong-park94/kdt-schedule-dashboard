@@ -22,7 +22,7 @@
 
     <div class="app-shell app-shell--jibble">
     <aside class="jibble-sidebar" aria-label="주요 메뉴">
-      <div class="jibble-logo">🧑‍🏫 KDT manager</div>
+      <div class="jibble-logo">🧑‍🏫 교육운영 유틸리티</div>
       <nav id="jibbleMainNav" class="jibble-nav" aria-label="메인 메뉴">
         <button
           class="jibble-nav-item is-active"
@@ -35,27 +35,17 @@
           <span class="jibble-nav-icon" aria-hidden="true">📅</span>
           <span class="jibble-nav-label">학사일정</span>
         </button>
-        <button
-          class="jibble-nav-item"
-          type="button"
-          data-scroll-target="instructorDrawer"
-          data-nav-key="management"
-          data-nav-icon="📄"
-          data-default-label="과정 정보입력"
-        >
-          <span class="jibble-nav-icon" aria-hidden="true">📄</span>
-          <span class="jibble-nav-label">과정 정보입력</span>
-        </button>
+        <!-- 과정 정보입력: 설정 페이지로 통합됨 -->
         <button
           class="jibble-nav-item"
           type="button"
           data-scroll-target="sectionScheduleGenerate"
           data-nav-key="generator"
           data-nav-icon="🛠️"
-          data-default-label="기수 일정 생성기"
+          data-default-label="HRD시간표 생성"
         >
           <span class="jibble-nav-icon" aria-hidden="true">🛠️</span>
-          <span class="jibble-nav-label">기수 일정 생성기</span>
+          <span class="jibble-nav-label">HRD시간표 생성</span>
         </button>
         <button
           class="jibble-nav-item"
@@ -99,13 +89,10 @@
         <span class="mobile-bottom-nav-icon">📅</span>
         <span class="mobile-bottom-nav-label">학사일정</span>
       </button>
-      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="management">
-        <span class="mobile-bottom-nav-icon">📄</span>
-        <span class="mobile-bottom-nav-label">정보입력</span>
-      </button>
+      <!-- 정보입력: 설정 페이지로 통합됨 -->
       <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="generator">
         <span class="mobile-bottom-nav-icon">🛠️</span>
-        <span class="mobile-bottom-nav-label">일정생성</span>
+        <span class="mobile-bottom-nav-label">HRD시간표</span>
       </button>
       <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="kpi">
         <span class="mobile-bottom-nav-icon">📊</span>
@@ -181,7 +168,7 @@
       id="jibbleManagementSubmenu"
       class="jibble-management-submenu u-hidden"
       aria-label="정보 입력 서브 메뉴"
-      data-page-group="management"
+      data-page-group="settings"
     >
       <div class="jibble-management-title">🧾 정보 입력</div>
       <div class="jibble-management-tabs" role="tablist" aria-label="정보 입력 분류">
@@ -191,7 +178,7 @@
       </div>
     </section>
 
-    <section class="quick-admin-index u-hidden" aria-label="정보 입력 바로가기" data-page-group="management">
+    <section class="quick-admin-index u-hidden" aria-label="정보 입력 바로가기" data-page-group="settings">
       <div class="quick-admin-index-head">
         <strong>입력 바로가기</strong>
         <span class="muted">과정/교과목/강사 정보와 매핑 화면을 바로 여세요.</span>
@@ -255,7 +242,7 @@
       <div id="conflictDetailContent" class="u-mt-10"></div>
     </dialog>
 
-    <aside id="instructorDrawer" class="drawer" aria-hidden="true" data-page-group="management">
+    <aside id="instructorDrawer" class="drawer" aria-hidden="true" data-page-group="settings">
       <div class="drawer-header">
         <strong>🧾 정보 입력</strong>
         <button class="drawer-close" data-close-drawer type="button">닫기</button>
@@ -504,7 +491,7 @@
         <p class="empty-guide-title">📅 타임라인을 시작하려면</p>
         <ol class="empty-guide-steps">
           <li><strong>과정 정보입력</strong>에서 과정·교과목·강사를 등록하세요</li>
-          <li><strong>기수 일정 생성기</strong>에서 수업시간표 CSV를 업로드하거나 일정을 생성하세요</li>
+          <li><strong>HRD시간표 생성</strong>에서 수업시간표 CSV를 업로드하거나 일정을 생성하세요</li>
           <li>생성된 일정이 이 타임라인에 자동으로 표시됩니다</li>
         </ol>
       </div>
@@ -515,7 +502,7 @@
     <div class="card card-span-12 card--schedule u-mt-14" id="sectionScheduleGenerate" data-page-group="generator">
       <div class="card-header row u-row-between u-row-center">
         <div>
-          <div class="card-title">🛠️ 기수 일정 생성기 정보</div>
+          <div class="card-title">🛠️ HRD시간표 생성 정보</div>
           <div class="card-subtitle muted">날짜/시간/휴강 규칙으로 학사일정을 생성하고 HRD 업로드용 CSV 다운로드까지 처리합니다.</div>
         </div>
       </div>
