@@ -2,24 +2,29 @@
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig } from "./hrdTypes";
 
 const HRD_BASE = "https://hrd.work24.go.kr/jsp/HRDP/HRDPO00/HRDPOA60/HRDPOA60_4.jsp";
-const BUILTIN_PROXIES = [
-  "https://corsproxy.io/?url=",
-  "https://api.allorigins.win/raw?url=",
-  "https://proxy.corsfix.com/?url=",
+
+interface ProxyEntry {
+  prefix: string;
+  /** true = prefix + encodeURIComponent(url), false = prefix + url */
+  encode: boolean;
+}
+
+const BUILTIN_PROXIES: ProxyEntry[] = [
+  { prefix: "https://cors.eu.org/", encode: false },
+  { prefix: "https://corsproxy.io/?url=", encode: true },
+  { prefix: "https://api.allorigins.win/raw?url=", encode: true },
 ];
 
 let activeProxyIndex = 0;
 
-function getProxy(config: HrdConfig): string {
-  if (config.proxy) return config.proxy;
-  return BUILTIN_PROXIES[activeProxyIndex] || BUILTIN_PROXIES[0];
-}
-
 // ─── 프록시 fetch 래퍼 ──────────────────────────────────────
 
 async function proxyFetch(rawUrl: string, config: HrdConfig, label: string): Promise<unknown> {
-  const tryOne = async (prefix: string): Promise<Response> => {
-    const r = await fetch(prefix + encodeURIComponent(rawUrl), {
+  const tryOne = async (entry: ProxyEntry): Promise<Response> => {
+    const url = entry.encode
+      ? entry.prefix + encodeURIComponent(rawUrl)
+      : entry.prefix + rawUrl;
+    const r = await fetch(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -30,7 +35,7 @@ async function proxyFetch(rawUrl: string, config: HrdConfig, label: string): Pro
   // 1) 커스텀 프록시 시도
   if (config.proxy) {
     try {
-      const r = await tryOne(config.proxy);
+      const r = await tryOne({ prefix: config.proxy, encode: true });
       return r.json();
     } catch {
       console.warn(`[HRD ${label}] Custom proxy failed, falling back`);
