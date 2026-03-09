@@ -12,7 +12,7 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
-export type AppSidebarNavKey = "timeline" | "management" | "generator" | "reports" | "settings";
+export type AppSidebarNavKey = "timeline" | "management" | "generator" | "kpi" | "attendance" | "reports" | "settings";
 
 export type AppSidebarMenuConfig = {
   order: AppSidebarNavKey[];
@@ -156,6 +156,8 @@ function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
     value === "timeline" ||
     value === "management" ||
     value === "generator" ||
+    value === "kpi" ||
+    value === "attendance" ||
     value === "reports" ||
     value === "settings"
   );
@@ -186,6 +188,8 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "timeline",
     "management",
     "generator",
+    "kpi",
+    "attendance",
     "reports",
     "settings"
   ];
@@ -215,6 +219,8 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       timeline: toSidebarLabel(labelsSource.timeline, "학사일정"),
       management: toSidebarLabel(labelsSource.management, "과정 정보입력"),
       generator: toSidebarLabel(labelsSource.generator, "기수 일정 생성기"),
+      kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
+      attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
       reports: toSidebarLabel(labelsSource.reports, "보고서"),
       settings: toSidebarLabel(labelsSource.settings, "설정")
     },
@@ -222,6 +228,8 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       timeline: toSidebarIcon(iconsSource.timeline, "📅"),
       management: toSidebarIcon(iconsSource.management, "📄"),
       generator: toSidebarIcon(iconsSource.generator, "🛠️"),
+      kpi: toSidebarIcon(iconsSource.kpi, "📊"),
+      attendance: toSidebarIcon(iconsSource.attendance, "📋"),
       reports: toSidebarIcon(iconsSource.reports, "🧾"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️")
     }

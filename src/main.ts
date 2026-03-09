@@ -7,7 +7,7 @@ import {
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
 import { applyCourseTemplateToState } from "./core/courseTemplateApply";
-import { removeBasicModeSections } from "./core/basicModeSections";
+import { BASIC_MODE_HIDDEN_NAV_KEYS, removeBasicModeSections } from "./core/basicModeSections";
 import {
   createCsvBlob,
   csvEscape,
@@ -22,6 +22,9 @@ import { exportHrdCsvForCohort } from "./core/export";
 import { fromScheduleDaysToSessions } from "./core/fromSchedule";
 import { fetchPublicHolidaysKR } from "./core/holidays";
 import { buildCohortInstructorMetaMap } from "./core/instructorTimeline";
+import { initKpiDashboard } from "./kpi/kpiDashboard";
+import { initAttendanceDashboard } from "./hrd/hrdAttendance";
+import { initDropoutDashboard } from "./hrd/hrdDropout";
 import { normalizeHHMM } from "./core/normalize";
 import {
   createDefaultScheduleTemplates,
@@ -238,6 +241,8 @@ const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "timeline",
   "management",
   "generator",
+  "kpi",
+  "attendance",
   "reports",
   "settings"
 ];
@@ -246,6 +251,8 @@ const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
   timeline: "학사일정",
   management: "과정 정보입력",
   generator: "기수 일정 생성기",
+  kpi: "재직자 자율성과지표",
+  attendance: "출결현황",
   reports: "보고서",
   settings: "설정"
 };
@@ -254,6 +261,8 @@ const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
   timeline: "📅",
   management: "📄",
   generator: "🛠️",
+  kpi: "📊",
+  attendance: "📋",
   reports: "🧾",
   settings: "⚙️"
 };
@@ -313,6 +322,7 @@ const jibbleSubCourseButton = document.querySelector<HTMLButtonElement>("#jibble
 const jibbleSubSubjectButton = document.querySelector<HTMLButtonElement>("#jibbleSubSubject");
 const jibbleSubInstructorButton = document.querySelector<HTMLButtonElement>("#jibbleSubInstructor");
 const jibbleMainNav = document.querySelector<HTMLElement>("#jibbleMainNav");
+const jibbleToolbar = document.querySelector<HTMLElement>("#jibbleToolbar");
 const jibblePrimaryNavButtons = Array.from(
   document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]")
 );
@@ -1937,6 +1947,8 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       timeline: config.labels.timeline,
       management: config.labels.management,
       generator: config.labels.generator,
+      kpi: config.labels.kpi,
+      attendance: config.labels.attendance,
       reports: config.labels.reports,
       settings: config.labels.settings
     },
@@ -1944,6 +1956,8 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       timeline: config.icons.timeline,
       management: config.icons.management,
       generator: config.icons.generator,
+      kpi: config.icons.kpi,
+      attendance: config.icons.attendance,
       reports: config.icons.reports,
       settings: config.icons.settings
     }
@@ -1984,6 +1998,8 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       timeline: normalizeSidebarMenuLabel("timeline", config.labels.timeline),
       management: normalizeSidebarMenuLabel("management", config.labels.management),
       generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
+      kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
+      attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
       reports: normalizeSidebarMenuLabel("reports", config.labels.reports),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings)
     },
@@ -1991,6 +2007,8 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       timeline: normalizeSidebarMenuIcon("timeline", config.icons.timeline),
       management: normalizeSidebarMenuIcon("management", config.icons.management),
       generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
+      kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
+      attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
       reports: normalizeSidebarMenuIcon("reports", config.icons.reports),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings)
     }
@@ -2004,6 +2022,8 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       timeline: DEFAULT_PRIMARY_SIDEBAR_LABELS.timeline,
       management: DEFAULT_PRIMARY_SIDEBAR_LABELS.management,
       generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
+      kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
+      attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
       reports: DEFAULT_PRIMARY_SIDEBAR_LABELS.reports,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings
     },
@@ -2011,6 +2031,8 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       timeline: DEFAULT_PRIMARY_SIDEBAR_ICONS.timeline,
       management: DEFAULT_PRIMARY_SIDEBAR_ICONS.management,
       generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
+      kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
+      attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
       reports: DEFAULT_PRIMARY_SIDEBAR_ICONS.reports,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings
     }
@@ -2051,6 +2073,18 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
           ? parsed.labels.generator
           : fallback.labels.generator
       ),
+      kpi: normalizeSidebarMenuLabel(
+        "kpi",
+        typeof parsed.labels?.kpi === "string"
+          ? parsed.labels.kpi
+          : fallback.labels.kpi
+      ),
+      attendance: normalizeSidebarMenuLabel(
+        "attendance",
+        typeof parsed.labels?.attendance === "string"
+          ? parsed.labels.attendance
+          : fallback.labels.attendance
+      ),
       reports: normalizeSidebarMenuLabel(
         "reports",
         typeof parsed.labels?.reports === "string"
@@ -2084,6 +2118,18 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
           ? parsed.icons.generator
           : fallback.icons.generator
       ),
+      kpi: normalizeSidebarMenuIcon(
+        "kpi",
+        typeof parsed.icons?.kpi === "string"
+          ? parsed.icons.kpi
+          : fallback.icons.kpi
+      ),
+      attendance: normalizeSidebarMenuIcon(
+        "attendance",
+        typeof parsed.icons?.attendance === "string"
+          ? parsed.icons.attendance
+          : fallback.icons.attendance
+      ),
       reports: normalizeSidebarMenuIcon(
         "reports",
         typeof parsed.icons?.reports === "string"
@@ -2113,8 +2159,13 @@ function getPrimarySidebarButtonByKey(navKey: PrimarySidebarNavKey): HTMLButtonE
 }
 
 function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
+  const hideAdminNav = !appState.showAdvanced;
+
   if (jibbleMainNav) {
     for (const navKey of config.order) {
+      if (hideAdminNav && BASIC_MODE_HIDDEN_NAV_KEYS.has(navKey)) {
+        continue;
+      }
       const button = getPrimarySidebarButtonByKey(navKey);
       if (button) {
         jibbleMainNav.appendChild(button);
@@ -2127,6 +2178,13 @@ function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
     if (!button) {
       continue;
     }
+
+    // Hide buttons for admin-only pages in basic mode
+    if (hideAdminNav && BASIC_MODE_HIDDEN_NAV_KEYS.has(navKey)) {
+      button.style.display = "none";
+      continue;
+    }
+    button.style.display = "";
 
     const iconElement = button.querySelector<HTMLElement>(".jibble-nav-icon");
     const icon = normalizeSidebarMenuIcon(navKey, config.icons[navKey]);
@@ -2247,6 +2305,11 @@ function activatePrimarySidebarPage(
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
 
+  // Show toolbar only on the timeline page where filters are relevant
+  if (jibbleToolbar) {
+    jibbleToolbar.style.display = navKey === "timeline" ? "" : "none";
+  }
+
   const showManagement = navKey === "management";
   setJibbleManagementSubmenuVisible(showManagement);
   if (showManagement && options.openManagementTab !== false) {
@@ -2292,6 +2355,14 @@ function setJibbleSidebarActive(navKey: PrimarySidebarNavKey): void {
     const currentKey = button.dataset.navKey?.trim() ?? "";
     button.classList.toggle("is-active", currentKey === navKey);
   }
+
+  // Sync mobile bottom nav active state
+  const mobileNav = document.getElementById("mobileBottomNav");
+  if (mobileNav) {
+    for (const btn of mobileNav.querySelectorAll<HTMLButtonElement>("[data-mobile-nav]")) {
+      btn.classList.toggle("is-active", btn.dataset.mobileNav === navKey);
+    }
+  }
 }
 
 function setupJibbleSidebarNavigation(): void {
@@ -2334,6 +2405,46 @@ function setupJibbleSidebarNavigation(): void {
     scrollToTop: false,
     openManagementTab: false
   });
+}
+
+function setupMobileBottomNavigation(): void {
+  const mobileNav = document.getElementById("mobileBottomNav");
+  if (!mobileNav) {
+    return;
+  }
+
+  const mobileButtons = Array.from(
+    mobileNav.querySelectorAll<HTMLButtonElement>("[data-mobile-nav]")
+  );
+
+  // Hide admin-only items in basic mode
+  if (!appState.showAdvanced) {
+    for (const button of mobileButtons) {
+      const navKey = button.dataset.mobileNav ?? "";
+      if (BASIC_MODE_HIDDEN_NAV_KEYS.has(navKey)) {
+        button.style.display = "none";
+      }
+    }
+  }
+
+  for (const button of mobileButtons) {
+    button.addEventListener("click", () => {
+      const navKeyRaw = button.dataset.mobileNav?.trim() ?? "";
+      if (!isPrimarySidebarNavKey(navKeyRaw)) {
+        return;
+      }
+
+      // Update mobile nav active state
+      for (const btn of mobileButtons) {
+        btn.classList.toggle("is-active", btn === button);
+      }
+
+      activatePrimarySidebarPage(navKeyRaw, {
+        scrollToTop: true,
+        openManagementTab: navKeyRaw === "management"
+      });
+    });
+  }
 }
 
 function getTrackTypeMissingCohorts(): string[] {
@@ -4039,7 +4150,6 @@ function renderAssigneeTimelineView(): void {
   }
 
   timelineEmpty.style.display = "none";
-  timelineEmpty.textContent = "수업시간표를 불러오면 타임라인이 생성됩니다.";
 
   const globalStart = limited.reduce((min, item) => Math.min(min, parseIsoDate(item.startDate)?.getTime() ?? min), Number.POSITIVE_INFINITY);
   const globalEnd = limited.reduce((max, item) => Math.max(max, parseIsoDate(item.endDate)?.getTime() ?? max), Number.NEGATIVE_INFINITY);
@@ -4234,7 +4344,6 @@ function renderTimeline(): void {
   }
 
   timelineEmpty.style.display = "none";
-  timelineEmpty.textContent = "수업시간표를 불러오면 타임라인이 생성됩니다.";
 
   if (appState.timelineViewType === "COHORT_TIMELINE") {
     renderCohortTimelineView(timelineItems, cohortNotificationMap, cohortInstructorMetaMap);
@@ -6888,6 +6997,26 @@ renderSidebarMenuConfigEditor();
 menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();
+setupMobileBottomNavigation();
+initKpiDashboard();
+initAttendanceDashboard();
+initDropoutDashboard();
+
+// ─── 출결현황 ↔ 하차방어율 page-level tab switching ─────────
+(() => {
+  const pageTabs = document.querySelectorAll<HTMLElement>("[data-att-page]");
+  const attPanel = document.getElementById("attPageAttendance");
+  const doPanel = document.getElementById("attPageDropout");
+  pageTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      pageTabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      const target = tab.dataset.attPage;
+      if (attPanel) attPanel.style.display = target === "attendance" ? "block" : "none";
+      if (doPanel) doPanel.style.display = target === "dropout" ? "block" : "none";
+    });
+  });
+})();
 
 const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
 applyAuthGate(hasAuthSession);
