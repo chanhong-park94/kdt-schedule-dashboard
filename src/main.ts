@@ -3136,7 +3136,11 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
 
     const ui = state.ui;
     const loadedSidebarMenu = ui?.sidebarMenu;
-    if (loadedSidebarMenu) {
+    // 마이그레이션: 이전 사이드바 설정(기수 일정 생성기, 설정 순서 등)이면 기본값으로 리셋
+    const needsMigration = loadedSidebarMenu &&
+      (loadedSidebarMenu.labels?.generator?.includes("기수") ||
+       loadedSidebarMenu.order?.indexOf("settings") < loadedSidebarMenu.order?.indexOf("attendance"));
+    if (loadedSidebarMenu && !needsMigration) {
       appState.sidebarMenuConfig = normalizeSidebarMenuConfig({
         order: loadedSidebarMenu.order,
         labels: loadedSidebarMenu.labels,
