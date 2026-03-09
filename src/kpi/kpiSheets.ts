@@ -264,8 +264,8 @@ function parseSummary(csv: string): {
         cohort: row[1]?.trim() || "",
         studentCount: num(row[2]),
         avgScore: num(row[3]),
-        completed: num(row[4]),
-        responseRate: num(row[5]),
+        completed: num(row[6]),
+        responseRate: num(row[7]),
       });
     }
   }
