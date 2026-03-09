@@ -3436,6 +3436,19 @@ tbody tr:hover {
 .att-modal-box { background: #fff; border-radius: 12px; width: 720px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2); max-height: 90vh; overflow-y: auto; }
 .att-modal-top { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px 0; }
 .att-modal-top h3 { font-size: 17px; font-weight: 800; margin: 0; }
+.att-risk-top-actions { display: flex; align-items: center; gap: 10px; }
+.att-slack-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px; border-radius: 6px; border: 1px solid #e2e8f0;
+  background: #fff; color: #4a154b; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.att-slack-btn:hover { background: #4a154b; color: #fff; border-color: #4a154b; }
+.att-slack-btn:disabled { opacity: .5; cursor: not-allowed; }
+.att-slack-btn.att-slack-sending { background: #f8fafc; color: #94a3b8; pointer-events: none; }
+.att-slack-btn.att-slack-sent { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.att-slack-btn.att-slack-fail { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.att-slack-icon { font-size: 14px; }
 .att-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; padding: 4px 8px; border-radius: 6px; color: #9ca3af; }
 .att-modal-close:hover { background: #f3f4f6; color: #374151; }
 .att-modal-body { padding: 16px 24px 24px; }

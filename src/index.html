@@ -971,7 +971,12 @@
       <div class="att-modal-box att-risk-panel">
         <div class="att-modal-top">
           <h3>🚨 출결 관리대상 명단</h3>
-          <button id="attRiskPanelClose" class="att-modal-close" type="button">&times;</button>
+          <div class="att-risk-top-actions">
+            <button id="attSlackSendBtn" class="att-slack-btn" type="button" title="Slack으로 리포트 전송">
+              <span class="att-slack-icon">📤</span> Slack 전송
+            </button>
+            <button id="attRiskPanelClose" class="att-modal-close" type="button">&times;</button>
+          </div>
         </div>
         <div class="att-risk-panel-summary">
           <span class="att-rps-chip rps-danger">🔴 위험 <strong id="attRpsDanger">0</strong>명</span>
@@ -1338,6 +1343,10 @@
           <div class="hrd-field">
             <label>CORS 프록시 (선택)</label>
             <input type="text" id="hrdProxy" class="hrd-input" placeholder="비워두면 자동 폴백" />
+          </div>
+          <div class="hrd-field" style="flex-basis:100%;">
+            <label>Slack Webhook URL <span style="font-weight:400;color:#9ca3af;font-size:11px;">관리대상 리포트 전송용</span></label>
+            <input type="password" id="hrdSlackWebhook" class="hrd-input" placeholder="https://hooks.slack.com/services/..." style="width:100%;" />
           </div>
           <div class="hrd-field-actions">
             <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>

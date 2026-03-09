@@ -17,6 +17,7 @@ import type {
   AttendanceViewMode,
 } from "./hrdTypes";
 import { ATTENDANCE_STATUS_CODE, isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
+import { sendSlackReport } from "./hrdSlack";
 
 Chart.register(...registerables);
 
@@ -593,6 +594,53 @@ function openRiskPanel(): void {
     });
   });
 
+  // Slack send button
+  const slackBtn = $("attSlackSendBtn") as HTMLButtonElement | null;
+  if (slackBtn) {
+    const config = loadHrdConfig();
+    slackBtn.style.display = config.slackWebhookUrl ? "" : "none";
+
+    // Clone to remove old listeners
+    const newBtn = slackBtn.cloneNode(true) as HTMLButtonElement;
+    slackBtn.parentNode?.replaceChild(newBtn, slackBtn);
+
+    newBtn.addEventListener("click", async () => {
+      const course = getSelectedCourse();
+      const degrSelect = $("attFilterDegr") as HTMLSelectElement | null;
+      const dateInput = $("attFilterDate") as HTMLInputElement | null;
+      if (!course || !degrSelect) return;
+
+      newBtn.disabled = true;
+      newBtn.className = "att-slack-btn att-slack-sending";
+      newBtn.innerHTML = `<span class="att-slack-icon">⏳</span> 전송 중...`;
+
+      try {
+        await sendSlackReport(
+          course.name,
+          degrSelect.value,
+          dateInput?.value || new Date().toISOString().slice(0, 10),
+          currentStudents,
+        );
+        newBtn.className = "att-slack-btn att-slack-sent";
+        newBtn.innerHTML = `<span class="att-slack-icon">✅</span> 전송 완료`;
+        setTimeout(() => {
+          newBtn.className = "att-slack-btn";
+          newBtn.innerHTML = `<span class="att-slack-icon">📤</span> Slack 전송`;
+          newBtn.disabled = false;
+        }, 3000);
+      } catch (e) {
+        newBtn.className = "att-slack-btn att-slack-fail";
+        newBtn.innerHTML = `<span class="att-slack-icon">❌</span> 실패`;
+        newBtn.title = e instanceof Error ? e.message : String(e);
+        setTimeout(() => {
+          newBtn.className = "att-slack-btn";
+          newBtn.innerHTML = `<span class="att-slack-icon">📤</span> Slack 전송`;
+          newBtn.disabled = false;
+        }, 3000);
+      }
+    });
+  }
+
   panel.classList.add("active");
 }
 
@@ -613,6 +661,8 @@ function renderHrdSettingsSection(): void {
   const isUnlocked = keySection && keySection.style.display !== "none";
   if (keyInput && isUnlocked) keyInput.value = currentConfig.authKey;
   if (proxyInput) proxyInput.value = currentConfig.proxy;
+  const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
+  if (slackInput && isUnlocked) slackInput.value = currentConfig.slackWebhookUrl || "";
 
   if (courseList) {
     courseList.innerHTML = currentConfig.courses.length === 0
@@ -676,8 +726,10 @@ function setupSettingsHandlers(): void {
   saveBtn?.addEventListener("click", () => {
     const key = ($("hrdAuthKey") as HTMLInputElement)?.value?.trim() || "";
     const proxy = ($("hrdProxy") as HTMLInputElement)?.value?.trim() || "";
+    const slackUrl = ($("hrdSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
     currentConfig.authKey = key;
     currentConfig.proxy = proxy;
+    currentConfig.slackWebhookUrl = slackUrl || undefined;
     saveHrdConfig(currentConfig);
     const status = $("hrdTestStatus");
     if (status) { status.textContent = "✅ 저장됨"; status.className = "att-api-status att-api-ok"; }

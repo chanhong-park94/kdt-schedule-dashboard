@@ -49,6 +49,7 @@ export interface HrdCourse {
 export interface HrdConfig {
   authKey: string;
   proxy: string;
+  slackWebhookUrl?: string;
   courses: HrdCourse[];
 }
 
