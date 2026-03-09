@@ -1,13 +1,13 @@
 import {
   createClickableCell,
   createTableElement,
-  getRequiredElement,
   setRenderNotice
 } from "./ui/utils/dom";
+import { domRefs } from "./ui/domRefs";
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
 import { applyCourseTemplateToState } from "./core/courseTemplateApply";
-import { BASIC_MODE_HIDDEN_NAV_KEYS, removeBasicModeSections } from "./core/basicModeSections";
+import { removeBasicModeSections } from "./core/basicModeSections";
 import {
   createCsvBlob,
   csvEscape,
@@ -20,20 +20,10 @@ import { detectConflicts } from "./core/conflicts";
 import { assignInstructorToModule } from "./core/autoAssignInstructor";
 import { exportHrdCsvForCohort } from "./core/export";
 import { fromScheduleDaysToSessions } from "./core/fromSchedule";
-import { fetchPublicHolidaysKR } from "./core/holidays";
-import { buildCohortInstructorMetaMap } from "./core/instructorTimeline";
-import { initKpiDashboard } from "./kpi/kpiDashboard";
-import { initAttendanceDashboard } from "./hrd/hrdAttendance";
-import { initDropoutDashboard } from "./hrd/hrdDropout";
 import { normalizeHHMM } from "./core/normalize";
 import {
-  createDefaultScheduleTemplates,
   findScheduleTemplate,
-  mergeScheduleTemplates,
   NamedScheduleTemplate,
-  removeScheduleTemplate,
-  SCHEDULE_TEMPLATE_STORAGE_KEY,
-  upsertScheduleTemplate
 } from "./core/scheduleTemplates";
 import {
   applyCourseSubjectInstructorMappingsToCohortSessions
@@ -50,18 +40,11 @@ import {
   type SavedStaffCell,
   type TemplateRowState
 } from "./core/state";
+import { type InternalV7ERecord } from "./core/schema";
 import { resolveShowAdvancedPolicy } from "./core/showAdvancedPolicy";
 import {
-  V7E_STRICT_DETAIL_HEADER,
-  buildAssignments,
   deriveModuleRangesFromSessions,
-  detectStaffOverlaps,
-  exportV7eStrictCsv,
-  summarizeWorkload
 } from "./core/staffing";
-import { exportWithMapping, type ExportFormatKey } from "./core/exportMapping";
-import { validateRecordsForFormat } from "./core/exportValidation";
-import { type InternalV7ERecord } from "./core/schema";
 import { normalizeInstructorCode, normalizeSubjectCode } from "./core/standardize";
 import { buildCohortSummaries } from "./core/summary";
 import {
@@ -165,6 +148,78 @@ import {
   type TimelineViewType,
   type PrimarySidebarNavKey
 } from "./ui/appState";
+import { initEventListeners } from "./ui/events";
+import {
+  initConflictsFeature,
+  setConflictTab,
+  renderTimeConflicts,
+  applyConflictFilters,
+  resetConflictsBeforeCompute,
+  downloadVisibleTimeConflictsCsv,
+  downloadVisibleInstructorDayConflictsCsv,
+  downloadVisibleFoDayConflictsCsv,
+  openConflictDetailModal,
+  closeConflictDetailModal,
+  renderInstructorDayOverlapPanel,
+  renderFoDayOverlapPanel,
+  applyInstructorDayFilters,
+  applyFoDayFilters,
+  CONFLICT_COLUMNS,
+  DAY_CONFLICT_COLUMNS,
+  RESOURCE_TYPE_LABEL
+} from "./ui/features/conflicts";
+import {
+  initTimelineFeature,
+  parseTimelineViewType,
+  renderTimeline,
+  renderTimelineDetail,
+  setTimelineViewType,
+  startOfWeekIso,
+  type TimelineNotificationFocus
+} from "./ui/features/timeline";
+import {
+  addDateToList as holidayAddDateToList,
+  clearHolidayList as holidayClearHolidayList,
+  dedupeHolidayList as holidayDedupeHolidayList,
+  getHolidayDisplayLabel as holidayGetHolidayDisplayLabel,
+  getHolidayFetchYears as holidayGetHolidayFetchYears,
+  handleAddCustomBreak as holidayHandleAddCustomBreak,
+  handleAddHoliday as holidayHandleAddHoliday,
+  handleLoadPublicHolidays as holidayHandleLoadPublicHolidays,
+  initHolidaysFeature,
+  loadPublicHolidays as holidayLoadPublicHolidays,
+  mergeFetchedHolidays as holidayMergeFetchedHolidays,
+  renderDateList as holidayRenderDateList,
+  renderHolidayAndBreakLists as holidayRenderHolidayAndBreakLists
+} from "./ui/features/holidays";
+import {
+  applySelectedScheduleTemplate as scheduleTemplatesApplySelectedScheduleTemplate,
+  applyTemplateRowsState as scheduleTemplatesApplyTemplateRowsState,
+  collectTemplateRowsState as scheduleTemplatesCollectTemplateRowsState,
+  deleteSelectedScheduleTemplate as scheduleTemplatesDeleteSelectedScheduleTemplate,
+  initScheduleTemplatesFeature,
+  loadScheduleTemplatesFromLocalStorage as scheduleTemplatesLoadScheduleTemplatesFromLocalStorage,
+  renderScheduleTemplateOptions as scheduleTemplatesRenderScheduleTemplateOptions,
+  saveCurrentScheduleTemplate as scheduleTemplatesSaveCurrentScheduleTemplate,
+  saveScheduleTemplatesToLocalStorage as scheduleTemplatesSaveScheduleTemplatesToLocalStorage
+} from "./ui/features/scheduleTemplates";
+import {
+  autoFillStaffingFromCohorts as staffingAutoFillStaffingFromCohorts,
+  buildModulesGenericExportRecords as staffingBuildModulesGenericExportRecords,
+  buildOverlapDayMapByAssignment as staffingBuildOverlapDayMapByAssignment,
+  buildStrictExportRecords as staffingBuildStrictExportRecords,
+  collectStaffingInputs as staffingCollectStaffingInputs,
+  downloadStaffingCsv as staffingDownloadStaffingCsv,
+  getPolicyLabelsForAssignee as staffingGetPolicyLabelsForAssignee,
+  initStaffingFeature,
+  isV7eStrictReady as staffingIsV7eStrictReady,
+  rebuildStaffingCohortRanges as staffingRebuildStaffingCohortRanges,
+  refreshStaffingAnalytics as staffingRefreshStaffingAnalytics,
+  renderStaffGantt as staffingRenderStaffGantt,
+  renderStaffingMatrix as staffingRenderStaffingMatrix,
+  renderStaffingSection as staffingRenderStaffingSection,
+  renderStaffKpiAndDetails as staffingRenderStaffKpiAndDetails
+} from "./ui/features/staffing";
 type ActivatePrimaryPageOptions = {
   scrollToTop?: boolean;
   openManagementTab?: boolean;
@@ -190,11 +245,6 @@ const TRACK_LABEL: Record<TrackType, string> = {
   EMPLOYED: "재직자"
 };
 
-const RESOURCE_TYPE_LABEL: Record<ResourceType, string> = {
-  INSTRUCTOR: "강사",
-  FACILITATOR: "퍼실",
-  OPERATION: "운영"
-};
 
 const RESOURCE_TYPE_ORDER: Record<ResourceType, number> = {
   INSTRUCTOR: 0,
@@ -202,31 +252,6 @@ const RESOURCE_TYPE_ORDER: Record<ResourceType, number> = {
   OPERATION: 2
 };
 
-const CONFLICT_COLUMNS = [
-  "기준",
-  "일자",
-  "키",
-  "과정A",
-  "A시간",
-  "A교과목",
-  "과정B",
-  "B시간",
-  "B교과목"
-] as const;
-
-const DAY_CONFLICT_COLUMNS = [
-  "담당자",
-  "리소스타입",
-  "과정A",
-  "모듈A",
-  "시작A",
-  "종료A",
-  "과정B",
-  "모듈B",
-  "시작B",
-  "종료B",
-  "겹침일수(정책반영)"
-] as const;
 
 const STORAGE_KEY = "academic_schedule_manager_state_v1";
 const AUTH_SESSION_KEY = "academic_schedule_manager_auth_v2";
@@ -234,7 +259,6 @@ const AUTH_CODE_V2 = "v2";
 const STORAGE_WARN_BYTES = 4_500_000;
 const AUTO_SAVE_DEBOUNCE_MS = 500;
 const PRINT_CONFLICT_LIMIT = 50;
-const TABLE_RENDER_LIMIT = 1000;
 const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v1";
 
 const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
@@ -281,250 +305,245 @@ const TIMELINE_VIEW_ORDER: TimelineViewType[] = [
 const TIMELINE_RENDER_LIMIT = 600;
 
 
-const fileInput = getRequiredElement<HTMLInputElement>("#file");
-const uploadStatus = getRequiredElement<HTMLElement>("#uploadStatus");
-const standardizeStatus = getRequiredElement<HTMLElement>("#standardizeStatus");
-const authGate = getRequiredElement<HTMLElement>("#authGate");
-const authCodeInput = getRequiredElement<HTMLInputElement>("#authCodeInput");
-const authLoginButton = getRequiredElement<HTMLButtonElement>("#authLoginButton");
-const authStatus = getRequiredElement<HTMLElement>("#authStatus");
+const fileInput = domRefs.fileInput;
+const uploadStatus = domRefs.uploadStatus;
+const standardizeStatus = domRefs.standardizeStatus;
+const authGate = domRefs.authGate;
+const authCodeInput = domRefs.authCodeInput;
+const authLoginButton = domRefs.authLoginButton;
+const authStatus = domRefs.authStatus;
 
-const stateMigrationBanner = getRequiredElement<HTMLElement>("#stateMigrationBanner");
-const stateMigrationList = getRequiredElement<HTMLUListElement>("#stateMigrationList");
-const globalWarningPanel = getRequiredElement<HTMLElement>("#globalWarningPanel");
-const globalWarningList = getRequiredElement<HTMLUListElement>("#globalWarningList");
-const adminModeToggle = document.querySelector<HTMLInputElement>("#adminModeToggle");
+const stateMigrationBanner = domRefs.stateMigrationBanner;
+const stateMigrationList = domRefs.stateMigrationList;
+const globalWarningPanel = domRefs.globalWarningPanel;
+const globalWarningList = domRefs.globalWarningList;
+const adminModeToggle = domRefs.adminModeToggle;
 
-const drawerBackdrop = getRequiredElement<HTMLElement>("#drawerBackdrop");
-const notificationDrawer = getRequiredElement<HTMLElement>("#notificationDrawer");
-const instructorDrawer = getRequiredElement<HTMLElement>("#instructorDrawer");
-const headerRuntimePanel = getRequiredElement<HTMLElement>(".header-runtime-panel");
-const headerCurrentTime = getRequiredElement<HTMLElement>("#headerCurrentTime");
-const headerSyncState = getRequiredElement<HTMLElement>("#headerSyncState");
-const openNotificationDrawerButton = getRequiredElement<HTMLButtonElement>("#openNotificationDrawer");
-const openInstructorDrawerButton = getRequiredElement<HTMLButtonElement>("#openInstructorDrawer");
-const quickNavCourseButton = getRequiredElement<HTMLButtonElement>("#quickNavCourse");
-const quickNavSubjectButton = getRequiredElement<HTMLButtonElement>("#quickNavSubject");
-const quickNavInstructorButton = getRequiredElement<HTMLButtonElement>("#quickNavInstructor");
-const quickNavMappingButton = getRequiredElement<HTMLButtonElement>("#quickNavMapping");
-const quickNavCourseMeta = getRequiredElement<HTMLElement>("#quickNavCourseMeta");
-const quickNavSubjectMeta = getRequiredElement<HTMLElement>("#quickNavSubjectMeta");
-const quickNavInstructorMeta = getRequiredElement<HTMLElement>("#quickNavInstructorMeta");
-const quickNavMappingMeta = getRequiredElement<HTMLElement>("#quickNavMappingMeta");
-const jibbleRightMemberText = document.querySelector<HTMLElement>("#jibbleRightMemberText");
-const jibbleRightStatInstructor = document.querySelector<HTMLElement>("#jibbleRightStatInstructor");
-const jibbleRightStatCohort = document.querySelector<HTMLElement>("#jibbleRightStatCohort");
-const jibbleRightStatConflict = document.querySelector<HTMLElement>("#jibbleRightStatConflict");
-const jibbleOpsStatus = document.querySelector<HTMLElement>("#jibbleOpsStatus");
-const jibbleOpsSummary = document.querySelector<HTMLElement>("#jibbleOpsSummary");
-const jibbleManagementSubmenu = document.querySelector<HTMLElement>("#jibbleManagementSubmenu");
-const jibbleSubCourseButton = document.querySelector<HTMLButtonElement>("#jibbleSubCourse");
-const jibbleSubSubjectButton = document.querySelector<HTMLButtonElement>("#jibbleSubSubject");
-const jibbleSubInstructorButton = document.querySelector<HTMLButtonElement>("#jibbleSubInstructor");
-const jibbleMainNav = document.querySelector<HTMLElement>("#jibbleMainNav");
-const jibbleToolbar = document.querySelector<HTMLElement>("#jibbleToolbar");
-const jibblePrimaryNavButtons = Array.from(
-  document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]")
-);
-const jibbleSubNavButtons = Array.from(
-  document.querySelectorAll<HTMLButtonElement>(".jibble-nav-sub .jibble-nav-item[data-scroll-target]")
-);
-const jibblePageGroupElements = Array.from(document.querySelectorAll<HTMLElement>("[data-page-group]"));
-const menuConfigList = getRequiredElement<HTMLElement>("#menuConfigList");
-const saveMenuConfigButton = getRequiredElement<HTMLButtonElement>("#saveMenuConfigButton");
-const resetMenuConfigButton = getRequiredElement<HTMLButtonElement>("#resetMenuConfigButton");
-const menuConfigStatus = getRequiredElement<HTMLElement>("#menuConfigStatus");
-const openConflictDetailModalButton = getRequiredElement<HTMLButtonElement>("#openConflictDetailModal");
-const conflictDetailModal = getRequiredElement<HTMLDialogElement>("#conflictDetailModal");
-const conflictDetailTitle = getRequiredElement<HTMLElement>("#conflictDetailTitle");
-const conflictDetailContent = getRequiredElement<HTMLElement>("#conflictDetailContent");
-const closeConflictDetailModalButton = getRequiredElement<HTMLButtonElement>("#closeConflictDetailModal");
+const drawerBackdrop = domRefs.drawerBackdrop;
+const notificationDrawer = domRefs.notificationDrawer;
+const instructorDrawer = domRefs.instructorDrawer;
+const headerRuntimePanel = domRefs.headerRuntimePanel;
+const headerCurrentTime = domRefs.headerCurrentTime;
+const headerSyncState = domRefs.headerSyncState;
+const openNotificationDrawerButton = domRefs.openNotificationDrawerButton;
+const openInstructorDrawerButton = domRefs.openInstructorDrawerButton;
+const quickNavCourseButton = domRefs.quickNavCourseButton;
+const quickNavSubjectButton = domRefs.quickNavSubjectButton;
+const quickNavInstructorButton = domRefs.quickNavInstructorButton;
+const quickNavMappingButton = domRefs.quickNavMappingButton;
+const quickNavCourseMeta = domRefs.quickNavCourseMeta;
+const quickNavSubjectMeta = domRefs.quickNavSubjectMeta;
+const quickNavInstructorMeta = domRefs.quickNavInstructorMeta;
+const quickNavMappingMeta = domRefs.quickNavMappingMeta;
+const jibbleRightMemberText = domRefs.jibbleRightMemberText;
+const jibbleRightStatInstructor = domRefs.jibbleRightStatInstructor;
+const jibbleRightStatCohort = domRefs.jibbleRightStatCohort;
+const jibbleRightStatConflict = domRefs.jibbleRightStatConflict;
+const jibbleOpsStatus = domRefs.jibbleOpsStatus;
+const jibbleOpsSummary = domRefs.jibbleOpsSummary;
+const jibbleManagementSubmenu = domRefs.jibbleManagementSubmenu;
+const jibbleSubCourseButton = domRefs.jibbleSubCourseButton;
+const jibbleSubSubjectButton = domRefs.jibbleSubSubjectButton;
+const jibbleSubInstructorButton = domRefs.jibbleSubInstructorButton;
+const jibbleMainNav = domRefs.jibbleMainNav;
+const jibblePrimaryNavButtons = domRefs.jibblePrimaryNavButtons;
+const jibbleSubNavButtons = domRefs.jibbleSubNavButtons;
+const jibblePageGroupElements = domRefs.jibblePageGroupElements;
+const menuConfigList = domRefs.menuConfigList;
+const saveMenuConfigButton = domRefs.saveMenuConfigButton;
+const resetMenuConfigButton = domRefs.resetMenuConfigButton;
+const menuConfigStatus = domRefs.menuConfigStatus;
+const openConflictDetailModalButton = domRefs.openConflictDetailModalButton;
+const conflictDetailModal = domRefs.conflictDetailModal;
+const conflictDetailTitle = domRefs.conflictDetailTitle;
+const conflictDetailContent = domRefs.conflictDetailContent;
+const closeConflictDetailModalButton = domRefs.closeConflictDetailModalButton;
 
-const riskCardTime = getRequiredElement<HTMLElement>("#riskCardTime");
-const riskTimeConflict = getRequiredElement<HTMLElement>("#riskTimeConflict");
-const riskCardInstructorDay = getRequiredElement<HTMLElement>("#riskCardInstructorDay");
-const riskInstructorDayConflict = getRequiredElement<HTMLElement>("#riskInstructorDayConflict");
-const riskCardFoDay = getRequiredElement<HTMLElement>("#riskCardFoDay");
-const riskFoDayConflict = getRequiredElement<HTMLElement>("#riskFoDayConflict");
-const riskCardHrd = getRequiredElement<HTMLElement>("#riskCardHrd");
-const riskHrdValidation = getRequiredElement<HTMLElement>("#riskHrdValidation");
-const riskCardHoliday = getRequiredElement<HTMLElement>("#riskCardHoliday");
-const riskHolidayApplied = getRequiredElement<HTMLElement>("#riskHolidayApplied");
+const riskCardTime = domRefs.riskCardTime;
+const riskTimeConflict = domRefs.riskTimeConflict;
+const riskCardInstructorDay = domRefs.riskCardInstructorDay;
+const riskInstructorDayConflict = domRefs.riskInstructorDayConflict;
+const riskCardFoDay = domRefs.riskCardFoDay;
+const riskFoDayConflict = domRefs.riskFoDayConflict;
+const riskCardHrd = domRefs.riskCardHrd;
+const riskHrdValidation = domRefs.riskHrdValidation;
+const riskCardHoliday = domRefs.riskCardHoliday;
+const riskHolidayApplied = domRefs.riskHolidayApplied;
 
-const cohortSelect = getRequiredElement<HTMLSelectElement>("#cohort");
-const cohortInfo = getRequiredElement<HTMLElement>("#cohortInfo");
-const downloadButton = getRequiredElement<HTMLButtonElement>("#download");
-const hrdValidationPanel = getRequiredElement<HTMLElement>("#hrdValidationPanel");
-const hrdValidationList = getRequiredElement<HTMLUListElement>("#hrdValidationList");
+const cohortSelect = domRefs.cohortSelect;
+const cohortInfo = domRefs.cohortInfo;
+const downloadButton = domRefs.downloadButton;
+const hrdValidationPanel = domRefs.hrdValidationPanel;
+const hrdValidationList = domRefs.hrdValidationList;
 
-const timelineRange = getRequiredElement<HTMLElement>("#timelineRange");
-const timelineEmpty = getRequiredElement<HTMLElement>("#timelineEmpty");
-const timelineViewTypeSelect = getRequiredElement<HTMLSelectElement>("#timelineViewTypeSelect");
-const assigneeTimelineControls = getRequiredElement<HTMLElement>("#assigneeTimelineControls");
-const assigneeModeInstructorButton = getRequiredElement<HTMLButtonElement>("#assigneeModeInstructor");
-const assigneeModeStaffButton = getRequiredElement<HTMLButtonElement>("#assigneeModeStaff");
-const weekGridControls = getRequiredElement<HTMLElement>("#weekGridControls");
-const weekPrevButton = getRequiredElement<HTMLButtonElement>("#weekPrevButton");
-const weekNextButton = getRequiredElement<HTMLButtonElement>("#weekNextButton");
-const weekLabel = getRequiredElement<HTMLElement>("#weekLabel");
-const monthCalendarControls = getRequiredElement<HTMLElement>("#monthCalendarControls");
-const monthPrevButton = getRequiredElement<HTMLButtonElement>("#monthPrevButton");
-const monthNextButton = getRequiredElement<HTMLButtonElement>("#monthNextButton");
-const monthLabel = getRequiredElement<HTMLElement>("#monthLabel");
-const timelineDetailPanel = getRequiredElement<HTMLElement>("#timelineDetailPanel");
-const timelineList = getRequiredElement<HTMLElement>("#timelineList");
-const notificationStatusList = getRequiredElement<HTMLElement>("#notificationStatusList");
+const timelineRange = domRefs.timelineRange;
+const timelineEmpty = domRefs.timelineEmpty;
+const timelineViewTypeSelect = domRefs.timelineViewTypeSelect;
+const assigneeTimelineControls = domRefs.assigneeTimelineControls;
+const assigneeModeInstructorButton = domRefs.assigneeModeInstructorButton;
+const assigneeModeStaffButton = domRefs.assigneeModeStaffButton;
+const weekGridControls = domRefs.weekGridControls;
+const weekPrevButton = domRefs.weekPrevButton;
+const weekNextButton = domRefs.weekNextButton;
+const weekLabel = domRefs.weekLabel;
+const monthCalendarControls = domRefs.monthCalendarControls;
+const monthPrevButton = domRefs.monthPrevButton;
+const monthNextButton = domRefs.monthNextButton;
+const monthLabel = domRefs.monthLabel;
+const timelineDetailPanel = domRefs.timelineDetailPanel;
+const timelineList = domRefs.timelineList;
+const notificationStatusList = domRefs.notificationStatusList;
 
-const scheduleCohortInput = getRequiredElement<HTMLInputElement>("#scheduleCohort");
-const scheduleStartDateInput = getRequiredElement<HTMLInputElement>("#scheduleStartDate");
-const scheduleTotalHoursInput = getRequiredElement<HTMLInputElement>("#scheduleTotalHours");
-const dayTemplateTable = getRequiredElement<HTMLTableElement>("#dayTemplateTable");
-const scheduleTemplateSelect = getRequiredElement<HTMLSelectElement>("#scheduleTemplateSelect");
-const scheduleTemplateNameInput = getRequiredElement<HTMLInputElement>("#scheduleTemplateName");
-const loadScheduleTemplateButton = getRequiredElement<HTMLButtonElement>("#loadScheduleTemplateButton");
-const saveScheduleTemplateButton = getRequiredElement<HTMLButtonElement>("#saveScheduleTemplateButton");
-const deleteScheduleTemplateButton = getRequiredElement<HTMLButtonElement>("#deleteScheduleTemplateButton");
-const scheduleTemplateStatus = getRequiredElement<HTMLElement>("#scheduleTemplateStatus");
+const scheduleCohortInput = domRefs.scheduleCohortInput;
+const scheduleStartDateInput = domRefs.scheduleStartDateInput;
+const scheduleTotalHoursInput = domRefs.scheduleTotalHoursInput;
+const dayTemplateTable = domRefs.dayTemplateTable;
+const scheduleTemplateSelect = domRefs.scheduleTemplateSelect;
+const scheduleTemplateNameInput = domRefs.scheduleTemplateNameInput;
+const loadScheduleTemplateButton = domRefs.loadScheduleTemplateButton;
+const saveScheduleTemplateButton = domRefs.saveScheduleTemplateButton;
+const deleteScheduleTemplateButton = domRefs.deleteScheduleTemplateButton;
+const scheduleTemplateStatus = domRefs.scheduleTemplateStatus;
 
-const holidayDateInput = getRequiredElement<HTMLInputElement>("#holidayDateInput");
-const addHolidayButton = getRequiredElement<HTMLButtonElement>("#addHolidayButton");
-const loadPublicHolidaysButton = getRequiredElement<HTMLButtonElement>("#loadPublicHolidaysButton");
-const clearHolidaysButton = getRequiredElement<HTMLButtonElement>("#clearHolidaysButton");
-const dedupeHolidaysButton = getRequiredElement<HTMLButtonElement>("#dedupeHolidaysButton");
-const holidayLoadStatus = getRequiredElement<HTMLElement>("#holidayLoadStatus");
-const holidayLoadSpinner = getRequiredElement<HTMLElement>("#holidayLoadSpinner");
-const holidayList = getRequiredElement<HTMLUListElement>("#holidayList");
+const holidayDateInput = domRefs.holidayDateInput;
+const addHolidayButton = domRefs.addHolidayButton;
+const loadPublicHolidaysButton = domRefs.loadPublicHolidaysButton;
+const clearHolidaysButton = domRefs.clearHolidaysButton;
+const dedupeHolidaysButton = domRefs.dedupeHolidaysButton;
+const holidayLoadStatus = domRefs.holidayLoadStatus;
+const holidayLoadSpinner = domRefs.holidayLoadSpinner;
+const holidayList = domRefs.holidayList;
 
-const customBreakDateInput = getRequiredElement<HTMLInputElement>("#customBreakDateInput");
-const addCustomBreakButton = getRequiredElement<HTMLButtonElement>("#addCustomBreakButton");
-const customBreakList = getRequiredElement<HTMLUListElement>("#customBreakList");
+const customBreakDateInput = domRefs.customBreakDateInput;
+const addCustomBreakButton = domRefs.addCustomBreakButton;
+const customBreakList = domRefs.customBreakList;
 
-const scheduleInstructorCodeInput = getRequiredElement<HTMLInputElement>("#scheduleInstructorCode");
-const scheduleClassroomCodeInput = getRequiredElement<HTMLInputElement>("#scheduleClassroomCode");
-const scheduleSubjectCodeInput = getRequiredElement<HTMLInputElement>("#scheduleSubjectCode");
+const scheduleInstructorCodeInput = domRefs.scheduleInstructorCodeInput;
+const scheduleClassroomCodeInput = domRefs.scheduleClassroomCodeInput;
+const scheduleSubjectCodeInput = domRefs.scheduleSubjectCodeInput;
 
-const generateScheduleButton = getRequiredElement<HTMLButtonElement>("#generateScheduleButton");
-const pushScheduleToConflicts = getRequiredElement<HTMLInputElement>("#pushScheduleToConflicts");
-const appendScheduleButton = getRequiredElement<HTMLButtonElement>("#appendScheduleButton");
+const generateScheduleButton = domRefs.generateScheduleButton;
+const pushScheduleToConflicts = domRefs.pushScheduleToConflicts;
+const appendScheduleButton = domRefs.appendScheduleButton;
 
-const scheduleError = getRequiredElement<HTMLElement>("#scheduleError");
-const scheduleResult = getRequiredElement<HTMLElement>("#scheduleResult");
-const scheduleSummary = getRequiredElement<HTMLElement>("#scheduleSummary");
-const scheduleSkippedSummary = getRequiredElement<HTMLElement>("#scheduleSkippedSummary");
-const scheduleSkippedDetails = getRequiredElement<HTMLElement>("#scheduleSkippedDetails");
-const scheduleDaysInfo = getRequiredElement<HTMLElement>("#scheduleDaysInfo");
-const scheduleDaysPreview = getRequiredElement<HTMLUListElement>("#scheduleDaysPreview");
-const scheduleAppendStatus = getRequiredElement<HTMLElement>("#scheduleAppendStatus");
+const scheduleError = domRefs.scheduleError;
+const scheduleResult = domRefs.scheduleResult;
+const scheduleSummary = domRefs.scheduleSummary;
+const scheduleSkippedSummary = domRefs.scheduleSkippedSummary;
+const scheduleSkippedDetails = domRefs.scheduleSkippedDetails;
+const scheduleDaysInfo = domRefs.scheduleDaysInfo;
+const scheduleDaysPreview = domRefs.scheduleDaysPreview;
+const scheduleAppendStatus = domRefs.scheduleAppendStatus;
 
-const staffingStatus = getRequiredElement<HTMLElement>("#staffingStatus");
-const staffingModeSelect = getRequiredElement<HTMLSelectElement>("#staffingModeSelect");
-const staffingModeHint = getRequiredElement<HTMLElement>("#staffingModeHint");
-const staffP1WeeksInput = getRequiredElement<HTMLInputElement>("#staffP1Weeks");
-const staff365WeeksInput = getRequiredElement<HTMLInputElement>("#staff365Weeks");
-const staffAutoFillButton = getRequiredElement<HTMLButtonElement>("#staffAutoFill");
-const staffRefreshButton = getRequiredElement<HTMLButtonElement>("#staffRefresh");
-const staffExportCsvButton = getRequiredElement<HTMLButtonElement>("#staffExportCsv");
-const staffExportModeSelect = getRequiredElement<HTMLSelectElement>("#staffExportMode");
-const staffExportIncludeDetails = getRequiredElement<HTMLInputElement>("#staffExportIncludeDetails");
-const staffExportModeHint = getRequiredElement<HTMLElement>("#staffExportModeHint");
-const staffExportWarningsAgree = getRequiredElement<HTMLInputElement>("#staffExportWarningsAgree");
-const staffExportValidationPanel = getRequiredElement<HTMLElement>("#staffExportValidationPanel");
-const staffExportValidationList = getRequiredElement<HTMLUListElement>("#staffExportValidationList");
-const staffModuleManagerContainer = getRequiredElement<HTMLElement>("#staffModuleManagerContainer");
-const staffModuleManagerContainerAdmin = getRequiredElement<HTMLElement>("#staffModuleManagerContainerAdmin");
-const staffAdvancedContainer = getRequiredElement<HTMLElement>("#staffAdvancedContainer");
-const staffMatrixContainer = getRequiredElement<HTMLElement>("#staffMatrixContainer");
-const staffCohortGantt = getRequiredElement<HTMLElement>("#staffCohortGantt");
-const staffAssigneeGantt = getRequiredElement<HTMLElement>("#staffAssigneeGantt");
-const staffKpiBody = getRequiredElement<HTMLTableSectionElement>("#staffKpiBody");
-const staffDetailContainer = getRequiredElement<HTMLElement>("#staffDetailContainer");
+const staffingStatus = domRefs.staffingStatus;
+const staffingModeSelect = domRefs.staffingModeSelect;
+const staffingModeHint = domRefs.staffingModeHint;
+const staffP1WeeksInput = domRefs.staffP1WeeksInput;
+const staff365WeeksInput = domRefs.staff365WeeksInput;
+const staffAutoFillButton = domRefs.staffAutoFillButton;
+const staffRefreshButton = domRefs.staffRefreshButton;
+const staffExportCsvButton = domRefs.staffExportCsvButton;
+const staffExportModeSelect = domRefs.staffExportModeSelect;
+const staffExportIncludeDetails = domRefs.staffExportIncludeDetails;
+const staffExportModeHint = domRefs.staffExportModeHint;
+const staffExportWarningsAgree = domRefs.staffExportWarningsAgree;
+const staffExportValidationPanel = domRefs.staffExportValidationPanel;
+const staffExportValidationList = domRefs.staffExportValidationList;
+const staffModuleManagerContainer = domRefs.staffModuleManagerContainer;
+const staffModuleManagerContainerAdmin = domRefs.staffModuleManagerContainerAdmin;
+const staffAdvancedContainer = domRefs.staffAdvancedContainer;
+const staffMatrixContainer = domRefs.staffMatrixContainer;
+const staffCohortGantt = domRefs.staffCohortGantt;
+const staffAssigneeGantt = domRefs.staffAssigneeGantt;
+const staffKpiBody = domRefs.staffKpiBody;
+const staffDetailContainer = domRefs.staffDetailContainer;
 
-const errorCount = getRequiredElement<HTMLElement>("#errorCount");
-const errorList = getRequiredElement<HTMLUListElement>("#errorList");
-const errorEmpty = getRequiredElement<HTMLElement>("#errorEmpty");
+const errorCount = domRefs.errorCount;
+const errorList = domRefs.errorList;
+const errorEmpty = domRefs.errorEmpty;
 
-const confCount = getRequiredElement<HTMLElement>("#confCount");
-const confTableBody = getRequiredElement<HTMLTableSectionElement>("#confTable tbody");
-const computeConflictsButton = getRequiredElement<HTMLButtonElement>("#computeConflicts");
-const keySearchInput = getRequiredElement<HTMLInputElement>("#keySearch");
-const downloadTimeConflictsButton = getRequiredElement<HTMLButtonElement>("#downloadTimeConflicts");
-const confRenderNotice = getRequiredElement<HTMLElement>("#confRenderNotice");
+const confCount = domRefs.confCount;
+const confTableBody = domRefs.confTableBody;
+const computeConflictsButton = domRefs.computeConflictsButton;
+const keySearchInput = domRefs.keySearchInput;
+const downloadTimeConflictsButton = domRefs.downloadTimeConflictsButton;
+const confRenderNotice = domRefs.confRenderNotice;
 
-const tabTimeConflicts = getRequiredElement<HTMLButtonElement>("#tabTimeConflicts");
-const tabInstructorDayConflicts = getRequiredElement<HTMLButtonElement>("#tabInstructorDayConflicts");
-const tabFoDayConflicts = getRequiredElement<HTMLButtonElement>("#tabFoDayConflicts");
-const timeConflictPanel = getRequiredElement<HTMLElement>("#timeConflictPanel");
-const instructorDayConflictPanel = getRequiredElement<HTMLElement>("#instructorDayConflictPanel");
-const foDayConflictPanel = getRequiredElement<HTMLElement>("#foDayConflictPanel");
-const instructorDaySearchInput = getRequiredElement<HTMLInputElement>("#instructorDaySearch");
-const foDaySearchInput = getRequiredElement<HTMLInputElement>("#foDaySearch");
-const downloadInstructorDayConflictsButton = getRequiredElement<HTMLButtonElement>("#downloadInstructorDayConflicts");
-const downloadFoDayConflictsButton = getRequiredElement<HTMLButtonElement>("#downloadFoDayConflicts");
-const instructorDayOverlapCount = getRequiredElement<HTMLElement>("#instructorDayOverlapCount");
-const instructorDayOverlapBody = getRequiredElement<HTMLTableSectionElement>("#instructorDayOverlapBody");
-const instructorDayRenderNotice = getRequiredElement<HTMLElement>("#instructorDayRenderNotice");
-const foOverlapCount = getRequiredElement<HTMLElement>("#foOverlapCount");
-const foOverlapBody = getRequiredElement<HTMLTableSectionElement>("#foOverlapBody");
-const foDayRenderNotice = getRequiredElement<HTMLElement>("#foDayRenderNotice");
+const tabTimeConflicts = domRefs.tabTimeConflicts;
+const tabInstructorDayConflicts = domRefs.tabInstructorDayConflicts;
+const tabFoDayConflicts = domRefs.tabFoDayConflicts;
+const timeConflictPanel = domRefs.timeConflictPanel;
+const instructorDayConflictPanel = domRefs.instructorDayConflictPanel;
+const foDayConflictPanel = domRefs.foDayConflictPanel;
+const instructorDaySearchInput = domRefs.instructorDaySearchInput;
+const foDaySearchInput = domRefs.foDaySearchInput;
+const downloadInstructorDayConflictsButton = domRefs.downloadInstructorDayConflictsButton;
+const downloadFoDayConflictsButton = domRefs.downloadFoDayConflictsButton;
+const instructorDayOverlapCount = domRefs.instructorDayOverlapCount;
+const instructorDayOverlapBody = domRefs.instructorDayOverlapBody;
+const instructorDayRenderNotice = domRefs.instructorDayRenderNotice;
+const foOverlapCount = domRefs.foOverlapCount;
+const foOverlapBody = domRefs.foOverlapBody;
+const foDayRenderNotice = domRefs.foDayRenderNotice;
 
-const saveProjectButton = getRequiredElement<HTMLButtonElement>("#saveProjectButton");
-const loadProjectButton = getRequiredElement<HTMLButtonElement>("#loadProjectButton");
-const resetProjectButton = getRequiredElement<HTMLButtonElement>("#resetProjectButton");
-const printReportButton = getRequiredElement<HTMLButtonElement>("#printReportButton");
-const loadProjectInput = getRequiredElement<HTMLInputElement>("#loadProjectInput");
-const stateStorageStatus = getRequiredElement<HTMLElement>("#stateStorageStatus");
-const stateStorageWarning = getRequiredElement<HTMLElement>("#stateStorageWarning");
+const saveProjectButton = domRefs.saveProjectButton;
+const loadProjectButton = domRefs.loadProjectButton;
+const resetProjectButton = domRefs.resetProjectButton;
+const printReportButton = domRefs.printReportButton;
+const loadProjectInput = domRefs.loadProjectInput;
+const stateStorageStatus = domRefs.stateStorageStatus;
+const stateStorageWarning = domRefs.stateStorageWarning;
 
-const demoSampleSection = getRequiredElement<HTMLElement>("#demoSampleSection");
-const demoSampleSelect = getRequiredElement<HTMLSelectElement>("#demoSampleSelect");
-const loadDemoSampleButton = getRequiredElement<HTMLButtonElement>("#loadDemoSampleButton");
-const restorePreviousStateButton = getRequiredElement<HTMLButtonElement>("#restorePreviousStateButton");
-const demoSampleBanner = getRequiredElement<HTMLElement>("#demoSampleBanner");
+const demoSampleSection = domRefs.demoSampleSection;
+const demoSampleSelect = domRefs.demoSampleSelect;
+const loadDemoSampleButton = domRefs.loadDemoSampleButton;
+const restorePreviousStateButton = domRefs.restorePreviousStateButton;
+const demoSampleBanner = domRefs.demoSampleBanner;
 
-const opsChecklistList = getRequiredElement<HTMLUListElement>("#opsChecklistList");
+const opsChecklistList = domRefs.opsChecklistList;
 
-const printReportCard = getRequiredElement<HTMLElement>("#printReportCard");
-const printReportMeta = getRequiredElement<HTMLElement>("#printReportMeta");
-const printCohortGantt = getRequiredElement<HTMLElement>("#printCohortGantt");
-const printAssigneeGantt = getRequiredElement<HTMLElement>("#printAssigneeGantt");
-const printKpiContainer = getRequiredElement<HTMLElement>("#printKpiContainer");
-const printConflictTitle = getRequiredElement<HTMLElement>("#printConflictTitle");
-const printConflictContainer = getRequiredElement<HTMLElement>("#printConflictContainer");
+const printReportCard = domRefs.printReportCard;
+const printReportMeta = domRefs.printReportMeta;
+const printCohortGantt = domRefs.printCohortGantt;
+const printAssigneeGantt = domRefs.printAssigneeGantt;
+const printKpiContainer = domRefs.printKpiContainer;
+const printConflictTitle = domRefs.printConflictTitle;
+const printConflictContainer = domRefs.printConflictContainer;
 
-const instructorCodeInput = getRequiredElement<HTMLInputElement>("#instructorCodeInput");
-const instructorNameInput = getRequiredElement<HTMLInputElement>("#instructorNameInput");
-const instructorMemoInput = getRequiredElement<HTMLInputElement>("#instructorMemoInput");
-const upsertInstructorButton = getRequiredElement<HTMLButtonElement>("#upsertInstructorButton");
-const instructorDirectoryBody = getRequiredElement<HTMLTableSectionElement>("#instructorDirectoryBody");
-const courseIdInput = getRequiredElement<HTMLInputElement>("#courseIdInput");
-const courseNameInput = getRequiredElement<HTMLInputElement>("#courseNameInput");
-const courseMemoInput = getRequiredElement<HTMLInputElement>("#courseMemoInput");
-const upsertCourseButton = getRequiredElement<HTMLButtonElement>("#upsertCourseButton");
-const courseRegistryBody = getRequiredElement<HTMLTableSectionElement>("#courseRegistryBody");
-const subjectCourseSelect = getRequiredElement<HTMLSelectElement>("#subjectCourseSelect");
-const mappingCourseSelect = getRequiredElement<HTMLSelectElement>("#mappingCourseSelect");
-const courseTemplateCourseSelect = getRequiredElement<HTMLSelectElement>("#courseTemplateCourseSelect");
-const courseTemplateNameInput = getRequiredElement<HTMLInputElement>("#courseTemplateNameInput");
-const courseTemplateSelect = getRequiredElement<HTMLSelectElement>("#courseTemplateSelect");
-const saveCourseTemplateButton = getRequiredElement<HTMLButtonElement>("#saveCourseTemplateButton");
-const loadCourseTemplateButton = getRequiredElement<HTMLButtonElement>("#loadCourseTemplateButton");
-const deleteCourseTemplateButton = getRequiredElement<HTMLButtonElement>("#deleteCourseTemplateButton");
-const courseTemplateStatus = getRequiredElement<HTMLElement>("#courseTemplateStatus");
-const subjectCodeInput = getRequiredElement<HTMLInputElement>("#subjectCodeInput");
-const subjectNameInput = getRequiredElement<HTMLInputElement>("#subjectNameInput");
-const subjectMemoInput = getRequiredElement<HTMLInputElement>("#subjectMemoInput");
-const upsertSubjectButton = getRequiredElement<HTMLButtonElement>("#upsertSubjectButton");
-const subjectDirectoryBody = getRequiredElement<HTMLTableSectionElement>("#subjectDirectoryBody");
-const applySubjectMappingsButton = getRequiredElement<HTMLButtonElement>("#applySubjectMappingsButton");
-const subjectMappingContainer = getRequiredElement<HTMLElement>("#subjectMappingContainer");
-const instructorTabCourse = getRequiredElement<HTMLButtonElement>("#instructorTabCourse");
-const instructorTabRegister = getRequiredElement<HTMLButtonElement>("#instructorTabRegister");
-const instructorTabMapping = getRequiredElement<HTMLButtonElement>("#instructorTabMapping");
-const instructorTabSubject = getRequiredElement<HTMLButtonElement>("#instructorTabSubject");
-const instructorCoursePanel = getRequiredElement<HTMLElement>("#instructorCoursePanel");
-const instructorRegisterPanel = getRequiredElement<HTMLElement>("#instructorRegisterPanel");
-const instructorMappingPanel = getRequiredElement<HTMLElement>("#instructorMappingPanel");
-const instructorSubjectPanel = getRequiredElement<HTMLElement>("#instructorSubjectPanel");
+const instructorCodeInput = domRefs.instructorCodeInput;
+const instructorNameInput = domRefs.instructorNameInput;
+const instructorMemoInput = domRefs.instructorMemoInput;
+const upsertInstructorButton = domRefs.upsertInstructorButton;
+const instructorDirectoryBody = domRefs.instructorDirectoryBody;
+const courseIdInput = domRefs.courseIdInput;
+const courseNameInput = domRefs.courseNameInput;
+const courseMemoInput = domRefs.courseMemoInput;
+const upsertCourseButton = domRefs.upsertCourseButton;
+const courseRegistryBody = domRefs.courseRegistryBody;
+const subjectCourseSelect = domRefs.subjectCourseSelect;
+const mappingCourseSelect = domRefs.mappingCourseSelect;
+const courseTemplateCourseSelect = domRefs.courseTemplateCourseSelect;
+const courseTemplateNameInput = domRefs.courseTemplateNameInput;
+const courseTemplateSelect = domRefs.courseTemplateSelect;
+const saveCourseTemplateButton = domRefs.saveCourseTemplateButton;
+const loadCourseTemplateButton = domRefs.loadCourseTemplateButton;
+const deleteCourseTemplateButton = domRefs.deleteCourseTemplateButton;
+const courseTemplateStatus = domRefs.courseTemplateStatus;
+const subjectCodeInput = domRefs.subjectCodeInput;
+const subjectNameInput = domRefs.subjectNameInput;
+const subjectMemoInput = domRefs.subjectMemoInput;
+const upsertSubjectButton = domRefs.upsertSubjectButton;
+const subjectDirectoryBody = domRefs.subjectDirectoryBody;
+const applySubjectMappingsButton = domRefs.applySubjectMappingsButton;
+const subjectMappingContainer = domRefs.subjectMappingContainer;
+const instructorTabCourse = domRefs.instructorTabCourse;
+const instructorTabRegister = domRefs.instructorTabRegister;
+const instructorTabMapping = domRefs.instructorTabMapping;
+const instructorTabSubject = domRefs.instructorTabSubject;
+const instructorCoursePanel = domRefs.instructorCoursePanel;
+const instructorRegisterPanel = domRefs.instructorRegisterPanel;
+const instructorMappingPanel = domRefs.instructorMappingPanel;
+const instructorSubjectPanel = domRefs.instructorSubjectPanel;
 
 function isCloudAccessAllowed(): boolean {
   return appState.isAuthVerified;
@@ -1868,53 +1887,6 @@ function setNotificationFocus(focus: { cohort?: string; assignee?: string; date?
   appState.notificationFocus = focus;
 }
 
-function setTimelineViewType(nextView: TimelineViewType): void {
-  appState.timelineViewType = TIMELINE_VIEW_ORDER.includes(nextView) ? nextView : "COHORT_TIMELINE";
-  timelineViewTypeSelect.value = appState.timelineViewType;
-  assigneeTimelineControls.style.display = appState.timelineViewType === "ASSIGNEE_TIMELINE" ? "block" : "none";
-  weekGridControls.style.display = appState.timelineViewType === "WEEK_GRID" ? "block" : "none";
-  monthCalendarControls.style.display = appState.timelineViewType === "MONTH_CALENDAR" ? "block" : "none";
-}
-
-function parseTimelineViewType(value: string): TimelineViewType {
-  return TIMELINE_VIEW_ORDER.includes(value as TimelineViewType)
-    ? (value as TimelineViewType)
-    : "COHORT_TIMELINE";
-}
-
-function renderTimelineDetail(title: string, details: string[]): void {
-  if (details.length === 0) {
-    timelineDetailPanel.style.display = "none";
-    timelineDetailPanel.textContent = "";
-    return;
-  }
-
-  timelineDetailPanel.style.display = "block";
-  timelineDetailPanel.innerHTML = "";
-  const strong = document.createElement("strong");
-  strong.textContent = title;
-  timelineDetailPanel.appendChild(strong);
-
-  const list = document.createElement("ul");
-  list.className = "error-list";
-  for (const detail of details.slice(0, 12)) {
-    const li = document.createElement("li");
-    li.textContent = detail;
-    list.appendChild(li);
-  }
-  timelineDetailPanel.appendChild(list);
-}
-
-function startOfWeekIso(isoDate: string): string {
-  const parsed = parseIsoDate(isoDate);
-  if (!parsed) {
-    return isoDate;
-  }
-  const utcDay = parsed.getUTCDay();
-  const mondayOffset = utcDay === 0 ? -6 : 1 - utcDay;
-  return formatDate(new Date(parsed.getTime() + mondayOffset * DAY_MS));
-}
-
 function applyStaffingMode(mode: StaffingMode): void {
   appState.staffingMode = mode;
   staffingModeSelect.value = mode;
@@ -2159,13 +2131,8 @@ function getPrimarySidebarButtonByKey(navKey: PrimarySidebarNavKey): HTMLButtonE
 }
 
 function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
-  const hideAdminNav = !appState.showAdvanced;
-
   if (jibbleMainNav) {
     for (const navKey of config.order) {
-      if (hideAdminNav && BASIC_MODE_HIDDEN_NAV_KEYS.has(navKey)) {
-        continue;
-      }
       const button = getPrimarySidebarButtonByKey(navKey);
       if (button) {
         jibbleMainNav.appendChild(button);
@@ -2178,13 +2145,6 @@ function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
     if (!button) {
       continue;
     }
-
-    // Hide buttons for admin-only pages in basic mode
-    if (hideAdminNav && BASIC_MODE_HIDDEN_NAV_KEYS.has(navKey)) {
-      button.style.display = "none";
-      continue;
-    }
-    button.style.display = "";
 
     const iconElement = button.querySelector<HTMLElement>(".jibble-nav-icon");
     const icon = normalizeSidebarMenuIcon(navKey, config.icons[navKey]);
@@ -2305,11 +2265,6 @@ function activatePrimarySidebarPage(
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
 
-  // Show toolbar only on the timeline page where filters are relevant
-  if (jibbleToolbar) {
-    jibbleToolbar.style.display = navKey === "timeline" ? "" : "none";
-  }
-
   const showManagement = navKey === "management";
   setJibbleManagementSubmenuVisible(showManagement);
   if (showManagement && options.openManagementTab !== false) {
@@ -2355,14 +2310,6 @@ function setJibbleSidebarActive(navKey: PrimarySidebarNavKey): void {
     const currentKey = button.dataset.navKey?.trim() ?? "";
     button.classList.toggle("is-active", currentKey === navKey);
   }
-
-  // Sync mobile bottom nav active state
-  const mobileNav = document.getElementById("mobileBottomNav");
-  if (mobileNav) {
-    for (const btn of mobileNav.querySelectorAll<HTMLButtonElement>("[data-mobile-nav]")) {
-      btn.classList.toggle("is-active", btn.dataset.mobileNav === navKey);
-    }
-  }
 }
 
 function setupJibbleSidebarNavigation(): void {
@@ -2405,46 +2352,6 @@ function setupJibbleSidebarNavigation(): void {
     scrollToTop: false,
     openManagementTab: false
   });
-}
-
-function setupMobileBottomNavigation(): void {
-  const mobileNav = document.getElementById("mobileBottomNav");
-  if (!mobileNav) {
-    return;
-  }
-
-  const mobileButtons = Array.from(
-    mobileNav.querySelectorAll<HTMLButtonElement>("[data-mobile-nav]")
-  );
-
-  // Hide admin-only items in basic mode
-  if (!appState.showAdvanced) {
-    for (const button of mobileButtons) {
-      const navKey = button.dataset.mobileNav ?? "";
-      if (BASIC_MODE_HIDDEN_NAV_KEYS.has(navKey)) {
-        button.style.display = "none";
-      }
-    }
-  }
-
-  for (const button of mobileButtons) {
-    button.addEventListener("click", () => {
-      const navKeyRaw = button.dataset.mobileNav?.trim() ?? "";
-      if (!isPrimarySidebarNavKey(navKeyRaw)) {
-        return;
-      }
-
-      // Update mobile nav active state
-      for (const btn of mobileButtons) {
-        btn.classList.toggle("is-active", btn === button);
-      }
-
-      activatePrimarySidebarPage(navKeyRaw, {
-        scrollToTop: true,
-        openManagementTab: navKeyRaw === "management"
-      });
-    });
-  }
 }
 
 function getTrackTypeMissingCohorts(): string[] {
@@ -2704,168 +2611,35 @@ function highlightGanttByCohortModule(cohort: string, module?: string): void {
 }
 
 function collectTemplateRowsState(): TemplateRowState[] {
-  const rows = Array.from(dayTemplateTable.querySelectorAll<HTMLTableRowElement>("tbody tr"));
-
-  return rows
-    .map((row) => {
-      const weekday = Number.parseInt(row.dataset.weekday ?? "", 10);
-      if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
-        return null;
-      }
-
-      return {
-        weekday,
-        start: row.querySelector<HTMLInputElement>(".tpl-start")?.value ?? "",
-        end: row.querySelector<HTMLInputElement>(".tpl-end")?.value ?? "",
-        breakStart: row.querySelector<HTMLInputElement>(".tpl-break-start")?.value ?? "",
-        breakEnd: row.querySelector<HTMLInputElement>(".tpl-break-end")?.value ?? ""
-      };
-    })
-    .filter((item): item is TemplateRowState => item !== null)
-    .sort((a, b) => a.weekday - b.weekday);
+  return scheduleTemplatesCollectTemplateRowsState();
 }
 
 function applyTemplateRowsState(rows: TemplateRowState[] | undefined): void {
-  if (!rows || rows.length === 0) {
-    return;
-  }
-
-  const map = new Map<number, TemplateRowState>();
-  for (const row of rows) {
-    if (Number.isInteger(row.weekday) && row.weekday >= 0 && row.weekday <= 6) {
-      map.set(row.weekday, row);
-    }
-  }
-
-  const domRows = Array.from(dayTemplateTable.querySelectorAll<HTMLTableRowElement>("tbody tr"));
-  for (const domRow of domRows) {
-    const weekday = Number.parseInt(domRow.dataset.weekday ?? "", 10);
-    const state = map.get(weekday);
-    if (!state) {
-      continue;
-    }
-
-    const startInput = domRow.querySelector<HTMLInputElement>(".tpl-start");
-    const endInput = domRow.querySelector<HTMLInputElement>(".tpl-end");
-    const breakStartInput = domRow.querySelector<HTMLInputElement>(".tpl-break-start");
-    const breakEndInput = domRow.querySelector<HTMLInputElement>(".tpl-break-end");
-
-    if (startInput) {
-      startInput.value = state.start;
-    }
-    if (endInput) {
-      endInput.value = state.end;
-    }
-    if (breakStartInput) {
-      breakStartInput.value = state.breakStart;
-    }
-    if (breakEndInput) {
-      breakEndInput.value = state.breakEnd;
-    }
-  }
+  scheduleTemplatesApplyTemplateRowsState(rows);
 }
 
 function saveScheduleTemplatesToLocalStorage(): void {
-  try {
-    localStorage.setItem(SCHEDULE_TEMPLATE_STORAGE_KEY, JSON.stringify(appState.scheduleTemplates));
-  } catch {
-    scheduleTemplateStatus.textContent = "템플릿 저장 실패: 브라우저 저장소를 확인해 주세요.";
-  }
+  scheduleTemplatesSaveScheduleTemplatesToLocalStorage();
 }
 
 function loadScheduleTemplatesFromLocalStorage(): void {
-  const raw = localStorage.getItem(SCHEDULE_TEMPLATE_STORAGE_KEY);
-  if (!raw) {
-    appState.scheduleTemplates = createDefaultScheduleTemplates();
-    saveScheduleTemplatesToLocalStorage();
-    return;
-  }
-
-  try {
-    appState.scheduleTemplates = mergeScheduleTemplates(JSON.parse(raw) as unknown);
-  } catch {
-    appState.scheduleTemplates = createDefaultScheduleTemplates();
-    saveScheduleTemplatesToLocalStorage();
-  }
+  scheduleTemplatesLoadScheduleTemplatesFromLocalStorage();
 }
 
 function renderScheduleTemplateOptions(preferredName = ""): void {
-  const previous = preferredName || scheduleTemplateSelect.value;
-  scheduleTemplateSelect.innerHTML = "";
-
-  for (const preset of appState.scheduleTemplates) {
-    const option = document.createElement("option");
-    option.value = preset.name;
-    option.textContent = preset.builtIn ? `${preset.name} (기본)` : preset.name;
-    scheduleTemplateSelect.appendChild(option);
-  }
-
-  if (appState.scheduleTemplates.length === 0) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "저장된 템플릿 없음";
-    scheduleTemplateSelect.appendChild(option);
-    scheduleTemplateSelect.value = "";
-    deleteScheduleTemplateButton.disabled = true;
-    return;
-  }
-
-  const selected = appState.scheduleTemplates.some((item) => item.name === previous)
-    ? previous
-    : appState.scheduleTemplates[0].name;
-  scheduleTemplateSelect.value = selected;
-  const selectedTemplate = findScheduleTemplate(appState.scheduleTemplates, selected);
-  deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn);
-  updateActionStates();
+  scheduleTemplatesRenderScheduleTemplateOptions(preferredName);
 }
 
 function applySelectedScheduleTemplate(): void {
-  const selected = findScheduleTemplate(appState.scheduleTemplates, scheduleTemplateSelect.value);
-  if (!selected) {
-    scheduleTemplateStatus.textContent = "선택한 템플릿을 찾을 수 없습니다.";
-    return;
-  }
-
-  applyTemplateRowsState(selected.rows);
-  scheduleTemplateStatus.textContent = `템플릿 불러오기 완료: ${selected.name}`;
-  pushRecentActionLog("INFO", `시간 템플릿 적용 완료: ${selected.name}`, "sectionScheduleGenerate");
-  scheduleAutoSave();
+  scheduleTemplatesApplySelectedScheduleTemplate();
 }
 
 function saveCurrentScheduleTemplate(): void {
-  const name = scheduleTemplateNameInput.value.trim();
-  if (!name) {
-    scheduleTemplateStatus.textContent = "저장할 템플릿 이름을 입력해 주세요.";
-    return;
-  }
-
-  const rows = collectTemplateRowsState();
-  appState.scheduleTemplates = upsertScheduleTemplate(appState.scheduleTemplates, name, rows);
-  saveScheduleTemplatesToLocalStorage();
-  renderScheduleTemplateOptions(name);
-  scheduleTemplateNameInput.value = "";
-  scheduleTemplateStatus.textContent = `템플릿 저장 완료: ${name}`;
-  pushRecentActionLog("INFO", `시간 템플릿 저장 완료: ${name}`, "sectionScheduleGenerate");
+  scheduleTemplatesSaveCurrentScheduleTemplate();
 }
 
 function deleteSelectedScheduleTemplate(): void {
-  const selected = scheduleTemplateSelect.value;
-  const template = findScheduleTemplate(appState.scheduleTemplates, selected);
-  if (!template) {
-    scheduleTemplateStatus.textContent = "삭제할 템플릿을 찾을 수 없습니다.";
-    return;
-  }
-
-  if (template.builtIn) {
-    scheduleTemplateStatus.textContent = "기본 템플릿은 삭제할 수 없습니다.";
-    return;
-  }
-
-  appState.scheduleTemplates = removeScheduleTemplate(appState.scheduleTemplates, template.name);
-  saveScheduleTemplatesToLocalStorage();
-  renderScheduleTemplateOptions();
-  scheduleTemplateStatus.textContent = `템플릿 삭제 완료: ${template.name}`;
-  pushRecentActionLog("INFO", `시간 템플릿 삭제 완료: ${template.name}`, "sectionScheduleGenerate");
+  scheduleTemplatesDeleteSelectedScheduleTemplate();
 }
 
 function buildCourseTemplateOptionValue(template: CourseTemplate): string {
@@ -3519,21 +3293,6 @@ function setStaffingStatus(message: string, isError = false): void {
   staffingStatus.style.color = isError ? "#b42318" : "";
 }
 
-function setConflictTab(tab: ConflictTab): void {
-  appState.activeConflictTab = tab;
-
-  const isTime = tab === "time";
-  const isInstructorDay = tab === "instructor_day";
-
-  tabTimeConflicts.classList.toggle("active", isTime);
-  tabInstructorDayConflicts.classList.toggle("active", isInstructorDay);
-  tabFoDayConflicts.classList.toggle("active", tab === "fo_day");
-
-  timeConflictPanel.style.display = isTime ? "block" : "none";
-  instructorDayConflictPanel.style.display = isInstructorDay ? "block" : "none";
-  foDayConflictPanel.style.display = tab === "fo_day" ? "block" : "none";
-  scheduleAutoSave();
-}
 
 function setUploadProcessingState(processing: boolean): void {
   appState.isUploadProcessing = processing;
@@ -3675,697 +3434,6 @@ function updateCohortInfo(): void {
   cohortInfo.textContent = `기간: ${summary.시작일} ~ ${summary.종료일} / 훈련일수: ${summary.훈련일수} / 수업시간표 건수: ${summary.세션수}`;
   refreshHrdValidation();
   scheduleAutoSave();
-}
-
-function appendTimelineNotice(message: string): void {
-  const notice = document.createElement("div");
-  notice.className = "muted";
-  notice.textContent = message;
-  notice.style.marginBottom = "6px";
-  timelineList.appendChild(notice);
-}
-
-type MonthAxisItem = {
-  key: string;
-  label: string;
-  leftPercent: number;
-};
-
-function buildMonthAxis(globalStart: number, globalEnd: number): MonthAxisItem[] {
-  const span = Math.max(globalEnd - globalStart, 1);
-  const axis: MonthAxisItem[] = [];
-  const startDate = new Date(globalStart);
-  const endDate = new Date(globalEnd);
-  const cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
-
-  while (cursor.getTime() <= endDate.getTime()) {
-    const leftPercent = ((cursor.getTime() - globalStart) / span) * 100;
-    const safeLeft = Math.max(0, Math.min(100, leftPercent));
-    const year = cursor.getUTCFullYear();
-    const month = String(cursor.getUTCMonth() + 1).padStart(2, "0");
-    axis.push({
-      key: `${year}-${month}`,
-      label: `${year}-${month}`,
-      leftPercent: safeLeft
-    });
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-  }
-
-  return axis;
-}
-
-function renderTimelineMonthAxis(globalStart: number, globalEnd: number): MonthAxisItem[] {
-  const axis = buildMonthAxis(globalStart, globalEnd);
-  if (axis.length === 0) {
-    return axis;
-  }
-
-  const axisWrap = document.createElement("div");
-  axisWrap.className = "timeline-axis";
-
-  const line = document.createElement("div");
-  line.className = "timeline-axis-line";
-  axisWrap.appendChild(line);
-
-  for (const item of axis) {
-    const tick = document.createElement("div");
-    tick.className = "timeline-axis-tick";
-    tick.style.left = `${item.leftPercent}%`;
-    tick.textContent = item.label;
-    axisWrap.appendChild(tick);
-  }
-
-  timelineList.appendChild(axisWrap);
-  return axis;
-}
-
-function buildCohortTimelineItems(): Array<{ summary: CohortSummary; startDate: Date; endDate: Date }> {
-  return appState.summaries
-    .map((summary) => ({
-      summary,
-      startDate: parseCompactDate(summary.시작일),
-      endDate: parseCompactDate(summary.종료일)
-    }))
-    .filter(
-      (item): item is { summary: CohortSummary; startDate: Date; endDate: Date } =>
-        item.startDate !== null && item.endDate !== null
-    )
-    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-}
-
-function appendTimelineBarRow(params: {
-  label: string;
-  startDate: Date;
-  endDate: Date;
-  globalStart: number;
-  globalEnd: number;
-  title: string;
-  barText?: string;
-  barDateText?: string;
-  barColor?: string;
-  badgeText?: string;
-  onBadgeClick?: () => void;
-  onBarClick?: () => void;
-  monthAxis?: MonthAxisItem[];
-}): void {
-  const span = Math.max(params.globalEnd - params.globalStart, 1);
-  const startMs = params.startDate.getTime();
-  const endMs = params.endDate.getTime();
-
-  const leftPercent = ((startMs - params.globalStart) / span) * 100;
-  const widthPercent = params.globalEnd === params.globalStart ? 100 : Math.max(((endMs - startMs) / span) * 100, 1.2);
-  const safeLeft = Math.max(0, Math.min(100, leftPercent));
-  const safeWidth = Math.max(0, Math.min(100 - safeLeft, widthPercent));
-
-  const row = document.createElement("div");
-  row.className = "timeline-row";
-
-  const label = document.createElement("div");
-  label.className = "timeline-label";
-  const text = document.createElement("span");
-  text.textContent = params.label;
-  label.appendChild(text);
-
-  if (params.badgeText && params.onBadgeClick) {
-    const badge = document.createElement("button");
-    badge.type = "button";
-    badge.className = "timeline-cohort-filter";
-    badge.textContent = params.badgeText;
-    badge.addEventListener("click", params.onBadgeClick);
-    label.appendChild(badge);
-  }
-
-  const track = document.createElement("div");
-  track.className = "timeline-track";
-  if (params.monthAxis) {
-    for (const month of params.monthAxis) {
-      const line = document.createElement("span");
-      line.className = "timeline-month-line";
-      line.style.left = `${month.leftPercent}%`;
-      track.appendChild(line);
-    }
-  }
-  const bar = document.createElement("button");
-  bar.type = "button";
-  bar.className = "timeline-bar";
-  bar.style.left = `${safeLeft}%`;
-  bar.style.width = `${safeWidth}%`;
-  if (params.barColor) {
-    bar.style.background = params.barColor;
-  }
-  bar.style.color = getReadableTextColorFromCssColor(params.barColor);
-
-  const barMain = document.createElement("span");
-  barMain.className = "timeline-bar-main";
-  barMain.textContent = params.barText ?? "";
-  bar.appendChild(barMain);
-
-  if (params.barDateText) {
-    const datePill = document.createElement("span");
-    datePill.className = "timeline-date-pill";
-    datePill.textContent = params.barDateText;
-    bar.appendChild(datePill);
-  }
-  bar.title = params.title;
-  if (params.onBarClick) {
-    bar.addEventListener("click", params.onBarClick);
-  }
-
-  track.appendChild(bar);
-  row.appendChild(label);
-  row.appendChild(track);
-  timelineList.appendChild(row);
-}
-
-function renderCohortTimelineView(
-  items: Array<{ summary: CohortSummary; startDate: Date; endDate: Date }>,
-  cohortNotificationMap: Map<string, { warning: number; error: number }>,
-  cohortInstructorMetaMap: ReturnType<typeof buildCohortInstructorMetaMap>
-): void {
-  const limited = items.slice(0, TIMELINE_RENDER_LIMIT);
-  if (items.length > limited.length) {
-    appendTimelineNotice(`기수 ${items.length}건 중 상위 ${limited.length}건만 표시합니다.`);
-  }
-
-  const globalStart = limited.reduce((min, item) => Math.min(min, item.startDate.getTime()), Number.POSITIVE_INFINITY);
-  const globalEnd = limited.reduce((max, item) => Math.max(max, item.endDate.getTime()), Number.NEGATIVE_INFINITY);
-  const monthAxis = renderTimelineMonthAxis(globalStart, globalEnd);
-
-  for (const item of limited) {
-    const counts = cohortNotificationMap.get(item.summary.과정기수) ?? { warning: 0, error: 0 };
-    const badgeText = counts.warning + counts.error > 0 ? `⚠ ${counts.warning} · ❗ ${counts.error}` : undefined;
-    const instructorMeta = cohortInstructorMetaMap.get(item.summary.과정기수);
-    const instructorText = instructorMeta?.instructorLabel ?? "강사: 미지정";
-    const instructorTooltip = instructorMeta?.instructorTooltip ?? "강사 정보 없음";
-
-    appendTimelineBarRow({
-      label: item.summary.과정기수,
-      startDate: item.startDate,
-      endDate: item.endDate,
-      globalStart,
-      globalEnd,
-      title: `시작일: ${formatCompactDate(item.summary.시작일)}\n종료일: ${formatCompactDate(item.summary.종료일)}\n훈련일수: ${item.summary.훈련일수}\n수업시간표 건수: ${item.summary.세션수}\n${instructorText}\n전체 강사: ${instructorTooltip}`,
-      barText: `${formatShortDateFromCompact(item.summary.시작일)} -> ${formatShortDateFromCompact(item.summary.종료일)}`,
-      barDateText: `${formatShortDateFromCompact(item.summary.시작일)} -> ${formatShortDateFromCompact(item.summary.종료일)}`,
-      barColor: instructorMeta?.barColor,
-      monthAxis,
-      badgeText,
-      onBadgeClick: () => {
-        setNotificationFocus({ cohort: item.summary.과정기수 });
-        openDrawer("notification");
-        renderNotificationCenter();
-      },
-      onBarClick: () => {
-        setNotificationFocus({ cohort: item.summary.과정기수 });
-        openDrawer("notification");
-        renderNotificationCenter();
-      }
-    });
-  }
-
-  timelineRange.textContent = `기간: ${formatDate(new Date(globalStart))} ~ ${formatDate(new Date(globalEnd))}`;
-}
-
-function renderCourseGroupedTimelineView(
-  items: Array<{ summary: CohortSummary; startDate: Date; endDate: Date }>,
-  cohortNotificationMap: Map<string, { warning: number; error: number }>,
-  cohortInstructorMetaMap: ReturnType<typeof buildCohortInstructorMetaMap>
-): void {
-  const groupMap = new Map<string, Array<{ summary: CohortSummary; startDate: Date; endDate: Date; cohortLabel: string }>>();
-  for (const item of items) {
-    const parsed = parseCourseGroupFromCohortName(item.summary.과정기수);
-    const list = groupMap.get(parsed.course) ?? [];
-    list.push({ ...item, cohortLabel: parsed.cohortLabel });
-    groupMap.set(parsed.course, list);
-  }
-
-  const groupNames = Array.from(groupMap.keys()).sort((a, b) => a.localeCompare(b));
-  let renderedCount = 0;
-
-  for (const groupName of groupNames) {
-    const rows = (groupMap.get(groupName) ?? []).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-    if (rows.length === 0) {
-      continue;
-    }
-
-    const groupCard = document.createElement("div");
-    groupCard.className = "timeline-group";
-
-    const header = document.createElement("div");
-    header.className = "timeline-group-header";
-
-    const title = document.createElement("strong");
-    title.textContent = groupName;
-    header.appendChild(title);
-
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "small-btn";
-    const collapsed = collapsedCourseGroups.has(groupName);
-    toggle.textContent = collapsed ? "펼치기" : "접기";
-    header.appendChild(toggle);
-    groupCard.appendChild(header);
-
-    const container = document.createElement("div");
-    container.style.display = collapsed ? "none" : "block";
-    groupCard.appendChild(container);
-
-    toggle.addEventListener("click", () => {
-      const isCollapsed = collapsedCourseGroups.has(groupName);
-      if (isCollapsed) {
-        collapsedCourseGroups.delete(groupName);
-      } else {
-        collapsedCourseGroups.add(groupName);
-      }
-      renderTimeline();
-    });
-
-    timelineList.appendChild(groupCard);
-
-    if (collapsed) {
-      continue;
-    }
-
-    const maxRenderCount = TIMELINE_RENDER_LIMIT - renderedCount;
-    const limitedRows = rows.slice(0, Math.max(0, maxRenderCount));
-    renderedCount += limitedRows.length;
-
-    if (limitedRows.length === 0) {
-      continue;
-    }
-
-    const groupStart = limitedRows.reduce((min, item) => Math.min(min, item.startDate.getTime()), Number.POSITIVE_INFINITY);
-    const groupEnd = limitedRows.reduce((max, item) => Math.max(max, item.endDate.getTime()), Number.NEGATIVE_INFINITY);
-    const monthAxis = buildMonthAxis(groupStart, groupEnd);
-
-    for (const item of limitedRows) {
-      const rowHost = document.createElement("div");
-      rowHost.className = "timeline-row";
-
-      const label = document.createElement("div");
-      label.className = "timeline-label";
-      label.textContent = `${item.cohortLabel}`;
-      rowHost.appendChild(label);
-
-      const track = document.createElement("div");
-      track.className = "timeline-track";
-      for (const month of monthAxis) {
-        const line = document.createElement("span");
-        line.className = "timeline-month-line";
-        line.style.left = `${month.leftPercent}%`;
-        track.appendChild(line);
-      }
-      const bar = document.createElement("button");
-      bar.type = "button";
-      bar.className = "timeline-bar";
-      const span = Math.max(groupEnd - groupStart, 1);
-      const left = ((item.startDate.getTime() - groupStart) / span) * 100;
-      const width = groupEnd === groupStart ? 100 : Math.max(((item.endDate.getTime() - item.startDate.getTime()) / span) * 100, 1.2);
-      const safeLeft = Math.max(0, Math.min(100, left));
-      const safeWidth = Math.max(0, Math.min(100 - safeLeft, width));
-      bar.style.left = `${safeLeft}%`;
-      bar.style.width = `${safeWidth}%`;
-      const instructorMeta = cohortInstructorMetaMap.get(item.summary.과정기수);
-      const instructorText = instructorMeta?.instructorLabel ?? "강사: 미지정";
-      const instructorTooltip = instructorMeta?.instructorTooltip ?? "강사 정보 없음";
-      if (instructorMeta?.barColor) {
-        bar.style.background = instructorMeta.barColor;
-      }
-      bar.style.color = getReadableTextColorFromCssColor(instructorMeta?.barColor);
-      const barMain = document.createElement("span");
-      barMain.className = "timeline-bar-main";
-      barMain.textContent = `${item.cohortLabel}`;
-      bar.appendChild(barMain);
-
-      const datePill = document.createElement("span");
-      datePill.className = "timeline-date-pill";
-      datePill.textContent = `${formatShortDateFromCompact(item.summary.시작일)} -> ${formatShortDateFromCompact(item.summary.종료일)}`;
-      bar.appendChild(datePill);
-      bar.title = `${groupName} / ${item.summary.과정기수}\n${instructorText}\n전체 강사: ${instructorTooltip}`;
-      bar.addEventListener("click", () => {
-        setNotificationFocus({ cohort: item.summary.과정기수 });
-        openDrawer("notification");
-        renderNotificationCenter();
-      });
-      track.appendChild(bar);
-      rowHost.appendChild(track);
-
-      const counts = cohortNotificationMap.get(item.summary.과정기수) ?? { warning: 0, error: 0 };
-      if (counts.warning + counts.error > 0) {
-        const badge = document.createElement("button");
-        badge.type = "button";
-        badge.className = "timeline-cohort-filter";
-        badge.textContent = `⚠ ${counts.warning} · ❗ ${counts.error}`;
-        badge.addEventListener("click", () => {
-          setNotificationFocus({ cohort: item.summary.과정기수 });
-          openDrawer("notification");
-          renderNotificationCenter();
-        });
-        label.appendChild(badge);
-      }
-
-      container.appendChild(rowHost);
-    }
-
-    if (renderedCount >= TIMELINE_RENDER_LIMIT) {
-      appendTimelineNotice(`렌더 안전을 위해 상위 ${TIMELINE_RENDER_LIMIT}개 항목까지만 표시합니다.`);
-      break;
-    }
-  }
-
-  const globalStart = items.reduce((min, item) => Math.min(min, item.startDate.getTime()), Number.POSITIVE_INFINITY);
-  const globalEnd = items.reduce((max, item) => Math.max(max, item.endDate.getTime()), Number.NEGATIVE_INFINITY);
-  timelineRange.textContent = `기간: ${formatDate(new Date(globalStart))} ~ ${formatDate(new Date(globalEnd))}`;
-}
-
-function getSessionIsoDate(session: Session): string | null {
-  if (session.normalizedDate && parseIsoDate(session.normalizedDate)) {
-    return session.normalizedDate;
-  }
-
-  const parsed = parseCompactDate(session.훈련일자);
-  if (!parsed) {
-    return null;
-  }
-  return formatDate(parsed);
-}
-
-function renderAssigneeTimelineView(): void {
-  type AssigneeRow = {
-    key: string;
-    startDate: string;
-    endDate: string;
-    count: number;
-    conflictCount: number;
-    conflictComputed: boolean;
-  };
-  const rows: AssigneeRow[] = [];
-
-  if (appState.assigneeTimelineKind === "INSTRUCTOR") {
-    const byInstructor = new Map<string, { startDate: string; endDate: string; count: number }>();
-    for (const session of appState.sessions) {
-      const instructor = normalizeInstructorCode(session.훈련강사코드);
-      const iso = getSessionIsoDate(session);
-      if (!instructor || !iso) {
-        continue;
-      }
-      const prev = byInstructor.get(instructor);
-      if (!prev) {
-        byInstructor.set(instructor, { startDate: iso, endDate: iso, count: 1 });
-        continue;
-      }
-      prev.startDate = prev.startDate < iso ? prev.startDate : iso;
-      prev.endDate = prev.endDate > iso ? prev.endDate : iso;
-      prev.count += 1;
-    }
-
-    const conflictMap = new Map<string, number>();
-    for (const conflict of appState.allConflicts) {
-      const key = normalizeInstructorCode(conflict.키);
-      if (!key) {
-        continue;
-      }
-      conflictMap.set(key, (conflictMap.get(key) ?? 0) + 1);
-    }
-
-    for (const [key, value] of byInstructor.entries()) {
-      rows.push({
-        key,
-        startDate: value.startDate,
-        endDate: value.endDate,
-        count: value.count,
-        conflictCount: conflictMap.get(key) ?? 0,
-        conflictComputed: appState.hasComputedConflicts
-      });
-    }
-  } else {
-    const byAssignee = new Map<string, { startDate: string; endDate: string; count: number }>();
-    for (const assignment of appState.staffingAssignments) {
-      const assignee = assignment.assignee.trim();
-      if (!assignee || !parseIsoDate(assignment.startDate) || !parseIsoDate(assignment.endDate)) {
-        continue;
-      }
-      const prev = byAssignee.get(assignee);
-      if (!prev) {
-        byAssignee.set(assignee, { startDate: assignment.startDate, endDate: assignment.endDate, count: 1 });
-        continue;
-      }
-      prev.startDate = prev.startDate < assignment.startDate ? prev.startDate : assignment.startDate;
-      prev.endDate = prev.endDate > assignment.endDate ? prev.endDate : assignment.endDate;
-      prev.count += 1;
-    }
-
-    const overlapMap = new Map<string, number>();
-    for (const overlap of [...appState.instructorDayOverlaps, ...appState.facilitatorOperationOverlaps]) {
-      const assignee = overlap.assignee.trim();
-      if (!assignee) {
-        continue;
-      }
-      overlapMap.set(assignee, (overlapMap.get(assignee) ?? 0) + 1);
-    }
-
-    for (const [key, value] of byAssignee.entries()) {
-      rows.push({
-        key,
-        startDate: value.startDate,
-        endDate: value.endDate,
-        count: value.count,
-        conflictCount: overlapMap.get(key) ?? 0,
-        conflictComputed: true
-      });
-    }
-  }
-
-  rows.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.key.localeCompare(b.key));
-  const limited = rows.slice(0, TIMELINE_RENDER_LIMIT);
-  if (rows.length > limited.length) {
-    appendTimelineNotice(`담당 항목 ${rows.length}건 중 상위 ${limited.length}건만 표시합니다.`);
-  }
-
-  if (limited.length === 0) {
-    timelineRange.textContent = "기간: -";
-    timelineEmpty.style.display = "block";
-    timelineEmpty.textContent = appState.assigneeTimelineKind === "INSTRUCTOR" ? "강사 기준 데이터가 없습니다." : "담당자 기준 데이터가 없습니다.";
-    return;
-  }
-
-  timelineEmpty.style.display = "none";
-
-  const globalStart = limited.reduce((min, item) => Math.min(min, parseIsoDate(item.startDate)?.getTime() ?? min), Number.POSITIVE_INFINITY);
-  const globalEnd = limited.reduce((max, item) => Math.max(max, parseIsoDate(item.endDate)?.getTime() ?? max), Number.NEGATIVE_INFINITY);
-  const monthAxis = renderTimelineMonthAxis(globalStart, globalEnd);
-
-  for (const row of limited) {
-    const startDate = parseIsoDate(row.startDate);
-    const endDate = parseIsoDate(row.endDate);
-    if (!startDate || !endDate) {
-      continue;
-    }
-
-    appendTimelineBarRow({
-      label: row.key,
-      startDate,
-      endDate,
-      globalStart,
-      globalEnd,
-      title: `${row.key}\n시작: ${row.startDate}\n종료: ${row.endDate}\n대상 건수: ${row.count}`,
-      barText: row.key,
-      barDateText: `${formatShortDateFromIso(row.startDate)} -> ${formatShortDateFromIso(row.endDate)}`,
-      monthAxis,
-      badgeText: !row.conflictComputed ? "미계산" : row.conflictCount > 0 ? `❗ ${row.conflictCount}` : undefined,
-      onBadgeClick: () => {
-        setNotificationFocus({ assignee: row.key });
-        openDrawer("notification");
-        renderNotificationCenter();
-      },
-      onBarClick: () => {
-        setNotificationFocus({ assignee: row.key });
-        openDrawer("notification");
-        renderNotificationCenter();
-      }
-    });
-  }
-
-  timelineRange.textContent = `기간: ${formatDate(new Date(globalStart))} ~ ${formatDate(new Date(globalEnd))}`;
-}
-
-function renderWeekGridView(): void {
-  const start = startOfWeekIso(appState.weekGridStartDate);
-  appState.weekGridStartDate = start;
-
-  const dayNames = ["월", "화", "수", "목", "금", "토", "일"];
-  const days = Array.from({ length: 7 }, (_, index) => addDaysToIso(start, index));
-  weekLabel.textContent = `${days[0]} ~ ${days[6]}`;
-  timelineRange.textContent = `기간: ${days[0]} ~ ${days[6]}`;
-
-  const grid = document.createElement("div");
-  grid.className = "timeline-grid";
-
-  for (const [index, day] of days.entries()) {
-    const sessionsOnDay = appState.sessions.filter((session) => getSessionIsoDate(session) === day);
-    const cell = document.createElement("div");
-    cell.className = "timeline-grid-cell";
-    if (sessionsOnDay.length > 0) {
-      cell.classList.add("has-class");
-    }
-    if (appState.holidayDates.includes(day) || appState.customBreakDates.includes(day)) {
-      cell.classList.add("holiday");
-      const holidayName = holidayNameByDate.get(day);
-      const dayType = holidayName ? `공휴일: ${holidayName}` : appState.customBreakDates.includes(day) ? "자체휴강" : "공휴일";
-      cell.title = `${day} ${dayType}`;
-    }
-
-    const title = document.createElement("div");
-    title.className = "timeline-grid-title";
-    title.textContent = `${dayNames[index]} ${day}`;
-    cell.appendChild(title);
-
-    const body = document.createElement("div");
-    body.textContent = sessionsOnDay.length > 0 ? `수업 ${sessionsOnDay.length}건` : "수업 없음";
-    cell.appendChild(body);
-
-    cell.addEventListener("click", () => {
-      const details = sessionsOnDay.map(
-        (session) => `${session.과정기수} / ${session["교과목(및 능력단위)코드"]} / ${formatHHMM(session.훈련시작시간)}-${formatHHMM(session.훈련종료시간)}`
-      );
-      renderTimelineDetail(`${day} 수업시간표`, details);
-      if (sessionsOnDay.length > 0) {
-        setNotificationFocus({ date: toCompactDateFromIso(day) });
-      }
-    });
-
-    grid.appendChild(cell);
-  }
-
-  timelineList.appendChild(grid);
-}
-
-function renderMonthCalendarView(): void {
-  const parsedMonth = appState.monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
-  if (!parsedMonth) {
-    appState.monthCalendarCursor = getTodayIsoDate().slice(0, 7);
-  }
-  const [year, month] = appState.monthCalendarCursor.split("-").map((value) => Number.parseInt(value, 10));
-  const first = new Date(Date.UTC(year, (month || 1) - 1, 1));
-  const monthLabelText = `${first.getUTCFullYear()}-${String(first.getUTCMonth() + 1).padStart(2, "0")}`;
-  appState.monthCalendarCursor = monthLabelText;
-  monthLabel.textContent = monthLabelText;
-
-  const firstIso = formatDate(first);
-  const start = startOfWeekIso(firstIso);
-  const weekdayHeader = document.createElement("div");
-  weekdayHeader.className = "timeline-weekday-header";
-  const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];
-  for (const [index, labelText] of weekdayLabels.entries()) {
-    const cell = document.createElement("div");
-    cell.className = `timeline-weekday-cell${index >= 5 ? " weekend" : ""}`;
-    cell.textContent = labelText;
-    weekdayHeader.appendChild(cell);
-  }
-  timelineList.appendChild(weekdayHeader);
-
-  const grid = document.createElement("div");
-  grid.className = "timeline-grid";
-
-  for (let i = 0; i < 42; i += 1) {
-    const day = addDaysToIso(start, i);
-    const sessionsOnDay = appState.sessions.filter((session) => getSessionIsoDate(session) === day);
-    const inCurrentMonth = day.slice(0, 7) === appState.monthCalendarCursor;
-    const dayOfWeek = parseIsoDate(day)?.getUTCDay() ?? 1;
-
-    const cell = document.createElement("div");
-    cell.className = "timeline-grid-cell";
-    if (sessionsOnDay.length > 0) {
-      cell.classList.add("has-class");
-    }
-    if (appState.holidayDates.includes(day) || appState.customBreakDates.includes(day)) {
-      cell.classList.add("holiday");
-      const holidayName = holidayNameByDate.get(day);
-      const dayType = holidayName ? `공휴일: ${holidayName}` : appState.customBreakDates.includes(day) ? "자체휴강" : "공휴일";
-      cell.title = `${day} ${dayType}`;
-    }
-    if (!inCurrentMonth) {
-      cell.style.opacity = "0.55";
-    }
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      cell.classList.add("weekend");
-    }
-    if (day === getTodayIsoDate()) {
-      cell.classList.add("today");
-    }
-
-    const title = document.createElement("div");
-    title.className = "timeline-grid-title";
-    title.textContent = day;
-    const holidayName = holidayNameByDate.get(day);
-    if (holidayName) {
-      const holidayBadge = document.createElement("span");
-      holidayBadge.className = "holiday-name-badge";
-      holidayBadge.textContent = holidayName;
-      holidayBadge.title = holidayName;
-      title.appendChild(holidayBadge);
-    }
-    cell.appendChild(title);
-
-    const body = document.createElement("div");
-    body.textContent = sessionsOnDay.length > 0 ? `수업 ${sessionsOnDay.length}건` : "-";
-    cell.appendChild(body);
-
-    cell.addEventListener("click", () => {
-      const details = sessionsOnDay.map(
-        (session) => `${session.과정기수} / ${session["교과목(및 능력단위)코드"]} / ${formatHHMM(session.훈련시작시간)}-${formatHHMM(session.훈련종료시간)}`
-      );
-      renderTimelineDetail(`${day} 요약`, details);
-      if (sessionsOnDay.length > 0) {
-        setNotificationFocus({ date: toCompactDateFromIso(day) });
-      }
-    });
-
-    grid.appendChild(cell);
-  }
-
-  timelineRange.textContent = `월: ${appState.monthCalendarCursor}`;
-  timelineList.appendChild(grid);
-}
-
-function renderTimeline(): void {
-  timelineList.innerHTML = "";
-  const cohortNotificationMap = getCohortNotificationCountMap(refreshNotificationItems());
-  const cohortInstructorMetaMap = buildCohortInstructorMetaMap(appState.sessions);
-  const timelineItems = buildCohortTimelineItems();
-
-  timelineDetailPanel.style.display = "none";
-  timelineDetailPanel.textContent = "";
-
-  if (timelineItems.length === 0 && (appState.timelineViewType === "COHORT_TIMELINE" || appState.timelineViewType === "COURSE_GROUPED")) {
-    timelineRange.textContent = "기간: -";
-    timelineEmpty.style.display = "block";
-    return;
-  }
-
-  timelineEmpty.style.display = "none";
-
-  if (appState.timelineViewType === "COHORT_TIMELINE") {
-    renderCohortTimelineView(timelineItems, cohortNotificationMap, cohortInstructorMetaMap);
-    return;
-  }
-
-  if (appState.timelineViewType === "COURSE_GROUPED") {
-    renderCourseGroupedTimelineView(timelineItems, cohortNotificationMap, cohortInstructorMetaMap);
-    return;
-  }
-
-  if (appState.timelineViewType === "ASSIGNEE_TIMELINE") {
-    renderAssigneeTimelineView();
-    return;
-  }
-
-  if (appState.timelineViewType === "WEEK_GRID") {
-    renderWeekGridView();
-    return;
-  }
-
-  renderMonthCalendarView();
 }
 
 function renderErrors(): void {
@@ -4589,87 +3657,6 @@ function renderOpsChecklist(): void {
   }
 }
 
-function renderTimeConflicts(): void {
-  confTableBody.innerHTML = "";
-
-  if (!appState.hasComputedConflicts) {
-    confCount.textContent = "계산 대기";
-    confRenderNotice.textContent = "";
-    return;
-  }
-
-  confCount.textContent = `총 ${appState.visibleConflicts.length}건`;
-
-  const preview = appState.visibleConflicts.slice(0, TABLE_RENDER_LIMIT);
-  setRenderNotice(confRenderNotice, appState.visibleConflicts.length, preview.length);
-
-  for (const conflict of preview) {
-    const tr = document.createElement("tr");
-    tr.title = `동일 키(${conflict.키}), ${conflict.일자} 시간구간 겹침`;
-    const columns = [
-      conflict.기준,
-      conflict.일자,
-      conflict.키,
-      conflict.과정A,
-      conflict.A시간,
-      conflict.A교과목,
-      conflict.과정B,
-      conflict.B시간,
-      conflict.B교과목
-    ];
-
-    for (const [index, value] of columns.entries()) {
-      if (index === 3) {
-        tr.appendChild(createClickableCell(value, () => highlightGanttByCohortModule(conflict.과정A)));
-        continue;
-      }
-      if (index === 6) {
-        tr.appendChild(createClickableCell(value, () => highlightGanttByCohortModule(conflict.과정B)));
-        continue;
-      }
-
-      const td = document.createElement("td");
-      td.textContent = value;
-      tr.appendChild(td);
-    }
-
-    confTableBody.appendChild(tr);
-  }
-}
-
-function applyConflictFilters(): void {
-  if (!appState.hasComputedConflicts) {
-    appState.visibleConflicts = [];
-    renderTimeConflicts();
-    updateActionStates();
-    return;
-  }
-
-  const keyQuery = keySearchInput.value.trim().toLowerCase();
-
-  appState.visibleConflicts = appState.allConflicts
-    .filter((conflict) => (keyQuery.length === 0 ? true : conflict.키.toLowerCase().includes(keyQuery)))
-    .sort(
-      (a, b) =>
-        a.일자.localeCompare(b.일자) ||
-        a.기준.localeCompare(b.기준) ||
-        a.키.localeCompare(b.키) ||
-        a.과정A.localeCompare(b.과정A)
-    );
-
-  renderTimeConflicts();
-  updateActionStates();
-}
-
-function resetConflictsBeforeCompute(): void {
-  appState.allConflicts = [];
-  appState.visibleConflicts = [];
-  appState.hasComputedConflicts = false;
-
-  keySearchInput.value = "";
-  renderTimeConflicts();
-  updateActionStates();
-}
 
 async function computeConflicts(): Promise<void> {
   if (appState.sessions.length === 0 || appState.isConflictComputing) {
@@ -4740,132 +3727,6 @@ function downloadCohortCSV(): void {
   updateActionStates();
 }
 
-function downloadVisibleTimeConflictsCsv(): void {
-  if (appState.visibleConflicts.length === 0) {
-    return;
-  }
-
-  const rows = appState.visibleConflicts.map((conflict) => [
-    conflict.기준,
-    conflict.일자,
-    conflict.키,
-    conflict.과정A,
-    conflict.A시간,
-    conflict.A교과목,
-    conflict.과정B,
-    conflict.B시간,
-    conflict.B교과목
-  ]);
-
-  downloadCsvFile(`conflicts_instructor_time_${getTodayCompactDate()}.csv`, CONFLICT_COLUMNS, rows);
-}
-
-function downloadVisibleInstructorDayConflictsCsv(): void {
-  if (appState.visibleInstructorDayOverlaps.length === 0) {
-    return;
-  }
-
-  const rows = appState.visibleInstructorDayOverlaps.map((overlap) => toDayConflictRow(overlap));
-  downloadCsvFile(`conflicts_instructor_day_${getTodayCompactDate()}.csv`, DAY_CONFLICT_COLUMNS, rows);
-}
-
-function downloadVisibleFoDayConflictsCsv(): void {
-  if (appState.visibleFoDayOverlaps.length === 0) {
-    return;
-  }
-
-  const rows = appState.visibleFoDayOverlaps.map((overlap) => toDayConflictRow(overlap));
-  downloadCsvFile(`conflicts_facil_ops_day_${getTodayCompactDate()}.csv`, DAY_CONFLICT_COLUMNS, rows);
-}
-
-function renderConflictDetailModalContent(): void {
-  conflictDetailContent.innerHTML = "";
-  conflictDetailTitle.textContent = "충돌 상세";
-
-  const sections: Array<{ label: string; columns: readonly string[]; rows: string[][] }> = [
-    {
-      label: "강사 시간 충돌",
-      columns: CONFLICT_COLUMNS,
-      rows: appState.allConflicts.map((conflict) => [
-        conflict.기준,
-        conflict.일자,
-        conflict.키,
-        conflict.과정A,
-        conflict.A시간,
-        conflict.A교과목,
-        conflict.과정B,
-        conflict.B시간,
-        conflict.B교과목
-      ])
-    },
-    {
-      label: "강사 배치(일) 충돌",
-      columns: DAY_CONFLICT_COLUMNS,
-      rows: appState.instructorDayOverlaps.map((overlap) => toDayConflictRow(overlap))
-    },
-    {
-      label: "퍼실/운영 배치(일) 충돌",
-      columns: DAY_CONFLICT_COLUMNS,
-      rows: appState.facilitatorOperationOverlaps.map((overlap) => toDayConflictRow(overlap))
-    }
-  ];
-
-  const hasAnyConflict = sections.some((section) => section.rows.length > 0);
-  if (!hasAnyConflict) {
-    const empty = document.createElement("div");
-    empty.className = "muted";
-    empty.textContent = "현재 감지된 충돌 상세가 없습니다.";
-    conflictDetailContent.appendChild(empty);
-    return;
-  }
-
-  for (const section of sections) {
-    const wrap = document.createElement("div");
-    wrap.style.marginTop = "12px";
-
-    const heading = document.createElement("strong");
-    heading.textContent = `${section.label} (${section.rows.length}건)`;
-    wrap.appendChild(heading);
-
-    if (section.rows.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "muted";
-      empty.style.marginTop = "6px";
-      empty.textContent = "없음";
-      wrap.appendChild(empty);
-      conflictDetailContent.appendChild(wrap);
-      continue;
-    }
-
-    const previewRows = section.rows.slice(0, TABLE_RENDER_LIMIT);
-    const table = createTableElement(section.columns, previewRows);
-    table.style.marginTop = "6px";
-    wrap.appendChild(table);
-
-    if (section.rows.length > previewRows.length) {
-      const notice = document.createElement("div");
-      notice.className = "muted";
-      notice.style.marginTop = "4px";
-      notice.textContent = `총 ${section.rows.length}건 중 상위 ${previewRows.length}건만 표시합니다.`;
-      wrap.appendChild(notice);
-    }
-
-    conflictDetailContent.appendChild(wrap);
-  }
-}
-
-function openConflictDetailModal(): void {
-  renderConflictDetailModalContent();
-  if (!conflictDetailModal.open) {
-    conflictDetailModal.showModal();
-  }
-}
-
-function closeConflictDetailModal(): void {
-  if (conflictDetailModal.open) {
-    conflictDetailModal.close();
-  }
-}
 
 function downloadProjectStateJson(): void {
   const state = serializeProjectState();
@@ -4953,80 +3814,19 @@ function renderDateList(
   toLabel: (value: string) => string,
   onRemove: (value: string) => void
 ): void {
-  listElement.innerHTML = "";
-
-  if (values.length === 0) {
-    const li = document.createElement("li");
-    li.textContent = "없음";
-    listElement.appendChild(li);
-    return;
-  }
-
-  for (const value of values) {
-    const li = document.createElement("li");
-
-    const text = document.createElement("span");
-    text.textContent = toLabel(value);
-
-    const removeButton = document.createElement("button");
-    removeButton.type = "button";
-    removeButton.className = "small-btn";
-    removeButton.textContent = "삭제";
-    removeButton.addEventListener("click", () => {
-      onRemove(value);
-    });
-
-    li.appendChild(text);
-    li.appendChild(removeButton);
-    listElement.appendChild(li);
-  }
+  holidayRenderDateList(listElement, values, toLabel, onRemove);
 }
 
 function getHolidayDisplayLabel(date: string): string {
-  const holidayName = holidayNameByDate.get(date);
-  return holidayName ? `${date} (${holidayName})` : date;
+  return holidayGetHolidayDisplayLabel(date);
 }
 
 function renderHolidayAndBreakLists(): void {
-  renderDateList(holidayList, appState.holidayDates, (value) => {
-    return getHolidayDisplayLabel(value);
-  }, (value) => {
-    appState.holidayDates = appState.holidayDates.filter((item) => item !== value);
-    renderHolidayAndBreakLists();
-  });
-
-  renderDateList(customBreakList, appState.customBreakDates, (value) => {
-    return value;
-  }, (value) => {
-    appState.customBreakDates = appState.customBreakDates.filter((item) => item !== value);
-    renderHolidayAndBreakLists();
-  });
-
-  refreshHrdValidation();
-  scheduleAutoSave();
+  holidayRenderHolidayAndBreakLists();
 }
 
 function addDateToList(input: HTMLInputElement, target: "holiday" | "customBreak"): void {
-  const value = input.value.trim();
-  const parsed = parseIsoDate(value);
-  if (!parsed) {
-    setScheduleError("날짜를 선택해 주세요.");
-    return;
-  }
-
-  const normalized = formatDate(parsed);
-  const source = target === "holiday" ? appState.holidayDates : appState.customBreakDates;
-  if (source.includes(normalized)) {
-    setScheduleError("이미 추가된 날짜입니다.");
-    return;
-  }
-
-  source.push(normalized);
-  source.sort((a, b) => a.localeCompare(b));
-
-  input.value = "";
-  setScheduleError(null);
-  renderHolidayAndBreakLists();
+  holidayAddDateToList(input, target);
 }
 
 function parseTemplateRows(): { dayTemplates: DayTimeTemplate[]; weekdays: number[] } {
@@ -5285,90 +4085,23 @@ function renderGeneratedScheduleResult(): void {
 }
 
 function getHolidayFetchYears(startDate: string): number[] {
-  const parsed = parseIsoDate(startDate);
-  if (!parsed) {
-    throw new Error("개강일을 먼저 입력해 주세요.");
-  }
-
-  const end = new Date(parsed.getTime());
-  end.setUTCMonth(end.getUTCMonth() + 18);
-
-  const years: number[] = [];
-  for (let year = parsed.getUTCFullYear(); year <= end.getUTCFullYear(); year += 1) {
-    years.push(year);
-  }
-
-  return years;
+  return holidayGetHolidayFetchYears(startDate);
 }
 
 function mergeFetchedHolidays(holidays: Holiday[]): number {
-  const existing = new Set(appState.holidayDates);
-  const before = existing.size;
-
-  for (const holiday of holidays) {
-    const parsed = parseIsoDate(holiday.date);
-    if (!parsed) {
-      continue;
-    }
-
-    const date = formatDate(parsed);
-    existing.add(date);
-    holidayNameByDate.set(date, holiday.localName || holiday.name);
-  }
-
-  appState.holidayDates = Array.from(existing).sort((a, b) => a.localeCompare(b));
-  return appState.holidayDates.length - before;
+  return holidayMergeFetchedHolidays(holidays);
 }
 
 async function loadPublicHolidays(): Promise<void> {
-  let years: number[];
-  try {
-    years = getHolidayFetchYears(scheduleStartDateInput.value);
-  } catch (error) {
-    if (error instanceof Error) {
-      setScheduleError(error.message);
-    } else {
-      setScheduleError("공휴일 조회 기준 연도를 계산할 수 없습니다.");
-    }
-    return;
-  }
-
-  setHolidayLoadingState(true);
-  holidayLoadStatus.textContent = `${years.join(", ")}년 공휴일 조회 중...`;
-  setScheduleError(null);
-
-  try {
-    const responses = await Promise.all(years.map((year) => fetchPublicHolidaysKR(year)));
-    const holidays = responses.flat();
-    const added = mergeFetchedHolidays(holidays);
-    appState.hasLoadedPublicHoliday = holidays.length > 0;
-
-    renderHolidayAndBreakLists();
-    holidayLoadStatus.textContent = `${years.join(", ")}년 공휴일 ${holidays.length}건 조회, ${added}건 추가`;
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : "공휴일 조회 중 알 수 없는 오류";
-    setScheduleError(`${reason} 재시도해 주세요.`);
-    holidayLoadStatus.textContent = "공휴일 불러오기 실패";
-  } finally {
-    setHolidayLoadingState(false);
-  }
+  await holidayLoadPublicHolidays();
 }
 
 function clearHolidayList(): void {
-  appState.holidayDates = [];
-  holidayNameByDate.clear();
-  appState.hasLoadedPublicHoliday = false;
-  renderHolidayAndBreakLists();
-  holidayLoadStatus.textContent = "공휴일 목록을 초기화했습니다.";
+  holidayClearHolidayList();
 }
 
 function dedupeHolidayList(): void {
-  const before = appState.holidayDates.length;
-  appState.holidayDates = dedupeAndSortDates(appState.holidayDates);
-  renderHolidayAndBreakLists();
-
-  const removed = before - appState.holidayDates.length;
-  holidayLoadStatus.textContent = removed > 0 ? `중복 ${removed}건 제거` : "중복된 날짜가 없습니다.";
+  holidayDedupeHolidayList();
 }
 
 function compactToIso(value: string): string | null {
@@ -5390,1083 +4123,34 @@ function upsertCohortRange<T extends { cohort: string; startDate: string; endDat
   existing.endDate = existing.endDate > range.endDate ? existing.endDate : range.endDate;
 }
 
-function rebuildStaffingCohortRanges(): void {
-  const rangeMap = new Map<string, Omit<CohortRange, "trackType">>();
+function rebuildStaffingCohortRanges(): void { staffingRebuildStaffingCohortRanges(); }
 
-  for (const summary of appState.summaries) {
-    const startDate = compactToIso(summary.시작일);
-    const endDate = compactToIso(summary.종료일);
-    if (!startDate || !endDate) {
-      continue;
-    }
+function renderStaffingMatrix(): void { staffingRenderStaffingMatrix(); }
 
-    upsertCohortRange(rangeMap, {
-      cohort: summary.과정기수,
-      startDate,
-      endDate
-    });
-  }
+function collectStaffingInputs(): StaffAssignmentInput[] { return staffingCollectStaffingInputs(); }
 
-  for (const range of generatedCohortRanges.values()) {
-    upsertCohortRange(rangeMap, range);
-  }
 
-  const mergedRanges = Array.from(rangeMap.values()).sort((a, b) => a.startDate.localeCompare(b.startDate));
+function renderStaffGantt(container: HTMLElement, groups: Array<{ label: string; assignments: StaffAssignment[] }>, barLabel: (assignment: StaffAssignment) => string): void { staffingRenderStaffGantt(container, groups, barLabel); }
 
-  appState.staffingCohortRanges = mergedRanges.map((range) => {
-    const existingTrack = cohortTrackType.get(range.cohort);
-    const trackType = existingTrack ?? getDefaultTrackTypeForCohort(range.cohort);
-    cohortTrackType.set(range.cohort, trackType);
-    return { ...range, trackType };
-  });
+function buildOverlapDayMapByAssignment(): Map<StaffAssignment, number> { return staffingBuildOverlapDayMapByAssignment(); }
 
-  for (const range of appState.staffingCohortRanges) {
-    for (const phase of PHASES) {
-      const key = staffCellKey(range.cohort, phase);
-      if (!staffingCellState.has(key)) {
-        staffingCellState.set(key, { assignee: "", startDate: "", endDate: "", resourceType: "FACILITATOR" });
-      }
-    }
-  }
-}
+function getPolicyLabelsForAssignee(assignee: string, resourceType: ResourceType): string[] { return staffingGetPolicyLabelsForAssignee(assignee, resourceType); }
 
-function renderStaffingMatrix(): void {
-  staffMatrixContainer.innerHTML = "";
+function renderStaffKpiAndDetails(): void { staffingRenderStaffKpiAndDetails(); }
 
-  if (appState.staffingCohortRanges.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "muted";
-    empty.textContent = "코호트 데이터가 없어 배치표를 표시할 수 없습니다.";
-    staffMatrixContainer.appendChild(empty);
-    return;
-  }
+function refreshStaffingAnalytics(showStatus = true): void { staffingRefreshStaffingAnalytics(showStatus); }
 
-  const table = document.createElement("table");
-  table.className = "staffing-table";
+function renderStaffingSection(): void { staffingRenderStaffingSection(); }
 
-  const thead = document.createElement("thead");
-  const headRow = document.createElement("tr");
-  ["과정", "트랙유형", "개강", "종강", "P1", "P2", "365"].forEach((text) => {
-    const th = document.createElement("th");
-    th.textContent = text;
-    headRow.appendChild(th);
-  });
-  thead.appendChild(headRow);
-  table.appendChild(thead);
+function autoFillStaffingFromCohorts(): void { staffingAutoFillStaffingFromCohorts(); }
 
-  const tbody = document.createElement("tbody");
+function isV7eStrictReady(): { ok: boolean; reason?: string } { return staffingIsV7eStrictReady(); }
 
-  for (const range of appState.staffingCohortRanges) {
-    const tr = document.createElement("tr");
+function buildStrictExportRecords(): InternalV7ERecord[] { return staffingBuildStrictExportRecords(); }
 
-    const cohortCell = document.createElement("td");
-    cohortCell.textContent = range.cohort;
-    tr.appendChild(cohortCell);
+function buildModulesGenericExportRecords(): InternalV7ERecord[] { return staffingBuildModulesGenericExportRecords(); }
 
-    const trackCell = document.createElement("td");
-    const trackSelect = document.createElement("select");
-    const currentTrack = range.trackType ?? cohortTrackType.get(range.cohort) ?? getDefaultTrackTypeForCohort(range.cohort);
-
-    for (const trackType of TRACK_TYPES) {
-      const option = document.createElement("option");
-      option.value = trackType;
-      option.textContent = `${TRACK_LABEL[trackType]} (${getPolicyLabel(getPolicyForTrack(trackType))})`;
-      trackSelect.appendChild(option);
-    }
-    trackSelect.value = currentTrack;
-    trackSelect.addEventListener("change", () => {
-      const nextTrack = trackSelect.value as TrackType;
-      cohortTrackType.set(range.cohort, nextTrack);
-      const nextRange = appState.staffingCohortRanges.find((item) => item.cohort === range.cohort);
-      if (nextRange) {
-        nextRange.trackType = nextTrack;
-      }
-      refreshStaffingAnalytics(true);
-      scheduleAutoSave();
-    });
-
-    trackCell.appendChild(trackSelect);
-    tr.appendChild(trackCell);
-
-    const startCell = document.createElement("td");
-    startCell.textContent = range.startDate;
-    tr.appendChild(startCell);
-
-    const endCell = document.createElement("td");
-    endCell.textContent = range.endDate;
-    tr.appendChild(endCell);
-
-    for (const phase of PHASES) {
-      const state = getStaffCellState(range.cohort, phase);
-
-      const td = document.createElement("td");
-      const wrapper = document.createElement("div");
-      wrapper.className = "phase-cell";
-
-      const resourceBox = document.createElement("div");
-      const resourceLabel = document.createElement("div");
-      resourceLabel.className = "phase-field-label";
-      resourceLabel.textContent = "유형";
-      const resourceSelect = document.createElement("select");
-      for (const resourceType of MATRIX_RESOURCE_TYPES) {
-        const option = document.createElement("option");
-        option.value = resourceType;
-        option.textContent = RESOURCE_TYPE_LABEL[resourceType];
-        resourceSelect.appendChild(option);
-      }
-      resourceSelect.value =
-        state.resourceType === "INSTRUCTOR" ? "FACILITATOR" : state.resourceType;
-      resourceSelect.addEventListener("change", () => {
-        setStaffCellState(range.cohort, phase, {
-          assignee: assigneeInput.value,
-          startDate: startInput.value,
-          endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
-        });
-        refreshStaffingAnalytics(false);
-      });
-      resourceBox.appendChild(resourceLabel);
-      resourceBox.appendChild(resourceSelect);
-
-      const assigneeBox = document.createElement("div");
-      const assigneeLabel = document.createElement("div");
-      assigneeLabel.className = "phase-field-label";
-      assigneeLabel.textContent = "담당자";
-      const assigneeInput = document.createElement("input");
-      assigneeInput.type = "text";
-      assigneeInput.value = state.assignee;
-      assigneeInput.addEventListener("input", () => {
-        setStaffCellState(range.cohort, phase, {
-          assignee: assigneeInput.value,
-          startDate: startInput.value,
-          endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
-        });
-        refreshStaffingAnalytics(false);
-      });
-      assigneeBox.appendChild(assigneeLabel);
-      assigneeBox.appendChild(assigneeInput);
-
-      const startBox = document.createElement("div");
-      const startLabel = document.createElement("div");
-      startLabel.className = "phase-field-label";
-      startLabel.textContent = "시작";
-      const startInput = document.createElement("input");
-      startInput.type = "date";
-      startInput.value = state.startDate;
-      startInput.addEventListener("input", () => {
-        setStaffCellState(range.cohort, phase, {
-          assignee: assigneeInput.value,
-          startDate: startInput.value,
-          endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
-        });
-        refreshStaffingAnalytics(false);
-      });
-      startBox.appendChild(startLabel);
-      startBox.appendChild(startInput);
-
-      const endBox = document.createElement("div");
-      const endLabel = document.createElement("div");
-      endLabel.className = "phase-field-label";
-      endLabel.textContent = "종료";
-      const endInput = document.createElement("input");
-      endInput.type = "date";
-      endInput.value = state.endDate;
-      endInput.addEventListener("input", () => {
-        setStaffCellState(range.cohort, phase, {
-          assignee: assigneeInput.value,
-          startDate: startInput.value,
-          endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
-        });
-        refreshStaffingAnalytics(false);
-      });
-      endBox.appendChild(endLabel);
-      endBox.appendChild(endInput);
-
-      wrapper.appendChild(resourceBox);
-      wrapper.appendChild(assigneeBox);
-      wrapper.appendChild(startBox);
-      wrapper.appendChild(endBox);
-      td.appendChild(wrapper);
-      tr.appendChild(td);
-    }
-
-    tbody.appendChild(tr);
-  }
-
-  table.appendChild(tbody);
-  staffMatrixContainer.appendChild(table);
-}
-
-function collectStaffingInputs(): StaffAssignmentInput[] {
-  const inputs: StaffAssignmentInput[] = [];
-
-  for (const range of appState.staffingCohortRanges) {
-    const trackType = range.trackType ?? cohortTrackType.get(range.cohort) ?? getDefaultTrackTypeForCohort(range.cohort);
-
-    for (const phase of PHASES) {
-      const state = getStaffCellState(range.cohort, phase);
-      const assignee = state.assignee.trim();
-      const startDate = state.startDate.trim();
-      const endDate = state.endDate.trim();
-      const resourceType = state.resourceType;
-
-      const isEmpty = assignee.length === 0 && startDate.length === 0 && endDate.length === 0;
-      if (isEmpty) {
-        continue;
-      }
-
-      if (!assignee || !startDate || !endDate) {
-        throw new Error(`${range.cohort} ${phase} 배치는 담당자/시작일/종료일을 모두 입력해야 합니다.`);
-      }
-
-      inputs.push({
-        cohort: range.cohort,
-        phase,
-        assignee,
-        startDate,
-        endDate,
-        resourceType,
-        trackType
-      });
-    }
-  }
-
-  return inputs;
-}
-
-function overlapToSearchText(overlap: StaffOverlap): string {
-  return [
-    overlap.assignee,
-    overlap.resourceType,
-    RESOURCE_TYPE_LABEL[overlap.resourceType],
-    overlap.assignmentA.cohort,
-    overlap.assignmentA.phase,
-    overlap.assignmentA.startDate,
-    overlap.assignmentA.endDate,
-    overlap.assignmentB.cohort,
-    overlap.assignmentB.phase,
-    overlap.assignmentB.startDate,
-    overlap.assignmentB.endDate
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
-function renderInstructorDayOverlapPanel(): void {
-  instructorDayOverlapBody.innerHTML = "";
-  instructorDayOverlapCount.textContent = `총 ${appState.visibleInstructorDayOverlaps.length}건`;
-  const preview = appState.visibleInstructorDayOverlaps.slice(0, TABLE_RENDER_LIMIT);
-  setRenderNotice(instructorDayRenderNotice, appState.visibleInstructorDayOverlaps.length, preview.length);
-
-  if (appState.visibleInstructorDayOverlaps.length === 0) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 11;
-    td.textContent = "겹침이 없습니다.";
-    tr.appendChild(td);
-    instructorDayOverlapBody.appendChild(tr);
-    return;
-  }
-
-  for (const overlap of preview) {
-    const tr = document.createElement("tr");
-    const overlapRangeLabel = getOverlapRangeLabel(overlap);
-    tr.title = `동일 담당자, ${overlapRangeLabel} 겹침 ${overlap.overlapDays}건`;
-
-    const assigneeCell = document.createElement("td");
-    assigneeCell.textContent = overlap.assignee;
-    tr.appendChild(assigneeCell);
-
-    const resourceTypeCell = document.createElement("td");
-    resourceTypeCell.textContent = overlap.resourceType;
-    tr.appendChild(resourceTypeCell);
-
-    tr.appendChild(
-      createClickableCell(overlap.assignmentA.cohort, () =>
-        highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
-    );
-    tr.appendChild(
-      createClickableCell(overlap.assignmentA.phase, () =>
-        highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
-    );
-
-    const startACell = document.createElement("td");
-    startACell.textContent = overlap.assignmentA.startDate;
-    if (isDateInsideRange(overlap.assignmentA.startDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      startACell.classList.add("date-highlight");
-    }
-    tr.appendChild(startACell);
-
-    const endACell = document.createElement("td");
-    endACell.textContent = overlap.assignmentA.endDate;
-    if (isDateInsideRange(overlap.assignmentA.endDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      endACell.classList.add("date-highlight");
-    }
-    tr.appendChild(endACell);
-
-    tr.appendChild(
-      createClickableCell(overlap.assignmentB.cohort, () =>
-        highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
-    );
-    tr.appendChild(
-      createClickableCell(overlap.assignmentB.phase, () =>
-        highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
-    );
-
-    const startBCell = document.createElement("td");
-    startBCell.textContent = overlap.assignmentB.startDate;
-    if (isDateInsideRange(overlap.assignmentB.startDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      startBCell.classList.add("date-highlight");
-    }
-    tr.appendChild(startBCell);
-
-    const endBCell = document.createElement("td");
-    endBCell.textContent = overlap.assignmentB.endDate;
-    if (isDateInsideRange(overlap.assignmentB.endDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      endBCell.classList.add("date-highlight");
-    }
-    tr.appendChild(endBCell);
-
-    const overlapCountCell = document.createElement("td");
-    overlapCountCell.textContent = String(overlap.overlapDays);
-    overlapCountCell.classList.add("date-highlight");
-    tr.appendChild(overlapCountCell);
-
-    instructorDayOverlapBody.appendChild(tr);
-  }
-}
-
-function renderFoDayOverlapPanel(): void {
-  foOverlapBody.innerHTML = "";
-  foOverlapCount.textContent = `총 ${appState.visibleFoDayOverlaps.length}건`;
-  const preview = appState.visibleFoDayOverlaps.slice(0, TABLE_RENDER_LIMIT);
-  setRenderNotice(foDayRenderNotice, appState.visibleFoDayOverlaps.length, preview.length);
-
-  if (appState.visibleFoDayOverlaps.length === 0) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 11;
-    td.textContent = "겹침이 없습니다.";
-    tr.appendChild(td);
-    foOverlapBody.appendChild(tr);
-    return;
-  }
-
-  for (const overlap of preview) {
-    const tr = document.createElement("tr");
-    const overlapRangeLabel = getOverlapRangeLabel(overlap);
-    tr.title = `동일 담당자, ${overlapRangeLabel} 겹침 ${overlap.overlapDays}건`;
-
-    const assigneeCell = document.createElement("td");
-    assigneeCell.textContent = overlap.assignee;
-    tr.appendChild(assigneeCell);
-
-    const resourceTypeCell = document.createElement("td");
-    resourceTypeCell.textContent = overlap.resourceType;
-    tr.appendChild(resourceTypeCell);
-
-    tr.appendChild(
-      createClickableCell(overlap.assignmentA.cohort, () =>
-        highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
-    );
-    tr.appendChild(
-      createClickableCell(overlap.assignmentA.phase, () =>
-        highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
-    );
-
-    const startACell = document.createElement("td");
-    startACell.textContent = overlap.assignmentA.startDate;
-    if (isDateInsideRange(overlap.assignmentA.startDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      startACell.classList.add("date-highlight");
-    }
-    tr.appendChild(startACell);
-
-    const endACell = document.createElement("td");
-    endACell.textContent = overlap.assignmentA.endDate;
-    if (isDateInsideRange(overlap.assignmentA.endDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      endACell.classList.add("date-highlight");
-    }
-    tr.appendChild(endACell);
-
-    tr.appendChild(
-      createClickableCell(overlap.assignmentB.cohort, () =>
-        highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
-    );
-    tr.appendChild(
-      createClickableCell(overlap.assignmentB.phase, () =>
-        highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
-    );
-
-    const startBCell = document.createElement("td");
-    startBCell.textContent = overlap.assignmentB.startDate;
-    if (isDateInsideRange(overlap.assignmentB.startDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      startBCell.classList.add("date-highlight");
-    }
-    tr.appendChild(startBCell);
-
-    const endBCell = document.createElement("td");
-    endBCell.textContent = overlap.assignmentB.endDate;
-    if (isDateInsideRange(overlap.assignmentB.endDate, overlap.overlapStartDate, overlap.overlapEndDate)) {
-      endBCell.classList.add("date-highlight");
-    }
-    tr.appendChild(endBCell);
-
-    const overlapCountCell = document.createElement("td");
-    overlapCountCell.textContent = String(overlap.overlapDays);
-    overlapCountCell.classList.add("date-highlight");
-    tr.appendChild(overlapCountCell);
-
-    foOverlapBody.appendChild(tr);
-  }
-}
-
-function applyInstructorDayFilters(): void {
-  const query = instructorDaySearchInput.value.trim().toLowerCase();
-
-  appState.visibleInstructorDayOverlaps = appState.instructorDayOverlaps
-    .filter((overlap) => (query.length === 0 ? true : overlapToSearchText(overlap).includes(query)))
-    .sort(
-      (a, b) =>
-        a.assignee.localeCompare(b.assignee) ||
-        a.overlapStartDate.localeCompare(b.overlapStartDate) ||
-        a.assignmentA.cohort.localeCompare(b.assignmentA.cohort)
-    );
-
-  renderInstructorDayOverlapPanel();
-  updateActionStates();
-}
-
-function applyFoDayFilters(): void {
-  const query = foDaySearchInput.value.trim().toLowerCase();
-
-  appState.visibleFoDayOverlaps = appState.facilitatorOperationOverlaps
-    .filter((overlap) => (query.length === 0 ? true : overlapToSearchText(overlap).includes(query)))
-    .sort(
-      (a, b) =>
-        a.resourceType.localeCompare(b.resourceType) ||
-        a.assignee.localeCompare(b.assignee) ||
-        a.overlapStartDate.localeCompare(b.overlapStartDate)
-    );
-
-  renderFoDayOverlapPanel();
-  updateActionStates();
-}
-
-function renderStaffGantt(
-  container: HTMLElement,
-  groups: Array<{ label: string; assignments: StaffAssignment[] }>,
-  barLabel: (assignment: StaffAssignment) => string
-): void {
-  container.innerHTML = "";
-
-  if (groups.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "muted";
-    empty.textContent = "데이터가 없습니다.";
-    container.appendChild(empty);
-    return;
-  }
-
-  const allAssignments = groups.flatMap((group) => group.assignments);
-  const starts = allAssignments.map((item) => item.startDate).sort();
-  const ends = allAssignments.map((item) => item.endDate).sort();
-
-  const minDate = starts[0];
-  const maxDate = ends[ends.length - 1];
-  const minParsed = parseIsoDate(minDate);
-  const maxParsed = parseIsoDate(maxDate);
-
-  if (!minParsed || !maxParsed) {
-    return;
-  }
-
-  const totalSpan = Math.max((maxParsed.getTime() - minParsed.getTime()) / DAY_MS, 1);
-  const phaseColor: Record<Phase, string> = {
-    P1: "#60a5fa",
-    P2: "#34d399",
-    "365": "#fbbf24"
-  };
-
-  for (const group of groups) {
-    const row = document.createElement("div");
-    row.className = "staff-gantt-row";
-
-    const label = document.createElement("div");
-    label.className = "staff-gantt-label";
-    label.textContent = group.label;
-
-    const track = document.createElement("div");
-    track.className = "staff-gantt-track";
-
-    for (const assignment of group.assignments) {
-      const startParsed = parseIsoDate(assignment.startDate);
-      const endParsed = parseIsoDate(assignment.endDate);
-      if (!startParsed || !endParsed) {
-        continue;
-      }
-
-      const left = ((startParsed.getTime() - minParsed.getTime()) / DAY_MS / totalSpan) * 100;
-      const width =
-        Math.max(((endParsed.getTime() - startParsed.getTime()) / DAY_MS / totalSpan) * 100, 1.2);
-
-      const bar = document.createElement("div");
-      bar.className = "staff-gantt-bar";
-      bar.dataset.cohort = assignment.cohort;
-      bar.dataset.phase = assignment.phase;
-      bar.style.left = `${Math.max(0, Math.min(100, left))}%`;
-      bar.style.width = `${Math.max(1.2, Math.min(100, width))}%`;
-      bar.style.background = phaseColor[assignment.phase];
-      bar.textContent = barLabel(assignment);
-      bar.title = `${assignment.cohort} ${assignment.phase} ${assignment.assignee}\n${assignment.startDate}~${assignment.endDate}`;
-
-      track.appendChild(bar);
-    }
-
-    row.appendChild(label);
-    row.appendChild(track);
-    container.appendChild(row);
-  }
-}
-
-function buildOverlapDayMapByAssignment(): Map<StaffAssignment, number> {
-  const map = new Map<StaffAssignment, Set<string>>();
-
-  for (const overlap of [...appState.instructorDayOverlaps, ...appState.facilitatorOperationOverlaps]) {
-    const start = parseIsoDate(overlap.overlapStartDate);
-    const end = parseIsoDate(overlap.overlapEndDate);
-    if (!start || !end) {
-      continue;
-    }
-
-    const overlapPolicy = normalizePolicyDays(
-      overlap.assignmentA.includeWeekdays.filter((day) => overlap.assignmentB.includeWeekdays.includes(day))
-    );
-    if (overlapPolicy.length === 0) {
-      continue;
-    }
-
-    for (const target of [overlap.assignmentA, overlap.assignmentB]) {
-      if (!map.has(target)) {
-        map.set(target, new Set<string>());
-      }
-
-      const set = map.get(target);
-      if (!set) {
-        continue;
-      }
-
-      let current = new Date(start.getTime());
-      while (current.getTime() <= end.getTime()) {
-        if (overlapPolicy.includes(current.getUTCDay())) {
-          set.add(formatDate(current));
-        }
-        current = new Date(current.getTime() + DAY_MS);
-      }
-    }
-  }
-
-  const countMap = new Map<StaffAssignment, number>();
-  for (const [assignment, days] of map.entries()) {
-    countMap.set(assignment, days.size);
-  }
-  return countMap;
-}
-
-function getPolicyLabelsForAssignee(assignee: string, resourceType: ResourceType): string[] {
-  if (resourceType === "INSTRUCTOR") {
-    return [];
-  }
-
-  const set = new Set<string>();
-
-  for (const assignment of appState.staffingAssignments) {
-    if (assignment.assignee !== assignee || assignment.resourceType !== resourceType) {
-      continue;
-    }
-    set.add(getPolicyLabel(assignment.includeWeekdays));
-  }
-
-  return Array.from(set).sort();
-}
-
-function renderStaffKpiAndDetails(): void {
-  staffKpiBody.innerHTML = "";
-
-  const kpiRows = [...appState.instructorSummaries, ...appState.staffingSummaries].sort(
-    (a, b) =>
-      RESOURCE_TYPE_ORDER[a.resourceType] - RESOURCE_TYPE_ORDER[b.resourceType] ||
-      a.assignee.localeCompare(b.assignee)
-  );
-
-  if (kpiRows.length === 0) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 7;
-    td.textContent = "배치 데이터가 없습니다.";
-    tr.appendChild(td);
-    staffKpiBody.appendChild(tr);
-  } else {
-    for (const summary of kpiRows) {
-      const tr = document.createElement("tr");
-      const assigneeCell = document.createElement("td");
-      assigneeCell.textContent = summary.assignee;
-
-      const policyLabels = getPolicyLabelsForAssignee(summary.assignee, summary.resourceType);
-      for (const label of policyLabels) {
-        const badge = document.createElement("span");
-        badge.className = "policy-badge";
-        badge.textContent = label;
-        assigneeCell.appendChild(badge);
-      }
-
-      tr.appendChild(assigneeCell);
-
-      const resourceTypeCell = document.createElement("td");
-      resourceTypeCell.textContent = RESOURCE_TYPE_LABEL[summary.resourceType];
-      tr.appendChild(resourceTypeCell);
-
-      const phaseValues =
-        summary.resourceType === "INSTRUCTOR"
-          ? ["-", "-", "-"]
-          : [
-              String(summary.phaseWorkDays.P1),
-              String(summary.phaseWorkDays.P2),
-              String(summary.phaseWorkDays["365"])
-            ];
-
-      const values = [
-        String(summary.totalWorkDays),
-        ...phaseValues,
-        String(summary.overlapDays)
-      ];
-
-      values.forEach((value, index) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        if (index === 4 && summary.overlapDays === 0) {
-          td.className = "kpi-ok";
-        }
-        tr.appendChild(td);
-      });
-
-      staffKpiBody.appendChild(tr);
-    }
-  }
-
-  staffDetailContainer.innerHTML = "";
-  const overlapDayMap = buildOverlapDayMapByAssignment();
-
-  for (const summary of appState.instructorSummaries) {
-    const group = document.createElement("div");
-    group.className = "staff-detail-group";
-
-    const title = document.createElement("div");
-    title.className = "staff-detail-title";
-    title.textContent = `${summary.assignee} (${RESOURCE_TYPE_LABEL[summary.resourceType]}) / 총 ${summary.totalWorkDays}일 / 겹침 ${summary.overlapDays}일`;
-    group.appendChild(title);
-
-    const text = document.createElement("div");
-    text.className = "muted";
-    text.textContent = "Staffing 배치 기준 집계입니다. 강사 배치(일) 충돌 탭에서 상세 일자를 확인할 수 있습니다.";
-    group.appendChild(text);
-
-    staffDetailContainer.appendChild(group);
-  }
-
-  for (const summary of appState.staffingSummaries) {
-    const group = document.createElement("div");
-    group.className = "staff-detail-group";
-
-    const title = document.createElement("div");
-    title.className = "staff-detail-title";
-    title.textContent = `${summary.assignee} (${RESOURCE_TYPE_LABEL[summary.resourceType]}) / 총 ${summary.totalWorkDays}일 / 겹침 ${summary.overlapDays}일`;
-
-    const titlePolicies = getPolicyLabelsForAssignee(summary.assignee, summary.resourceType);
-    for (const label of titlePolicies) {
-      const badge = document.createElement("span");
-      badge.className = "policy-badge";
-      badge.textContent = label;
-      title.appendChild(badge);
-    }
-
-    group.appendChild(title);
-
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const trHead = document.createElement("tr");
-    ["Phase", "과정", "시작일", "종료일", "일수", "산정기준", "관련겹침일수"].forEach((text) => {
-      const th = document.createElement("th");
-      th.textContent = text;
-      trHead.appendChild(th);
-    });
-    thead.appendChild(trHead);
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-    const rows = appState.staffingAssignments
-      .filter(
-        (assignment) => assignment.assignee === summary.assignee && assignment.resourceType === summary.resourceType
-      )
-      .sort(
-        (a, b) =>
-          a.startDate.localeCompare(b.startDate) ||
-          a.phase.localeCompare(b.phase) ||
-          a.cohort.localeCompare(b.cohort)
-      );
-
-    for (const assignment of rows) {
-      const tr = document.createElement("tr");
-      const overlapDays = overlapDayMap.get(assignment) ?? 0;
-      const values = [
-        assignment.phase,
-        assignment.cohort,
-        assignment.startDate,
-        assignment.endDate,
-        String(assignment.workDays)
-      ];
-
-      values.forEach((value, index) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        tr.appendChild(td);
-      });
-
-      const policyCell = document.createElement("td");
-      const policyBadge = document.createElement("span");
-      policyBadge.className = "policy-badge";
-      policyBadge.textContent = getPolicyLabel(assignment.includeWeekdays);
-      policyCell.appendChild(policyBadge);
-      tr.appendChild(policyCell);
-
-      const overlapCell = document.createElement("td");
-      overlapCell.textContent = String(overlapDays);
-      if (overlapDays === 0) {
-        overlapCell.className = "kpi-ok";
-      }
-      tr.appendChild(overlapCell);
-
-      tbody.appendChild(tr);
-    }
-
-    table.appendChild(tbody);
-    group.appendChild(table);
-    staffDetailContainer.appendChild(group);
-  }
-}
-
-function refreshStaffingAnalytics(showStatus = true): void {
-  try {
-    const inputs = collectStaffingInputs();
-    appState.staffingAssignments = buildAssignments(inputs);
-    const allOverlaps = detectStaffOverlaps(appState.staffingAssignments);
-    appState.instructorDayOverlaps = allOverlaps.filter((item) => item.resourceType === "INSTRUCTOR");
-    appState.facilitatorOperationOverlaps = allOverlaps.filter((item) => item.resourceType !== "INSTRUCTOR");
-
-    const allSummaries = summarizeWorkload(appState.staffingAssignments);
-    appState.instructorSummaries = allSummaries.filter((item) => item.resourceType === "INSTRUCTOR");
-    appState.staffingSummaries = allSummaries.filter((item) => item.resourceType !== "INSTRUCTOR");
-
-    applyInstructorDayFilters();
-    applyFoDayFilters();
-
-    const byCohort = new Map<string, StaffAssignment[]>();
-    for (const assignment of appState.staffingAssignments) {
-      if (!byCohort.has(assignment.cohort)) {
-        byCohort.set(assignment.cohort, []);
-      }
-      byCohort.get(assignment.cohort)?.push(assignment);
-    }
-    renderStaffGantt(
-      staffCohortGantt,
-      Array.from(byCohort.entries()).map(([label, assignments]) => ({ label, assignments })),
-      (assignment) => `${assignment.phase} ${assignment.assignee}`
-    );
-
-    const byAssignee = new Map<string, StaffAssignment[]>();
-    for (const assignment of appState.staffingAssignments) {
-      if (!byAssignee.has(assignment.assignee)) {
-        byAssignee.set(assignment.assignee, []);
-      }
-      byAssignee.get(assignment.assignee)?.push(assignment);
-    }
-    renderStaffGantt(
-      staffAssigneeGantt,
-      Array.from(byAssignee.entries()).map(([label, assignments]) => ({ label, assignments })),
-      (assignment) => `${assignment.cohort} ${assignment.phase}`
-    );
-
-    renderStaffKpiAndDetails();
-
-    if (showStatus) {
-      const kpiTarget = appState.instructorSummaries.length + appState.staffingSummaries.length;
-      setStaffingStatus(
-        `배치 ${appState.staffingAssignments.length}건 / 강사 일충돌 ${appState.instructorDayOverlaps.length}건 / 퍼실·운영 일충돌 ${appState.facilitatorOperationOverlaps.length}건 / KPI ${kpiTarget}명`
-      );
-    }
-
-    staffExportWarningsAgree.checked = false;
-    renderStaffExportValidation([], []);
-  } catch (error) {
-    appState.staffingAssignments = [];
-    appState.facilitatorOperationOverlaps = [];
-    appState.instructorDayOverlaps = [];
-    appState.visibleInstructorDayOverlaps = [];
-    appState.visibleFoDayOverlaps = [];
-    appState.staffingSummaries = [];
-    appState.instructorSummaries = [];
-
-    renderInstructorDayOverlapPanel();
-    renderFoDayOverlapPanel();
-    renderStaffGantt(staffCohortGantt, [], () => "");
-    renderStaffGantt(staffAssigneeGantt, [], () => "");
-    renderStaffKpiAndDetails();
-
-    if (showStatus) {
-      const message = error instanceof Error ? error.message : "배치 계산 중 오류가 발생했습니다.";
-      setStaffingStatus(message, true);
-    }
-
-    staffExportWarningsAgree.checked = false;
-    renderStaffExportValidation([], []);
-  }
-}
-
-function renderStaffingSection(): void {
-  rebuildStaffingCohortRanges();
-  renderStaffModuleManagerTable(false);
-  renderStaffingMatrix();
-  refreshStaffingAnalytics(false);
-
-  if (appState.staffingMode === "manager") {
-    const moduleRows = buildModuleAssignSummaries();
-    if (moduleRows.length === 0) {
-      setStaffingStatus("수업시간표가 없어 운영매니저 교과목 배치표를 표시할 수 없습니다.");
-    } else {
-      setStaffingStatus(`모듈 ${moduleRows.length}건 기준으로 강사 자동 배정을 관리합니다.`);
-    }
-    return;
-  }
-
-  if (appState.staffingCohortRanges.length === 0) {
-    setStaffingStatus("코호트 데이터가 없어 고급 배치표를 표시할 수 없습니다.");
-  } else {
-    setStaffingStatus(`코호트 ${appState.staffingCohortRanges.length}개를 기준으로 배치표를 구성했습니다.`);
-  }
-}
-
-function autoFillStaffingFromCohorts(): void {
-  if (appState.staffingCohortRanges.length === 0) {
-    setStaffingStatus("자동 채울 코호트가 없습니다.", true);
-    return;
-  }
-
-  const p1Weeks = Number.parseInt(staffP1WeeksInput.value, 10);
-  const d365Weeks = Number.parseInt(staff365WeeksInput.value, 10);
-
-  if (!Number.isInteger(p1Weeks) || p1Weeks <= 0 || !Number.isInteger(d365Weeks) || d365Weeks <= 0) {
-    setStaffingStatus("P1/365 기본 주수는 1 이상의 정수여야 합니다.", true);
-    return;
-  }
-
-  for (const range of appState.staffingCohortRanges) {
-    const p1EndCandidate = addDaysToIso(range.startDate, p1Weeks * 7 - 1);
-    const p1End = p1EndCandidate < range.endDate ? p1EndCandidate : range.endDate;
-
-    const p2StartCandidate = addDaysToIso(p1End, 1);
-    const hasP2 = p2StartCandidate <= range.endDate;
-
-    const d365Start = range.endDate;
-    const d365End = addDaysToIso(d365Start, d365Weeks * 7 - 1);
-
-    const p1State = getStaffCellState(range.cohort, "P1");
-    const p2State = getStaffCellState(range.cohort, "P2");
-    const d365State = getStaffCellState(range.cohort, "365");
-
-    setStaffCellState(range.cohort, "P1", {
-      assignee: p1State.assignee,
-      startDate: range.startDate,
-      endDate: p1End,
-      resourceType: p1State.resourceType
-    });
-
-    setStaffCellState(range.cohort, "P2", {
-      assignee: p2State.assignee,
-      startDate: hasP2 ? p2StartCandidate : "",
-      endDate: hasP2 ? range.endDate : "",
-      resourceType: p2State.resourceType
-    });
-
-    setStaffCellState(range.cohort, "365", {
-      assignee: d365State.assignee,
-      startDate: d365Start,
-      endDate: d365End,
-      resourceType: d365State.resourceType
-    });
-  }
-
-  renderStaffingMatrix();
-  refreshStaffingAnalytics(true);
-  setStaffingStatus("코호트 일정 기준으로 P1/P2/365 기간을 자동 반영했습니다.");
-  scheduleAutoSave();
-}
-
-function isV7eStrictReady(): { ok: boolean; reason?: string } {
-  if (appState.staffingCohortRanges.length === 0) {
-    return { ok: false, reason: "코호트 데이터가 없습니다." };
-  }
-
-  const p1Weeks = Number.parseInt(staffP1WeeksInput.value, 10);
-  const d365Weeks = Number.parseInt(staff365WeeksInput.value, 10);
-  if (!Number.isInteger(p1Weeks) || !Number.isInteger(d365Weeks) || p1Weeks <= 0 || d365Weeks <= 0) {
-    return { ok: false, reason: "P1/365 기본 주수가 올바르지 않습니다." };
-  }
-
-  for (const range of appState.staffingCohortRanges) {
-    const p1State = getStaffCellState(range.cohort, "P1");
-    const p2State = getStaffCellState(range.cohort, "P2");
-    const d365State = getStaffCellState(range.cohort, "365");
-
-    const p1EndCandidate = addDaysToIso(range.startDate, p1Weeks * 7 - 1);
-    const expectedP1End = p1EndCandidate < range.endDate ? p1EndCandidate : range.endDate;
-    if (p1State.startDate !== range.startDate || p1State.endDate !== expectedP1End) {
-      return { ok: false, reason: `${range.cohort} P1 기간이 프리셋과 다릅니다.` };
-    }
-
-    const expectedP2Start = addDaysToIso(expectedP1End, 1);
-    if (expectedP2Start <= range.endDate) {
-      if (p2State.startDate !== expectedP2Start || p2State.endDate !== range.endDate) {
-        return { ok: false, reason: `${range.cohort} P2 기간이 프리셋과 다릅니다.` };
-      }
-    } else if (p2State.startDate || p2State.endDate) {
-      return { ok: false, reason: `${range.cohort} P2 기간이 프리셋과 다릅니다.` };
-    }
-
-    const expected365Start = range.endDate;
-    const expected365End = addDaysToIso(expected365Start, d365Weeks * 7 - 1);
-    if (d365State.startDate !== expected365Start || d365State.endDate !== expected365End) {
-      return { ok: false, reason: `${range.cohort} 365 기간이 프리셋과 다릅니다.` };
-    }
-  }
-
-  return { ok: true };
-}
-
-function buildStrictExportRecords(): InternalV7ERecord[] {
-  const records: InternalV7ERecord[] = [];
-
-  for (const range of appState.staffingCohortRanges) {
-    const p1 = getStaffCellState(range.cohort, "P1");
-    const p2 = getStaffCellState(range.cohort, "P2");
-    const d365 = getStaffCellState(range.cohort, "365");
-
-    records.push({
-      cohort: range.cohort,
-      startDate: range.startDate,
-      endDate: range.endDate,
-      p1Assignee: p1.assignee,
-      p1Range: p1.startDate && p1.endDate ? `${p1.startDate}~${p1.endDate}` : "",
-      p2Assignee: p2.assignee,
-      p2Range: p2.startDate && p2.endDate ? `${p2.startDate}~${p2.endDate}` : "",
-      p365Assignee: d365.assignee,
-      p365Range: d365.startDate && d365.endDate ? `${d365.startDate}~${d365.endDate}` : ""
-    });
-  }
-
-  return records;
-}
-
-function buildModulesGenericExportRecords(): InternalV7ERecord[] {
-  const moduleRanges = deriveModuleRangesFromSessions(appState.sessions);
-
-  return moduleRanges.map((range) => ({
-    cohort: range.cohort,
-    moduleKey: range.module,
-    instructorCode: range.instructorCode,
-    classroomCode: range.classroomCode,
-    startDate: range.startDate,
-    endDate: range.endDate,
-    start: range.startDate,
-    end: range.endDate,
-    sessionCount: String(range.sessionCount)
-  }));
-}
-
-function downloadStaffingCsv(): void {
-  if (appState.staffingCohortRanges.length === 0) {
-    setStaffingStatus("내보낼 배치 데이터가 없습니다.", true);
-    return;
-  }
-
-  const mode: ExportFormatKey =
-    staffExportModeSelect.value === "modules_generic" ? "modules_generic" : "v7e_strict";
-
-  if (mode === "v7e_strict") {
-    const strictReady = isV7eStrictReady();
-    if (!strictReady.ok) {
-      setStaffingStatus(
-        `v7e_strict는 P1/P2/365 프리셋 적용 상태에서만 내보낼 수 있습니다. (${strictReady.reason})`,
-        true
-      );
-      return;
-    }
-  }
-
-  const records = mode === "v7e_strict" ? buildStrictExportRecords() : buildModulesGenericExportRecords();
-  const validation = validateRecordsForFormat(mode, records);
-  renderStaffExportValidation(validation.errors, validation.warnings);
-
-  if (validation.errors.length > 0) {
-    setStaffingStatus("내보내기 검증 오류가 있어 진행할 수 없습니다.", true);
-    return;
-  }
-
-  if (validation.warnings.length > 0 && !staffExportWarningsAgree.checked) {
-    setStaffingStatus("경고를 확인한 뒤 체크박스를 선택하면 내보내기를 진행할 수 있습니다.", true);
-    return;
-  }
-
-  const csv = mode === "v7e_strict" ? exportV7eStrictCsv(records) : exportWithMapping("modules_generic", records);
-  const fileName =
-    mode === "v7e_strict"
-      ? `staffing_v7e_strict_${getTodayCompactDate()}.csv`
-      : `staffing_modules_generic_${getTodayCompactDate()}.csv`;
-  downloadCsvText(fileName, csv);
-
-  if (mode === "v7e_strict" && staffExportIncludeDetails.checked) {
-    const detailRows = appState.staffingAssignments
-      .sort(
-        (a, b) =>
-          a.assignee.localeCompare(b.assignee) ||
-          a.cohort.localeCompare(b.cohort) ||
-          a.phase.localeCompare(b.phase)
-      )
-      .map((assignment) => [
-        assignment.assignee,
-        assignment.resourceType,
-        assignment.cohort,
-        assignment.phase,
-        assignment.startDate,
-        assignment.endDate,
-        String(assignment.workDays),
-        getPolicyLabel(assignment.includeWeekdays)
-      ]);
-
-    downloadCsvFile(`staffing_v7e_strict_details_${getTodayCompactDate()}.csv`, V7E_STRICT_DETAIL_HEADER, detailRows);
-  }
-
-  setStaffingStatus(`${mode} 내보내기를 완료했습니다.`);
-}
+function downloadStaffingCsv(): void { staffingDownloadStaffingCsv(); }
 
 function regenerateSummariesAndTimeline(preferredCohort = ""): void {
   appState.summaries = buildCohortSummaries(appState.sessions);
@@ -6569,7 +4253,7 @@ function appendGeneratedScheduleToSessions(): void {
 
 const CSV_UPLOAD_WARN_BYTES = 5 * 1024 * 1024;
 
-fileInput.addEventListener("change", async () => {
+async function handleFileChange(): Promise<void> {
   const file = fileInput.files?.[0];
   if (!file) {
     return;
@@ -6606,22 +4290,25 @@ fileInput.addEventListener("change", async () => {
   } finally {
     setUploadProcessingState(false);
   }
-});
+}
 
-cohortSelect.addEventListener("change", updateCohortInfo);
-downloadButton.addEventListener("click", downloadCohortCSV);
-
-openNotificationDrawerButton.addEventListener("click", () => {
+function handleOpenNotificationDrawer(): void {
   openDrawer("notification");
   renderNotificationCenter();
-});
-openConflictDetailModalButton.addEventListener("click", openConflictDetailModal);
-closeConflictDetailModalButton.addEventListener("click", closeConflictDetailModal);
-conflictDetailModal.addEventListener("cancel", (event) => {
+}
+
+function focusNotificationCenter(focus: TimelineNotificationFocus): void {
+  setNotificationFocus(focus);
+  openDrawer("notification");
+  renderNotificationCenter();
+}
+
+function handleConflictModalCancel(event: Event): void {
   event.preventDefault();
   closeConflictDetailModal();
-});
-conflictDetailModal.addEventListener("click", (event) => {
+}
+
+function handleConflictModalClick(event: MouseEvent): void {
   if (!(event instanceof MouseEvent)) {
     return;
   }
@@ -6634,70 +4321,81 @@ conflictDetailModal.addEventListener("click", (event) => {
   if (!insideDialog) {
     closeConflictDetailModal();
   }
-});
-openInstructorDrawerButton.addEventListener("click", () => {
+}
+
+function handleOpenInstructorDrawer(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
   });
   openInstructorDrawerWithTab("course");
-});
-quickNavCourseButton.addEventListener("click", () => {
+}
+
+function handleQuickNavCourse(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
   });
   openInstructorDrawerWithTab("course");
-});
-quickNavSubjectButton.addEventListener("click", () => {
+}
+
+function handleQuickNavSubject(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
   });
   openInstructorDrawerWithTab("subject");
-});
-quickNavInstructorButton.addEventListener("click", () => {
+}
+
+function handleQuickNavInstructor(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
   });
   openInstructorDrawerWithTab("register");
-});
-quickNavMappingButton.addEventListener("click", () => {
+}
+
+function handleQuickNavMapping(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
   });
   openInstructorDrawerWithTab("mapping");
-});
-timelineViewTypeSelect.addEventListener("change", () => {
+}
+
+function handleTimelineViewTypeChange(): void {
   setTimelineViewType(parseTimelineViewType(timelineViewTypeSelect.value));
   renderTimeline();
   scheduleAutoSave();
-});
-assigneeModeInstructorButton.addEventListener("click", () => {
+}
+
+function handleAssigneeModeInstructor(): void {
   appState.assigneeTimelineKind = "INSTRUCTOR";
   assigneeModeInstructorButton.classList.add("active");
   assigneeModeStaffButton.classList.remove("active");
   renderTimeline();
   scheduleAutoSave();
-});
-assigneeModeStaffButton.addEventListener("click", () => {
+}
+
+function handleAssigneeModeStaff(): void {
   appState.assigneeTimelineKind = "STAFF";
   assigneeModeStaffButton.classList.add("active");
   assigneeModeInstructorButton.classList.remove("active");
   renderTimeline();
   scheduleAutoSave();
-});
-weekPrevButton.addEventListener("click", () => {
+}
+
+function handleWeekPrev(): void {
   appState.weekGridStartDate = addDaysToIso(startOfWeekIso(appState.weekGridStartDate), -7);
   renderTimeline();
-});
-weekNextButton.addEventListener("click", () => {
+}
+
+function handleWeekNext(): void {
   appState.weekGridStartDate = addDaysToIso(startOfWeekIso(appState.weekGridStartDate), 7);
   renderTimeline();
-});
-monthPrevButton.addEventListener("click", () => {
+}
+
+function handleMonthPrev(): void {
   const parsed = appState.monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
   if (!parsed) {
     appState.monthCalendarCursor = getTodayIsoDate().slice(0, 7);
@@ -6706,8 +4404,9 @@ monthPrevButton.addEventListener("click", () => {
   const prev = new Date(Date.UTC(year, (month || 1) - 2, 1));
   appState.monthCalendarCursor = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}`;
   renderTimeline();
-});
-monthNextButton.addEventListener("click", () => {
+}
+
+function handleMonthNext(): void {
   const parsed = appState.monthCalendarCursor.match(/^(\d{4})-(\d{2})$/);
   if (!parsed) {
     appState.monthCalendarCursor = getTodayIsoDate().slice(0, 7);
@@ -6716,23 +4415,19 @@ monthNextButton.addEventListener("click", () => {
   const next = new Date(Date.UTC(year, month || 1, 1));
   appState.monthCalendarCursor = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
   renderTimeline();
-});
-drawerBackdrop.addEventListener("click", closeDrawers);
-for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>("[data-close-drawer]"))) {
-  button.addEventListener("click", closeDrawers);
 }
-window.addEventListener("keydown", (event) => {
+
+function handleWindowKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape" && appState.activeDrawer) {
     closeDrawers();
   }
-});
-window.addEventListener("resize", applyManagementInlineMode);
+}
 
-computeConflictsButton.addEventListener("click", () => {
+function handleComputeConflictsClick(): void {
   void computeConflicts();
-});
+}
 
-keySearchInput.addEventListener("input", () => {
+function handleKeySearchInput(): void {
   if (appState.keySearchTimer !== undefined) {
     window.clearTimeout(appState.keySearchTimer);
   }
@@ -6741,9 +4436,9 @@ keySearchInput.addEventListener("input", () => {
     applyConflictFilters();
     scheduleAutoSave();
   }, 300);
-});
+}
 
-instructorDaySearchInput.addEventListener("input", () => {
+function handleInstructorDaySearchInput(): void {
   if (appState.instructorDaySearchTimer !== undefined) {
     window.clearTimeout(appState.instructorDaySearchTimer);
   }
@@ -6752,9 +4447,9 @@ instructorDaySearchInput.addEventListener("input", () => {
     applyInstructorDayFilters();
     scheduleAutoSave();
   }, 300);
-});
+}
 
-foDaySearchInput.addEventListener("input", () => {
+function handleFoDaySearchInput(): void {
   if (appState.foDaySearchTimer !== undefined) {
     window.clearTimeout(appState.foDaySearchTimer);
   }
@@ -6763,91 +4458,78 @@ foDaySearchInput.addEventListener("input", () => {
     applyFoDayFilters();
     scheduleAutoSave();
   }, 300);
-});
+}
 
-downloadTimeConflictsButton.addEventListener("click", downloadVisibleTimeConflictsCsv);
-downloadInstructorDayConflictsButton.addEventListener("click", downloadVisibleInstructorDayConflictsCsv);
-downloadFoDayConflictsButton.addEventListener("click", downloadVisibleFoDayConflictsCsv);
-
-tabTimeConflicts.addEventListener("click", () => {
+function handleTabTimeConflicts(): void {
   setConflictTab("time");
-});
+}
 
-tabInstructorDayConflicts.addEventListener("click", () => {
+function handleTabInstructorDayConflicts(): void {
   setConflictTab("instructor_day");
-});
+}
 
-tabFoDayConflicts.addEventListener("click", () => {
+function handleTabFoDayConflicts(): void {
   setConflictTab("fo_day");
-});
+}
 
-addHolidayButton.addEventListener("click", () => {
-  addDateToList(holidayDateInput, "holiday");
-});
+function handleAddHoliday(): void {
+  holidayHandleAddHoliday();
+}
 
-loadPublicHolidaysButton.addEventListener("click", () => {
-  void loadPublicHolidays();
-});
+function handleLoadPublicHolidays(): void {
+  holidayHandleLoadPublicHolidays();
+}
 
-clearHolidaysButton.addEventListener("click", clearHolidayList);
-dedupeHolidaysButton.addEventListener("click", dedupeHolidayList);
+function handleAddCustomBreak(): void {
+  holidayHandleAddCustomBreak();
+}
 
-addCustomBreakButton.addEventListener("click", () => {
-  addDateToList(customBreakDateInput, "customBreak");
-});
-
-scheduleTemplateSelect.addEventListener("change", () => {
+function handleScheduleTemplateSelectChange(): void {
   const selectedTemplate = findScheduleTemplate(appState.scheduleTemplates, scheduleTemplateSelect.value);
   deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn);
-});
-loadScheduleTemplateButton.addEventListener("click", applySelectedScheduleTemplate);
-saveScheduleTemplateButton.addEventListener("click", saveCurrentScheduleTemplate);
-deleteScheduleTemplateButton.addEventListener("click", deleteSelectedScheduleTemplate);
+}
 
-generateScheduleButton.addEventListener("click", generateScheduleFromUi);
-appendScheduleButton.addEventListener("click", appendGeneratedScheduleToSessions);
-pushScheduleToConflicts.addEventListener("change", () => {
+function handlePushScheduleToConflictsChange(): void {
   updateActionStates();
   scheduleAutoSave();
-});
+}
 
-staffAutoFillButton.addEventListener("click", autoFillStaffingFromCohorts);
-staffRefreshButton.addEventListener("click", () => {
+function handleStaffRefresh(): void {
   refreshStaffingAnalytics(true);
   scheduleAutoSave();
-});
-staffingModeSelect.addEventListener("change", () => {
+}
+
+function handleStaffingModeSelectChange(): void {
   applyStaffingMode(staffingModeSelect.value === "advanced" ? "advanced" : "manager");
   renderStaffingSection();
   updateActionStates();
   scheduleAutoSave();
-});
-if (adminModeToggle) {
-  adminModeToggle.addEventListener("change", () => {
-    applyShowAdvancedMode(resolveShowAdvanced(adminModeToggle.checked));
-    scheduleAutoSave();
-  });
 }
 
-saveMenuConfigButton.addEventListener("click", () => {
+function handleAdminModeToggleChange(): void {
+  applyShowAdvancedMode(resolveShowAdvanced(adminModeToggle!.checked));
+  scheduleAutoSave();
+}
+
+function handleSaveMenuConfig(): void {
   appState.sidebarMenuConfig = normalizeSidebarMenuConfig(appState.sidebarMenuDraft);
   appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
   applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
   saveSidebarMenuConfig(appState.sidebarMenuConfig);
   renderSidebarMenuConfigEditor();
   menuConfigStatus.textContent = `메뉴 설정 저장 완료 (${new Date().toLocaleTimeString()})`;
-});
+}
 
-resetMenuConfigButton.addEventListener("click", () => {
+function handleResetMenuConfig(): void {
   appState.sidebarMenuConfig = getDefaultSidebarMenuConfig();
   appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
   applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
   saveSidebarMenuConfig(appState.sidebarMenuConfig);
   renderSidebarMenuConfigEditor();
   menuConfigStatus.textContent = "기본 메뉴 설정으로 복원했습니다.";
-});
+}
 
-jibbleSubCourseButton?.addEventListener("click", () => {
+function handleJibbleSubCourse(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
@@ -6855,9 +4537,9 @@ jibbleSubCourseButton?.addEventListener("click", () => {
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("course");
   openInstructorDrawerWithTab("course");
-});
+}
 
-jibbleSubSubjectButton?.addEventListener("click", () => {
+function handleJibbleSubSubject(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
@@ -6865,9 +4547,9 @@ jibbleSubSubjectButton?.addEventListener("click", () => {
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("subject");
   openInstructorDrawerWithTab("subject");
-});
+}
 
-jibbleSubInstructorButton?.addEventListener("click", () => {
+function handleJibbleSubInstructor(): void {
   activatePrimarySidebarPage("management", {
     scrollToTop: false,
     openManagementTab: false
@@ -6875,46 +4557,51 @@ jibbleSubInstructorButton?.addEventListener("click", () => {
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("instructor");
   openInstructorDrawerWithTab("register");
-});
+}
 
-instructorTabCourse.addEventListener("click", () => switchInstructorDrawerTab("course"));
-instructorTabRegister.addEventListener("click", () => switchInstructorDrawerTab("register"));
-instructorTabMapping.addEventListener("click", () => switchInstructorDrawerTab("mapping"));
-instructorTabSubject.addEventListener("click", () => switchInstructorDrawerTab("subject"));
-upsertCourseButton.addEventListener("click", upsertCourseRegistryEntry);
-upsertInstructorButton.addEventListener("click", upsertInstructorDirectoryEntry);
-upsertSubjectButton.addEventListener("click", upsertSubjectDirectoryEntry);
-applySubjectMappingsButton.addEventListener("click", applySubjectMappingsToSessions);
-subjectCourseSelect.addEventListener("change", () => {
+function handleInstructorTabCourse(): void {
+  switchInstructorDrawerTab("course");
+}
+
+function handleInstructorTabRegister(): void {
+  switchInstructorDrawerTab("register");
+}
+
+function handleInstructorTabMapping(): void {
+  switchInstructorDrawerTab("mapping");
+}
+
+function handleInstructorTabSubject(): void {
+  switchInstructorDrawerTab("subject");
+}
+
+function handleSubjectCourseSelectChange(): void {
   renderSubjectDirectory();
   scheduleAutoSave();
-});
-mappingCourseSelect.addEventListener("change", () => {
+}
+
+function handleMappingCourseSelectChange(): void {
   renderSubjectMappingTable();
   scheduleAutoSave();
-});
-courseTemplateCourseSelect.addEventListener("change", () => {
+}
+
+function handleCourseTemplateCourseSelectChange(): void {
   renderCourseTemplateOptions();
   scheduleAutoSave();
-});
-saveCourseTemplateButton.addEventListener("click", saveCurrentCourseTemplate);
-loadCourseTemplateButton.addEventListener("click", applySelectedCourseTemplate);
-deleteCourseTemplateButton.addEventListener("click", deleteSelectedCourseTemplate);
-staffExportCsvButton.addEventListener("click", downloadStaffingCsv);
-staffExportModeSelect.addEventListener("change", () => {
+}
+
+function handleStaffExportModeSelectChange(): void {
   staffExportWarningsAgree.checked = false;
   renderStaffExportValidation([], []);
   scheduleAutoSave();
   updateActionStates();
-});
-staffExportIncludeDetails.addEventListener("change", scheduleAutoSave);
-staffExportWarningsAgree.addEventListener("change", updateActionStates);
+}
 
-saveProjectButton.addEventListener("click", downloadProjectStateJson);
-loadProjectButton.addEventListener("click", () => {
+function handleLoadProjectButtonClick(): void {
   loadProjectInput.click();
-});
-loadProjectInput.addEventListener("change", async () => {
+}
+
+async function handleLoadProjectInputChange(): Promise<void> {
   const file = loadProjectInput.files?.[0];
   if (!file) {
     return;
@@ -6930,50 +4617,165 @@ loadProjectInput.addEventListener("change", async () => {
   } finally {
     loadProjectInput.value = "";
   }
-});
-resetProjectButton.addEventListener("click", resetAllStateWithConfirm);
-printReportButton.addEventListener("click", printReport);
+}
 
-loadDemoSampleButton.addEventListener("click", async () => {
+async function handleLoadDemoSampleButtonClick(): Promise<void> {
   try {
     await loadDemoSampleState();
   } catch (error) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
     setDemoSampleBanner(`샘플 로드 실패: ${message}`);
   }
-});
+}
 
-restorePreviousStateButton.addEventListener("click", restoreStateBeforeSampleLoad);
-authLoginButton.addEventListener("click", submitAuthCode);
-authCodeInput.addEventListener("keydown", (event) => {
+function handleAuthCodeInputKeydown(event: KeyboardEvent): void {
   if (event.key === "Enter") {
     event.preventDefault();
     submitAuthCode();
   }
-});
-
-const scheduleInputsForAutoSave: Array<HTMLInputElement> = [
-  scheduleCohortInput,
-  scheduleStartDateInput,
-  scheduleTotalHoursInput,
-  scheduleInstructorCodeInput,
-  scheduleClassroomCodeInput,
-  scheduleSubjectCodeInput,
-  staffP1WeeksInput,
-  staff365WeeksInput
-];
-
-for (const input of scheduleInputsForAutoSave) {
-  input.addEventListener("input", scheduleAutoSave);
 }
 
-dayTemplateTable.addEventListener("input", scheduleAutoSave);
-dayTemplateTable.addEventListener("input", () => {
+function handleDayTemplateInputTemplateStatus(): void {
   scheduleTemplateStatus.textContent = "현재 템플릿이 수정되었습니다. 필요 시 저장해 주세요.";
+}
+
+function handleWindowAfterprint(): void {
+  printReportCard.style.display = "none";
+}
+
+initConflictsFeature({
+  highlightGanttByCohortModule,
+  updateActionStates,
+  scheduleAutoSave
 });
 
-window.addEventListener("afterprint", () => {
-  printReportCard.style.display = "none";
+initTimelineFeature({
+  getCohortNotificationMap: () => getCohortNotificationCountMap(refreshNotificationItems()),
+  focusNotification: focusNotificationCenter
+});
+
+initHolidaysFeature({
+  refreshHrdValidation,
+  scheduleAutoSave,
+  setHolidayLoadingState,
+  setScheduleError
+});
+
+initScheduleTemplatesFeature({
+  scheduleAutoSave,
+  updateActionStates,
+  pushRecentActionLog
+});
+
+initStaffingFeature({
+  phases: PHASES,
+  trackTypes: TRACK_TYPES,
+  matrixResourceTypes: MATRIX_RESOURCE_TYPES,
+  trackLabel: TRACK_LABEL,
+  resourceTypeOrder: RESOURCE_TYPE_ORDER,
+  compactToIso,
+  upsertCohortRange,
+  getDefaultTrackTypeForCohort,
+  getStaffCellState,
+  setStaffCellState,
+  setStaffingStatus,
+  scheduleAutoSave,
+  renderInstructorDayOverlapPanel,
+  renderFoDayOverlapPanel,
+  applyInstructorDayFilters,
+  applyFoDayFilters,
+  renderStaffExportValidation,
+  renderStaffModuleManagerTable,
+  buildModuleAssignSummaries
+});
+
+initEventListeners({
+  onFileChange: handleFileChange,
+  onCohortSelectChange: updateCohortInfo,
+  onDownloadButtonClick: downloadCohortCSV,
+  onOpenNotificationDrawerButtonClick: handleOpenNotificationDrawer,
+  onOpenConflictDetailModalButtonClick: openConflictDetailModal,
+  onCloseConflictDetailModalButtonClick: closeConflictDetailModal,
+  onConflictDetailModalCancel: handleConflictModalCancel,
+  onConflictDetailModalClick: handleConflictModalClick,
+  onOpenInstructorDrawerButtonClick: handleOpenInstructorDrawer,
+  onQuickNavCourseButtonClick: handleQuickNavCourse,
+  onQuickNavSubjectButtonClick: handleQuickNavSubject,
+  onQuickNavInstructorButtonClick: handleQuickNavInstructor,
+  onQuickNavMappingButtonClick: handleQuickNavMapping,
+  onTimelineViewTypeSelectChange: handleTimelineViewTypeChange,
+  onAssigneeModeInstructorButtonClick: handleAssigneeModeInstructor,
+  onAssigneeModeStaffButtonClick: handleAssigneeModeStaff,
+  onWeekPrevButtonClick: handleWeekPrev,
+  onWeekNextButtonClick: handleWeekNext,
+  onMonthPrevButtonClick: handleMonthPrev,
+  onMonthNextButtonClick: handleMonthNext,
+  onDrawerBackdropClick: closeDrawers,
+  onCloseDrawerButtonClick: closeDrawers,
+  onWindowKeydown: handleWindowKeydown,
+  onWindowResize: applyManagementInlineMode,
+  onComputeConflictsButtonClick: handleComputeConflictsClick,
+  onKeySearchInputInput: handleKeySearchInput,
+  onInstructorDaySearchInputInput: handleInstructorDaySearchInput,
+  onFoDaySearchInputInput: handleFoDaySearchInput,
+  onDownloadTimeConflictsButtonClick: downloadVisibleTimeConflictsCsv,
+  onDownloadInstructorDayConflictsButtonClick: downloadVisibleInstructorDayConflictsCsv,
+  onDownloadFoDayConflictsButtonClick: downloadVisibleFoDayConflictsCsv,
+  onTabTimeConflictsClick: handleTabTimeConflicts,
+  onTabInstructorDayConflictsClick: handleTabInstructorDayConflicts,
+  onTabFoDayConflictsClick: handleTabFoDayConflicts,
+  onAddHolidayButtonClick: handleAddHoliday,
+  onLoadPublicHolidaysButtonClick: handleLoadPublicHolidays,
+  onClearHolidaysButtonClick: clearHolidayList,
+  onDedupeHolidaysButtonClick: dedupeHolidayList,
+  onAddCustomBreakButtonClick: handleAddCustomBreak,
+  onScheduleTemplateSelectChange: handleScheduleTemplateSelectChange,
+  onLoadScheduleTemplateButtonClick: applySelectedScheduleTemplate,
+  onSaveScheduleTemplateButtonClick: saveCurrentScheduleTemplate,
+  onDeleteScheduleTemplateButtonClick: deleteSelectedScheduleTemplate,
+  onGenerateScheduleButtonClick: generateScheduleFromUi,
+  onAppendScheduleButtonClick: appendGeneratedScheduleToSessions,
+  onPushScheduleToConflictsChange: handlePushScheduleToConflictsChange,
+  onStaffAutoFillButtonClick: autoFillStaffingFromCohorts,
+  onStaffRefreshButtonClick: handleStaffRefresh,
+  onStaffingModeSelectChange: handleStaffingModeSelectChange,
+  onAdminModeToggleChange: handleAdminModeToggleChange,
+  onSaveMenuConfigButtonClick: handleSaveMenuConfig,
+  onResetMenuConfigButtonClick: handleResetMenuConfig,
+  onJibbleSubCourseButtonClick: handleJibbleSubCourse,
+  onJibbleSubSubjectButtonClick: handleJibbleSubSubject,
+  onJibbleSubInstructorButtonClick: handleJibbleSubInstructor,
+  onInstructorTabCourseClick: handleInstructorTabCourse,
+  onInstructorTabRegisterClick: handleInstructorTabRegister,
+  onInstructorTabMappingClick: handleInstructorTabMapping,
+  onInstructorTabSubjectClick: handleInstructorTabSubject,
+  onUpsertCourseButtonClick: upsertCourseRegistryEntry,
+  onUpsertInstructorButtonClick: upsertInstructorDirectoryEntry,
+  onUpsertSubjectButtonClick: upsertSubjectDirectoryEntry,
+  onApplySubjectMappingsButtonClick: applySubjectMappingsToSessions,
+  onSubjectCourseSelectChange: handleSubjectCourseSelectChange,
+  onMappingCourseSelectChange: handleMappingCourseSelectChange,
+  onCourseTemplateCourseSelectChange: handleCourseTemplateCourseSelectChange,
+  onSaveCourseTemplateButtonClick: saveCurrentCourseTemplate,
+  onLoadCourseTemplateButtonClick: applySelectedCourseTemplate,
+  onDeleteCourseTemplateButtonClick: deleteSelectedCourseTemplate,
+  onStaffExportCsvButtonClick: downloadStaffingCsv,
+  onStaffExportModeSelectChange: handleStaffExportModeSelectChange,
+  onStaffExportIncludeDetailsChange: scheduleAutoSave,
+  onStaffExportWarningsAgreeChange: updateActionStates,
+  onSaveProjectButtonClick: downloadProjectStateJson,
+  onLoadProjectButtonClick: handleLoadProjectButtonClick,
+  onLoadProjectInputChange: handleLoadProjectInputChange,
+  onResetProjectButtonClick: resetAllStateWithConfirm,
+  onPrintReportButtonClick: printReport,
+  onLoadDemoSampleButtonClick: handleLoadDemoSampleButtonClick,
+  onRestorePreviousStateButtonClick: restoreStateBeforeSampleLoad,
+  onAuthLoginButtonClick: submitAuthCode,
+  onAuthCodeInputKeydown: handleAuthCodeInputKeydown,
+  onScheduleInputInput: scheduleAutoSave,
+  onDayTemplateTableInput: scheduleAutoSave,
+  onDayTemplateTableInputTemplateStatus: handleDayTemplateInputTemplateStatus,
+  onWindowAfterprint: handleWindowAfterprint,
 });
 
 if (!scheduleStartDateInput.value) {
@@ -6997,26 +4799,6 @@ renderSidebarMenuConfigEditor();
 menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();
-setupMobileBottomNavigation();
-initKpiDashboard();
-initAttendanceDashboard();
-initDropoutDashboard();
-
-// ─── 출결현황 ↔ 하차방어율 page-level tab switching ─────────
-(() => {
-  const pageTabs = document.querySelectorAll<HTMLElement>("[data-att-page]");
-  const attPanel = document.getElementById("attPageAttendance");
-  const doPanel = document.getElementById("attPageDropout");
-  pageTabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      pageTabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      const target = tab.dataset.attPage;
-      if (attPanel) attPanel.style.display = target === "attendance" ? "block" : "none";
-      if (doPanel) doPanel.style.display = target === "dropout" ? "block" : "none";
-    });
-  });
-})();
 
 const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
 applyAuthGate(hasAuthSession);
