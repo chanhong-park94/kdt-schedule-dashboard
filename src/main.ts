@@ -266,7 +266,7 @@ const AUTH_CODE_V2 = "v2";
 const STORAGE_WARN_BYTES = 4_500_000;
 const AUTO_SAVE_DEBOUNCE_MS = 500;
 const PRINT_CONFLICT_LIMIT = 50;
-const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v1";
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v2";
 
 const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "timeline",

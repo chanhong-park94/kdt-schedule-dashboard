@@ -2661,6 +2661,16 @@ tbody tr:hover {
   border-bottom: 1px solid #f0f1f4;
   text-align: center;
 }
+.app-shell--jibble .jibble-logo .logo-icon {
+  font-size: 13px;
+  vertical-align: baseline;
+}
+
+/* 정보입력 바로가기 바 — 설정 페이지 내 중복 UI 제거 */
+.jibble-management-submenu,
+.quick-admin-index {
+  display: none !important;
+}
 
 .app-shell--jibble .jibble-nav {
   padding: 12px 10px;
