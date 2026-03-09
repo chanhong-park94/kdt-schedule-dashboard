@@ -505,15 +505,14 @@
       </div>
 
       <div class="u-mt-10">
-        <label>요일별 시간대 템플릿 (기본 1블록 + 선택 break)</label>
+        <label>요일별 시간대 템플릿</label>
         <table id="dayTemplateTable" class="template-table">
           <thead>
             <tr>
               <th>요일</th>
               <th>수업 시작</th>
               <th>수업 종료</th>
-              <th>break 시작(선택)</th>
-              <th>break 종료(선택)</th>
+              <th>점심시간</th>
             </tr>
           </thead>
           <tbody>
@@ -521,50 +520,43 @@
               <td>월</td>
               <td><input class="tpl-start" type="time" /></td>
               <td><input class="tpl-end" type="time" /></td>
-              <td><input class="tpl-break-start" type="time" /></td>
-              <td><input class="tpl-break-end" type="time" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" /><input class="tpl-break-start" type="time" value="13:00" disabled /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
             <tr data-weekday="2">
               <td>화</td>
               <td><input class="tpl-start" type="time" value="20:00" /></td>
               <td><input class="tpl-end" type="time" value="22:30" /></td>
-              <td><input class="tpl-break-start" type="time" /></td>
-              <td><input class="tpl-break-end" type="time" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" /><input class="tpl-break-start" type="time" value="13:00" disabled /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
             <tr data-weekday="3">
               <td>수</td>
               <td><input class="tpl-start" type="time" value="20:00" /></td>
               <td><input class="tpl-end" type="time" value="22:30" /></td>
-              <td><input class="tpl-break-start" type="time" /></td>
-              <td><input class="tpl-break-end" type="time" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" /><input class="tpl-break-start" type="time" value="13:00" disabled /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
             <tr data-weekday="4">
               <td>목</td>
               <td><input class="tpl-start" type="time" value="20:00" /></td>
               <td><input class="tpl-end" type="time" value="22:30" /></td>
-              <td><input class="tpl-break-start" type="time" /></td>
-              <td><input class="tpl-break-end" type="time" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" /><input class="tpl-break-start" type="time" value="13:00" disabled /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
             <tr data-weekday="5">
               <td>금</td>
               <td><input class="tpl-start" type="time" value="20:00" /></td>
               <td><input class="tpl-end" type="time" value="22:30" /></td>
-              <td><input class="tpl-break-start" type="time" /></td>
-              <td><input class="tpl-break-end" type="time" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" /><input class="tpl-break-start" type="time" value="13:00" disabled /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
             <tr data-weekday="6">
               <td>토</td>
-              <td><input class="tpl-start" type="time" value="10:00" placeholder="10:00" /></td>
-              <td><input class="tpl-end" type="time" value="18:00" placeholder="18:00" /></td>
-              <td><input class="tpl-break-start" type="time" value="13:00" placeholder="13:00" /></td>
-              <td><input class="tpl-break-end" type="time" value="14:00" placeholder="14:00" /></td>
+              <td><input class="tpl-start" type="time" value="10:00" /></td>
+              <td><input class="tpl-end" type="time" value="18:00" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" checked /><input class="tpl-break-start" type="time" value="13:00" /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
             <tr data-weekday="0">
               <td>일</td>
               <td><input class="tpl-start" type="time" /></td>
               <td><input class="tpl-end" type="time" /></td>
-              <td><input class="tpl-break-start" type="time" /></td>
-              <td><input class="tpl-break-end" type="time" /></td>
+              <td class="tpl-lunch-cell"><label><input class="tpl-break-check" type="checkbox" /><input class="tpl-break-start" type="time" value="13:00" disabled /><span class="tpl-break-end-display">~ 14:00</span></label></td>
             </tr>
           </tbody>
         </table>

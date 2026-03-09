@@ -28,6 +28,15 @@ export function initScheduleTemplatesFeature(nextDeps: ScheduleTemplatesFeatureD
   deps = nextDeps;
 }
 
+/** breakStart 시간(HH:MM)에 1시간을 더한 종료 시간 반환 */
+function computeBreakEnd(startTime: string): string {
+  if (!startTime) return "";
+  const [h, m] = startTime.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return "";
+  const endH = (h + 1) % 24;
+  return `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 export function collectTemplateRowsState(): TemplateRowState[] {
   const rows = Array.from(domRefs.dayTemplateTable.querySelectorAll<HTMLTableRowElement>("tbody tr"));
 
@@ -38,12 +47,17 @@ export function collectTemplateRowsState(): TemplateRowState[] {
         return null;
       }
 
+      const checked = row.querySelector<HTMLInputElement>(".tpl-break-check")?.checked ?? false;
+      const breakStartVal = checked
+        ? (row.querySelector<HTMLInputElement>(".tpl-break-start")?.value ?? "")
+        : "";
+
       return {
         weekday,
         start: row.querySelector<HTMLInputElement>(".tpl-start")?.value ?? "",
         end: row.querySelector<HTMLInputElement>(".tpl-end")?.value ?? "",
-        breakStart: row.querySelector<HTMLInputElement>(".tpl-break-start")?.value ?? "",
-        breakEnd: row.querySelector<HTMLInputElement>(".tpl-break-end")?.value ?? ""
+        breakStart: breakStartVal,
+        breakEnd: breakStartVal ? computeBreakEnd(breakStartVal) : ""
       };
     })
     .filter((item): item is TemplateRowState => item !== null)
@@ -72,8 +86,9 @@ export function applyTemplateRowsState(rows: TemplateRowState[] | undefined): vo
 
     const startInput = domRow.querySelector<HTMLInputElement>(".tpl-start");
     const endInput = domRow.querySelector<HTMLInputElement>(".tpl-end");
+    const breakCheck = domRow.querySelector<HTMLInputElement>(".tpl-break-check");
     const breakStartInput = domRow.querySelector<HTMLInputElement>(".tpl-break-start");
-    const breakEndInput = domRow.querySelector<HTMLInputElement>(".tpl-break-end");
+    const breakEndDisplay = domRow.querySelector<HTMLElement>(".tpl-break-end-display");
 
     if (startInput) {
       startInput.value = state.start;
@@ -81,11 +96,18 @@ export function applyTemplateRowsState(rows: TemplateRowState[] | undefined): vo
     if (endInput) {
       endInput.value = state.end;
     }
-    if (breakStartInput) {
-      breakStartInput.value = state.breakStart;
+
+    const hasBreak = Boolean(state.breakStart);
+    if (breakCheck) {
+      breakCheck.checked = hasBreak;
     }
-    if (breakEndInput) {
-      breakEndInput.value = state.breakEnd;
+    if (breakStartInput) {
+      breakStartInput.value = state.breakStart || "13:00";
+      breakStartInput.disabled = !hasBreak;
+    }
+    if (breakEndDisplay) {
+      const endTime = hasBreak ? computeBreakEnd(state.breakStart) : "14:00";
+      breakEndDisplay.textContent = `~ ${endTime}`;
     }
   }
 }

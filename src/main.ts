@@ -3834,27 +3834,26 @@ function parseTemplateRows(): { dayTemplates: DayTimeTemplate[]; weekdays: numbe
 
     const startInput = row.querySelector<HTMLInputElement>(".tpl-start");
     const endInput = row.querySelector<HTMLInputElement>(".tpl-end");
+    const breakCheck = row.querySelector<HTMLInputElement>(".tpl-break-check");
     const breakStartInput = row.querySelector<HTMLInputElement>(".tpl-break-start");
-    const breakEndInput = row.querySelector<HTMLInputElement>(".tpl-break-end");
 
-    if (!startInput || !endInput || !breakStartInput || !breakEndInput) {
+    if (!startInput || !endInput) {
       throw new Error(`${weekdayLabel} 템플릿 입력 요소를 찾을 수 없습니다.`);
     }
 
     const startValue = startInput.value.trim();
     const endValue = endInput.value.trim();
-    const breakStartValue = breakStartInput.value.trim();
-    const breakEndValue = breakEndInput.value.trim();
+    const hasLunch = breakCheck?.checked ?? false;
+    const breakStartValue = hasLunch ? (breakStartInput?.value.trim() ?? "") : "";
 
     const hasClassRange = startValue.length > 0 || endValue.length > 0;
-    const hasBreakRange = breakStartValue.length > 0 || breakEndValue.length > 0;
 
-    if (!hasClassRange && !hasBreakRange) {
+    if (!hasClassRange && !hasLunch) {
       continue;
     }
 
-    if (!hasClassRange && hasBreakRange) {
-      throw new Error(`${weekdayLabel}은 break만 입력할 수 없습니다. 수업 시작/종료를 입력해 주세요.`);
+    if (!hasClassRange && hasLunch) {
+      throw new Error(`${weekdayLabel}은 점심시간만 설정할 수 없습니다. 수업 시작/종료를 입력해 주세요.`);
     }
 
     if (!startValue || !endValue) {
@@ -3869,18 +3868,16 @@ function parseTemplateRows(): { dayTemplates: DayTimeTemplate[]; weekdays: numbe
     }
 
     const breaks: Array<{ startHHMM: string; endHHMM: string }> = [];
-    if (hasBreakRange) {
-      if (!breakStartValue || !breakEndValue) {
-        throw new Error(`${weekdayLabel} break 시작/종료 시간을 모두 입력해 주세요.`);
-      }
-
+    if (hasLunch && breakStartValue) {
       const breakStartHHMM = normalizeTimeInputToHHMM(breakStartValue);
-      const breakEndHHMM = normalizeTimeInputToHHMM(breakEndValue);
-
-      if (!breakStartHHMM || !breakEndHHMM) {
-        throw new Error(`${weekdayLabel} break 시간 형식이 올바르지 않습니다.`);
+      if (!breakStartHHMM) {
+        throw new Error(`${weekdayLabel} 점심시간 형식이 올바르지 않습니다.`);
       }
-
+      // 점심시간은 항상 1시간: start + 1h
+      const [bh, bm] = breakStartValue.split(":").map(Number);
+      const breakEndHH = String((bh + 1) % 24).padStart(2, "0");
+      const breakEndMM = String(bm).padStart(2, "0");
+      const breakEndHHMM = `${breakEndHH}${breakEndMM}`;
       breaks.push({ startHHMM: breakStartHHMM, endHHMM: breakEndHHMM });
     }
 
@@ -4788,6 +4785,27 @@ renderSidebarMenuConfigEditor();
 menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();
+
+// 점심시간 체크박스 토글 이벤트: input 활성화/비활성화 + 종료시간 표시 업데이트
+for (const row of Array.from(dayTemplateTable.querySelectorAll<HTMLTableRowElement>("tbody tr"))) {
+  const check = row.querySelector<HTMLInputElement>(".tpl-break-check");
+  const bStart = row.querySelector<HTMLInputElement>(".tpl-break-start");
+  const bEndDisp = row.querySelector<HTMLElement>(".tpl-break-end-display");
+  if (check && bStart) {
+    const updateLunchUI = (): void => {
+      bStart.disabled = !check.checked;
+      if (bEndDisp) {
+        const val = bStart.value || "13:00";
+        const [h, m] = val.split(":").map(Number);
+        const eh = String(((h || 0) + 1) % 24).padStart(2, "0");
+        const em = String(m || 0).padStart(2, "0");
+        bEndDisp.textContent = `~ ${eh}:${em}`;
+      }
+    };
+    check.addEventListener("change", updateLunchUI);
+    bStart.addEventListener("input", updateLunchUI);
+  }
+}
 
 const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
 applyAuthGate(hasAuthSession);
