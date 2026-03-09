@@ -3567,6 +3567,26 @@ tbody tr:hover {
 .btn-danger { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
 .btn-danger:hover { background: #fee2e2; }
 
+/* Slack Schedule Toggle */
+.slack-toggle-label { position: relative; }
+.slack-toggle { opacity: 0; width: 0; height: 0; position: absolute; }
+.slack-toggle-slider { display: inline-block; width: 40px; height: 22px; background: #d1d5db; border-radius: 11px; position: relative; transition: background .2s; cursor: pointer; }
+.slack-toggle-slider::after { content: ''; position: absolute; width: 18px; height: 18px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.slack-toggle:checked + .slack-toggle-slider { background: #4f46e5; }
+.slack-toggle:checked + .slack-toggle-slider::after { transform: translateX(18px); }
+
+/* Slack Schedule Status */
+.slack-schedule-status { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; }
+.slack-schedule-info { background: #eff6ff; color: #1e40af; }
+.slack-schedule-success { background: #d1fae5; color: #065f46; }
+.slack-schedule-error { background: #fee2e2; color: #991b1b; }
+
+/* Slack Course Checkbox */
+.slack-course-check { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; cursor: pointer; background: #fff; transition: all .15s; }
+.slack-course-check:hover { border-color: #a5b4fc; background: #eef2ff; }
+.slack-course-check input[type="checkbox"] { accent-color: #4f46e5; }
+.slack-course-check.checked { background: #eef2ff; border-color: #818cf8; color: #4338ca; font-weight: 600; }
+
 /* Risk Management Button */
 .att-risk-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 700; border: 2px solid #fecaca; border-radius: 8px; background: #fff5f5; color: #dc2626; cursor: pointer; transition: all .2s; white-space: nowrap; }
 .att-risk-btn:hover:not(:disabled) { background: #fee2e2; border-color: #f87171; box-shadow: 0 2px 8px rgba(239,68,68,.15); }

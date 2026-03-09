@@ -15,9 +15,11 @@ import type {
   WeeklyTrend,
   DayPattern,
   AttendanceViewMode,
+  SlackScheduleConfig,
 } from "./hrdTypes";
-import { ATTENDANCE_STATUS_CODE, isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import { sendSlackReport } from "./hrdSlack";
+import { ATTENDANCE_STATUS_CODE, isAbsentStatus, isAttendedStatus, isExcusedStatus, DEFAULT_SLACK_SCHEDULE } from "./hrdTypes";
+import { sendSlackReport, testSlackWebhook, sendSlackReportDirect } from "./hrdSlack";
+import { startScheduler, restartScheduler } from "./hrdScheduler";
 
 Chart.register(...registerables);
 
@@ -689,6 +691,61 @@ function renderHrdSettingsSection(): void {
       });
     });
   }
+
+  // ─── Slack 자동 알림 설정 UI 렌더링 ─────
+  renderSlackScheduleUI(currentConfig);
+}
+
+function renderSlackScheduleUI(config: HrdConfig): void {
+  const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
+
+  // 토글 상태
+  const toggle = $("slackScheduleEnabled") as HTMLInputElement | null;
+  const toggleLabel = $("slackScheduleToggleLabel");
+  const settingsPanel = $("slackScheduleSettings");
+  if (toggle) {
+    toggle.checked = schedule.enabled;
+    if (toggleLabel) toggleLabel.textContent = schedule.enabled ? "활성화" : "비활성화";
+    if (settingsPanel) settingsPanel.style.display = schedule.enabled ? "block" : "none";
+  }
+
+  // 시간
+  const hourSel = $("slackScheduleHour") as HTMLSelectElement | null;
+  const minSel = $("slackScheduleMinute") as HTMLSelectElement | null;
+  if (hourSel) hourSel.value = String(schedule.hour);
+  if (minSel) minSel.value = String(schedule.minute);
+
+  // 요일
+  const weekdaySel = $("slackScheduleWeekdays") as HTMLSelectElement | null;
+  if (weekdaySel) weekdaySel.value = schedule.weekdaysOnly ? "weekdays" : "daily";
+
+  // 대상 과정 체크박스
+  const coursesContainer = $("slackScheduleCourses");
+  if (coursesContainer) {
+    coursesContainer.innerHTML = config.courses.map((c) => {
+      const checked = schedule.targetCourses.length === 0 || schedule.targetCourses.includes(c.trainPrId);
+      return `<label class="slack-course-check ${checked ? "checked" : ""}">
+        <input type="checkbox" value="${c.trainPrId}" ${checked ? "checked" : ""} />
+        ${c.name}
+      </label>`;
+    }).join("");
+
+    // 체크 상태 변경 시 시각 피드백
+    coursesContainer.querySelectorAll("input[type='checkbox']").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const label = cb.closest(".slack-course-check");
+        if (label) {
+          label.classList.toggle("checked", (cb as HTMLInputElement).checked);
+        }
+      });
+    });
+  }
+
+  // 헤더/푸터
+  const headerInput = $("slackScheduleHeader") as HTMLInputElement | null;
+  const footerInput = $("slackScheduleFooter") as HTMLInputElement | null;
+  if (headerInput) headerInput.value = schedule.headerText || DEFAULT_SLACK_SCHEDULE.headerText;
+  if (footerInput) footerInput.value = schedule.footerText || DEFAULT_SLACK_SCHEDULE.footerText;
 }
 
 const HRD_KEY_GATE_PASSWORD = "admin";
@@ -832,6 +889,132 @@ function setupSettingsHandlers(): void {
         : "✅ 탐색 완료. 변경사항 없음.";
     }
     if (discoverBtn instanceof HTMLButtonElement) discoverBtn.disabled = false;
+  });
+
+  // ─── Slack Webhook 테스트 버튼 ──────────────────
+  const slackTestBtn = $("hrdSlackTestBtn");
+  slackTestBtn?.addEventListener("click", async () => {
+    const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
+    const statusEl = $("hrdSlackTestStatus");
+    const url = slackInput?.value?.trim() || "";
+    if (!url) {
+      if (statusEl) { statusEl.textContent = "Webhook URL을 입력해주세요."; statusEl.style.color = "#dc2626"; }
+      return;
+    }
+    if (statusEl) { statusEl.textContent = "테스트 전송 중..."; statusEl.style.color = "#6b7280"; }
+    if (slackTestBtn instanceof HTMLButtonElement) slackTestBtn.disabled = true;
+
+    const result = await testSlackWebhook(url);
+    if (statusEl) {
+      statusEl.textContent = result.ok ? `✅ ${result.message}` : `❌ ${result.message}`;
+      statusEl.style.color = result.ok ? "#059669" : "#dc2626";
+    }
+    if (slackTestBtn instanceof HTMLButtonElement) slackTestBtn.disabled = false;
+  });
+
+  // ─── Slack 자동 알림 토글 ───────────────────────
+  const scheduleToggle = $("slackScheduleEnabled") as HTMLInputElement | null;
+  scheduleToggle?.addEventListener("change", () => {
+    const toggleLabel = $("slackScheduleToggleLabel");
+    const settingsPanel = $("slackScheduleSettings");
+    if (toggleLabel) toggleLabel.textContent = scheduleToggle.checked ? "활성화" : "비활성화";
+    if (settingsPanel) settingsPanel.style.display = scheduleToggle.checked ? "block" : "none";
+  });
+
+  // ─── Slack 알림 설정 저장 ───────────────────────
+  const scheduleSaveBtn = $("slackScheduleSave");
+  scheduleSaveBtn?.addEventListener("click", () => {
+    const config = loadHrdConfig();
+    const toggle = $("slackScheduleEnabled") as HTMLInputElement | null;
+    const hourSel = $("slackScheduleHour") as HTMLSelectElement | null;
+    const minSel = $("slackScheduleMinute") as HTMLSelectElement | null;
+    const weekdaySel = $("slackScheduleWeekdays") as HTMLSelectElement | null;
+    const headerInput = $("slackScheduleHeader") as HTMLInputElement | null;
+    const footerInput = $("slackScheduleFooter") as HTMLInputElement | null;
+    const coursesContainer = $("slackScheduleCourses");
+
+    // 대상 과정 수집
+    const targetCourses: string[] = [];
+    if (coursesContainer) {
+      const checkboxes = coursesContainer.querySelectorAll("input[type='checkbox']");
+      const allChecked = Array.from(checkboxes).every((cb) => (cb as HTMLInputElement).checked);
+      if (!allChecked) {
+        checkboxes.forEach((cb) => {
+          if ((cb as HTMLInputElement).checked) {
+            targetCourses.push((cb as HTMLInputElement).value);
+          }
+        });
+      }
+      // allChecked → 빈 배열 = 전체 과정
+    }
+
+    const schedule: SlackScheduleConfig = {
+      enabled: toggle?.checked || false,
+      hour: parseInt(hourSel?.value || "10"),
+      minute: parseInt(minSel?.value || "0"),
+      weekdaysOnly: weekdaySel?.value !== "daily",
+      targetCourses,
+      headerText: headerInput?.value?.trim() || DEFAULT_SLACK_SCHEDULE.headerText,
+      footerText: footerInput?.value?.trim() || DEFAULT_SLACK_SCHEDULE.footerText,
+      lastSentDate: config.slackSchedule?.lastSentDate,
+    };
+
+    config.slackSchedule = schedule;
+    saveHrdConfig(config);
+    currentConfig = config;
+
+    // 스케줄러 재시작
+    restartScheduler();
+
+    const statusEl = $("slackScheduleStatus");
+    if (statusEl) {
+      const timeStr = `${String(schedule.hour).padStart(2, "0")}:${String(schedule.minute).padStart(2, "0")}`;
+      statusEl.textContent = schedule.enabled
+        ? `✅ 설정 저장됨 — ${schedule.weekdaysOnly ? "평일" : "매일"} ${timeStr} 자동 전송`
+        : "ℹ️ 자동 전송 비활성화됨";
+      statusEl.className = `slack-schedule-status ${schedule.enabled ? "slack-schedule-success" : "slack-schedule-info"}`;
+    }
+  });
+
+  // ─── Slack 수동 전송 테스트 ─────────────────────
+  const testSendBtn = $("slackScheduleTestSend");
+  testSendBtn?.addEventListener("click", async () => {
+    const config = loadHrdConfig();
+    const webhookUrl = config.slackWebhookUrl;
+    if (!webhookUrl) {
+      const statusEl = $("slackScheduleStatus");
+      if (statusEl) { statusEl.textContent = "❌ Webhook URL을 먼저 설정해주세요"; statusEl.className = "slack-schedule-status slack-schedule-error"; }
+      return;
+    }
+
+    if (testSendBtn instanceof HTMLButtonElement) { testSendBtn.disabled = true; testSendBtn.textContent = "전송 중..."; }
+    const statusEl = $("slackScheduleStatus");
+    if (statusEl) { statusEl.textContent = "⏳ 수동 전송 중..."; statusEl.className = "slack-schedule-status slack-schedule-info"; }
+
+    try {
+      // 현재 대시보드에 로드된 데이터가 있으면 사용, 없으면 첫 번째 과정으로 조회
+      if (currentStudents.length > 0) {
+        const courseSelect = $("attFilterCourse") as HTMLSelectElement | null;
+        const degrSelect = $("attFilterDegr") as HTMLSelectElement | null;
+        const course = currentConfig.courses.find((c) => c.trainPrId === courseSelect?.value);
+        const courseName = course?.name || "테스트 과정";
+        const degr = degrSelect?.value || "1";
+        const today = new Date().toISOString().slice(0, 10);
+
+        await sendSlackReportDirect(webhookUrl, courseName, degr, today, currentStudents);
+        if (statusEl) { statusEl.textContent = `✅ ${courseName} ${degr}차 리포트 전송 완료`; statusEl.className = "slack-schedule-status slack-schedule-success"; }
+      } else {
+        // 데이터 미로드 상태 — 테스트 메시지만 전송
+        const result = await testSlackWebhook(webhookUrl);
+        if (statusEl) {
+          statusEl.textContent = result.ok ? "✅ 테스트 메시지 전송 완료" : `❌ ${result.message}`;
+          statusEl.className = `slack-schedule-status ${result.ok ? "slack-schedule-success" : "slack-schedule-error"}`;
+        }
+      }
+    } catch (e) {
+      if (statusEl) { statusEl.textContent = `❌ 전송 실패: ${e instanceof Error ? e.message : String(e)}`; statusEl.className = "slack-schedule-status slack-schedule-error"; }
+    }
+    if (testSendBtn instanceof HTMLButtonElement) { testSendBtn.disabled = false; testSendBtn.textContent = "수동 전송 테스트"; }
   });
 }
 
@@ -980,4 +1163,7 @@ export function initAttendanceDashboard(): void {
   // Settings section
   renderHrdSettingsSection();
   setupSettingsHandlers();
+
+  // Slack 스케줄러 시작
+  startScheduler();
 }

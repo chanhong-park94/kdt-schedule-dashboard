@@ -1333,7 +1333,11 @@
           </div>
           <div class="hrd-field" style="flex-basis:100%;">
             <label>Slack Webhook URL <span style="font-weight:400;color:#9ca3af;font-size:11px;">관리대상 리포트 전송용</span></label>
-            <input type="password" id="hrdSlackWebhook" class="hrd-input" placeholder="https://hooks.slack.com/services/..." style="width:100%;" />
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="password" id="hrdSlackWebhook" class="hrd-input" placeholder="https://hooks.slack.com/services/..." style="flex:1;" />
+              <button id="hrdSlackTestBtn" class="btn-sm" type="button" style="background:#4f46e5;color:#fff;white-space:nowrap;">Slack 테스트</button>
+            </div>
+            <div id="hrdSlackTestStatus" style="font-size:12px;margin-top:4px;color:#6b7280;"></div>
           </div>
           <div class="hrd-field-actions">
             <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
@@ -1341,6 +1345,78 @@
           </div>
         </div>
         <div id="hrdTestStatus" class="att-api-status" style="margin-top:8px;"></div>
+
+        <!-- Slack 자동 알림 설정 -->
+        <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h4 style="margin:0;">Slack 자동 알림</h4>
+            <label class="slack-toggle-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <span style="font-size:13px;color:#6b7280;" id="slackScheduleToggleLabel">비활성화</span>
+              <input type="checkbox" id="slackScheduleEnabled" class="slack-toggle" />
+              <span class="slack-toggle-slider"></span>
+            </label>
+          </div>
+          <div class="muted" style="font-size:12px;">설정된 시간에 자동으로 관리대상 리포트를 Slack으로 전송합니다.</div>
+        </div>
+
+        <div id="slackScheduleSettings" style="display:none;">
+          <!-- 전송 시간 설정 -->
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">
+            <div class="hrd-field" style="min-width:100px;">
+              <label>전송 시간</label>
+              <div style="display:flex;gap:4px;align-items:center;">
+                <select id="slackScheduleHour" class="hrd-input" style="width:70px;">
+                  ${Array.from({length:24}, (_,i) => `<option value="${i}">${String(i).padStart(2,'0')}</option>`).join('')}
+                </select>
+                <span style="font-weight:600;">:</span>
+                <select id="slackScheduleMinute" class="hrd-input" style="width:70px;">
+                  <option value="0">00</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                  <option value="45">45</option>
+                </select>
+              </div>
+            </div>
+            <div class="hrd-field" style="min-width:120px;">
+              <label>전송 요일</label>
+              <select id="slackScheduleWeekdays" class="hrd-input">
+                <option value="weekdays">평일만 (월~금)</option>
+                <option value="daily">매일</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 대상 과정 선택 -->
+          <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">대상 과정</label>
+            <div id="slackScheduleCourses" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            <div class="muted" style="font-size:11px;margin-top:4px;">체크하지 않으면 전체 과정 전송</div>
+          </div>
+
+          <!-- 메시지 템플릿 -->
+          <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">메시지 템플릿</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <div class="hrd-field" style="flex:1;min-width:200px;">
+                <label style="font-size:12px;">헤더 텍스트</label>
+                <input type="text" id="slackScheduleHeader" class="hrd-input" placeholder="🚨 *[KDT 출결 관리대상 리포트]*" />
+              </div>
+              <div class="hrd-field" style="flex:1;min-width:200px;">
+                <label style="font-size:12px;">푸터 텍스트</label>
+                <input type="text" id="slackScheduleFooter" class="hrd-input" placeholder="📍 모두의연구소 HRD 운영팀" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 저장 + 상태 -->
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="slackScheduleSave" class="btn-primary btn-sm" type="button">알림 설정 저장</button>
+            <button id="slackScheduleTestSend" class="btn-sm" type="button" style="background:#059669;color:#fff;">수동 전송 테스트</button>
+          </div>
+        </div>
+
+        <div id="slackScheduleStatus" class="slack-schedule-status" style="margin-top:8px;font-size:12px;"></div>
 
         <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">

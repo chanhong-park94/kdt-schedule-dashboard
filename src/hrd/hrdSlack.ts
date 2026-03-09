@@ -1,6 +1,7 @@
 /** HRD 출결 관리대상 Slack 리포트 전송 모듈 */
 import { loadHrdConfig } from "./hrdConfig";
-import type { AttendanceStudent, RiskLevel } from "./hrdTypes";
+import type { AttendanceStudent, RiskLevel, SlackScheduleConfig, DEFAULT_SLACK_SCHEDULE as _ } from "./hrdTypes";
+import { DEFAULT_SLACK_SCHEDULE } from "./hrdTypes";
 
 const CORS_PROXIES = [
   "https://corsproxy.io/?url=",
@@ -40,12 +41,22 @@ function buildRiskGroup(
   return `${label} — *${students.length}명*\n${lines.join("\n")}`;
 }
 
+/**
+ * Slack 메시지 빌드 — 커스텀 헤더/푸터 지원
+ */
 export function buildSlackMessage(
   courseName: string,
   degr: string,
   date: string,
   students: AttendanceStudent[],
+  headerText?: string,
+  footerText?: string,
 ): string {
+  const config = loadHrdConfig();
+  const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
+  const header = headerText ?? schedule.headerText ?? DEFAULT_SLACK_SCHEDULE.headerText;
+  const footer = footerText ?? schedule.footerText ?? DEFAULT_SLACK_SCHEDULE.footerText;
+
   const active = students.filter((s) => !s.dropout);
   const danger = active.filter((s) => s.riskLevel === "danger");
   const warning = active.filter((s) => s.riskLevel === "warning");
@@ -53,15 +64,14 @@ export function buildSlackMessage(
   const missing = active.filter((s) => s.missingCheckout);
 
   const totalRisk = danger.length + warning.length + caution.length;
-  const present = active.filter((s) => s.riskLevel === "safe" && !s.missingCheckout).length;
   const attendanceRate = active.length > 0
     ? (active.reduce((sum, s) => sum + s.attendanceRate, 0) / active.length).toFixed(1)
     : "0.0";
 
   const sections: string[] = [];
 
-  // Header
-  sections.push(`🚨 *[KDT 출결 관리대상 리포트]*`);
+  // Header (커스터마이징 가능)
+  sections.push(header);
   sections.push(`━━━━━━━━━━━━━━━━━━━`);
   sections.push(`📋 *${courseName} ${degr}차* | ${date}\n`);
 
@@ -80,9 +90,14 @@ export function buildSlackMessage(
     sections.push("✅ 관리대상 없음 — 정상 운영 중");
   }
 
-  // Summary footer
+  // Summary stats
   sections.push("");
   sections.push(`📊 전체: ${active.length}명 | 관리대상: ${totalRisk}명 | 퇴실미체크: ${missing.length}명 | 평균 출석률: ${attendanceRate}%`);
+
+  // Footer (커스터마이징 가능)
+  if (footer) {
+    sections.push(`\n${footer}`);
+  }
 
   return sections.join("\n");
 }
@@ -125,6 +140,35 @@ export async function sendSlackReport(
     throw new Error("Slack Webhook URL이 설정되지 않았습니다.\n설정 > 잠금 해제 > Slack Webhook URL을 입력해주세요.");
   }
 
+  const text = buildSlackMessage(courseName, degr, date, students);
+  await postToSlackViaProxy(webhookUrl, { text });
+}
+
+/**
+ * Slack Webhook URL 테스트 — 짧은 확인 메시지 전송
+ */
+export async function testSlackWebhook(webhookUrl: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    const now = new Date();
+    const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const text = `✅ *[KDT 대시보드 Slack 연결 테스트]*\n테스트 시간: ${timeStr}\n이 메시지가 보이면 Webhook이 정상적으로 연결되었습니다.`;
+    await postToSlackViaProxy(webhookUrl, { text });
+    return { ok: true, message: "Slack 전송 성공! 채널을 확인하세요." };
+  } catch (e) {
+    return { ok: false, message: `Slack 전송 실패: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+/**
+ * 특정 webhook URL로 리포트 전송 (스케줄러용)
+ */
+export async function sendSlackReportDirect(
+  webhookUrl: string,
+  courseName: string,
+  degr: string,
+  date: string,
+  students: AttendanceStudent[],
+): Promise<void> {
   const text = buildSlackMessage(courseName, degr, date, students);
   await postToSlackViaProxy(webhookUrl, { text });
 }

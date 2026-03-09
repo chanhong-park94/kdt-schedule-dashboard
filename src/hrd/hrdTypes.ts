@@ -46,10 +46,32 @@ export interface HrdCourse {
   category?: CourseCategory;  // 재직자/실업자 구분
 }
 
+export interface SlackScheduleConfig {
+  enabled: boolean;
+  hour: number;           // 0-23
+  minute: number;         // 0-59
+  weekdaysOnly: boolean;  // 평일만
+  targetCourses: string[]; // trainPrId[] — 빈 배열이면 전체
+  headerText: string;     // 메시지 헤더
+  footerText: string;     // 메시지 푸터
+  lastSentDate?: string;  // YYYY-MM-DD (중복 방지)
+}
+
+export const DEFAULT_SLACK_SCHEDULE: SlackScheduleConfig = {
+  enabled: false,
+  hour: 10,
+  minute: 0,
+  weekdaysOnly: true,
+  targetCourses: [],
+  headerText: "🚨 *[KDT 출결 관리대상 리포트]*",
+  footerText: "📍 모두의연구소 HRD 운영팀",
+};
+
 export interface HrdConfig {
   authKey: string;
   proxy: string;
   slackWebhookUrl?: string;
+  slackSchedule?: SlackScheduleConfig;
   courses: HrdCourse[];
 }
 
