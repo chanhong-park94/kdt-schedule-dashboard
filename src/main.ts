@@ -2334,6 +2334,25 @@ function setupJibbleSidebarNavigation(): void {
     scrollToTop: false,
     openManagementTab: false
   });
+
+  // Mobile bottom nav
+  const mobileNavButtons = document.querySelectorAll<HTMLButtonElement>("[data-mobile-nav]");
+  for (const btn of mobileNavButtons) {
+    btn.addEventListener("click", () => {
+      const navKeyRaw = btn.dataset.mobileNav?.trim() ?? "";
+      if (!isPrimarySidebarNavKey(navKeyRaw)) {
+        return;
+      }
+      // Update mobile active state
+      for (const b of mobileNavButtons) b.classList.remove("is-active");
+      btn.classList.add("is-active");
+      // Also sync desktop sidebar
+      activatePrimarySidebarPage(navKeyRaw, {
+        scrollToTop: true,
+        openManagementTab: navKeyRaw === "management"
+      });
+    });
+  }
 }
 
 function getTrackTypeMissingCohorts(): string[] {
