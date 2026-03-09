@@ -12,7 +12,7 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
-export type AppSidebarNavKey = "timeline" | "management" | "generator" | "kpi" | "attendance" | "reports" | "settings";
+export type AppSidebarNavKey = "timeline" | "management" | "generator" | "kpi" | "attendance" | "settings";
 
 export type AppSidebarMenuConfig = {
   order: AppSidebarNavKey[];
@@ -190,7 +190,6 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "generator",
     "kpi",
     "attendance",
-    "reports",
     "settings"
   ];
 
@@ -221,7 +220,6 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       generator: toSidebarLabel(labelsSource.generator, "기수 일정 생성기"),
       kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
-      reports: toSidebarLabel(labelsSource.reports, "보고서"),
       settings: toSidebarLabel(labelsSource.settings, "설정")
     },
     icons: {
@@ -230,7 +228,6 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       generator: toSidebarIcon(iconsSource.generator, "🛠️"),
       kpi: toSidebarIcon(iconsSource.kpi, "📊"),
       attendance: toSidebarIcon(iconsSource.attendance, "📋"),
-      reports: toSidebarIcon(iconsSource.reports, "🧾"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️")
     }
   };

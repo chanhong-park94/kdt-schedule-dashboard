@@ -2,7 +2,7 @@
 import type { HrdConfig, HrdCourse } from "./hrdTypes";
 
 const STORAGE_KEY = "academic_schedule_manager_hrd_config_v1";
-const DEFAULT_KEY = "gL1rEteJnyrvfy3KmafcvPfrhT2E7rgz";
+const DEFAULT_KEY = "";  // API key is set at runtime via settings UI only
 
 /** 기본 운영 과정 목록 (API 확인 완료) */
 export const DEFAULT_COURSES: HrdCourse[] = [

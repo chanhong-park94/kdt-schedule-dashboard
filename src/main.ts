@@ -1,4 +1,6 @@
 import "./style.css";
+import { initAttendanceDashboard } from "./hrd/hrdAttendance";
+import { initDropoutDashboard } from "./hrd/hrdDropout";
 import {
   createClickableCell,
   createTableElement,
@@ -268,7 +270,6 @@ const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "generator",
   "kpi",
   "attendance",
-  "reports",
   "settings"
 ];
 
@@ -278,7 +279,6 @@ const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
   generator: "기수 일정 생성기",
   kpi: "재직자 자율성과지표",
   attendance: "출결현황",
-  reports: "보고서",
   settings: "설정"
 };
 
@@ -288,7 +288,6 @@ const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
   generator: "🛠️",
   kpi: "📊",
   attendance: "📋",
-  reports: "🧾",
   settings: "⚙️"
 };
 
@@ -1922,7 +1921,6 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       generator: config.labels.generator,
       kpi: config.labels.kpi,
       attendance: config.labels.attendance,
-      reports: config.labels.reports,
       settings: config.labels.settings
     },
     icons: {
@@ -1931,7 +1929,6 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       generator: config.icons.generator,
       kpi: config.icons.kpi,
       attendance: config.icons.attendance,
-      reports: config.icons.reports,
       settings: config.icons.settings
     }
   };
@@ -1973,7 +1970,6 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
       kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
-      reports: normalizeSidebarMenuLabel("reports", config.labels.reports),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings)
     },
     icons: {
@@ -1982,7 +1978,6 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
       kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
-      reports: normalizeSidebarMenuIcon("reports", config.icons.reports),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings)
     }
   };
@@ -1997,7 +1992,6 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
-      reports: DEFAULT_PRIMARY_SIDEBAR_LABELS.reports,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings
     },
     icons: {
@@ -2006,7 +2000,6 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
-      reports: DEFAULT_PRIMARY_SIDEBAR_ICONS.reports,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings
     }
   };
@@ -2058,12 +2051,6 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
           ? parsed.labels.attendance
           : fallback.labels.attendance
       ),
-      reports: normalizeSidebarMenuLabel(
-        "reports",
-        typeof parsed.labels?.reports === "string"
-          ? parsed.labels.reports
-          : fallback.labels.reports
-      ),
       settings: normalizeSidebarMenuLabel(
         "settings",
         typeof parsed.labels?.settings === "string"
@@ -2102,12 +2089,6 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
         typeof parsed.icons?.attendance === "string"
           ? parsed.icons.attendance
           : fallback.icons.attendance
-      ),
-      reports: normalizeSidebarMenuIcon(
-        "reports",
-        typeof parsed.icons?.reports === "string"
-          ? parsed.icons.reports
-          : fallback.icons.reports
       ),
       settings: normalizeSidebarMenuIcon(
         "settings",
@@ -4803,6 +4784,10 @@ setupJibbleSidebarNavigation();
 
 const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
 applyAuthGate(hasAuthSession);
+
+// HRD dashboards (attendance + dropout defense)
+initAttendanceDashboard();
+initDropoutDashboard();
 
 if (hasAuthSession) {
   void bootstrapAppAfterAuthLogin();
