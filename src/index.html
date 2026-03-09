@@ -686,21 +686,36 @@
         <div class="kpi-header-actions">
           <select id="kpiFilterCourse" class="kpi-filter-select"><option value="all">전체 과정</option></select>
           <select id="kpiFilterCohort" class="kpi-filter-select"><option value="all">전체 기수</option></select>
+          <button id="kpiLoadBtn" class="btn-primary kpi-btn" type="button">🔄 데이터 불러오기</button>
           <button id="kpiPdfBtn" class="btn-primary kpi-btn" type="button" style="background:#10b981;">📄 PDF 리포트</button>
-          <button id="kpiUploadBtn" class="btn-primary kpi-btn" type="button">📂 엑셀 업로드</button>
           <button id="kpiClearBtn" class="btn-secondary kpi-btn" type="button">초기화</button>
-          <input id="kpiFileInput" type="file" accept=".xlsx,.xls" hidden />
         </div>
       </div>
       <div id="kpiUploadStatus" class="kpi-upload-status"></div>
 
-      <!-- Empty state / Drop zone -->
+      <!-- Empty state — Google Sheets 연결 안내 -->
       <div id="kpiEmptyState" class="kpi-empty-state">
         <div id="kpiDropZone" class="kpi-drop-zone">
           <div class="kpi-drop-icon">📊</div>
-          <p class="kpi-drop-title">자율성과지표 엑셀 파일을 업로드하세요</p>
-          <p class="kpi-drop-desc">KDT_자율성과지표_운영_마스터시트.xlsx 파일을 드래그하거나 버튼을 클릭하세요</p>
-          <button class="btn btn--primary" type="button" onclick="document.getElementById('kpiFileInput').click()">파일 선택</button>
+          <p class="kpi-drop-title">Google Sheets 마스터시트를 연결하세요</p>
+          <p class="kpi-drop-desc">운영 중인 자율성과지표 마스터시트의 Apps Script 웹앱 URL 또는 스프레드시트 ID를 입력하세요</p>
+          <div class="kpi-connect-form">
+            <div class="kpi-connect-row">
+              <label class="kpi-connect-label">연결 방식</label>
+              <select id="kpiConnectMode" class="kpi-filter-select" style="width:auto">
+                <option value="appsscript">Apps Script 웹앱 URL</option>
+                <option value="published">스프레드시트 ID (웹에 게시 필요)</option>
+              </select>
+            </div>
+            <div class="kpi-connect-row">
+              <input id="kpiConnectUrl" type="text" class="kpi-connect-input" placeholder="https://script.google.com/macros/s/AKfy.../exec 또는 스프레드시트 ID" />
+            </div>
+            <div class="kpi-connect-row" style="gap:8px;">
+              <button id="kpiConnectTestBtn" class="btn-secondary kpi-btn" type="button">🔗 연결 테스트</button>
+              <button id="kpiConnectSaveBtn" class="btn-primary kpi-btn" type="button">💾 저장 후 불러오기</button>
+            </div>
+            <div id="kpiConnectStatus" class="kpi-connect-status"></div>
+          </div>
         </div>
       </div>
 
