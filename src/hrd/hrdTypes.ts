@@ -196,6 +196,7 @@ export interface DropoutRosterEntry {
   dropout: number;      // 중도탈락 인원
   active: number;       // 재적 인원
   defenseRate: number;  // 하차방어율 (%)
+  startDate: string;    // 개강일 YYYY-MM-DD (과정 설정에서 가져옴)
 }
 
 export interface DropoutSummary {

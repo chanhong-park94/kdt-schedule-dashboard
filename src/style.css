@@ -2653,12 +2653,13 @@ tbody tr:hover {
 }
 
 .app-shell--jibble .jibble-logo {
-  padding: 2px 18px 14px;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #111827;
+  padding: 16px 18px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #6b7280;
   border-bottom: 1px solid #f0f1f4;
+  text-align: center;
 }
 
 .app-shell--jibble .jibble-nav {
@@ -3687,6 +3688,21 @@ tbody tr:hover {
 .do-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
 .do-diff-plus { color: #059669; }
 .do-diff-minus { color: #dc2626; }
+
+/* Dropout Detail Panel Header */
+.do-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 14px; background: #f9fafb; border-radius: 8px; }
+.do-panel-subtitle { font-size: 13px; color: #6b7280; font-weight: 600; }
+
+/* Dropout Filter Bar */
+.do-filter-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.do-filter-label { font-size: 13px; font-weight: 600; color: #374151; }
+.do-filter-select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: #fff; min-width: 80px; }
+.do-filter-input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: #fff; }
+.do-filter-status { font-size: 12px; color: #6b7280; margin-left: auto; }
+
+/* Yearly group header row */
+.do-year-group { background: #f1f5f9; font-weight: 700; color: #334155; }
+.do-year-group td { padding: 10px 12px; font-size: 13px; border-bottom: 2px solid #cbd5e1; }
 
 /* Responsive */
 @media (max-width: 768px) {
