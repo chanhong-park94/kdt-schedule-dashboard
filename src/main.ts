@@ -4808,6 +4808,21 @@ applyAuthGate(hasAuthSession);
 initAttendanceDashboard();
 initDropoutDashboard();
 
+// ─── 출결현황 / 하차방어율 상위 탭 전환 ───
+(() => {
+  const pageTabs = document.querySelectorAll<HTMLButtonElement>("[data-att-page]");
+  const pagePanels = document.querySelectorAll<HTMLElement>("[data-att-page-panel]");
+  for (const tab of pageTabs) {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.attPage ?? "";
+      for (const t of pageTabs) t.classList.toggle("active", t === tab);
+      for (const p of pagePanels) {
+        p.style.display = p.dataset.attPagePanel === target ? "block" : "none";
+      }
+    });
+  }
+})();
+
 if (hasAuthSession) {
   void bootstrapAppAfterAuthLogin();
 }
