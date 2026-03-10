@@ -29,6 +29,14 @@ let analysisData: TraineeAnalysis[] = [];
 
 // ─── 성별/연령 파싱 ──────────────────────────────────────────
 
+function extractGenderDigit(digits: string): string {
+  // 7자리(YYMMDDG) → index[6]이 성별코드
+  // 13~14자리(YYMMDD-GNNNNNN) → index[6]이 성별코드
+  // 8자리(YYYYMMDD)는 일자 십의자리이므로 제외!
+  if (digits.length === 7 || digits.length >= 13) return digits[6];
+  return "";
+}
+
 function parseGender(raw: HrdRawTrainee): "남" | "여" | "미상" {
   // 1) 직접적인 성별 필드 확인
   const sexField = (
@@ -37,20 +45,18 @@ function parseGender(raw: HrdRawTrainee): "남" | "여" | "미상" {
   if (sexField === "M" || sexField === "남" || sexField === "1") return "남";
   if (sexField === "F" || sexField === "여" || sexField === "2") return "여";
 
-  // 2) 주민번호 뒷자리 첫 숫자
+  // 2) 주민번호(trneRrno)에서 성별코드 추출
   const rrno = (raw.trneRrno || "").toString().replace(/[^0-9]/g, "");
-  if (rrno.length >= 7) {
-    const g = rrno[6];
-    if (g === "1" || g === "3") return "남";
-    if (g === "2" || g === "4") return "여";
-  }
-  // 3) lifyeaMd 뒤에 성별코드가 붙는 경우
+  const gRrno = extractGenderDigit(rrno);
+  if (gRrno === "1" || gRrno === "3") return "남";
+  if (gRrno === "2" || gRrno === "4") return "여";
+
+  // 3) lifyeaMd에서 성별코드 추출 (YYMMDDG 7자리인 경우만)
   const lify = (raw.lifyeaMd || "").toString().replace(/[^0-9]/g, "");
-  if (lify.length >= 7) {
-    const g = lify[6];
-    if (g === "1" || g === "3") return "남";
-    if (g === "2" || g === "4") return "여";
-  }
+  const gLify = extractGenderDigit(lify);
+  if (gLify === "1" || gLify === "3") return "남";
+  if (gLify === "2" || gLify === "4") return "여";
+
   return "미상";
 }
 
@@ -61,7 +67,7 @@ function parseBirthYYYYMMDD(raw: HrdRawTrainee): string {
     const yy = parseInt(br.slice(0, 2));
     // 주민번호 7번째 자리로 세기 판별
     const rrno = (raw.trneRrno || "").toString().replace(/[^0-9]/g, "");
-    const genderDigit = rrno.length >= 7 ? rrno[6] : (br.length >= 7 ? br[6] : "");
+    const genderDigit = extractGenderDigit(rrno) || extractGenderDigit(br);
     const century = (genderDigit === "3" || genderDigit === "4") ? 2000 : 1900;
     return `${century + yy}${br.slice(2, 6)}`;
   }
@@ -113,25 +119,6 @@ async function collectAnalyticsData(
 
       try {
         const roster = await fetchRoster(config, course.trainPrId, degr);
-        // 디버그: 첫 명단의 원본 필드 확인 (성별 필드 탐색용)
-        if (roster.length > 0 && done === 1) {
-          const r = roster[0];
-          console.log("[훈련생분석] 원본 필드 전체:", JSON.stringify(r, null, 2));
-          console.log("[훈련생분석] 성별 관련 필드 →",
-            "trneRrno:", JSON.stringify(r.trneRrno),
-            "| lifyeaMd:", JSON.stringify(r.lifyeaMd),
-            "| trneBrdt:", JSON.stringify(r.trneBrdt),
-            "| sexdstnSe:", JSON.stringify(r.sexdstnSe),
-            "| trneSexdstnSe:", JSON.stringify(r.trneSexdstnSe),
-          );
-          // 숫자만 추출 후 길이 확인
-          const rrnoDigits = (r.trneRrno || "").toString().replace(/[^0-9]/g, "");
-          const lifyDigits = (r.lifyeaMd || "").toString().replace(/[^0-9]/g, "");
-          console.log("[훈련생분석] 숫자 추출 →",
-            "rrno:", rrnoDigits, `(${rrnoDigits.length}자리)`,
-            "| lify:", lifyDigits, `(${lifyDigits.length}자리)`,
-          );
-        }
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
 
@@ -325,15 +312,16 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
 
 function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): void {
   // 요약 카드
+  const hasGender = summary.maleCount + summary.femaleCount > 0;
   const cardEl = $("analyticsCards");
   if (cardEl) {
-    const genderStr = summary.totalTrainees > 0
+    const genderStr = hasGender
       ? `남 ${Math.round(summary.maleCount / summary.totalTrainees * 100)}% / 여 ${Math.round(summary.femaleCount / summary.totalTrainees * 100)}%`
-      : "-";
+      : "미제공";
     cardEl.innerHTML = `
       <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
       <div class="ana-card"><div class="ana-card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="ana-card-label">평균 연령</div></div>
-      <div class="ana-card"><div class="ana-card-value">${genderStr}</div><div class="ana-card-label">성별 비율</div></div>
+      <div class="ana-card"><div class="ana-card-value">${genderStr}</div><div class="ana-card-label">성별 비율</div><div class="ana-card-sub">${hasGender ? "" : "API 미제공"}</div></div>
       <div class="ana-card"><div class="ana-card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div></div>
     `;
   }
@@ -350,9 +338,9 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
     }));
   }
 
-  // 성별 Donut chart
+  // 성별 Donut chart (성별 데이터가 있을 때만)
   const genderCtx = ($("chartGenderDistribution") as HTMLCanvasElement)?.getContext("2d");
-  if (genderCtx) {
+  if (genderCtx && hasGender) {
     charts.push(new Chart(genderCtx, {
       type: "doughnut",
       data: {
@@ -361,11 +349,17 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
       },
       options: { responsive: true, plugins: { title: { display: true, text: "성별 구성" } } },
     }));
+  } else if (genderCtx && !hasGender) {
+    // 성별 데이터 없을 때 안내
+    const parent = ($("chartGenderDistribution") as HTMLCanvasElement)?.parentElement;
+    if (parent) {
+      parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">HRD API에서 성별 정보를 제공하지 않습니다</div>';
+    }
   }
 
-  // 과정별 인구 구성 Stacked bar
+  // 과정별 인구 구성 Stacked bar (성별 데이터 있을 때만 성별 분류, 없으면 과정별 인원수)
   const courseCtx = ($("chartCourseComposition") as HTMLCanvasElement)?.getContext("2d");
-  if (courseCtx) {
+  if (courseCtx && hasGender) {
     const courseNames = [...new Set(data.map((d) => d.courseName))];
     const maleData = courseNames.map((c) => data.filter((d) => d.courseName === c && d.gender === "남").length);
     const femaleData = courseNames.map((c) => data.filter((d) => d.courseName === c && d.gender === "여").length);
@@ -379,6 +373,15 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
         ],
       },
       options: { responsive: true, plugins: { title: { display: true, text: "과정별 성별 구성" } }, scales: { x: { stacked: true }, y: { stacked: true } } },
+    }));
+  } else if (courseCtx) {
+    // 성별 없으면 과정별 인원수 bar chart
+    const courseNames = [...new Set(data.map((d) => d.courseName))];
+    const counts = courseNames.map((c) => data.filter((d) => d.courseName === c).length);
+    charts.push(new Chart(courseCtx, {
+      type: "bar",
+      data: { labels: courseNames.map((n) => n.length > 12 ? n.slice(0, 12) + "…" : n), datasets: [{ label: "인원", data: counts, backgroundColor: "#7c5cfc" }] },
+      options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "과정별 인원" } } },
     }));
   }
 }
@@ -462,9 +465,10 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
     }));
   }
 
-  // 성별 × 과정유형별 탈락률
+  // 성별 × 과정유형별 탈락률 (성별 데이터 있을 때만)
+  const hasGenderData = data.some((d) => d.gender !== "미상");
   const genderDropCtx = ($("chartGenderDropout") as HTMLCanvasElement)?.getContext("2d");
-  if (genderDropCtx) {
+  if (genderDropCtx && hasGenderData) {
     const labels = ["남-재직자", "남-실업자", "여-재직자", "여-실업자"];
     const combos: Array<{ gender: "남" | "여"; cat: "재직자" | "실업자" }> = [
       { gender: "남", cat: "재직자" }, { gender: "남", cat: "실업자" },
@@ -482,6 +486,9 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
       },
       options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "성별 × 과정유형별 탈락률 (%)" } }, scales: { y: { min: 0 } } },
     }));
+  } else if (genderDropCtx) {
+    const parent = genderDropCtx.canvas.parentElement;
+    if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">성별 데이터 미제공</div>';
   }
 
   // 결석일수 vs 탈락 scatter
@@ -762,7 +769,7 @@ tr:nth-child(even) { background: #fafbfc; }
 <div class="cards">
   <div class="card"><div class="card-value">${summary.totalTrainees}명</div><div class="card-label">전체 훈련생</div></div>
   <div class="card"><div class="card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="card-label">평균 연령</div></div>
-  <div class="card"><div class="card-value">남 ${summary.maleCount} / 여 ${summary.femaleCount}</div><div class="card-label">성별 구성</div></div>
+  <div class="card"><div class="card-value">${(summary.maleCount + summary.femaleCount > 0) ? `남 ${summary.maleCount} / 여 ${summary.femaleCount}` : "미제공"}</div><div class="card-label">성별 구성</div></div>
   <div class="card"><div class="card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="card-label">중도탈락률 (${summary.dropoutCount}명)</div></div>
 </div>
 
