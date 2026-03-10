@@ -35,6 +35,13 @@ function isWeekday(): boolean {
   return day >= 1 && day <= 5;
 }
 
+/** 특정 날짜(YYYY-MM-DD)가 평일인지 */
+function isDateWeekday(dateStr: string): boolean {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  return day >= 1 && day <= 5;
+}
+
 function nowHHMM(): { hour: number; minute: number } {
   const d = new Date();
   return { hour: d.getHours(), minute: d.getMinutes() };
@@ -191,7 +198,12 @@ async function checkAndSend(): Promise<void> {
   console.log(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
 
   // 전일 출결 데이터 사용 (저녁 늦게 끝나는 과정 대응)
+  // 전일이 주말(비수업일)이면 알림 스킵 (예: 월요일 아침 → 일요일 데이터 불필요)
   const reportDate = yesterdayStr();
+  if (schedule.weekdaysOnly && !isDateWeekday(reportDate)) {
+    console.log(`[Scheduler] Skipped — 전일(${reportDate})이 주말(비수업일)`);
+    return;
+  }
 
   // 대상 과정 결정
   const courses = config.courses.filter(c => {
