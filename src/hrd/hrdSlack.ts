@@ -43,6 +43,7 @@ function buildRiskGroup(
 
 /**
  * Slack 메시지 빌드 — 커스텀 헤더/푸터 지원
+ * @param defenseRate - 하차방어율 (%) — 스케줄러에서 전달
  */
 export function buildSlackMessage(
   courseName: string,
@@ -51,6 +52,7 @@ export function buildSlackMessage(
   students: AttendanceStudent[],
   headerText?: string,
   footerText?: string,
+  defenseRate?: number,
 ): string {
   const config = loadHrdConfig();
   const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
@@ -64,9 +66,6 @@ export function buildSlackMessage(
   const missing = active.filter((s) => s.missingCheckout);
 
   const totalRisk = danger.length + warning.length + caution.length;
-  const attendanceRate = active.length > 0
-    ? (active.reduce((sum, s) => sum + s.attendanceRate, 0) / active.length).toFixed(1)
-    : "0.0";
 
   const sections: string[] = [];
 
@@ -90,9 +89,10 @@ export function buildSlackMessage(
     sections.push("✅ 관리대상 없음 — 정상 운영 중");
   }
 
-  // Summary stats
+  // Summary stats — 하차방어율 포함
   sections.push("");
-  sections.push(`📊 전체: ${active.length}명 | 관리대상: ${totalRisk}명 | 퇴실미체크: ${missing.length}명 | 평균 출석률: ${attendanceRate}%`);
+  const defRateText = defenseRate != null ? `하차방어율: ${defenseRate.toFixed(1)}%` : "";
+  sections.push(`📊 전체: ${active.length}명 | 관리대상: ${totalRisk}명 | 퇴실미체크: ${missing.length}명 | ${defRateText}`);
 
   // Footer (커스터마이징 가능)
   if (footer) {
@@ -132,6 +132,7 @@ export async function sendSlackReport(
   degr: string,
   date: string,
   students: AttendanceStudent[],
+  defenseRate?: number,
 ): Promise<void> {
   const config = loadHrdConfig();
   const webhookUrl = config.slackWebhookUrl;
@@ -140,7 +141,7 @@ export async function sendSlackReport(
     throw new Error("Slack Webhook URL이 설정되지 않았습니다.\n설정 > 잠금 해제 > Slack Webhook URL을 입력해주세요.");
   }
 
-  const text = buildSlackMessage(courseName, degr, date, students);
+  const text = buildSlackMessage(courseName, degr, date, students, undefined, undefined, defenseRate);
   await postToSlackViaProxy(webhookUrl, { text });
 }
 
@@ -168,7 +169,8 @@ export async function sendSlackReportDirect(
   degr: string,
   date: string,
   students: AttendanceStudent[],
+  defenseRate?: number,
 ): Promise<void> {
-  const text = buildSlackMessage(courseName, degr, date, students);
+  const text = buildSlackMessage(courseName, degr, date, students, undefined, undefined, defenseRate);
   await postToSlackViaProxy(webhookUrl, { text });
 }

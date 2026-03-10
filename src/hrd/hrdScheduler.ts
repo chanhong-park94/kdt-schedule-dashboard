@@ -24,6 +24,12 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function yesterdayStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function isWeekday(): boolean {
   const day = new Date().getDay();
   return day >= 1 && day <= 5;
@@ -64,14 +70,15 @@ function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
 /**
  * 스케줄러용 출결 데이터 조회 + 가공
  * hrdAttendance.ts의 buildStudents 로직을 간소화하여 독립 실행
+ * @param targetDate - 출결 조회 대상 날짜 (YYYY-MM-DD) — 전일 출결 발송을 위해 분리
  */
 async function fetchAttendanceForReport(
   config: HrdConfig,
   course: HrdCourse,
   degr: string,
-  today: string,
+  targetDate: string,
 ): Promise<AttendanceStudent[]> {
-  const month = today.replace(/-/g, "").slice(0, 6);
+  const month = targetDate.replace(/-/g, "").slice(0, 6);
 
   // 명단 + 출결 병렬 조회
   const [roster, daily] = await Promise.all([
@@ -94,11 +101,11 @@ async function fetchAttendanceForReport(
     });
   }
 
-  // 오늘 날짜 출결만 추출
-  const todayRaw = today.replace(/-/g, "");
-  const todayDaily = daily.filter((d) => ((d.atendDe || "").toString().replace(/[^0-9]/g, "")) === todayRaw);
+  // 대상 날짜 출결만 추출
+  const targetRaw = targetDate.replace(/-/g, "");
+  const targetDaily = daily.filter((d) => ((d.atendDe || "").toString().replace(/[^0-9]/g, "")) === targetRaw);
   const todayMap = new Map<string, HrdRawAttendance>();
-  for (const d of todayDaily) {
+  for (const d of targetDaily) {
     const nm = normalizeName(d.cstmrNm || d.trneeCstmrNm || d.trneNm || "");
     if (nm) todayMap.set(nm, d);
   }
@@ -183,6 +190,9 @@ async function checkAndSend(): Promise<void> {
   emitStatus("⏳ 자동 알림 전송 중...", "info");
   console.log(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
 
+  // 전일 출결 데이터 사용 (저녁 늦게 끝나는 과정 대응)
+  const reportDate = yesterdayStr();
+
   // 대상 과정 결정
   const courses = config.courses.filter(c => {
     if (schedule.targetCourses.length === 0) return true;
@@ -201,16 +211,23 @@ async function checkAndSend(): Promise<void> {
     // 각 과정의 최신 기수만 전송
     const latestDegr = course.degrs[course.degrs.length - 1] || "1";
     try {
-      const students = await fetchAttendanceForReport(config, course, latestDegr, today);
+      const students = await fetchAttendanceForReport(config, course, latestDegr, reportDate);
+
+      // 하차방어율 계산 (명단 기반: 전체 인원 대비 재적 인원)
+      const total = students.length;
+      const dropouts = students.filter(s => s.dropout).length;
+      const active = total - dropouts;
+      const defenseRate = total > 0 ? (active / total) * 100 : 100;
+
       // 관리대상(위험+경고+주의+퇴실미체크)만 있을 때 전송
       const riskStudents = students.filter(s => !s.dropout && (
         s.riskLevel === "danger" || s.riskLevel === "warning" || s.riskLevel === "caution" || s.missingCheckout
       ));
       if (riskStudents.length === 0 && students.length === 0) continue;
 
-      await sendSlackReportDirect(webhookUrl, course.name, latestDegr, today, students);
+      await sendSlackReportDirect(webhookUrl, course.name, latestDegr, reportDate, students, defenseRate);
       sentCount++;
-      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}기`);
+      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결)`);
     } catch (e) {
       failCount++;
       console.error(`[Scheduler] Failed for ${course.name}:`, e);

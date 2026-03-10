@@ -617,11 +617,16 @@ function openRiskPanel(): void {
       newBtn.innerHTML = `<span class="att-slack-icon">⏳</span> 전송 중...`;
 
       try {
+        // 하차방어율 계산
+        const totalCount = currentStudents.length;
+        const dropoutCount = currentStudents.filter(s => s.dropout).length;
+        const defRate = totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 100;
         await sendSlackReport(
           course.name,
           degrSelect.value,
           dateInput?.value || new Date().toISOString().slice(0, 10),
           currentStudents,
+          defRate,
         );
         newBtn.className = "att-slack-btn att-slack-sent";
         newBtn.innerHTML = `<span class="att-slack-icon">✅</span> 전송 완료`;
