@@ -13,6 +13,10 @@ import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStat
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
 
+/** NaN-safe hour/minute from schedule config */
+function safeHour(h: number): number { return Number.isFinite(h) ? h : DEFAULT_SLACK_SCHEDULE.hour; }
+function safeMinute(m: number): number { return Number.isFinite(m) ? m : DEFAULT_SLACK_SCHEDULE.minute; }
+
 // ─── 유틸 ────────────────────────────────────────────────────
 
 function todayStr(): string {
@@ -169,7 +173,7 @@ async function checkAndSend(): Promise<void> {
 
   // 시간 체크
   const { hour, minute } = nowHHMM();
-  if (hour !== schedule.hour || minute !== schedule.minute) return;
+  if (hour !== safeHour(schedule.hour) || minute !== safeMinute(schedule.minute)) return;
 
   // 오늘 이미 전송 완료
   const today = todayStr();
@@ -257,7 +261,7 @@ export function startScheduler(
   const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
   if (schedule.enabled) {
     const lastSent = schedule.lastSentDate;
-    const timeStr = `${String(schedule.hour).padStart(2, "0")}:${String(schedule.minute).padStart(2, "0")}`;
+    const timeStr = `${String(safeHour(schedule.hour)).padStart(2, "0")}:${String(safeMinute(schedule.minute)).padStart(2, "0")}`;
     if (lastSent === todayStr()) {
       emitStatus(`✅ 오늘 ${timeStr} 전송 완료`, "success");
     } else {
@@ -306,7 +310,7 @@ export function getScheduleSummary(): string {
   const config = loadHrdConfig();
   const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
   if (!schedule.enabled) return "비활성화";
-  const timeStr = `${String(schedule.hour).padStart(2, "0")}:${String(schedule.minute).padStart(2, "0")}`;
+  const timeStr = `${String(safeHour(schedule.hour)).padStart(2, "0")}:${String(safeMinute(schedule.minute)).padStart(2, "0")}`;
   const dayStr = schedule.weekdaysOnly ? "평일" : "매일";
   return `${dayStr} ${timeStr} 자동 전송`;
 }

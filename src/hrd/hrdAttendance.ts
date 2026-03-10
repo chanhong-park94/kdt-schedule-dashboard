@@ -712,8 +712,10 @@ function renderSlackScheduleUI(config: HrdConfig): void {
   // 시간
   const hourSel = $("slackScheduleHour") as HTMLSelectElement | null;
   const minSel = $("slackScheduleMinute") as HTMLSelectElement | null;
-  if (hourSel) hourSel.value = String(schedule.hour);
-  if (minSel) minSel.value = String(schedule.minute);
+  const safeHour = Number.isFinite(schedule.hour) ? schedule.hour : DEFAULT_SLACK_SCHEDULE.hour;
+  const safeMinute = Number.isFinite(schedule.minute) ? schedule.minute : DEFAULT_SLACK_SCHEDULE.minute;
+  if (hourSel) hourSel.value = String(safeHour);
+  if (minSel) minSel.value = String(safeMinute);
 
   // 요일
   const weekdaySel = $("slackScheduleWeekdays") as HTMLSelectElement | null;
