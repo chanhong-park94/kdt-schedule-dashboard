@@ -1,5 +1,6 @@
 import "./style.css";
 import { initAttendanceDashboard } from "./hrd/hrdAttendance";
+import { initAnalytics } from "./hrd/hrdAnalytics";
 import { initDropoutDashboard } from "./hrd/hrdDropout";
 import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from "./kpi/kpiSheets";
 import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
@@ -266,13 +267,14 @@ const AUTH_CODE_V2 = "v2";
 const STORAGE_WARN_BYTES = 4_500_000;
 const AUTO_SAVE_DEBOUNCE_MS = 500;
 const PRINT_CONFLICT_LIMIT = 50;
-const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v2";
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v3";
 
 const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "timeline",
   "generator",
   "kpi",
   "attendance",
+  "analytics",
   "settings"
 ];
 
@@ -281,6 +283,7 @@ const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
   generator: "HRD시간표 생성",
   kpi: "재직자 자율성과지표",
   attendance: "출결현황",
+  analytics: "훈련생 분석",
   settings: "설정"
 };
 
@@ -289,6 +292,7 @@ const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
   generator: "🛠️",
   kpi: "📊",
   attendance: "📋",
+  analytics: "📈",
   settings: "⚙️"
 };
 
@@ -1921,6 +1925,7 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       generator: config.labels.generator,
       kpi: config.labels.kpi,
       attendance: config.labels.attendance,
+      analytics: config.labels.analytics,
       settings: config.labels.settings
     },
     icons: {
@@ -1928,6 +1933,7 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       generator: config.icons.generator,
       kpi: config.icons.kpi,
       attendance: config.icons.attendance,
+      analytics: config.icons.analytics,
       settings: config.icons.settings
     }
   };
@@ -1968,6 +1974,7 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
       kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
+      analytics: normalizeSidebarMenuLabel("analytics", config.labels.analytics),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings)
     },
     icons: {
@@ -1975,6 +1982,7 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
       kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
+      analytics: normalizeSidebarMenuIcon("analytics", config.icons.analytics),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings)
     }
   };
@@ -1988,6 +1996,7 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
+      analytics: DEFAULT_PRIMARY_SIDEBAR_LABELS.analytics,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings
     },
     icons: {
@@ -1995,6 +2004,7 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
+      analytics: DEFAULT_PRIMARY_SIDEBAR_ICONS.analytics,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings
     }
   };
@@ -2040,6 +2050,12 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
           ? parsed.labels.attendance
           : fallback.labels.attendance
       ),
+      analytics: normalizeSidebarMenuLabel(
+        "analytics",
+        typeof parsed.labels?.analytics === "string"
+          ? parsed.labels.analytics
+          : fallback.labels.analytics
+      ),
       settings: normalizeSidebarMenuLabel(
         "settings",
         typeof parsed.labels?.settings === "string"
@@ -2072,6 +2088,12 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
         typeof parsed.icons?.attendance === "string"
           ? parsed.icons.attendance
           : fallback.icons.attendance
+      ),
+      analytics: normalizeSidebarMenuIcon(
+        "analytics",
+        typeof parsed.icons?.analytics === "string"
+          ? parsed.icons.analytics
+          : fallback.icons.analytics
       ),
       settings: normalizeSidebarMenuIcon(
         "settings",
@@ -4813,6 +4835,7 @@ applyAuthGate(hasAuthSession);
 // HRD dashboards (attendance + dropout defense)
 initAttendanceDashboard();
 initDropoutDashboard();
+initAnalytics();
 
 // ─── 출결현황 / 하차방어율 상위 탭 전환 ───
 (() => {

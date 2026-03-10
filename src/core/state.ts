@@ -12,7 +12,7 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
-export type AppSidebarNavKey = "timeline" | "generator" | "kpi" | "attendance" | "settings";
+export type AppSidebarNavKey = "timeline" | "generator" | "kpi" | "attendance" | "analytics" | "settings";
 
 export type AppSidebarMenuConfig = {
   order: AppSidebarNavKey[];
@@ -157,6 +157,7 @@ function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
     value === "generator" ||
     value === "kpi" ||
     value === "attendance" ||
+    value === "analytics" ||
     value === "settings"
   );
 }
@@ -187,6 +188,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "generator",
     "kpi",
     "attendance",
+    "analytics",
     "settings"
   ];
 
@@ -216,6 +218,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       generator: toSidebarLabel(labelsSource.generator, "HRD시간표 생성"),
       kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
+      analytics: toSidebarLabel(labelsSource.analytics, "훈련생 분석"),
       settings: toSidebarLabel(labelsSource.settings, "설정")
     },
     icons: {
@@ -223,6 +226,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       generator: toSidebarIcon(iconsSource.generator, "🛠️"),
       kpi: toSidebarIcon(iconsSource.kpi, "📊"),
       attendance: toSidebarIcon(iconsSource.attendance, "📋"),
+      analytics: toSidebarIcon(iconsSource.analytics, "📈"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️")
     }
   };

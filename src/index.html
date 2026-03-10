@@ -72,6 +72,17 @@
         <button
           class="jibble-nav-item"
           type="button"
+          data-scroll-target="sectionAnalytics"
+          data-nav-key="analytics"
+          data-nav-icon="📈"
+          data-default-label="훈련생 분석"
+        >
+          <span class="jibble-nav-icon" aria-hidden="true">📈</span>
+          <span class="jibble-nav-label">훈련생 분석</span>
+        </button>
+        <button
+          class="jibble-nav-item"
+          type="button"
           data-scroll-target="sectionStateManagement"
           data-nav-key="settings"
           data-nav-icon="⚙️"
@@ -101,6 +112,10 @@
       <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="attendance">
         <span class="mobile-bottom-nav-icon">📋</span>
         <span class="mobile-bottom-nav-label">출결현황</span>
+      </button>
+      <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="analytics">
+        <span class="mobile-bottom-nav-icon">📈</span>
+        <span class="mobile-bottom-nav-label">훈련생분석</span>
       </button>
       <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="settings">
         <span class="mobile-bottom-nav-icon">⚙️</span>
@@ -1121,6 +1136,100 @@
         </div>
       </div><!-- /attPageDropout -->
     </div><!-- /sectionAttendance -->
+
+    <!-- ═══ 훈련생 분석 ═══ -->
+    <div class="card card-span-12 u-mt-14" id="sectionAnalytics" data-page-group="analytics">
+      <div class="row u-row-between u-row-center" style="margin-bottom:12px;">
+        <h3>📊 훈련생 분석</h3>
+        <button id="analyticsFetchBtn" class="btn btn--primary btn--sm">전체 조회</button>
+      </div>
+      <div id="analyticsStatus" class="ana-status"></div>
+
+      <!-- 빈 상태 -->
+      <div id="analyticsEmpty" class="att-empty-state">
+        <div class="att-empty-title">훈련생 분석</div>
+        <div class="att-empty-desc">전체 조회 버튼을 클릭하면 등록된 과정의 훈련생 데이터를 분석합니다.</div>
+      </div>
+
+      <!-- 탭 -->
+      <div id="analyticsContent" style="display:none;">
+        <div class="ana-tabs" style="margin-bottom:16px;">
+          <button class="ana-tab-btn active" data-ana-tab="overview" type="button">개요</button>
+          <button class="ana-tab-btn" data-ana-tab="risk" type="button">리스크 분석</button>
+          <button class="ana-tab-btn" data-ana-tab="detail" type="button">상세 데이터</button>
+        </div>
+
+        <!-- [개요] 탭 -->
+        <div id="anaPanel-overview" class="ana-tab-panel" style="display:block;">
+          <div id="analyticsCards" class="ana-cards"></div>
+          <div class="ana-chart-grid">
+            <div class="ana-chart-box"><canvas id="chartAgeDistribution"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartGenderDistribution"></canvas></div>
+          </div>
+          <div class="ana-chart-box" style="margin-top:16px;"><canvas id="chartCourseComposition"></canvas></div>
+        </div>
+
+        <!-- [리스크 분석] 탭 -->
+        <div id="anaPanel-risk" class="ana-tab-panel" style="display:none;">
+          <div id="analyticsInsights" style="margin-bottom:16px;"></div>
+          <h4 style="margin:16px 0 8px;">출결 패턴</h4>
+          <div class="ana-chart-grid">
+            <div class="ana-chart-box"><canvas id="chartWeekdayAbsent"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartMonthlyAbsent"></canvas></div>
+          </div>
+          <h4 style="margin:16px 0 8px;">탈락 요인</h4>
+          <div class="ana-chart-grid">
+            <div class="ana-chart-box"><canvas id="chartAgeDropout"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartGenderDropout"></canvas></div>
+          </div>
+          <div class="ana-chart-box" style="margin-top:16px;"><canvas id="chartAbsentScatter"></canvas></div>
+        </div>
+
+        <!-- [상세 데이터] 탭 -->
+        <div id="anaPanel-detail" class="ana-tab-panel" style="display:none;">
+          <div class="ana-filters">
+            <select id="anaFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
+            <select id="anaFilterDegr" class="hrd-input"><option value="">전체 기수</option></select>
+            <select id="anaFilterGender" class="hrd-input">
+              <option value="">전체 성별</option>
+              <option value="남">남</option>
+              <option value="여">여</option>
+            </select>
+            <select id="anaFilterAge" class="hrd-input">
+              <option value="">전체 연령</option>
+              <option value="10대">10대</option>
+              <option value="20대">20대</option>
+              <option value="30대">30대</option>
+              <option value="40대">40대</option>
+              <option value="50대+">50대+</option>
+            </select>
+            <select id="anaFilterStatus" class="hrd-input">
+              <option value="">전체 상태</option>
+              <option value="active">재학</option>
+              <option value="dropout">탈락</option>
+            </select>
+            <span id="anaDetailCount" class="muted" style="font-size:13px;"></span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="hrd-table" style="margin-top:8px;">
+              <thead>
+                <tr>
+                  <th data-ana-sort="name">이름</th>
+                  <th data-ana-sort="course">과정</th>
+                  <th data-ana-sort="degr">기수</th>
+                  <th data-ana-sort="age">연령</th>
+                  <th data-ana-sort="gender">성별</th>
+                  <th data-ana-sort="rate">출석률</th>
+                  <th data-ana-sort="absent">결석</th>
+                  <th data-ana-sort="status">상태</th>
+                </tr>
+              </thead>
+              <tbody id="anaDetailBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div><!-- /sectionAnalytics -->
 
     <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign" data-page-group="reports">
       <div class="row u-row-between u-row-center">
