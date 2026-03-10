@@ -4,7 +4,6 @@ export interface TraineeAnalysis {
   name: string;
   birth: string;            // YYYYMMDD or YY.MM.DD
   age: number;              // 만 나이
-  gender: "남" | "여" | "미상";
   courseName: string;
   trainPrId: string;
   category: "재직자" | "실업자";
@@ -25,9 +24,6 @@ export interface TraineeAnalysis {
 export interface AnalyticsSummary {
   totalTrainees: number;
   avgAge: number;
-  maleCount: number;
-  femaleCount: number;
-  unknownGenderCount: number;
   dropoutCount: number;
   dropoutRate: number;
   avgAttendanceRate: number;

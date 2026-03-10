@@ -1167,7 +1167,7 @@
           <div id="analyticsCards" class="ana-cards"></div>
           <div class="ana-chart-grid">
             <div class="ana-chart-box"><canvas id="chartAgeDistribution"></canvas></div>
-            <div class="ana-chart-box"><canvas id="chartGenderDistribution"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartCourseAttendance"></canvas></div>
           </div>
           <div class="ana-chart-box" style="margin-top:16px;"><canvas id="chartCourseComposition"></canvas></div>
         </div>
@@ -1183,7 +1183,7 @@
           <h4 style="margin:16px 0 8px;">탈락 요인</h4>
           <div class="ana-chart-grid">
             <div class="ana-chart-box"><canvas id="chartAgeDropout"></canvas></div>
-            <div class="ana-chart-box"><canvas id="chartGenderDropout"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartDegrDropout"></canvas></div>
           </div>
           <div class="ana-chart-box" style="margin-top:16px;"><canvas id="chartAbsentScatter"></canvas></div>
         </div>
@@ -1193,11 +1193,6 @@
           <div class="ana-filters">
             <select id="anaFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
             <select id="anaFilterDegr" class="hrd-input"><option value="">전체 기수</option></select>
-            <select id="anaFilterGender" class="hrd-input">
-              <option value="">전체 성별</option>
-              <option value="남">남</option>
-              <option value="여">여</option>
-            </select>
             <select id="anaFilterAge" class="hrd-input">
               <option value="">전체 연령</option>
               <option value="10대">10대</option>
@@ -1221,7 +1216,7 @@
                   <th data-ana-sort="course">과정</th>
                   <th data-ana-sort="degr">기수</th>
                   <th data-ana-sort="age">연령</th>
-                  <th data-ana-sort="gender">성별</th>
+                  <th data-ana-sort="category">유형</th>
                   <th data-ana-sort="rate">출석률</th>
                   <th data-ana-sort="absent">결석</th>
                   <th data-ana-sort="status">상태</th>
