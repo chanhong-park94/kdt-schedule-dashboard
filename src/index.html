@@ -1141,7 +1141,10 @@
     <div class="card card-span-12 u-mt-14" id="sectionAnalytics" data-page-group="analytics">
       <div class="row u-row-between u-row-center" style="margin-bottom:12px;">
         <h3>📊 훈련생 분석</h3>
-        <button id="analyticsFetchBtn" class="btn btn--primary btn--sm">전체 조회</button>
+        <div style="display:flex;gap:8px;">
+          <button id="analyticsFetchBtn" class="btn btn--primary btn--sm">전체 조회</button>
+          <button id="analyticsPdfBtn" class="btn btn--sm" type="button" disabled style="background:#10b981;color:#fff;">📄 PDF 리포트</button>
+        </div>
       </div>
       <div id="analyticsStatus" class="ana-status"></div>
 

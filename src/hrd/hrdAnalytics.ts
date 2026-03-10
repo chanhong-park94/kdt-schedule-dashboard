@@ -30,14 +30,21 @@ let analysisData: TraineeAnalysis[] = [];
 // ─── 성별/연령 파싱 ──────────────────────────────────────────
 
 function parseGender(raw: HrdRawTrainee): "남" | "여" | "미상" {
-  // 주민번호 뒷자리 첫 숫자 또는 생년월일 뒤 성별코드
+  // 1) 직접적인 성별 필드 확인
+  const sexField = (
+    raw.sexdstnSe || raw.trneSexdstnSe || raw.sexCd || raw.gndrCd || ""
+  ).toString().trim();
+  if (sexField === "M" || sexField === "남" || sexField === "1") return "남";
+  if (sexField === "F" || sexField === "여" || sexField === "2") return "여";
+
+  // 2) 주민번호 뒷자리 첫 숫자
   const rrno = (raw.trneRrno || "").toString().replace(/[^0-9]/g, "");
   if (rrno.length >= 7) {
     const g = rrno[6];
     if (g === "1" || g === "3") return "남";
     if (g === "2" || g === "4") return "여";
   }
-  // lifyeaMd 뒤에 성별코드가 붙는 경우도 시도
+  // 3) lifyeaMd 뒤에 성별코드가 붙는 경우
   const lify = (raw.lifyeaMd || "").toString().replace(/[^0-9]/g, "");
   if (lify.length >= 7) {
     const g = lify[6];
@@ -106,6 +113,10 @@ async function collectAnalyticsData(
 
       try {
         const roster = await fetchRoster(config, course.trainPrId, degr);
+        // 디버그: 첫 명단의 원본 필드 확인 (성별 필드 탐색용)
+        if (roster.length > 0 && done === 1) {
+          console.log("[훈련생분석] 첫 명단 원본 필드:", JSON.stringify(roster[0], null, 2));
+        }
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
 
@@ -632,6 +643,10 @@ export function initAnalytics(): void {
 
       statusEl.textContent = `✅ ${analysisData.length}명 분석 완료`;
       statusEl.className = "ana-status ana-status-success";
+
+      // PDF 버튼 활성화
+      const pdfBtn = $("analyticsPdfBtn") as HTMLButtonElement | null;
+      if (pdfBtn) pdfBtn.disabled = false;
     } catch (e) {
       statusEl.textContent = `❌ ${e instanceof Error ? e.message : "조회 실패"}`;
       statusEl.className = "ana-status ana-status-error";
@@ -639,4 +654,158 @@ export function initAnalytics(): void {
       (fetchBtn as HTMLButtonElement).disabled = false;
     }
   });
+
+  // PDF 버튼
+  $("analyticsPdfBtn")?.addEventListener("click", () => {
+    if (analysisData.length === 0) { alert("데이터를 먼저 조회하세요."); return; }
+    printAnalyticsReport(analysisData);
+  });
+}
+
+// ─── PDF 출력 ──────────────────────────────────────────────
+
+function printAnalyticsReport(data: TraineeAnalysis[]): void {
+  const summary = computeSummary(data);
+  const insights = generateInsights(data);
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
+
+  // 연령대 분포
+  const ageGroups: AgeGroup[] = ["10대", "20대", "30대", "40대", "50대+"];
+  const ageCounts = ageGroups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g).length);
+  const maxAgeCount = Math.max(...ageCounts, 1);
+
+  // 과정별 통계
+  const courseNames = [...new Set(data.map((d) => d.courseName))];
+  const courseStats = courseNames.map((name) => {
+    const group = data.filter((d) => d.courseName === name);
+    const dropouts = group.filter((d) => d.dropout).length;
+    const avgRate = group.reduce((s, d) => s + d.attendanceRate, 0) / (group.length || 1);
+    return { name, count: group.length, dropouts, dropoutRate: group.length > 0 ? (dropouts / group.length * 100) : 0, avgRate };
+  });
+
+  // 요일별 결석
+  const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
+  for (const d of data) {
+    for (let i = 0; i < 7; i++) weekdayTotals[i] += d.absentByWeekday[i];
+  }
+  const maxWeekday = Math.max(...weekdayTotals, 1);
+
+  // 상세 데이터 (탈락자 우선, 출석률 낮은 순)
+  const sorted = [...data].sort((a, b) => {
+    if (a.dropout !== b.dropout) return a.dropout ? -1 : 1;
+    return a.attendanceRate - b.attendanceRate;
+  });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>훈련생 분석 리포트</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans KR', sans-serif; color: #1e293b; background: #fff; padding: 20px 30px; font-size: 12px; line-height: 1.5; }
+@page { margin: 12mm; size: A4; }
+@media print { .no-print { display: none !important; } body { padding: 0; } }
+.no-print { position: fixed; top: 16px; right: 16px; z-index: 999; }
+.no-print button { padding: 10px 24px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.subtitle { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+h2 { font-size: 15px; font-weight: 700; color: #374151; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #e5e7eb; }
+h3 { font-size: 13px; font-weight: 700; color: #374151; margin: 14px 0 6px; }
+
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+.card-value { font-size: 22px; font-weight: 800; color: #1e293b; }
+.card-label { font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .3px; }
+
+.bar-chart { margin: 6px 0 12px; }
+.bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.bar-label { width: 36px; text-align: right; font-size: 11px; color: #6b7280; font-weight: 600; }
+.bar-track { flex: 1; height: 18px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 6px; font-size: 10px; color: #fff; font-weight: 700; min-width: 1px; }
+
+.insight { padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; margin-bottom: 4px; }
+.insight.info { background: #eff6ff; color: #1e40af; }
+.insight.warning { background: #fef3c7; color: #92400e; }
+.insight.danger { background: #fee2e2; color: #991b1b; }
+
+table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+th { background: #f1f5f9; font-weight: 700; text-align: left; padding: 6px 8px; border-bottom: 2px solid #d1d5db; }
+td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+tr:nth-child(even) { background: #fafbfc; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.chip-dropout { background: #fee2e2; color: #991b1b; }
+.chip-active { background: #dcfce7; color: #166534; }
+
+.course-table th { font-size: 11px; }
+.page-break { page-break-before: always; }
+</style></head><body>
+<div class="no-print"><button onclick="window.print()">PDF 저장 / 인쇄</button></div>
+
+<h1>훈련생 분석 리포트</h1>
+<div class="subtitle">${dateStr} 기준 · ${courseNames.length}개 과정 · ${data.length}명</div>
+
+<div class="cards">
+  <div class="card"><div class="card-value">${summary.totalTrainees}명</div><div class="card-label">전체 훈련생</div></div>
+  <div class="card"><div class="card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="card-label">평균 연령</div></div>
+  <div class="card"><div class="card-value">남 ${summary.maleCount} / 여 ${summary.femaleCount}</div><div class="card-label">성별 구성</div></div>
+  <div class="card"><div class="card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="card-label">중도탈락률 (${summary.dropoutCount}명)</div></div>
+</div>
+
+<h2>연령대 분포</h2>
+<div class="bar-chart">
+${ageGroups.map((g, i) => `<div class="bar-row">
+  <span class="bar-label">${g}</span>
+  <div class="bar-track"><div class="bar-fill" style="width:${(ageCounts[i] / maxAgeCount * 100).toFixed(0)}%;background:#7c5cfc;">${ageCounts[i]}</div></div>
+</div>`).join("")}
+</div>
+
+<h2>요일별 결석 분포</h2>
+<div class="bar-chart">
+${weekdayNames.map((name, i) => `<div class="bar-row">
+  <span class="bar-label">${name}</span>
+  <div class="bar-track"><div class="bar-fill" style="width:${(weekdayTotals[i] / maxWeekday * 100).toFixed(0)}%;background:${i === 0 || i === 6 ? "#94a3b8" : "#f56c6c"};">${weekdayTotals[i]}</div></div>
+</div>`).join("")}
+</div>
+
+<h2>과정별 현황</h2>
+<table class="course-table">
+<thead><tr><th>과정명</th><th>인원</th><th>평균출석률</th><th>탈락</th><th>탈락률</th></tr></thead>
+<tbody>
+${courseStats.map((c) => `<tr>
+  <td>${c.name.length > 20 ? c.name.slice(0, 20) + "…" : c.name}</td>
+  <td>${c.count}명</td>
+  <td>${c.avgRate.toFixed(1)}%</td>
+  <td>${c.dropouts}명</td>
+  <td>${c.dropoutRate.toFixed(1)}%</td>
+</tr>`).join("")}
+</tbody></table>
+
+${insights.length > 0 ? `<h2>자동 인사이트</h2>
+${insights.map((i) => `<div class="insight ${i.severity}">${i.icon} ${i.text}</div>`).join("")}` : ""}
+
+<div class="page-break"></div>
+<h2>상세 데이터</h2>
+<table>
+<thead><tr><th>이름</th><th>과정</th><th>기수</th><th>연령</th><th>성별</th><th>출석률</th><th>결석</th><th>지각</th><th>공결</th><th>상태</th></tr></thead>
+<tbody>
+${sorted.map((d) => `<tr>
+  <td>${d.name}</td>
+  <td>${d.courseName.length > 14 ? d.courseName.slice(0, 14) + "…" : d.courseName}</td>
+  <td>${d.degr}기</td>
+  <td>${d.age > 0 ? d.age + "세" : "-"}</td>
+  <td>${d.gender}</td>
+  <td>${d.attendanceRate.toFixed(1)}%</td>
+  <td>${d.absentDays}</td>
+  <td>${d.lateDays}</td>
+  <td>${d.excusedDays}</td>
+  <td><span class="chip ${d.dropout ? "chip-dropout" : "chip-active"}">${d.dropout ? "탈락" : "재학"}</span></td>
+</tr>`).join("")}
+</tbody></table>
+</body></html>`;
+
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  }
 }
