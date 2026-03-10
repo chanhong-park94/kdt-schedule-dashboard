@@ -76,6 +76,24 @@ export async function fetchPublicHolidaysKR(year: number): Promise<Holiday[]> {
 
   const mapped = json.map((item) => mapHoliday(item)).filter((item): item is Holiday => item !== null);
 
+  // 2026년부터 제헌절(7/17) 공휴일 복원 — 외부 API 미반영 대비
+  if (year >= 2026) {
+    const constitutionDate = `${year}-07-17`;
+    if (!mapped.some((h) => h.date === constitutionDate)) {
+      mapped.push({
+        date: constitutionDate,
+        localName: "제헌절",
+        name: "Constitution Day",
+        fixed: true,
+        global: true,
+        counties: null,
+        launchYear: 1949,
+        types: ["Public"],
+      });
+      mapped.sort((a, b) => a.date.localeCompare(b.date));
+    }
+  }
+
   HOLIDAY_CACHE.set(year, mapped);
   return mapped;
 }
