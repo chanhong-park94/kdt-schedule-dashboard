@@ -25,32 +25,57 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function yesterdayStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function isWeekday(): boolean {
   const day = new Date().getDay();
   return day >= 1 && day <= 5;
 }
 
-/** 특정 날짜(YYYY-MM-DD)가 수업일인지 (평일 + 공휴일 아님) */
-async function isClassDay(dateStr: string): Promise<boolean> {
+/** 과정 유형별 수업 요일 판단 */
+function isClassDayOfWeek(dayOfWeek: number, category?: string): boolean {
+  if (category === "재직자") {
+    // 재직자: 화~토 (Tue=2 ~ Sat=6)
+    return dayOfWeek >= 2 && dayOfWeek <= 6;
+  }
+  // 실업자(기본): 월~금 (Mon=1 ~ Fri=5)
+  return dayOfWeek >= 1 && dayOfWeek <= 5;
+}
+
+/** 특정 날짜가 해당 과정 유형의 수업일인지 (요일 + 공휴일 체크) */
+async function isClassDayForCategory(dateStr: string, category?: string): Promise<boolean> {
   const d = new Date(dateStr);
   const day = d.getDay();
-  // 주말 체크
-  if (day === 0 || day === 6) return false;
+  if (!isClassDayOfWeek(day, category)) return false;
   // 공휴일 체크
   try {
     const year = d.getFullYear();
     const holidays = await fetchPublicHolidaysKR(year);
     if (holidays.some((h) => h.date === dateStr)) return false;
   } catch {
-    // 공휴일 API 실패 시 평일만으로 판단
+    // 공휴일 API 실패 시 요일만으로 판단
   }
   return true;
+}
+
+function formatDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * 과정 유형별 가장 최근 수업일 찾기 (어제부터 역순 탐색, 최대 7일)
+ * - 실업자(기본): 월~금 중 공휴일 아닌 가장 최근 날짜
+ * - 재직자: 화~토 중 공휴일 아닌 가장 최근 날짜
+ */
+async function findLastClassDay(category?: string): Promise<string | null> {
+  const now = new Date();
+  for (let i = 1; i <= 7; i++) {
+    const check = new Date(now);
+    check.setDate(check.getDate() - i);
+    const dateStr = formatDateStr(check);
+    if (await isClassDayForCategory(dateStr, category)) {
+      return dateStr;
+    }
+  }
+  return null;
 }
 
 function nowHHMM(): { hour: number; minute: number } {
@@ -208,14 +233,6 @@ async function checkAndSend(): Promise<void> {
   emitStatus("⏳ 자동 알림 전송 중...", "info");
   console.log(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
 
-  // 전일 출결 데이터 사용 (저녁 늦게 끝나는 과정 대응)
-  // 전일이 주말 또는 공휴일(비수업일)이면 알림 스킵
-  const reportDate = yesterdayStr();
-  if (schedule.weekdaysOnly && !(await isClassDay(reportDate))) {
-    console.log(`[Scheduler] Skipped — 전일(${reportDate})이 비수업일(주말/공휴일)`);
-    return;
-  }
-
   // 대상 과정 결정
   const courses = config.courses.filter(c => {
     if (schedule.targetCourses.length === 0) return true;
@@ -234,6 +251,15 @@ async function checkAndSend(): Promise<void> {
     // 각 과정의 최신 기수만 전송
     const latestDegr = course.degrs[course.degrs.length - 1] || "1";
     try {
+      // 과정 유형별 가장 최근 수업일 계산
+      // 실업자(기본): 월~금 → 월요일 아침에 금요일 데이터
+      // 재직자: 화~토 → 월요일 아침에 토요일 데이터
+      const reportDate = await findLastClassDay(course.category);
+      if (!reportDate) {
+        console.log(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
+        continue;
+      }
+
       const students = await fetchAttendanceForReport(config, course, latestDegr, reportDate);
 
       // 하차방어율 계산 (명단 기반: 전체 인원 대비 재적 인원)
@@ -250,7 +276,7 @@ async function checkAndSend(): Promise<void> {
 
       await sendSlackReportDirect(webhookUrl, course.name, latestDegr, reportDate, students, defenseRate);
       sentCount++;
-      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결)`);
+      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결, ${course.category || "실업자"})`);
     } catch (e) {
       failCount++;
       console.error(`[Scheduler] Failed for ${course.name}:`, e);
