@@ -15,6 +15,8 @@ export interface TraineeAnalysis {
   attendedDays: number;
   totalDays: number;
   dropout: boolean;
+  /** 출결 데이터 존재 여부 (false면 출석률 N/A) */
+  hasAttendanceData: boolean;
   /** 요일별 결석 (0=일,1=월,...6=토) */
   absentByWeekday: number[];
   /** 월차별 결석 (개강 후 1월차, 2월차...) */

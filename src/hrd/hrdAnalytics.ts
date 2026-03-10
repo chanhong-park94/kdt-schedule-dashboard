@@ -24,6 +24,11 @@ function destroyCharts(): void {
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
 
+/** 출석률 포맷: -1이면 "N/A" (데이터 없음), 아니면 소수점 1자리% */
+function fmtRate(rate: number): string {
+  return rate < 0 ? "N/A" : `${rate.toFixed(1)}%`;
+}
+
 // ─── 데이터 저장 ────────────────────────────────────────────
 let analysisData: TraineeAnalysis[] = [];
 
@@ -88,19 +93,6 @@ async function collectAnalyticsData(
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
 
-        // 🔍 진단 로그: 기수별 데이터 현황
-        console.log(`[Analytics 진단] ${course.name} ${degr}기 — 명단: ${roster.length}명, 출결레코드: ${attendanceRecords.length}건, startDate: ${course.startDate}, totalDays: ${course.totalDays}`);
-        if (attendanceRecords.length > 0) {
-          const sampleRec = attendanceRecords[0];
-          console.log(`[Analytics 진단] 출결레코드 샘플:`, JSON.stringify({
-            cstmrNm: sampleRec.cstmrNm, trneeCstmrNm: sampleRec.trneeCstmrNm,
-            atendDe: sampleRec.atendDe, atendSttusNm: sampleRec.atendSttusNm,
-          }));
-        }
-        if (roster.length > 0 && attendanceRecords.length === 0) {
-          console.warn(`[Analytics 진단] ⚠️ ${course.name} ${degr}기 — 명단은 있지만 출결 데이터 0건! API가 종강 기수 출결을 미제공하는 것으로 보입니다.`);
-        }
-
         for (const raw of roster) {
           const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
           const birthStr = parseBirthYYYYMMDD(raw);
@@ -121,8 +113,10 @@ async function collectAnalyticsData(
           const lateDays = statuses.filter((s) => isLateStatus(s)).length;
           const excusedDays = statuses.filter((s) => isExcusedStatus(s)).length;
           const totalDays = course.totalDays || 0;
+          const hasAttendanceData = myRecords.length > 0;
           const effectiveDays = totalDays > 0 ? totalDays - excusedDays : (myRecords.length || 1);
-          const attendanceRate = effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : 100;
+          const attendanceRate = !hasAttendanceData ? -1
+            : effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : 100;
 
           // 요일별 결석
           const absentByWeekday = [0, 0, 0, 0, 0, 0, 0];
@@ -152,7 +146,7 @@ async function collectAnalyticsData(
             courseName: course.name, trainPrId: course.trainPrId,
             category, degr,
             attendanceRate, absentDays, lateDays, excusedDays, attendedDays, totalDays,
-            dropout,
+            dropout, hasAttendanceData,
             absentByWeekday, absentByMonth,
           });
         }
@@ -171,25 +165,49 @@ async function fetchAllMonthlyAttendance(
   degr: string,
 ): Promise<HrdRawAttendance[]> {
   const all: HrdRawAttendance[] = [];
-  const start = course.startDate ? new Date(course.startDate) : new Date();
   const now = new Date();
-  const startMonth = start.getFullYear() * 12 + start.getMonth();
-  const endMonth = now.getFullYear() * 12 + now.getMonth();
 
-  console.log(`[Analytics 진단] 출결 조회 범위: ${start.toISOString().slice(0, 7)} ~ ${now.toISOString().slice(0, 7)} (${endMonth - startMonth + 1}개월)`);
+  // 개강일: startDate가 있으면 사용, 없으면 totalDays 기반으로 역산
+  let start: Date;
+  if (course.startDate) {
+    start = new Date(course.startDate);
+  } else if (course.totalDays > 0) {
+    // totalDays로 개강일 역산 (주말 제외: 평일 기준 ≈ totalDays / 5 * 7)
+    const estimatedCalendarDays = Math.ceil(course.totalDays / 5 * 7) + 30; // 여유 1개월
+    start = new Date(now);
+    start.setDate(start.getDate() - estimatedCalendarDays);
+  } else {
+    // 둘 다 없으면 24개월 전부터 조회
+    start = new Date(now);
+    start.setMonth(start.getMonth() - 24);
+  }
+
+  // 종료월: startDate + totalDays 기반 추정 or 현재월
+  let endDate: Date;
+  if (course.startDate && course.totalDays > 0) {
+    const estimatedEnd = new Date(course.startDate);
+    const calDays = Math.ceil(course.totalDays / 5 * 7) + 14; // 여유 2주
+    estimatedEnd.setDate(estimatedEnd.getDate() + calDays);
+    // 현재보다 미래면 현재까지만
+    endDate = estimatedEnd < now ? estimatedEnd : now;
+  } else {
+    endDate = now;
+  }
+
+  const startMonth = start.getFullYear() * 12 + start.getMonth();
+  const endMonth = endDate.getFullYear() * 12 + endDate.getMonth();
+
   for (let m = startMonth; m <= endMonth; m++) {
     const y = Math.floor(m / 12);
     const mo = (m % 12) + 1;
     const monthStr = `${y}${String(mo).padStart(2, "0")}`;
     try {
       const records = await fetchDailyAttendance(config, course.trainPrId, degr, monthStr);
-      if (records.length > 0) console.log(`[Analytics 진단] ${monthStr} → ${records.length}건`);
       all.push(...records);
     } catch {
       // skip failed month
     }
   }
-  console.log(`[Analytics 진단] 출결 총합: ${all.length}건`);
   return all;
 }
 
@@ -201,8 +219,10 @@ function computeSummary(data: TraineeAnalysis[]): AnalyticsSummary {
   const avgAge = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 0;
   const dropoutCount = data.filter((d) => d.dropout).length;
   const dropoutRate = total > 0 ? (dropoutCount / total) * 100 : 0;
-  const avgAttendanceRate = total > 0
-    ? data.reduce((sum, d) => sum + d.attendanceRate, 0) / total : 0;
+  // 출결 데이터가 있는 훈련생만 평균 출석률 계산
+  const withData = data.filter((d) => d.hasAttendanceData);
+  const avgAttendanceRate = withData.length > 0
+    ? withData.reduce((sum, d) => sum + d.attendanceRate, 0) / withData.length : 0;
   return { totalTrainees: total, avgAge, dropoutCount, dropoutRate, avgAttendanceRate };
 }
 
@@ -247,9 +267,9 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
   const courseNames = [...new Set(data.map((d) => d.courseName))];
   if (courseNames.length >= 2) {
     const courseRates = courseNames.map((c) => {
-      const group = data.filter((d) => d.courseName === c);
-      return { name: c, avgRate: group.reduce((s, d) => s + d.attendanceRate, 0) / (group.length || 1), count: group.length };
-    }).filter((c) => c.count >= 3);
+      const group = data.filter((d) => d.courseName === c && d.hasAttendanceData);
+      return { name: c, avgRate: group.length > 0 ? group.reduce((s, d) => s + d.attendanceRate, 0) / group.length : -1, count: group.length };
+    }).filter((c) => c.count >= 3 && c.avgRate >= 0);
     if (courseRates.length >= 2) {
       const maxCourse = courseRates.reduce((a, b) => a.avgRate > b.avgRate ? a : b);
       const minCourse = courseRates.reduce((a, b) => a.avgRate < b.avgRate ? a : b);
@@ -308,16 +328,17 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
 // ─── 차트 렌더링 ────────────────────────────────────────────
 
 function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): void {
-  const atRiskActive = data.filter((d) => !d.dropout && d.attendanceRate < 80);
+  const atRiskActive = data.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80);
 
   // ── 요약 카드 (5개) ──
   const cardEl = $("analyticsCards");
   if (cardEl) {
-    const rateClass = summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
+    const hasRate = summary.avgAttendanceRate > 0;
+    const rateClass = !hasRate ? "" : summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
     const dropClass = summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
     cardEl.innerHTML = `
       <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
-      <div class="ana-card"><div class="ana-card-value ${rateClass}">${summary.avgAttendanceRate.toFixed(1)}%</div><div class="ana-card-label">평균 출석률</div></div>
+      <div class="ana-card"><div class="ana-card-value ${rateClass}">${hasRate ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="ana-card-label">평균 출석률</div></div>
       <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
       <div class="ana-card"><div class="ana-card-value" style="color:${atRiskActive.length > 0 ? "#dc2626" : "#059669"}">${atRiskActive.length}명</div><div class="ana-card-label">위험군 (재학)</div><div class="ana-card-sub">출석률 80% 미만</div></div>
       <div class="ana-card"><div class="ana-card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="ana-card-label">평균 연령</div></div>
@@ -340,22 +361,25 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
 
     statusBody.innerHTML = groups.map((g) => {
       const cnt = g.list.length;
-      const avgRate = g.list.reduce((s, d) => s + d.attendanceRate, 0) / cnt;
+      const withData = g.list.filter((d) => d.hasAttendanceData);
+      const avgRate = withData.length > 0
+        ? withData.reduce((s, d) => s + d.attendanceRate, 0) / withData.length : -1;
       const dropouts = g.list.filter((d) => d.dropout).length;
       const dropRate = (dropouts / cnt) * 100;
-      const atRisk = g.list.filter((d) => !d.dropout && d.attendanceRate < 80).length;
-      const rateClass = avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
+      const atRisk = g.list.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80).length;
+      const noData = avgRate < 0;
+      const rateClass = noData ? "" : avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
       const dropClass = dropRate <= 5 ? "ana-cell-good" : dropRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
-      const riskClass = atRisk === 0 ? "ana-cell-good" : atRisk <= 2 ? "ana-cell-warn" : "ana-cell-bad";
+      const riskClass = noData ? "" : atRisk === 0 ? "ana-cell-good" : atRisk <= 2 ? "ana-cell-warn" : "ana-cell-bad";
       return `<tr>
         <td>${g.course.length > 18 ? g.course.slice(0, 18) + "…" : g.course}</td>
         <td>${g.degr}기</td>
         <td>${g.category}</td>
         <td>${cnt}명</td>
-        <td class="${rateClass}">${avgRate.toFixed(1)}%</td>
+        <td class="${rateClass}">${fmtRate(avgRate)}</td>
         <td>${dropouts}명</td>
         <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
-        <td class="${riskClass}">${atRisk}명</td>
+        <td class="${riskClass}">${noData ? "-" : atRisk + "명"}</td>
       </tr>`;
     }).join("");
 
@@ -379,16 +403,19 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
     const renderCat = (cat: "재직자" | "실업자", icon: string, color: string) => {
       const g = data.filter((d) => d.category === cat);
       if (g.length === 0) return "";
-      const avgRate = g.reduce((s, d) => s + d.attendanceRate, 0) / g.length;
+      const withData = g.filter((d) => d.hasAttendanceData);
+      const avgRate = withData.length > 0 ? withData.reduce((s, d) => s + d.attendanceRate, 0) / withData.length : -1;
       const drops = g.filter((d) => d.dropout).length;
       const dropRate = (drops / g.length) * 100;
-      const risk = g.filter((d) => !d.dropout && d.attendanceRate < 80).length;
+      const risk = g.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80).length;
       const ages = g.filter((d) => d.age > 0).map((d) => d.age);
       const avgAge = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 0;
+      const rateDisplay = avgRate < 0 ? "N/A" : `${avgRate.toFixed(1)}%`;
+      const rateClass = avgRate < 0 ? "" : avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
       return `<div class="ana-compare-card" style="border-top:3px solid ${color};">
         <h5>${icon} ${cat}</h5>
         <div class="ana-compare-row"><span class="ana-compare-label">인원</span><span class="ana-compare-value">${g.length}명</span></div>
-        <div class="ana-compare-row"><span class="ana-compare-label">평균 출석률</span><span class="ana-compare-value ${avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}">${avgRate.toFixed(1)}%</span></div>
+        <div class="ana-compare-row"><span class="ana-compare-label">평균 출석률</span><span class="ana-compare-value ${rateClass}">${rateDisplay}</span></div>
         <div class="ana-compare-row"><span class="ana-compare-label">탈락률</span><span class="ana-compare-value ${dropRate <= 5 ? "ana-cell-good" : dropRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}">${dropRate.toFixed(1)}% (${drops}명)</span></div>
         <div class="ana-compare-row"><span class="ana-compare-label">위험군</span><span class="ana-compare-value" style="color:${risk > 0 ? "#dc2626" : "#059669"}">${risk}명</span></div>
         <div class="ana-compare-row"><span class="ana-compare-label">평균 연령</span><span class="ana-compare-value">${avgAge > 0 ? avgAge.toFixed(1) + "세" : "-"}</span></div>
@@ -466,7 +493,7 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
 
   // ── 조기경보: 위험군 훈련생 ──
   const atRisk = data
-    .filter((d) => !d.dropout && d.attendanceRate < 80)
+    .filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80)
     .sort((a, b) => a.attendanceRate - b.attendanceRate);
   const warningBody = $("anaEarlyWarningBody");
   const warningEmpty = $("anaEarlyWarningEmpty");
@@ -649,7 +676,7 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
     <td>${d.degr}기</td>
     <td>${d.age > 0 ? d.age + "세" : "-"}</td>
     <td>${d.category}</td>
-    <td>${d.attendanceRate.toFixed(1)}%</td>
+    <td>${fmtRate(d.attendanceRate)}</td>
     <td>${d.absentDays}</td>
     <td><span class="ana-status-chip ${d.dropout ? "ana-status-dropout" : "ana-status-active"}">${d.dropout ? "탈락" : "재학"}</span></td>
   </tr>`).join("");
@@ -765,19 +792,23 @@ function printAnalyticsReport(data: TraineeAnalysis[]): void {
 
   // 과정·기수별 통계
   const courseNames = [...new Set(data.map((d) => d.courseName))];
-  const courseDegrStats: Array<{ name: string; degr: string; category: string; count: number; avgRate: number; dropouts: number; dropoutRate: number; atRisk: number }> = [];
+  const courseDegrStats: Array<{ name: string; degr: string; category: string; count: number; avgRate: number; hasData: boolean; dropouts: number; dropoutRate: number; atRisk: number }> = [];
   for (const d of data) {
     let g = courseDegrStats.find((x) => x.name === d.courseName && x.degr === d.degr);
-    if (!g) { g = { name: d.courseName, degr: d.degr, category: d.category, count: 0, avgRate: 0, dropouts: 0, dropoutRate: 0, atRisk: 0 }; courseDegrStats.push(g); }
+    if (!g) { g = { name: d.courseName, degr: d.degr, category: d.category, count: 0, avgRate: 0, hasData: false, dropouts: 0, dropoutRate: 0, atRisk: 0 }; courseDegrStats.push(g); }
     g.count++;
-    g.avgRate += d.attendanceRate;
+    if (d.hasAttendanceData) { g.avgRate += d.attendanceRate; g.hasData = true; }
     if (d.dropout) g.dropouts++;
-    if (!d.dropout && d.attendanceRate < 80) g.atRisk++;
+    if (!d.dropout && d.hasAttendanceData && d.attendanceRate < 80) g.atRisk++;
   }
-  for (const g of courseDegrStats) { g.avgRate /= g.count; g.dropoutRate = (g.dropouts / g.count) * 100; }
+  for (const g of courseDegrStats) {
+    const withData = data.filter((d) => d.courseName === g.name && d.degr === g.degr && d.hasAttendanceData);
+    g.avgRate = withData.length > 0 ? g.avgRate / withData.length : -1;
+    g.dropoutRate = (g.dropouts / g.count) * 100;
+  }
 
   // 위험군 훈련생
-  const atRiskList = data.filter((d) => !d.dropout && d.attendanceRate < 80).sort((a, b) => a.attendanceRate - b.attendanceRate);
+  const atRiskList = data.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80).sort((a, b) => a.attendanceRate - b.attendanceRate);
 
   // 요일별 결석
   const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
@@ -841,7 +872,7 @@ tr:nth-child(even) { background: #fafbfc; }
 
 <div class="cards">
   <div class="card"><div class="card-value">${summary.totalTrainees}명</div><div class="card-label">전체 훈련생</div></div>
-  <div class="card"><div class="card-value">${summary.avgAttendanceRate.toFixed(1)}%</div><div class="card-label">평균 출석률</div></div>
+  <div class="card"><div class="card-value">${summary.avgAttendanceRate > 0 ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="card-label">평균 출석률</div></div>
   <div class="card"><div class="card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="card-label">중도탈락률 (${summary.dropoutCount}명)</div></div>
   <div class="card"><div class="card-value" style="color:${atRiskList.length > 0 ? "#dc2626" : "#059669"}">${atRiskList.length}명</div><div class="card-label">위험군 (출석률 80% 미만)</div></div>
 </div>
@@ -871,10 +902,10 @@ ${courseDegrStats.map((c) => `<tr>
   <td>${c.degr}기</td>
   <td>${c.category}</td>
   <td>${c.count}명</td>
-  <td style="color:${c.avgRate >= 90 ? "#059669" : c.avgRate >= 80 ? "#d97706" : "#dc2626"};font-weight:600;">${c.avgRate.toFixed(1)}%</td>
+  <td style="color:${c.avgRate < 0 ? "#6b7280" : c.avgRate >= 90 ? "#059669" : c.avgRate >= 80 ? "#d97706" : "#dc2626"};font-weight:600;">${c.avgRate < 0 ? "N/A" : c.avgRate.toFixed(1) + "%"}</td>
   <td>${c.dropouts}명</td>
   <td style="color:${c.dropoutRate <= 5 ? "#059669" : c.dropoutRate <= 15 ? "#d97706" : "#dc2626"};font-weight:600;">${c.dropoutRate.toFixed(1)}%</td>
-  <td style="color:${c.atRisk > 0 ? "#dc2626" : "#059669"};font-weight:600;">${c.atRisk}명</td>
+  <td style="color:${c.avgRate < 0 ? "#6b7280" : c.atRisk > 0 ? "#dc2626" : "#059669"};font-weight:600;">${c.avgRate < 0 ? "-" : c.atRisk + "명"}</td>
 </tr>`).join("")}
 </tbody></table>
 
@@ -907,7 +938,7 @@ ${sorted.map((d) => `<tr>
   <td>${d.degr}기</td>
   <td>${d.age > 0 ? d.age + "세" : "-"}</td>
   <td>${d.category}</td>
-  <td>${d.attendanceRate.toFixed(1)}%</td>
+  <td>${fmtRate(d.attendanceRate)}</td>
   <td>${d.absentDays}</td>
   <td>${d.lateDays}</td>
   <td>${d.excusedDays}</td>
