@@ -88,6 +88,19 @@ async function collectAnalyticsData(
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
 
+        // 🔍 진단 로그: 기수별 데이터 현황
+        console.log(`[Analytics 진단] ${course.name} ${degr}기 — 명단: ${roster.length}명, 출결레코드: ${attendanceRecords.length}건, startDate: ${course.startDate}, totalDays: ${course.totalDays}`);
+        if (attendanceRecords.length > 0) {
+          const sampleRec = attendanceRecords[0];
+          console.log(`[Analytics 진단] 출결레코드 샘플:`, JSON.stringify({
+            cstmrNm: sampleRec.cstmrNm, trneeCstmrNm: sampleRec.trneeCstmrNm,
+            atendDe: sampleRec.atendDe, atendSttusNm: sampleRec.atendSttusNm,
+          }));
+        }
+        if (roster.length > 0 && attendanceRecords.length === 0) {
+          console.warn(`[Analytics 진단] ⚠️ ${course.name} ${degr}기 — 명단은 있지만 출결 데이터 0건! API가 종강 기수 출결을 미제공하는 것으로 보입니다.`);
+        }
+
         for (const raw of roster) {
           const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
           const birthStr = parseBirthYYYYMMDD(raw);
@@ -163,17 +176,20 @@ async function fetchAllMonthlyAttendance(
   const startMonth = start.getFullYear() * 12 + start.getMonth();
   const endMonth = now.getFullYear() * 12 + now.getMonth();
 
+  console.log(`[Analytics 진단] 출결 조회 범위: ${start.toISOString().slice(0, 7)} ~ ${now.toISOString().slice(0, 7)} (${endMonth - startMonth + 1}개월)`);
   for (let m = startMonth; m <= endMonth; m++) {
     const y = Math.floor(m / 12);
     const mo = (m % 12) + 1;
     const monthStr = `${y}${String(mo).padStart(2, "0")}`;
     try {
       const records = await fetchDailyAttendance(config, course.trainPrId, degr, monthStr);
+      if (records.length > 0) console.log(`[Analytics 진단] ${monthStr} → ${records.length}건`);
       all.push(...records);
     } catch {
       // skip failed month
     }
   }
+  console.log(`[Analytics 진단] 출결 총합: ${all.length}건`);
   return all;
 }
 
