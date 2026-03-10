@@ -292,67 +292,146 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
 // ─── 차트 렌더링 ────────────────────────────────────────────
 
 function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): void {
-  // 요약 카드
+  const atRiskActive = data.filter((d) => !d.dropout && d.attendanceRate < 80);
+
+  // ── 요약 카드 (5개) ──
   const cardEl = $("analyticsCards");
   if (cardEl) {
-    const empCount = data.filter((d) => d.category === "재직자").length;
-    const unempCount = data.filter((d) => d.category === "실업자").length;
+    const rateClass = summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
+    const dropClass = summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
     cardEl.innerHTML = `
       <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
+      <div class="ana-card"><div class="ana-card-value ${rateClass}">${summary.avgAttendanceRate.toFixed(1)}%</div><div class="ana-card-label">평균 출석률</div></div>
+      <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
+      <div class="ana-card"><div class="ana-card-value" style="color:${atRiskActive.length > 0 ? "#dc2626" : "#059669"}">${atRiskActive.length}명</div><div class="ana-card-label">위험군 (재학)</div><div class="ana-card-sub">출석률 80% 미만</div></div>
       <div class="ana-card"><div class="ana-card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="ana-card-label">평균 연령</div></div>
-      <div class="ana-card"><div class="ana-card-value">재직 ${empCount} / 실업 ${unempCount}</div><div class="ana-card-label">과정유형</div></div>
-      <div class="ana-card"><div class="ana-card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div></div>
     `;
   }
 
-  // 연령대 분포 Bar chart
+  // ── 과정·기수별 종합 현황표 ──
+  const statusBody = $("anaCourseStatusBody");
+  const statusFoot = $("anaCourseStatusFoot");
+  if (statusBody) {
+    // 과정+기수 조합별 그룹
+    const groups: Array<{ course: string; degr: string; category: string; list: TraineeAnalysis[] }> = [];
+    for (const d of data) {
+      const key = `${d.courseName}__${d.degr}`;
+      let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
+      if (!g) { g = { course: d.courseName, degr: d.degr, category: d.category, list: [] }; groups.push(g); }
+      g.list.push(d);
+    }
+    groups.sort((a, b) => a.course.localeCompare(b.course) || parseInt(a.degr) - parseInt(b.degr));
+
+    statusBody.innerHTML = groups.map((g) => {
+      const cnt = g.list.length;
+      const avgRate = g.list.reduce((s, d) => s + d.attendanceRate, 0) / cnt;
+      const dropouts = g.list.filter((d) => d.dropout).length;
+      const dropRate = (dropouts / cnt) * 100;
+      const atRisk = g.list.filter((d) => !d.dropout && d.attendanceRate < 80).length;
+      const rateClass = avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
+      const dropClass = dropRate <= 5 ? "ana-cell-good" : dropRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
+      const riskClass = atRisk === 0 ? "ana-cell-good" : atRisk <= 2 ? "ana-cell-warn" : "ana-cell-bad";
+      return `<tr>
+        <td>${g.course.length > 18 ? g.course.slice(0, 18) + "…" : g.course}</td>
+        <td>${g.degr}기</td>
+        <td>${g.category}</td>
+        <td>${cnt}명</td>
+        <td class="${rateClass}">${avgRate.toFixed(1)}%</td>
+        <td>${dropouts}명</td>
+        <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
+        <td class="${riskClass}">${atRisk}명</td>
+      </tr>`;
+    }).join("");
+
+    // 합계 행
+    if (statusFoot) {
+      const totalRisk = atRiskActive.length;
+      statusFoot.innerHTML = `<tr>
+        <td colspan="3"><strong>전체 합계</strong></td>
+        <td><strong>${data.length}명</strong></td>
+        <td class="${summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.avgAttendanceRate.toFixed(1)}%</strong></td>
+        <td><strong>${summary.dropoutCount}명</strong></td>
+        <td class="${summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.dropoutRate.toFixed(1)}%</strong></td>
+        <td class="${totalRisk === 0 ? "ana-cell-good" : "ana-cell-bad"}"><strong>${totalRisk}명</strong></td>
+      </tr>`;
+    }
+  }
+
+  // ── 재직자 vs 실업자 비교 ──
+  const compareEl = $("anaCategoryCompare");
+  if (compareEl) {
+    const renderCat = (cat: "재직자" | "실업자", icon: string, color: string) => {
+      const g = data.filter((d) => d.category === cat);
+      if (g.length === 0) return "";
+      const avgRate = g.reduce((s, d) => s + d.attendanceRate, 0) / g.length;
+      const drops = g.filter((d) => d.dropout).length;
+      const dropRate = (drops / g.length) * 100;
+      const risk = g.filter((d) => !d.dropout && d.attendanceRate < 80).length;
+      const ages = g.filter((d) => d.age > 0).map((d) => d.age);
+      const avgAge = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 0;
+      return `<div class="ana-compare-card" style="border-top:3px solid ${color};">
+        <h5>${icon} ${cat}</h5>
+        <div class="ana-compare-row"><span class="ana-compare-label">인원</span><span class="ana-compare-value">${g.length}명</span></div>
+        <div class="ana-compare-row"><span class="ana-compare-label">평균 출석률</span><span class="ana-compare-value ${avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}">${avgRate.toFixed(1)}%</span></div>
+        <div class="ana-compare-row"><span class="ana-compare-label">탈락률</span><span class="ana-compare-value ${dropRate <= 5 ? "ana-cell-good" : dropRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}">${dropRate.toFixed(1)}% (${drops}명)</span></div>
+        <div class="ana-compare-row"><span class="ana-compare-label">위험군</span><span class="ana-compare-value" style="color:${risk > 0 ? "#dc2626" : "#059669"}">${risk}명</span></div>
+        <div class="ana-compare-row"><span class="ana-compare-label">평균 연령</span><span class="ana-compare-value">${avgAge > 0 ? avgAge.toFixed(1) + "세" : "-"}</span></div>
+      </div>`;
+    };
+    compareEl.innerHTML = renderCat("재직자", "🏢", "#5b8ff9") + renderCat("실업자", "📚", "#f7ba1e");
+  }
+
+  // ── 연령대 분포 Bar chart ──
   const ageCtx = ($("chartAgeDistribution") as HTMLCanvasElement)?.getContext("2d");
   if (ageCtx) {
     const groups: AgeGroup[] = ["10대", "20대", "30대", "40대", "50대+"];
     const counts = groups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g).length);
+    const dropouts = groups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g && d.dropout).length);
     charts.push(new Chart(ageCtx, {
       type: "bar",
-      data: { labels: groups, datasets: [{ label: "인원", data: counts, backgroundColor: "#7c5cfc" }] },
-      options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "연령대 분포" } } },
-    }));
-  }
-
-  // 과정별 출석률 비교 Bar chart
-  const courseAttCtx = ($("chartCourseAttendance") as HTMLCanvasElement)?.getContext("2d");
-  if (courseAttCtx) {
-    const courseNames = [...new Set(data.map((d) => d.courseName))];
-    const avgRates = courseNames.map((c) => {
-      const group = data.filter((d) => d.courseName === c);
-      return group.length > 0 ? group.reduce((s, d) => s + d.attendanceRate, 0) / group.length : 0;
-    });
-    const colors = avgRates.map((r) => r >= 90 ? "#10b981" : r >= 80 ? "#f7ba1e" : "#f56c6c");
-    charts.push(new Chart(courseAttCtx, {
-      type: "bar",
       data: {
-        labels: courseNames.map((n) => n.length > 12 ? n.slice(0, 12) + "…" : n),
-        datasets: [{ label: "평균 출석률 (%)", data: avgRates.map((r) => +r.toFixed(1)), backgroundColor: colors }],
-      },
-      options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "과정별 평균 출석률" } }, scales: { y: { min: 0, max: 105 } } },
-    }));
-  }
-
-  // 과정별 인원 구성 (재직자/실업자) Stacked bar
-  const courseCtx = ($("chartCourseComposition") as HTMLCanvasElement)?.getContext("2d");
-  if (courseCtx) {
-    const courseNames = [...new Set(data.map((d) => d.courseName))];
-    const empData = courseNames.map((c) => data.filter((d) => d.courseName === c && d.category === "재직자").length);
-    const unempData = courseNames.map((c) => data.filter((d) => d.courseName === c && d.category === "실업자").length);
-    charts.push(new Chart(courseCtx, {
-      type: "bar",
-      data: {
-        labels: courseNames.map((n) => n.length > 12 ? n.slice(0, 12) + "…" : n),
+        labels: groups,
         datasets: [
-          { label: "재직자", data: empData, backgroundColor: "#5b8ff9" },
-          { label: "실업자", data: unempData, backgroundColor: "#f7ba1e" },
+          { label: "재학", data: counts.map((c, i) => c - dropouts[i]), backgroundColor: "#7c5cfc" },
+          { label: "탈락", data: dropouts, backgroundColor: "#f56c6c" },
         ],
       },
-      options: { responsive: true, plugins: { title: { display: true, text: "과정별 유형 구성" } }, scales: { x: { stacked: true }, y: { stacked: true } } },
+      options: { responsive: true, plugins: { title: { display: true, text: "연령대 분포 (재학 vs 탈락)" } }, scales: { x: { stacked: true }, y: { stacked: true } } },
     }));
+  }
+
+  // ── 기수별 탈락률 추이 ──
+  const degrDropCtx = ($("chartDegrDropout") as HTMLCanvasElement)?.getContext("2d");
+  if (degrDropCtx) {
+    const degrs = [...new Set(data.map((d) => d.degr))].sort((a, b) => parseInt(a) - parseInt(b));
+    if (degrs.length >= 2) {
+      const degrRates = degrs.map((dg) => {
+        const group = data.filter((d) => d.degr === dg);
+        return group.length > 0 ? +(((group.filter((d) => d.dropout).length / group.length) * 100).toFixed(1)) : 0;
+      });
+      const degrCounts = degrs.map((dg) => data.filter((d) => d.degr === dg).length);
+      charts.push(new Chart(degrDropCtx, {
+        type: "line",
+        data: {
+          labels: degrs.map((d) => `${d}기`),
+          datasets: [
+            { label: "탈락률 (%)", data: degrRates, borderColor: "#f56c6c", backgroundColor: "rgba(245,108,108,0.1)", fill: true, tension: 0.3, yAxisID: "y" },
+            { label: "인원", data: degrCounts, borderColor: "#5b8ff9", backgroundColor: "rgba(91,143,249,0.1)", fill: false, borderDash: [5, 5], tension: 0.3, yAxisID: "y1" },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: { title: { display: true, text: "기수별 탈락률 추이" } },
+          scales: {
+            y: { type: "linear", position: "left", min: 0, title: { display: true, text: "탈락률 (%)" } },
+            y1: { type: "linear", position: "right", min: 0, grid: { drawOnChartArea: false }, title: { display: true, text: "인원" } },
+          },
+        },
+      }));
+    } else {
+      const parent = degrDropCtx.canvas.parentElement;
+      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">2개 이상의 기수 데이터가 필요합니다</div>';
+    }
   }
 }
 
@@ -366,6 +445,35 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
       insightEl.innerHTML = insights.map((ins) =>
         `<div class="ana-insight ana-insight-${ins.severity}">${ins.icon} ${ins.text}</div>`
       ).join("");
+    }
+  }
+
+  // ── 조기경보: 위험군 훈련생 ──
+  const atRisk = data
+    .filter((d) => !d.dropout && d.attendanceRate < 80)
+    .sort((a, b) => a.attendanceRate - b.attendanceRate);
+  const warningBody = $("anaEarlyWarningBody");
+  const warningEmpty = $("anaEarlyWarningEmpty");
+  if (warningBody) {
+    if (atRisk.length === 0) {
+      warningBody.parentElement!.style.display = "none";
+      if (warningEmpty) warningEmpty.style.display = "block";
+    } else {
+      warningBody.parentElement!.style.display = "";
+      if (warningEmpty) warningEmpty.style.display = "none";
+      warningBody.innerHTML = atRisk.map((d) => {
+        const riskLevel = d.attendanceRate < 60 ? "high" : d.attendanceRate < 70 ? "mid" : "low";
+        const riskLabel = d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰";
+        return `<tr>
+          <td><strong>${d.name}</strong></td>
+          <td>${d.courseName.length > 14 ? d.courseName.slice(0, 14) + "…" : d.courseName}</td>
+          <td>${d.degr}기</td>
+          <td style="color:${d.attendanceRate < 60 ? "#dc2626" : "#d97706"};font-weight:700;">${d.attendanceRate.toFixed(1)}%</td>
+          <td>${d.absentDays}일</td>
+          <td>${d.lateDays}일</td>
+          <td><span class="ana-risk-${riskLevel}">${riskLabel}</span></td>
+        </tr>`;
+      }).join("");
     }
   }
 
@@ -433,57 +541,6 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
       },
       options: { responsive: true, plugins: { title: { display: true, text: "연령대별 탈락률 (%)" } }, scales: { y: { min: 0 } } },
     }));
-  }
-
-  // 기수별 탈락률 추이
-  const degrDropCtx = ($("chartDegrDropout") as HTMLCanvasElement)?.getContext("2d");
-  if (degrDropCtx) {
-    const degrs = [...new Set(data.map((d) => d.degr))].sort((a, b) => parseInt(a) - parseInt(b));
-    if (degrs.length >= 2) {
-      const degrRates = degrs.map((dg) => {
-        const group = data.filter((d) => d.degr === dg);
-        return group.length > 0 ? (group.filter((d) => d.dropout).length / group.length) * 100 : 0;
-      });
-      const degrCounts = degrs.map((dg) => data.filter((d) => d.degr === dg).length);
-      charts.push(new Chart(degrDropCtx, {
-        type: "line",
-        data: {
-          labels: degrs.map((d) => `${d}기`),
-          datasets: [
-            {
-              label: "탈락률 (%)",
-              data: degrRates.map((r) => +r.toFixed(1)),
-              borderColor: "#f56c6c",
-              backgroundColor: "rgba(245,108,108,0.1)",
-              fill: true,
-              tension: 0.3,
-              yAxisID: "y",
-            },
-            {
-              label: "인원",
-              data: degrCounts,
-              borderColor: "#5b8ff9",
-              backgroundColor: "rgba(91,143,249,0.1)",
-              fill: false,
-              borderDash: [5, 5],
-              tension: 0.3,
-              yAxisID: "y1",
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: { title: { display: true, text: "기수별 탈락률 추이" } },
-          scales: {
-            y: { type: "linear", position: "left", min: 0, title: { display: true, text: "탈락률 (%)" } },
-            y1: { type: "linear", position: "right", min: 0, grid: { drawOnChartArea: false }, title: { display: true, text: "인원" } },
-          },
-        },
-      }));
-    } else {
-      const parent = degrDropCtx.canvas.parentElement;
-      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">2개 이상의 기수가 필요합니다</div>';
-    }
   }
 
   // 결석일수 vs 탈락 scatter
@@ -690,14 +747,21 @@ function printAnalyticsReport(data: TraineeAnalysis[]): void {
   const ageCounts = ageGroups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g).length);
   const maxAgeCount = Math.max(...ageCounts, 1);
 
-  // 과정별 통계
+  // 과정·기수별 통계
   const courseNames = [...new Set(data.map((d) => d.courseName))];
-  const courseStats = courseNames.map((name) => {
-    const group = data.filter((d) => d.courseName === name);
-    const dropouts = group.filter((d) => d.dropout).length;
-    const avgRate = group.reduce((s, d) => s + d.attendanceRate, 0) / (group.length || 1);
-    return { name, count: group.length, dropouts, dropoutRate: group.length > 0 ? (dropouts / group.length * 100) : 0, avgRate };
-  });
+  const courseDegrStats: Array<{ name: string; degr: string; category: string; count: number; avgRate: number; dropouts: number; dropoutRate: number; atRisk: number }> = [];
+  for (const d of data) {
+    let g = courseDegrStats.find((x) => x.name === d.courseName && x.degr === d.degr);
+    if (!g) { g = { name: d.courseName, degr: d.degr, category: d.category, count: 0, avgRate: 0, dropouts: 0, dropoutRate: 0, atRisk: 0 }; courseDegrStats.push(g); }
+    g.count++;
+    g.avgRate += d.attendanceRate;
+    if (d.dropout) g.dropouts++;
+    if (!d.dropout && d.attendanceRate < 80) g.atRisk++;
+  }
+  for (const g of courseDegrStats) { g.avgRate /= g.count; g.dropoutRate = (g.dropouts / g.count) * 100; }
+
+  // 위험군 훈련생
+  const atRiskList = data.filter((d) => !d.dropout && d.attendanceRate < 80).sort((a, b) => a.attendanceRate - b.attendanceRate);
 
   // 요일별 결석
   const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
@@ -761,9 +825,9 @@ tr:nth-child(even) { background: #fafbfc; }
 
 <div class="cards">
   <div class="card"><div class="card-value">${summary.totalTrainees}명</div><div class="card-label">전체 훈련생</div></div>
-  <div class="card"><div class="card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="card-label">평균 연령</div></div>
-  <div class="card"><div class="card-value">재직 ${data.filter((d) => d.category === "재직자").length} / 실업 ${data.filter((d) => d.category === "실업자").length}</div><div class="card-label">과정유형</div></div>
+  <div class="card"><div class="card-value">${summary.avgAttendanceRate.toFixed(1)}%</div><div class="card-label">평균 출석률</div></div>
   <div class="card"><div class="card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="card-label">중도탈락률 (${summary.dropoutCount}명)</div></div>
+  <div class="card"><div class="card-value" style="color:${atRiskList.length > 0 ? "#dc2626" : "#059669"}">${atRiskList.length}명</div><div class="card-label">위험군 (출석률 80% 미만)</div></div>
 </div>
 
 <h2>연령대 분포</h2>
@@ -782,18 +846,36 @@ ${weekdayNames.map((name, i) => `<div class="bar-row">
 </div>`).join("")}
 </div>
 
-<h2>과정별 현황</h2>
+<h2>과정·기수별 현황</h2>
 <table class="course-table">
-<thead><tr><th>과정명</th><th>인원</th><th>평균출석률</th><th>탈락</th><th>탈락률</th></tr></thead>
+<thead><tr><th>과정명</th><th>기수</th><th>유형</th><th>인원</th><th>평균출석률</th><th>탈락</th><th>탈락률</th><th>위험군</th></tr></thead>
 <tbody>
-${courseStats.map((c) => `<tr>
-  <td>${c.name.length > 20 ? c.name.slice(0, 20) + "…" : c.name}</td>
+${courseDegrStats.map((c) => `<tr>
+  <td>${c.name.length > 16 ? c.name.slice(0, 16) + "…" : c.name}</td>
+  <td>${c.degr}기</td>
+  <td>${c.category}</td>
   <td>${c.count}명</td>
-  <td>${c.avgRate.toFixed(1)}%</td>
+  <td style="color:${c.avgRate >= 90 ? "#059669" : c.avgRate >= 80 ? "#d97706" : "#dc2626"};font-weight:600;">${c.avgRate.toFixed(1)}%</td>
   <td>${c.dropouts}명</td>
-  <td>${c.dropoutRate.toFixed(1)}%</td>
+  <td style="color:${c.dropoutRate <= 5 ? "#059669" : c.dropoutRate <= 15 ? "#d97706" : "#dc2626"};font-weight:600;">${c.dropoutRate.toFixed(1)}%</td>
+  <td style="color:${c.atRisk > 0 ? "#dc2626" : "#059669"};font-weight:600;">${c.atRisk}명</td>
 </tr>`).join("")}
 </tbody></table>
+
+${atRiskList.length > 0 ? `<h2>⚠️ 위험군 훈련생 (출석률 80% 미만 재학생)</h2>
+<table class="course-table">
+<thead><tr><th>이름</th><th>과정</th><th>기수</th><th>출석률</th><th>결석</th><th>지각</th><th>위험도</th></tr></thead>
+<tbody>
+${atRiskList.map((d) => `<tr>
+  <td><strong>${d.name}</strong></td>
+  <td>${d.courseName.length > 14 ? d.courseName.slice(0, 14) + "…" : d.courseName}</td>
+  <td>${d.degr}기</td>
+  <td style="color:${d.attendanceRate < 60 ? "#dc2626" : "#d97706"};font-weight:700;">${d.attendanceRate.toFixed(1)}%</td>
+  <td>${d.absentDays}일</td>
+  <td>${d.lateDays}일</td>
+  <td><span class="chip ${d.attendanceRate < 60 ? "chip-dropout" : "chip-active"}" style="${d.attendanceRate < 60 ? "" : "background:#fef3c7;color:#92400e;"}">${d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰"}</span></td>
+</tr>`).join("")}
+</tbody></table>` : ""}
 
 ${insights.length > 0 ? `<h2>자동 인사이트</h2>
 ${insights.map((i) => `<div class="insight ${i.severity}">${i.icon} ${i.text}</div>`).join("")}` : ""}

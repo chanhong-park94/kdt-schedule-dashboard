@@ -1165,17 +1165,57 @@
         <!-- [개요] 탭 -->
         <div id="anaPanel-overview" class="ana-tab-panel" style="display:block;">
           <div id="analyticsCards" class="ana-cards"></div>
-          <div class="ana-chart-grid">
-            <div class="ana-chart-box"><canvas id="chartAgeDistribution"></canvas></div>
-            <div class="ana-chart-box"><canvas id="chartCourseAttendance"></canvas></div>
+
+          <!-- 과정·기수별 종합 현황 -->
+          <h4 style="margin:20px 0 8px;">과정·기수별 종합 현황</h4>
+          <div style="overflow-x:auto;">
+            <table class="hrd-table ana-course-status-table" style="margin-top:0;">
+              <thead>
+                <tr>
+                  <th>과정명</th>
+                  <th>기수</th>
+                  <th>유형</th>
+                  <th>인원</th>
+                  <th>평균출석률</th>
+                  <th>탈락</th>
+                  <th>탈락률</th>
+                  <th>위험군</th>
+                </tr>
+              </thead>
+              <tbody id="anaCourseStatusBody"></tbody>
+              <tfoot id="anaCourseStatusFoot"></tfoot>
+            </table>
           </div>
-          <div class="ana-chart-box" style="margin-top:16px;"><canvas id="chartCourseComposition"></canvas></div>
+
+          <!-- 재직자 vs 실업자 비교 -->
+          <h4 style="margin:20px 0 8px;">재직자 vs 실업자 비교</h4>
+          <div id="anaCategoryCompare" class="ana-compare-grid"></div>
+
+          <!-- 연령대 분포 -->
+          <div class="ana-chart-grid" style="margin-top:20px;">
+            <div class="ana-chart-box"><canvas id="chartAgeDistribution"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartDegrDropout"></canvas></div>
+          </div>
         </div>
 
         <!-- [리스크 분석] 탭 -->
         <div id="anaPanel-risk" class="ana-tab-panel" style="display:none;">
           <div id="analyticsInsights" style="margin-bottom:16px;"></div>
-          <h4 style="margin:16px 0 8px;">출결 패턴</h4>
+
+          <!-- 조기경보: 위험군 훈련생 -->
+          <h4 style="margin:16px 0 8px;">⚠️ 조기경보 — 관리 필요 훈련생</h4>
+          <div class="ana-early-warning-desc muted" style="font-size:12px;margin-bottom:8px;">출석률 80% 미만 재학생 목록입니다. 상담·독려 등 조기 개입이 필요합니다.</div>
+          <div style="overflow-x:auto;">
+            <table class="hrd-table" style="margin-top:0;">
+              <thead>
+                <tr><th>이름</th><th>과정</th><th>기수</th><th>출석률</th><th>결석</th><th>지각</th><th>위험도</th></tr>
+              </thead>
+              <tbody id="anaEarlyWarningBody"></tbody>
+            </table>
+          </div>
+          <div id="anaEarlyWarningEmpty" style="display:none;text-align:center;padding:16px;color:#10b981;font-size:13px;font-weight:600;">✅ 현재 위험군 훈련생이 없습니다</div>
+
+          <h4 style="margin:24px 0 8px;">출결 패턴</h4>
           <div class="ana-chart-grid">
             <div class="ana-chart-box"><canvas id="chartWeekdayAbsent"></canvas></div>
             <div class="ana-chart-box"><canvas id="chartMonthlyAbsent"></canvas></div>
@@ -1183,9 +1223,8 @@
           <h4 style="margin:16px 0 8px;">탈락 요인</h4>
           <div class="ana-chart-grid">
             <div class="ana-chart-box"><canvas id="chartAgeDropout"></canvas></div>
-            <div class="ana-chart-box"><canvas id="chartDegrDropout"></canvas></div>
+            <div class="ana-chart-box"><canvas id="chartAbsentScatter"></canvas></div>
           </div>
-          <div class="ana-chart-box" style="margin-top:16px;"><canvas id="chartAbsentScatter"></canvas></div>
         </div>
 
         <!-- [상세 데이터] 탭 -->
