@@ -73,7 +73,7 @@ export function buildSlackMessage(
   // Header (커스터마이징 가능)
   sections.push(header);
   sections.push(`━━━━━━━━━━━━━━━━━━━`);
-  sections.push(`📋 *${courseName} ${degr}차* | ${date}\n`);
+  sections.push(`📋 *${courseName} ${degr}기* | ${date}\n`);
 
   // Risk groups
   const dangerBlock = buildRiskGroup("🔴 위험 (제적 대상)", danger);

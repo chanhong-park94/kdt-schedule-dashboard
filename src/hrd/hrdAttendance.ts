@@ -674,7 +674,7 @@ function renderHrdSettingsSection(): void {
             (c, i) => `<div class="hrd-course-item">
           <div class="hrd-course-info">
             <strong>${c.name}</strong>
-            <span class="hrd-course-meta">${c.trainPrId} | 기수: ${c.degrs.join(",")}차 (${c.degrs.length}개)${c.startDate ? ` | 개강: ${c.startDate}` : ""}${c.totalDays ? ` | ${c.totalDays}일` : ""}</span>
+            <span class="hrd-course-meta">${c.trainPrId} | 기수: ${c.degrs.join(",")}기 (${c.degrs.length}개)${c.startDate ? ` | 개강: ${c.startDate}` : ""}${c.totalDays ? ` | ${c.totalDays}일` : ""}</span>
           </div>
           <button class="btn-sm btn-danger hrd-course-remove" data-idx="${i}">삭제</button>
         </div>`
@@ -868,7 +868,7 @@ function setupSettingsHandlers(): void {
       if (statusEl) statusEl.textContent = `🔍 ${course.name} 기수 탐색 중...`;
       try {
         const found = await discoverDegrs(config, course.trainPrId, 15, (d, ok) => {
-          if (statusEl) statusEl.textContent = `🔍 ${course.name} ${d}차 ${ok ? "✅" : "—"}`;
+          if (statusEl) statusEl.textContent = `🔍 ${course.name} ${d}기 ${ok ? "✅" : "—"}`;
         });
         const newDegrs = found.map((f) => f.degr);
         if (newDegrs.length > 0 && newDegrs.join(",") !== course.degrs.join(",")) {
@@ -1004,7 +1004,7 @@ function setupSettingsHandlers(): void {
         const today = new Date().toISOString().slice(0, 10);
 
         await sendSlackReportDirect(webhookUrl, courseName, degr, today, currentStudents);
-        if (statusEl) { statusEl.textContent = `✅ ${courseName} ${degr}차 리포트 전송 완료`; statusEl.className = "slack-schedule-status slack-schedule-success"; }
+        if (statusEl) { statusEl.textContent = `✅ ${courseName} ${degr}기 리포트 전송 완료`; statusEl.className = "slack-schedule-status slack-schedule-success"; }
       } else {
         // 데이터 미로드 상태 — 테스트 메시지만 전송
         const result = await testSlackWebhook(webhookUrl);
@@ -1042,7 +1042,7 @@ function populateFilters(): void {
     const selected = courseSelect!.value;
     const course = currentConfig.courses.find((c) => c.trainPrId === selected);
     degrSelect.innerHTML = course
-      ? course.degrs.map((d) => `<option value="${d}">${d}차</option>`).join("")
+      ? course.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("")
       : '<option value="">-</option>';
   }
 }

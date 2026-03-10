@@ -118,7 +118,7 @@ async function fetchAllRosters(
           // skip failed
         }
         done++;
-        onProgress?.(`${done}/${total} 조회 중... (${course.name} ${degr}차)`);
+        onProgress?.(`${done}/${total} 조회 중... (${course.name} ${degr}기)`);
       });
       await Promise.all(promises);
     }
@@ -185,7 +185,7 @@ function renderDetailRow(e: DropoutRosterEntry, showCategory = true): string {
   return `<tr>
     ${catCell}
     <td>${e.courseName}</td>
-    <td>${e.degr}차</td>
+    <td>${e.degr}기</td>
     <td>${formatStartDate(e)}</td>
     <td>${e.total}</td>
     <td>${e.dropout}</td>
@@ -331,7 +331,7 @@ function renderYearlyTable(): void {
         <td>${year}</td>
         <td><span class="do-cat-chip do-cat-${e.category === "재직자" ? "emp" : "unemp"}">${e.category}</span></td>
         <td>${e.courseName}</td>
-        <td>${e.degr}차</td>
+        <td>${e.degr}기</td>
         <td>${formatStartDate(e)}</td>
         <td>${e.total}</td>
         <td>${e.dropout}</td>
@@ -614,7 +614,7 @@ function renderDegrChart(): void {
   }));
 
   const maxDegr = Math.max(...Array.from(courseMap.values()).map((v) => v.length));
-  const labels = Array.from({ length: maxDegr }, (_, i) => `${i + 1}차`);
+  const labels = Array.from({ length: maxDegr }, (_, i) => `${i + 1}기`);
 
   const chart = new Chart(canvas, {
     type: "line",

@@ -210,7 +210,7 @@ async function checkAndSend(): Promise<void> {
 
       await sendSlackReportDirect(webhookUrl, course.name, latestDegr, today, students);
       sentCount++;
-      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}차`);
+      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}기`);
     } catch (e) {
       failCount++;
       console.error(`[Scheduler] Failed for ${course.name}:`, e);
