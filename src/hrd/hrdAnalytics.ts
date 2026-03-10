@@ -115,7 +115,22 @@ async function collectAnalyticsData(
         const roster = await fetchRoster(config, course.trainPrId, degr);
         // 디버그: 첫 명단의 원본 필드 확인 (성별 필드 탐색용)
         if (roster.length > 0 && done === 1) {
-          console.log("[훈련생분석] 첫 명단 원본 필드:", JSON.stringify(roster[0], null, 2));
+          const r = roster[0];
+          console.log("[훈련생분석] 원본 필드 전체:", JSON.stringify(r, null, 2));
+          console.log("[훈련생분석] 성별 관련 필드 →",
+            "trneRrno:", JSON.stringify(r.trneRrno),
+            "| lifyeaMd:", JSON.stringify(r.lifyeaMd),
+            "| trneBrdt:", JSON.stringify(r.trneBrdt),
+            "| sexdstnSe:", JSON.stringify(r.sexdstnSe),
+            "| trneSexdstnSe:", JSON.stringify(r.trneSexdstnSe),
+          );
+          // 숫자만 추출 후 길이 확인
+          const rrnoDigits = (r.trneRrno || "").toString().replace(/[^0-9]/g, "");
+          const lifyDigits = (r.lifyeaMd || "").toString().replace(/[^0-9]/g, "");
+          console.log("[훈련생분석] 숫자 추출 →",
+            "rrno:", rrnoDigits, `(${rrnoDigits.length}자리)`,
+            "| lify:", lifyDigits, `(${lifyDigits.length}자리)`,
+          );
         }
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
