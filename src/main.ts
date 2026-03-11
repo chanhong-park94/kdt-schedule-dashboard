@@ -55,6 +55,7 @@ import {
 } from "./core/staffing";
 import { normalizeInstructorCode, normalizeSubjectCode } from "./core/standardize";
 import { buildCohortSummaries } from "./core/summary";
+import { getKdtScheduleSummaries } from "./hrd/hrdScheduleData";
 import {
   validateHrdExportForCohortDetailed
 } from "./core/hrdValidation";
@@ -4161,7 +4162,11 @@ function buildModulesGenericExportRecords(): InternalV7ERecord[] { return staffi
 function downloadStaffingCsv(): void { staffingDownloadStaffingCsv(); }
 
 function regenerateSummariesAndTimeline(preferredCohort = ""): void {
-  appState.summaries = buildCohortSummaries(appState.sessions);
+  const sessionSummaries = buildCohortSummaries(appState.sessions);
+  // KDT 학사일정 데이터 병합 (세션 데이터가 없는 과정만 추가)
+  const sessionCohortNames = new Set(sessionSummaries.map((s) => s.과정기수));
+  const kdtSummaries = getKdtScheduleSummaries().filter((s) => !sessionCohortNames.has(s.과정기수));
+  appState.summaries = [...sessionSummaries, ...kdtSummaries];
   setCohortOptions(appState.summaries, preferredCohort);
   renderTimeline();
   renderStaffingSection();
