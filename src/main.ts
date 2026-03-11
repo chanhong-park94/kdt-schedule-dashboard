@@ -1,4 +1,5 @@
 import "./style.css";
+import { findAssistantCode, getAssistantSession, setAssistantSession, clearAssistantSession } from "./auth/assistantAuth";
 import { initAttendanceDashboard } from "./hrd/hrdAttendance";
 import { initAnalytics } from "./hrd/hrdAnalytics";
 import { initDropoutDashboard } from "./hrd/hrdDropout";
@@ -380,15 +381,64 @@ async function bootstrapAppAfterAuthLogin(): Promise<void> {
 
 function submitAuthCode(): void {
   const code = authCodeInput.value.trim();
+
+  // 1) 관리자 코드
   if (code === AUTH_CODE_V2) {
     sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
+    clearAssistantSession();
     applyAuthGate(true);
+    void bootstrapAppAfterAuthLogin();
+    return;
+  }
+
+  // 2) 보조강사 코드
+  const assistant = findAssistantCode(code);
+  if (assistant) {
+    sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
+    setAssistantSession({
+      role: "assistant",
+      trainPrId: assistant.trainPrId,
+      degr: assistant.degr,
+      courseName: assistant.courseName,
+    });
+    applyAuthGate(true);
+    applyAssistantMode(assistant.courseName, assistant.degr);
     void bootstrapAppAfterAuthLogin();
     return;
   }
 
   authStatus.textContent = "인증코드가 올바르지 않습니다.";
   authCodeInput.select();
+}
+
+function applyAssistantMode(courseName: string, degr: string): void {
+  document.body.classList.add("assistant-mode");
+
+  // 헤더에 보조강사 안내 표시
+  const headerEl = document.querySelector(".app-header-title");
+  if (headerEl) {
+    headerEl.textContent = `📋 ${courseName} ${degr}기 출결현황 (보조강사)`;
+  }
+
+  // 로그아웃 바 라벨
+  const modeLabel = document.getElementById("assistantModeLabel");
+  if (modeLabel) modeLabel.textContent = `📋 ${courseName} ${degr}기 — 보조강사 모드`;
+
+  // 출결현황 탭으로 강제 이동
+  const attNavBtn = document.querySelector('[data-nav-key="attendance"]') as HTMLElement | null;
+  attNavBtn?.click();
+
+  // 하차방어율 탭 숨김
+  const dropoutTab = document.getElementById("attTabDropout");
+  if (dropoutTab) dropoutTab.style.display = "none";
+}
+
+function handleLogout(): void {
+  sessionStorage.removeItem(AUTH_SESSION_KEY);
+  clearAssistantSession();
+  document.body.classList.remove("assistant-mode");
+  applyAuthGate(false);
+  location.reload();
 }
 
 function buildModuleAssignSummaries(): ModuleAssignSummary[] {
@@ -2519,6 +2569,14 @@ for (const row of Array.from(dayTemplateTable.querySelectorAll<HTMLTableRowEleme
 
 const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
 applyAuthGate(hasAuthSession);
+if (hasAuthSession) {
+  const assistantSession = getAssistantSession();
+  if (assistantSession) {
+    applyAssistantMode(assistantSession.courseName, assistantSession.degr);
+  }
+}
+
+document.getElementById("assistantLogoutBtn")?.addEventListener("click", handleLogout);
 
 // HRD dashboards (attendance + dropout defense)
 initAttendanceDashboard();

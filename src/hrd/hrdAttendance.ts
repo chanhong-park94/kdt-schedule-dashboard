@@ -1,4 +1,5 @@
 /** HRD 출결현황 대시보드 */
+import { getAssistantSession, loadAssistantCodes, saveAssistantCode, removeAssistantCode, validateAssistantCode } from "../auth/assistantAuth";
 import { Chart, registerables } from "chart.js";
 import { fetchRoster, fetchDailyAttendance, testConnection, discoverDegrs } from "./hrdApi";
 import { loadHrdConfig, saveHrdConfig, DEFAULT_COURSES } from "./hrdConfig";
@@ -712,13 +713,34 @@ function renderHrdSettingsSection(): void {
         ? '<div class="att-empty-mini">등록된 과정이 없습니다. "기본 과정 복원" 버튼을 눌러주세요.</div>'
         : currentConfig.courses
             .map(
-              (c, i) => `<div class="hrd-course-item">
-          <div class="hrd-course-info">
-            <strong>${c.name}</strong>
-            <span class="hrd-course-meta">${c.trainPrId} | 기수: ${c.degrs.join(",")}기 (${c.degrs.length}개)${c.startDate ? ` | 개강: ${c.startDate}` : ""}${c.totalDays ? ` | ${c.totalDays}일` : ""}</span>
-          </div>
-          <button class="btn-sm btn-danger hrd-course-remove" data-idx="${i}">삭제</button>
-        </div>`,
+              (c, i) => {
+                const asstCodes = loadAssistantCodes().filter((ac) => ac.trainPrId === c.trainPrId);
+                const codeRows = asstCodes.map((ac) =>
+                  `<div class="asst-code-row" data-asst-code="${ac.code}">
+                    <span class="asst-code-degr">${ac.degr}기</span>
+                    <code class="asst-code-value">${ac.code}</code>
+                    <button class="btn-sm btn-danger asst-code-del" data-asst-del="${ac.code}" title="삭제">✕</button>
+                  </div>`
+                ).join("");
+                const degrOpts = c.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
+                return `<div class="hrd-course-item">
+                  <div class="hrd-course-info">
+                    <strong>${c.name}</strong>
+                    <span class="hrd-course-meta">${c.trainPrId} | 기수: ${c.degrs.join(",")}기 (${c.degrs.length}개)${c.startDate ? ` | 개강: ${c.startDate}` : ""}${c.totalDays ? ` | ${c.totalDays}일` : ""}</span>
+                  </div>
+                  <button class="btn-sm btn-danger hrd-course-remove" data-idx="${i}">삭제</button>
+                  <div class="asst-code-section">
+                    <div class="asst-code-header">🔑 보조강사 접근코드</div>
+                    ${codeRows || '<div class="asst-code-empty">등록된 코드 없음</div>'}
+                    <div class="asst-code-add">
+                      <select class="asst-code-degr-select" data-course-idx="${i}">${degrOpts}</select>
+                      <input class="asst-code-input" data-course-idx="${i}" placeholder="코드 입력 (예: kim-llm3)" />
+                      <button class="btn-sm asst-code-save" data-course-idx="${i}" style="background:#6366f1;color:#fff;border:none">저장</button>
+                    </div>
+                    <div class="asst-code-msg" data-course-idx="${i}"></div>
+                  </div>
+                </div>`;
+              },
             )
             .join("");
 
@@ -729,6 +751,45 @@ function renderHrdSettingsSection(): void {
         saveHrdConfig(currentConfig);
         renderHrdSettingsSection();
         populateFilters();
+      });
+    });
+
+    // 보조강사 코드 삭제
+    courseList.querySelectorAll(".asst-code-del").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const code = (btn as HTMLElement).dataset.asstDel;
+        if (code) {
+          removeAssistantCode(code);
+          renderHrdSettingsSection();
+        }
+      });
+    });
+
+    // 보조강사 코드 저장
+    courseList.querySelectorAll(".asst-code-save").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt((btn as HTMLElement).dataset.courseIdx || "0");
+        const course = currentConfig.courses[idx];
+        if (!course) return;
+
+        const row = btn.closest(".asst-code-add");
+        const degrSel = row?.querySelector(".asst-code-degr-select") as HTMLSelectElement | null;
+        const codeInput = row?.querySelector(".asst-code-input") as HTMLInputElement | null;
+        const msgEl = courseList!.querySelector(`.asst-code-msg[data-course-idx="${idx}"]`);
+
+        const code = codeInput?.value.trim() || "";
+        const degr = degrSel?.value || "";
+
+        const error = validateAssistantCode(code);
+        if (error) {
+          if (msgEl) { msgEl.textContent = error; (msgEl as HTMLElement).style.color = "#dc2626"; }
+          return;
+        }
+
+        saveAssistantCode({ code, trainPrId: course.trainPrId, degr, courseName: course.name });
+        if (codeInput) codeInput.value = "";
+        if (msgEl) { msgEl.textContent = ""; (msgEl as HTMLElement).style.color = ""; }
+        renderHrdSettingsSection();
       });
     });
   }
@@ -1172,6 +1233,18 @@ function populateFilters(): void {
       ? course.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("")
       : '<option value="">-</option>';
   }
+
+  // 보조강사 모드: 과정/기수 고정
+  const assistantSession = getAssistantSession();
+  if (assistantSession && courseSelect) {
+    courseSelect.value = assistantSession.trainPrId;
+    courseSelect.disabled = true;
+    updateDegrOptions();
+    if (degrSelect) {
+      degrSelect.value = assistantSession.degr;
+      degrSelect.disabled = true;
+    }
+  }
 }
 
 function getSelectedCourse(): HrdCourse | undefined {
@@ -1300,4 +1373,9 @@ export function initAttendanceDashboard(): void {
 
   // Slack 스케줄러 시작
   startScheduler();
+
+  // 보조강사 모드: 페이지 로드 시 자동 조회
+  if (getAssistantSession()) {
+    void fetchAndRender();
+  }
 }
