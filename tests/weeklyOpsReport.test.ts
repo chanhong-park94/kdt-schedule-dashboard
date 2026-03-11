@@ -58,8 +58,8 @@ function makeTraineeAnalysis(overrides: Partial<TraineeAnalysis> = {}): TraineeA
 
 function makeHrdConfig(): HrdConfig {
   return {
-    courses: [{ name: "과정A", degrs: ["1"], trainPrId: "T001", category: "실업자", startDate: "2026-01-05", endDate: "2026-06-30", saturdayClass: false }],
-    apiBaseUrl: "", authToken: "",
+    courses: [{ name: "과정A", degrs: ["1"], trainPrId: "T001", category: "실업자", startDate: "2026-01-05", totalDays: 100, endTime: "18:00" }],
+    authKey: "", proxy: "",
   } as HrdConfig;
 }
 
