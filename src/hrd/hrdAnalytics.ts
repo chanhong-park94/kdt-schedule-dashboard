@@ -31,6 +31,8 @@ function fmtRate(rate: number): string {
 
 // ─── 데이터 저장 ────────────────────────────────────────────
 let analysisData: TraineeAnalysis[] = [];
+let activeCourseStatusFilter: "" | "진행중" | "종강" = "";
+const CACHE_KEY = "kdt_analytics_cache_v1";
 
 // ─── 연령 파싱 ──────────────────────────────────────────────
 
@@ -84,6 +86,13 @@ async function collectAnalyticsData(
 
   for (const course of config.courses) {
     const category = course.category || "실업자";
+    // 과정 상태 판정: startDate + totalDays(주5일 기준 달력일수 환산)
+    let courseStatus: "진행중" | "종강" = "진행중";
+    if (course.startDate && course.totalDays > 0) {
+      const estimatedEnd = new Date(course.startDate);
+      estimatedEnd.setDate(estimatedEnd.getDate() + Math.ceil(course.totalDays / 5 * 7));
+      courseStatus = estimatedEnd < new Date() ? "종강" : "진행중";
+    }
     for (const degr of course.degrs) {
       done++;
       onProgress?.(`${done}/${totalJobs} 조회 중... (${course.name} ${degr}기)`);
@@ -123,13 +132,31 @@ async function collectAnalyticsData(
           const absentByMonth: number[] = [];
           const startDate = course.startDate ? new Date(course.startDate) : null;
 
-          for (let i = 0; i < myRecords.length; i++) {
-            const dateRaw = (myRecords[i].atendDe || "").toString().replace(/[^0-9]/g, "");
+          // 연속결석 / 지각 시간대 / 주차별 출석 추적용
+          let maxConsecutiveAbsent = 0;
+          let currentConsecutiveAbsent = 0;
+          const lateByHour = [0, 0, 0, 0, 0, 0]; // 7시~12시 (6칸)
+          const weeklyBuckets: Array<{ attended: number; total: number }> = [];
+          let lastAttendedDate: Date | null = null;
+
+          // 날짜순 정렬된 레코드 (안전하게)
+          const sortedIndices = myRecords
+            .map((_, idx) => idx)
+            .sort((a, b) => {
+              const da = (myRecords[a].atendDe || "").toString().replace(/[^0-9]/g, "");
+              const db = (myRecords[b].atendDe || "").toString().replace(/[^0-9]/g, "");
+              return da.localeCompare(db);
+            });
+
+          for (const idx of sortedIndices) {
+            const rec = myRecords[idx];
+            const dateRaw = (rec.atendDe || "").toString().replace(/[^0-9]/g, "");
             if (dateRaw.length < 8) continue;
             const dateStr = `${dateRaw.slice(0, 4)}-${dateRaw.slice(4, 6)}-${dateRaw.slice(6, 8)}`;
             const d = new Date(dateStr);
-            const status = statuses[i];
+            const status = statuses[idx];
 
+            // 요일별/월차별 결석
             if (isAbsentStatus(status)) {
               absentByWeekday[d.getDay()]++;
               if (startDate) {
@@ -139,6 +166,59 @@ async function collectAnalyticsData(
                 if (monthIdx >= 0) absentByMonth[monthIdx]++;
               }
             }
+
+            // 연속결석 추적
+            if (isAbsentStatus(status)) {
+              currentConsecutiveAbsent++;
+              if (currentConsecutiveAbsent > maxConsecutiveAbsent) maxConsecutiveAbsent = currentConsecutiveAbsent;
+            } else if (isAttendedStatus(status) || isExcusedStatus(status)) {
+              currentConsecutiveAbsent = 0;
+              lastAttendedDate = d;
+            }
+
+            // 지각 시간대 분포
+            if (isLateStatus(status)) {
+              const timeIn = (rec.atendTmIn || rec.lpsilTime || "").toString().replace(/[^0-9]/g, "");
+              if (timeIn.length >= 4) {
+                const hour = parseInt(timeIn.slice(0, 2));
+                if (hour >= 7 && hour <= 12) lateByHour[hour - 7]++;
+              }
+            }
+
+            // 주차별 출석률 버킷
+            if (startDate) {
+              const daysDiff = Math.floor((d.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+              const weekIdx = Math.floor(daysDiff / 7);
+              if (weekIdx >= 0) {
+                while (weeklyBuckets.length <= weekIdx) weeklyBuckets.push({ attended: 0, total: 0 });
+                weeklyBuckets[weekIdx].total++;
+                if (isAttendedStatus(status)) weeklyBuckets[weekIdx].attended++;
+              }
+            }
+          }
+
+          // 주차별 출석률 계산
+          const weeklyAttendanceRates = weeklyBuckets.map((b) =>
+            b.total > 0 ? (b.attended / b.total) * 100 : 100
+          );
+
+          // 탈락 시점 (주차)
+          let dropoutWeekIdx = -1;
+          if (dropout && lastAttendedDate && startDate) {
+            const daysDiff = Math.floor((lastAttendedDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            dropoutWeekIdx = Math.max(0, Math.floor(daysDiff / 7));
+          }
+
+          // 경보 사유 판정
+          const alertReasons: string[] = [];
+          if (currentConsecutiveAbsent >= 3) alertReasons.push("연속결석");
+          if (lateDays >= 5) alertReasons.push("상습지각");
+          // 출석률 급락: 최근 2주 vs 이전 2주
+          if (weeklyAttendanceRates.length >= 4) {
+            const len = weeklyAttendanceRates.length;
+            const recent2 = (weeklyAttendanceRates[len - 2] + weeklyAttendanceRates[len - 1]) / 2;
+            const prev2 = (weeklyAttendanceRates[len - 4] + weeklyAttendanceRates[len - 3]) / 2;
+            if (prev2 - recent2 >= 10) alertReasons.push("출석률 급락");
           }
 
           results.push({
@@ -148,6 +228,9 @@ async function collectAnalyticsData(
             attendanceRate, absentDays, lateDays, excusedDays, attendedDays, totalDays,
             dropout, hasAttendanceData,
             absentByWeekday, absentByMonth,
+            maxConsecutiveAbsent, currentConsecutiveAbsent,
+            lateByHour, weeklyAttendanceRates, dropoutWeekIdx, alertReasons,
+            courseStatus,
           });
         }
       } catch (e) {
@@ -223,7 +306,8 @@ function computeSummary(data: TraineeAnalysis[]): AnalyticsSummary {
   const withData = data.filter((d) => d.hasAttendanceData);
   const avgAttendanceRate = withData.length > 0
     ? withData.reduce((sum, d) => sum + d.attendanceRate, 0) / withData.length : 0;
-  return { totalTrainees: total, avgAge, dropoutCount, dropoutRate, avgAttendanceRate };
+  const consecutiveAbsentCount = data.filter((d) => !d.dropout && d.currentConsecutiveAbsent >= 3).length;
+  return { totalTrainees: total, avgAge, dropoutCount, dropoutRate, avgAttendanceRate, consecutiveAbsentCount };
 }
 
 // ─── 인사이트 자동 생성 ──────────────────────────────────────
@@ -234,19 +318,24 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
 
   const overallDropoutRate = data.filter((d) => d.dropout).length / data.length;
 
-  // 연령대별 탈락률
-  const ageGroups: AgeGroup[] = ["10대", "20대", "30대", "40대", "50대+"];
-  for (const ag of ageGroups) {
-    const group = data.filter((d) => d.age > 0 && getAgeGroup(d.age) === ag);
-    if (group.length < 3) continue;
-    const rate = group.filter((d) => d.dropout).length / group.length;
-    if (rate > overallDropoutRate * 1.5 && rate > 0.05) {
-      insights.push({
-        icon: "📊",
-        text: `${ag} 중도탈락률 ${(rate * 100).toFixed(1)}% — 전체 평균(${(overallDropoutRate * 100).toFixed(1)}%) 대비 ${(rate / overallDropoutRate).toFixed(1)}배`,
-        severity: rate > overallDropoutRate * 2 ? "danger" : "warning",
-      });
-    }
+  // 연속결석 경고
+  const consecutiveAbsentStudents = data.filter((d) => !d.dropout && d.currentConsecutiveAbsent >= 3);
+  if (consecutiveAbsentStudents.length > 0) {
+    insights.push({
+      icon: "🚨",
+      text: `연속결석 3일+ ${consecutiveAbsentStudents.length}명 — 즉시 면담 필요`,
+      severity: "danger",
+    });
+  }
+
+  // 상습지각 경고
+  const habitualLateStudents = data.filter((d) => !d.dropout && d.lateDays >= 5);
+  if (habitualLateStudents.length > 0) {
+    insights.push({
+      icon: "⏰",
+      text: `상습지각 5회+ ${habitualLateStudents.length}명 — 지각 사유 확인 필요`,
+      severity: "warning",
+    });
   }
 
   // 과정유형별(재직자/실업자) 탈락률 비교
@@ -341,7 +430,7 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
       <div class="ana-card"><div class="ana-card-value ${rateClass}">${hasRate ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="ana-card-label">평균 출석률</div></div>
       <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
       <div class="ana-card"><div class="ana-card-value" style="color:${atRiskActive.length > 0 ? "#dc2626" : "#059669"}">${atRiskActive.length}명</div><div class="ana-card-label">위험군 (재학)</div><div class="ana-card-sub">출석률 80% 미만</div></div>
-      <div class="ana-card"><div class="ana-card-value">${summary.avgAge > 0 ? summary.avgAge.toFixed(1) + "세" : "-"}</div><div class="ana-card-label">평균 연령</div></div>
+      <div class="ana-card"><div class="ana-card-value" style="color:${summary.consecutiveAbsentCount > 0 ? "#dc2626" : "#059669"}">${summary.consecutiveAbsentCount}명</div><div class="ana-card-label">연속결석 경고</div><div class="ana-card-sub">3일+ 연속결석</div></div>
     `;
   }
 
@@ -424,22 +513,26 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
     compareEl.innerHTML = renderCat("재직자", "🏢", "#5b8ff9") + renderCat("실업자", "📚", "#f7ba1e");
   }
 
-  // ── 연령대 분포 Bar chart ──
-  const ageCtx = ($("chartAgeDistribution") as HTMLCanvasElement)?.getContext("2d");
-  if (ageCtx) {
-    const groups: AgeGroup[] = ["10대", "20대", "30대", "40대", "50대+"];
-    const counts = groups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g).length);
-    const dropouts = groups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g && d.dropout).length);
-    charts.push(new Chart(ageCtx, {
+  // ── 지각 시간대 분포 (horizontal bar) ──
+  const lateHourCtx = ($("chartLateByHour") as HTMLCanvasElement)?.getContext("2d");
+  if (lateHourCtx) {
+    const hourLabels = ["7시대", "8시대", "9시대", "10시대", "11시대", "12시대"];
+    const hourTotals = [0, 0, 0, 0, 0, 0];
+    for (const d of data) {
+      for (let i = 0; i < 6; i++) hourTotals[i] += d.lateByHour[i];
+    }
+    charts.push(new Chart(lateHourCtx, {
       type: "bar",
       data: {
-        labels: groups,
-        datasets: [
-          { label: "재학", data: counts.map((c, i) => c - dropouts[i]), backgroundColor: "#7c5cfc" },
-          { label: "탈락", data: dropouts, backgroundColor: "#f56c6c" },
-        ],
+        labels: hourLabels,
+        datasets: [{ label: "지각 횟수", data: hourTotals, backgroundColor: "#f59e0b" }],
       },
-      options: { responsive: true, plugins: { title: { display: true, text: "연령대 분포 (재학 vs 탈락)" } }, scales: { x: { stacked: true }, y: { stacked: true } } },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        plugins: { legend: { display: false }, title: { display: true, text: "지각 시간대 분포" } },
+        scales: { x: { title: { display: true, text: "지각 횟수" } } },
+      },
     }));
   }
 
@@ -491,10 +584,17 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
     }
   }
 
-  // ── 조기경보: 위험군 훈련생 ──
+  // ── 조기경보: 위험군 훈련생 (다중 조건) ──
   const atRisk = data
-    .filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80)
-    .sort((a, b) => a.attendanceRate - b.attendanceRate);
+    .filter((d) => !d.dropout && d.hasAttendanceData && (
+      d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0
+    ))
+    .sort((a, b) => {
+      // 연속결석 최우선, 그 다음 출석률 오름차순
+      const ca = b.currentConsecutiveAbsent - a.currentConsecutiveAbsent;
+      if (ca !== 0) return ca;
+      return a.attendanceRate - b.attendanceRate;
+    });
   const warningBody = $("anaEarlyWarningBody");
   const warningEmpty = $("anaEarlyWarningEmpty");
   if (warningBody) {
@@ -507,6 +607,10 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
       warningBody.innerHTML = atRisk.map((d) => {
         const riskLevel = d.attendanceRate < 60 ? "high" : d.attendanceRate < 70 ? "mid" : "low";
         const riskLabel = d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰";
+        const alertTags = d.alertReasons.map((r) => {
+          const cls = r === "연속결석" ? "alert-tag--consecutive" : r === "출석률 급락" ? "alert-tag--drop" : "alert-tag--late";
+          return `<span class="alert-tag ${cls}">${r}</span>`;
+        }).join("");
         return `<tr>
           <td><strong>${d.name}</strong></td>
           <td>${d.courseName.length > 14 ? d.courseName.slice(0, 14) + "…" : d.courseName}</td>
@@ -515,6 +619,7 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
           <td>${d.absentDays}일</td>
           <td>${d.lateDays}일</td>
           <td><span class="ana-risk-${riskLevel}">${riskLabel}</span></td>
+          <td>${alertTags || '<span style="color:#9ca3af;">-</span>'}</td>
         </tr>`;
       }).join("");
     }
@@ -561,50 +666,67 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
     }
   }
 
-  // 연령대별 탈락률
-  const ageDropCtx = ($("chartAgeDropout") as HTMLCanvasElement)?.getContext("2d");
-  if (ageDropCtx) {
-    const groups: AgeGroup[] = ["10대", "20대", "30대", "40대", "50대+"];
-    const empRates: number[] = [];
-    const unempRates: number[] = [];
-    for (const g of groups) {
-      const emp = data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g && d.category === "재직자");
-      const unemp = data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g && d.category === "실업자");
-      empRates.push(emp.length > 0 ? (emp.filter((d) => d.dropout).length / emp.length) * 100 : 0);
-      unempRates.push(unemp.length > 0 ? (unemp.filter((d) => d.dropout).length / unemp.length) * 100 : 0);
+  // 탈락 시점 분석 (훈련 주차별 탈락 인원)
+  const dropTimingCtx = ($("chartDropoutTiming") as HTMLCanvasElement)?.getContext("2d");
+  if (dropTimingCtx) {
+    const dropouts = data.filter((d) => d.dropout && d.dropoutWeekIdx >= 0);
+    if (dropouts.length > 0) {
+      const maxWeek = Math.max(...dropouts.map((d) => d.dropoutWeekIdx));
+      const weekLabels = Array.from({ length: maxWeek + 1 }, (_, i) => `${i + 1}주`);
+      const weekCounts = Array.from({ length: maxWeek + 1 }, () => 0);
+      for (const d of dropouts) weekCounts[d.dropoutWeekIdx]++;
+      charts.push(new Chart(dropTimingCtx, {
+        type: "bar",
+        data: {
+          labels: weekLabels,
+          datasets: [{ label: "탈락 인원", data: weekCounts, backgroundColor: "#f56c6c" }],
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false }, title: { display: true, text: "탈락 시점 분석 (훈련 주차별)" } },
+          scales: { y: { title: { display: true, text: "인원" }, beginAtZero: true } },
+        },
+      }));
+    } else {
+      const parent = dropTimingCtx.canvas.parentElement;
+      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">탈락 데이터가 없습니다</div>';
     }
-    charts.push(new Chart(ageDropCtx, {
-      type: "bar",
-      data: {
-        labels: groups,
-        datasets: [
-          { label: "재직자", data: empRates, backgroundColor: "#5b8ff9" },
-          { label: "실업자", data: unempRates, backgroundColor: "#f7ba1e" },
-        ],
-      },
-      options: { responsive: true, plugins: { title: { display: true, text: "연령대별 탈락률 (%)" } }, scales: { y: { min: 0 } } },
-    }));
   }
 
-  // 결석일수 vs 탈락 scatter
-  const scatterCtx = ($("chartAbsentScatter") as HTMLCanvasElement)?.getContext("2d");
-  if (scatterCtx) {
-    const active = data.filter((d) => !d.dropout).map((d) => ({ x: d.absentDays, y: d.attendanceRate }));
-    const dropped = data.filter((d) => d.dropout).map((d) => ({ x: d.absentDays, y: d.attendanceRate }));
-    charts.push(new Chart(scatterCtx, {
-      type: "scatter",
-      data: {
-        datasets: [
-          { label: "수료/재학", data: active, backgroundColor: "rgba(91,143,249,0.5)", pointRadius: 4 },
-          { label: "중도탈락", data: dropped, backgroundColor: "rgba(245,108,108,0.7)", pointRadius: 5 },
-        ],
-      },
-      options: {
-        responsive: true,
-        plugins: { title: { display: true, text: "결석일수 vs 출석률" } },
-        scales: { x: { title: { display: true, text: "결석일수" } }, y: { title: { display: true, text: "출석률 (%)" }, min: 0, max: 110 } },
-      },
-    }));
+  // 위험군 개인별 출결 추이 (multi-line)
+  const trendCtx = ($("chartIndividualTrend") as HTMLCanvasElement)?.getContext("2d");
+  if (trendCtx) {
+    const riskStudents = data
+      .filter((d) => !d.dropout && d.alertReasons.length > 0 && d.weeklyAttendanceRates.length >= 2)
+      .sort((a, b) => a.attendanceRate - b.attendanceRate)
+      .slice(0, 5);
+    if (riskStudents.length > 0) {
+      const maxWeeks = Math.max(...riskStudents.map((d) => d.weeklyAttendanceRates.length));
+      const labels = Array.from({ length: maxWeeks }, (_, i) => `${i + 1}주`);
+      const colors = ["#dc2626", "#d97706", "#7c3aed", "#0891b2", "#059669"];
+      charts.push(new Chart(trendCtx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: riskStudents.map((d, i) => ({
+            label: d.name,
+            data: d.weeklyAttendanceRates,
+            borderColor: colors[i % colors.length],
+            backgroundColor: "transparent",
+            tension: 0.3,
+            pointRadius: 3,
+          })),
+        },
+        options: {
+          responsive: true,
+          plugins: { title: { display: true, text: "위험군 출결 추이 (TOP 5)" } },
+          scales: { y: { title: { display: true, text: "출석률 (%)" }, min: 0, max: 110 } },
+        },
+      }));
+    } else {
+      const parent = trendCtx.canvas.parentElement;
+      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">경고 대상 훈련생이 없습니다</div>';
+    }
   }
 }
 
@@ -716,16 +838,87 @@ function setupTableSort(): void {
   });
 }
 
+// ─── 렌더링 통합 ────────────────────────────────────────────
+
+function renderAllTabs(data: TraineeAnalysis[]): void {
+  destroyCharts();
+  const summary = computeSummary(data);
+  const insights = generateInsights(data);
+  renderOverviewTab(data, summary);
+  renderRiskTab(data, insights);
+  populateFilters(data);
+  renderDetailTab(data);
+}
+
+function getFilteredData(): TraineeAnalysis[] {
+  if (!activeCourseStatusFilter) return analysisData;
+  return analysisData.filter((d) => d.courseStatus === activeCourseStatusFilter);
+}
+
+function updateLastQueried(timestamp: string): void {
+  const lastEl = $("analyticsLastQueried");
+  if (!lastEl) return;
+  const d = new Date(timestamp);
+  lastEl.textContent = `최근 조회: ${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  lastEl.style.display = "";
+}
+
+function saveCache(data: TraineeAnalysis[]): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: new Date().toISOString() }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
+function loadCache(): { data: TraineeAnalysis[]; timestamp: string } | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.data) && parsed.timestamp) return parsed;
+  } catch { /* corrupted */ }
+  return null;
+}
+
+function setupCourseStatusFilter(): void {
+  const container = $("anaCourseStatusFilter");
+  if (!container) return;
+  container.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest("[data-course-status]") as HTMLElement | null;
+    if (!btn) return;
+    container.querySelectorAll(".ana-filter-btn").forEach((b) => b.classList.remove("is-active"));
+    btn.classList.add("is-active");
+    activeCourseStatusFilter = (btn.dataset.courseStatus || "") as "" | "진행중" | "종강";
+    renderAllTabs(getFilteredData());
+  });
+}
+
 // ─── 공개 초기화 함수 ───────────────────────────────────────
 
 export function initAnalytics(): void {
   setupTabs();
   setupTableSort();
+  setupCourseStatusFilter();
 
   const fetchBtn = $("analyticsFetchBtn");
   const statusEl = $("analyticsStatus");
   const contentEl = $("analyticsContent");
   const emptyEl = $("analyticsEmpty");
+
+  // 캐시 로드 — 이전 조회 결과가 있으면 즉시 표시
+  const cached = loadCache();
+  if (cached && cached.data.length > 0) {
+    analysisData = cached.data;
+    if (emptyEl) emptyEl.style.display = "none";
+    if (contentEl) contentEl.style.display = "block";
+    renderAllTabs(getFilteredData());
+    updateLastQueried(cached.timestamp);
+    if (statusEl) {
+      statusEl.textContent = `캐시된 데이터 ${analysisData.length}명 표시 중 (새 데이터는 전체 조회 클릭)`;
+      statusEl.className = "ana-status ana-status-info";
+    }
+    const pdfBtn = $("analyticsPdfBtn") as HTMLButtonElement | null;
+    if (pdfBtn) pdfBtn.disabled = false;
+  }
 
   fetchBtn?.addEventListener("click", async () => {
     if (!fetchBtn || !statusEl) return;
@@ -745,16 +938,24 @@ export function initAnalytics(): void {
         return;
       }
 
-      const summary = computeSummary(analysisData);
-      const insights = generateInsights(analysisData);
-
       if (emptyEl) emptyEl.style.display = "none";
       if (contentEl) contentEl.style.display = "block";
 
-      renderOverviewTab(analysisData, summary);
-      renderRiskTab(analysisData, insights);
-      populateFilters(analysisData);
-      renderDetailTab(analysisData);
+      // 필터 초기화
+      activeCourseStatusFilter = "";
+      const filterContainer = $("anaCourseStatusFilter");
+      if (filterContainer) {
+        filterContainer.querySelectorAll(".ana-filter-btn").forEach((b, i) => {
+          b.classList.toggle("is-active", i === 0);
+        });
+      }
+
+      renderAllTabs(analysisData);
+
+      // 캐시 저장 + 타임스탬프
+      const now = new Date().toISOString();
+      saveCache(analysisData);
+      updateLastQueried(now);
 
       statusEl.textContent = `✅ ${analysisData.length}명 분석 완료`;
       statusEl.className = "ana-status ana-status-success";
@@ -785,10 +986,11 @@ function printAnalyticsReport(data: TraineeAnalysis[]): void {
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
 
-  // 연령대 분포
-  const ageGroups: AgeGroup[] = ["10대", "20대", "30대", "40대", "50대+"];
-  const ageCounts = ageGroups.map((g) => data.filter((d) => d.age > 0 && getAgeGroup(d.age) === g).length);
-  const maxAgeCount = Math.max(...ageCounts, 1);
+  // 지각 시간대 분포
+  const lateHourLabels = ["7시대", "8시대", "9시대", "10시대", "11시대", "12시대"];
+  const lateHourTotals = [0, 0, 0, 0, 0, 0];
+  for (const d of data) { for (let i = 0; i < 6; i++) lateHourTotals[i] += d.lateByHour[i]; }
+  const maxLateHour = Math.max(...lateHourTotals, 1);
 
   // 과정·기수별 통계
   const courseNames = [...new Set(data.map((d) => d.courseName))];
@@ -807,8 +1009,16 @@ function printAnalyticsReport(data: TraineeAnalysis[]): void {
     g.dropoutRate = (g.dropouts / g.count) * 100;
   }
 
-  // 위험군 훈련생
-  const atRiskList = data.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80).sort((a, b) => a.attendanceRate - b.attendanceRate);
+  // 위험군 훈련생 (다중 조건)
+  const atRiskList = data
+    .filter((d) => !d.dropout && d.hasAttendanceData && (
+      d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0
+    ))
+    .sort((a, b) => {
+      const ca = b.currentConsecutiveAbsent - a.currentConsecutiveAbsent;
+      if (ca !== 0) return ca;
+      return a.attendanceRate - b.attendanceRate;
+    });
 
   // 요일별 결석
   const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
@@ -838,7 +1048,7 @@ h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
 h2 { font-size: 15px; font-weight: 700; color: #374151; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #e5e7eb; }
 h3 { font-size: 13px; font-weight: 700; color: #374151; margin: 14px 0 6px; }
 
-.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
 .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
 .card-value { font-size: 22px; font-weight: 800; color: #1e293b; }
 .card-label { font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .3px; }
@@ -875,13 +1085,14 @@ tr:nth-child(even) { background: #fafbfc; }
   <div class="card"><div class="card-value">${summary.avgAttendanceRate > 0 ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="card-label">평균 출석률</div></div>
   <div class="card"><div class="card-value">${summary.dropoutRate.toFixed(1)}%</div><div class="card-label">중도탈락률 (${summary.dropoutCount}명)</div></div>
   <div class="card"><div class="card-value" style="color:${atRiskList.length > 0 ? "#dc2626" : "#059669"}">${atRiskList.length}명</div><div class="card-label">위험군 (출석률 80% 미만)</div></div>
+  <div class="card"><div class="card-value" style="color:${summary.consecutiveAbsentCount > 0 ? "#dc2626" : "#059669"}">${summary.consecutiveAbsentCount}명</div><div class="card-label">연속결석 경고 (3일+)</div></div>
 </div>
 
-<h2>연령대 분포</h2>
+<h2>지각 시간대 분포</h2>
 <div class="bar-chart">
-${ageGroups.map((g, i) => `<div class="bar-row">
-  <span class="bar-label">${g}</span>
-  <div class="bar-track"><div class="bar-fill" style="width:${(ageCounts[i] / maxAgeCount * 100).toFixed(0)}%;background:#7c5cfc;">${ageCounts[i]}</div></div>
+${lateHourLabels.map((label, i) => `<div class="bar-row">
+  <span class="bar-label">${label}</span>
+  <div class="bar-track"><div class="bar-fill" style="width:${(lateHourTotals[i] / maxLateHour * 100).toFixed(0)}%;background:#f59e0b;">${lateHourTotals[i]}</div></div>
 </div>`).join("")}
 </div>
 
@@ -909,9 +1120,9 @@ ${courseDegrStats.map((c) => `<tr>
 </tr>`).join("")}
 </tbody></table>
 
-${atRiskList.length > 0 ? `<h2>⚠️ 위험군 훈련생 (출석률 80% 미만 재학생)</h2>
+${atRiskList.length > 0 ? `<h2>⚠️ 조기경보 대상 훈련생</h2>
 <table class="course-table">
-<thead><tr><th>이름</th><th>과정</th><th>기수</th><th>출석률</th><th>결석</th><th>지각</th><th>위험도</th></tr></thead>
+<thead><tr><th>이름</th><th>과정</th><th>기수</th><th>출석률</th><th>결석</th><th>지각</th><th>위험도</th><th>경고사유</th></tr></thead>
 <tbody>
 ${atRiskList.map((d) => `<tr>
   <td><strong>${d.name}</strong></td>
@@ -921,6 +1132,7 @@ ${atRiskList.map((d) => `<tr>
   <td>${d.absentDays}일</td>
   <td>${d.lateDays}일</td>
   <td><span class="chip ${d.attendanceRate < 60 ? "chip-dropout" : "chip-active"}" style="${d.attendanceRate < 60 ? "" : "background:#fef3c7;color:#92400e;"}">${d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰"}</span></td>
+  <td>${d.alertReasons.length > 0 ? d.alertReasons.join(", ") : "-"}</td>
 </tr>`).join("")}
 </tbody></table>` : ""}
 

@@ -21,6 +21,20 @@ export interface TraineeAnalysis {
   absentByWeekday: number[];
   /** 월차별 결석 (개강 후 1월차, 2월차...) */
   absentByMonth: number[];
+  /** 최대 연속결석 일수 */
+  maxConsecutiveAbsent: number;
+  /** 현재 진행중 연속결석 일수 */
+  currentConsecutiveAbsent: number;
+  /** 시간대별 지각 분포 [7시,8시,...12시] (6칸) */
+  lateByHour: number[];
+  /** 주차별 출석률 배열 */
+  weeklyAttendanceRates: number[];
+  /** 탈락 시점 (개강 후 주차, -1=미탈락) */
+  dropoutWeekIdx: number;
+  /** 경보 사유 태그 배열 */
+  alertReasons: string[];
+  /** 과정 상태: 진행중 or 종강 */
+  courseStatus: "진행중" | "종강";
 }
 
 export interface AnalyticsSummary {
@@ -29,6 +43,8 @@ export interface AnalyticsSummary {
   dropoutCount: number;
   dropoutRate: number;
   avgAttendanceRate: number;
+  /** 연속결석 3일+ 학생 수 */
+  consecutiveAbsentCount: number;
 }
 
 export interface InsightCard {

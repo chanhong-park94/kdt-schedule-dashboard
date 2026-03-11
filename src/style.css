@@ -3819,6 +3819,20 @@ tbody tr:hover {
 .ana-risk-mid  { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #92400e; }
 .ana-risk-low  { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #dbeafe; color: #1e40af; }
 
+/* Analytics course status filter */
+.ana-status-filter { display: flex; gap: 6px; }
+.ana-filter-btn { padding: 4px 14px; border: 1px solid #d1d5db; border-radius: 16px; background: #fff; font-size: 12px; font-weight: 600; color: #6b7280; cursor: pointer; transition: all .15s; }
+.ana-filter-btn:hover { border-color: #9ca3af; }
+.ana-filter-btn.is-active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+/* Last queried timestamp */
+.ana-last-queried { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+
+/* Alert tags for early warning table */
+.alert-tag { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 4px; font-weight: 600; }
+.alert-tag--consecutive { background: #fee2e2; color: #991b1b; }
+.alert-tag--drop { background: #fef3c7; color: #92400e; }
+.alert-tag--late { background: #e0e7ff; color: #3730a3; }
+
 .ana-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 
 .ana-insight { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; padding: 10px 14px; border-radius: 8px; font-weight: 500; margin-bottom: 6px; }
