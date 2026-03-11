@@ -1,11 +1,29 @@
-function readProcessEnv(key: string): string {
-  const value = process.env[key];
-  return typeof value === "string" ? value.trim() : "";
+function readEnvValue(key: string): string {
+  // 1. Vite browser builds: import.meta.env is replaced at build time
+  try {
+    const metaEnv = (import.meta as unknown as { env?: Record<string, string> }).env;
+    if (metaEnv) {
+      const v = metaEnv[key];
+      if (typeof v === "string" && v.trim().length > 0) return v.trim();
+    }
+  } catch {
+    /* import.meta not available */
+  }
+
+  // 2. Node.js / vitest: process.env is available
+  try {
+    const v = process.env[key];
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  } catch {
+    /* process not available in browser */
+  }
+
+  return "";
 }
 
 export function readClientEnv(keys: string[]): string {
   for (const key of keys) {
-    const fromProcess = readProcessEnv(key);
+    const fromProcess = readEnvValue(key);
     if (fromProcess.length > 0) {
       return fromProcess;
     }
@@ -19,7 +37,7 @@ export function assertClientEnv(keys: string[]): string {
     throw new RangeError("assertClientEnv: keys 배열이 비어 있습니다.");
   }
   for (const key of keys) {
-    const value = readProcessEnv(key);
+    const value = readEnvValue(key);
     if (value.length > 0) {
       return value;
     }
@@ -30,10 +48,10 @@ export function assertClientEnv(keys: string[]): string {
 }
 
 export function isDevRuntime(): boolean {
-  const nodeEnv = readProcessEnv("NODE_ENV");
+  const nodeEnv = readEnvValue("NODE_ENV");
   return nodeEnv !== "production";
 }
 
 export function isProdRuntime(): boolean {
-  return readProcessEnv("NODE_ENV") === "production";
+  return readEnvValue("NODE_ENV") === "production";
 }
