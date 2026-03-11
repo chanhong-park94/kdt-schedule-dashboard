@@ -431,6 +431,21 @@ function applyAssistantMode(courseName: string, degr: string): void {
   // 하차방어율 탭 숨김
   const dropoutTab = document.getElementById("attTabDropout");
   if (dropoutTab) dropoutTab.style.display = "none";
+
+  // 과정/기수 드롭다운 고정
+  const session = getAssistantSession();
+  if (session) {
+    const courseSelect = document.getElementById("attFilterCourse") as HTMLSelectElement | null;
+    const degrSelect = document.getElementById("attFilterDegr") as HTMLSelectElement | null;
+    if (courseSelect) {
+      courseSelect.value = session.trainPrId;
+      courseSelect.disabled = true;
+    }
+    if (degrSelect) {
+      degrSelect.value = session.degr;
+      degrSelect.disabled = true;
+    }
+  }
 }
 
 function handleLogout(): void {

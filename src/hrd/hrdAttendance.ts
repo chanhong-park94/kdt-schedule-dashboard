@@ -690,7 +690,7 @@ function openRiskPanel(): void {
 // ─── Settings Integration ───────────────────────────────────
 
 function renderHrdSettingsSection(): void {
-  const container = $("hrdSettingsSection");
+  const container = $("settingsCourseRegistration") ?? $("hrdSettingsSection");
   if (!container) return;
 
   currentConfig = loadHrdConfig();
