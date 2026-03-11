@@ -379,7 +379,7 @@ async function bootstrapAppAfterAuthLogin(): Promise<void> {
   await loadManagementDataFromCloudFallback();
 }
 
-function submitAuthCode(): void {
+async function submitAuthCode(): Promise<void> {
   const code = authCodeInput.value.trim();
 
   // 1) 관리자 코드
@@ -391,19 +391,26 @@ function submitAuthCode(): void {
     return;
   }
 
-  // 2) 보조강사 코드
-  const assistant = findAssistantCode(code);
-  if (assistant) {
-    sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
-    setAssistantSession({
-      role: "assistant",
-      trainPrId: assistant.trainPrId,
-      degr: assistant.degr,
-      courseName: assistant.courseName,
-    });
-    applyAuthGate(true);
-    applyAssistantMode(assistant.courseName, assistant.degr);
-    void bootstrapAppAfterAuthLogin();
+  // 2) 보조강사 코드 (Supabase 조회)
+  try {
+    const assistant = await findAssistantCode(code);
+    if (assistant) {
+      sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
+      setAssistantSession({
+        role: "assistant",
+        trainPrId: assistant.trainPrId,
+        degr: assistant.degr,
+        courseName: assistant.courseName,
+      });
+      applyAuthGate(true);
+      applyAssistantMode(assistant.courseName, assistant.degr);
+      void bootstrapAppAfterAuthLogin();
+      return;
+    }
+  } catch {
+    // Supabase 연결 실패 시 에러 표시
+    authStatus.textContent = "서버 연결에 실패했습니다. 잠시 후 다시 시도하세요.";
+    authCodeInput.select();
     return;
   }
 
@@ -2333,7 +2340,7 @@ async function handleLoadDemoSampleButtonClick(): Promise<void> {
 function handleAuthCodeInputKeydown(event: KeyboardEvent): void {
   if (event.key === "Enter") {
     event.preventDefault();
-    submitAuthCode();
+    void submitAuthCode();
   }
 }
 

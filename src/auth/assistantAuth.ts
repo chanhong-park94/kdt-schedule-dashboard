@@ -1,3 +1,6 @@
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { readClientEnv } from "../core/env";
+
 export interface AssistantCode {
   code: string;
   trainPrId: string;
@@ -6,53 +9,102 @@ export interface AssistantCode {
   createdAt: string;
 }
 
-const STORAGE_KEY = "kdt_assistant_codes_v1";
 const ADMIN_CODE = "v2";
+const TABLE = "assistant_codes";
 
-export function loadAssistantCodes(): AssistantCode[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AssistantCode[]) : [];
-  } catch {
-    return [];
-  }
+// ─── Supabase Client (reuse same env vars) ──────────────────
+
+const rawUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
+const rawKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+const supabaseUrl = typeof rawUrl === "string" ? rawUrl.trim() : "";
+const supabaseKey = typeof rawKey === "string" ? rawKey.trim() : "";
+const hasConfig = supabaseUrl.length > 0 && supabaseKey.length > 0;
+
+const client: SupabaseClient | null = hasConfig
+  ? createClient(supabaseUrl, supabaseKey, {
+      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    })
+  : null;
+
+function getClient(): SupabaseClient {
+  if (!client) throw new Error("Supabase 설정이 없습니다. 보조강사 코드를 사용하려면 Supabase를 설정하세요.");
+  return client;
 }
 
-function saveCodes(codes: AssistantCode[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(codes));
+// ─── DB Row type ─────────────────────────────────────────────
+
+type AssistantCodeRow = {
+  id: string;
+  code: string;
+  train_pr_id: string;
+  degr: string;
+  course_name: string;
+  created_at: string | null;
+};
+
+function toAssistantCode(row: AssistantCodeRow): AssistantCode {
+  return {
+    code: row.code,
+    trainPrId: row.train_pr_id,
+    degr: row.degr,
+    courseName: row.course_name,
+    createdAt: row.created_at ?? "",
+  };
 }
 
-export function saveAssistantCode(entry: Omit<AssistantCode, "createdAt">): void {
-  const codes = loadAssistantCodes();
-  const idx = codes.findIndex((c) => c.code === entry.code);
-  const full: AssistantCode = { ...entry, createdAt: new Date().toISOString() };
-  if (idx >= 0) {
-    codes[idx] = full;
-  } else {
-    codes.push(full);
-  }
-  saveCodes(codes);
+// ─── CRUD (async, Supabase-backed) ──────────────────────────
+
+export async function loadAssistantCodes(): Promise<AssistantCode[]> {
+  const supabase = getClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("id,code,train_pr_id,degr,course_name,created_at")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => toAssistantCode(row as AssistantCodeRow));
 }
 
-export function removeAssistantCode(code: string): void {
-  const codes = loadAssistantCodes().filter((c) => c.code !== code);
-  saveCodes(codes);
+export async function saveAssistantCode(entry: Omit<AssistantCode, "createdAt">): Promise<void> {
+  const supabase = getClient();
+  const { error } = await supabase
+    .from(TABLE)
+    .upsert(
+      { code: entry.code, train_pr_id: entry.trainPrId, degr: entry.degr, course_name: entry.courseName },
+      { onConflict: "code" },
+    );
+
+  if (error) throw new Error(error.message);
 }
 
-export function findAssistantCode(code: string): AssistantCode | null {
-  return loadAssistantCodes().find((c) => c.code === code) ?? null;
+export async function removeAssistantCode(code: string): Promise<void> {
+  const supabase = getClient();
+  const { error } = await supabase.from(TABLE).delete().eq("code", code);
+  if (error) throw new Error(error.message);
+}
+
+export async function findAssistantCode(code: string): Promise<AssistantCode | null> {
+  const supabase = getClient();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("id,code,train_pr_id,degr,course_name,created_at")
+    .eq("code", code)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? toAssistantCode(data as AssistantCodeRow) : null;
 }
 
 /** null = valid, string = error message */
-export function validateAssistantCode(code: string): string | null {
+export async function validateAssistantCode(code: string): Promise<string | null> {
   if (!code.trim()) return "코드를 입력하세요.";
   if (code === ADMIN_CODE) return "관리자 인증코드와 동일한 코드는 사용할 수 없습니다.";
-  const existing = loadAssistantCodes();
-  if (existing.some((c) => c.code === code)) return "이미 사용 중인 코드입니다.";
+  const existing = await findAssistantCode(code);
+  if (existing) return "이미 사용 중인 코드입니다.";
   return null;
 }
 
-// ─── Session Management ─────────────────────────────
+// ─── Session Management (sessionStorage — per-tab) ──────────
 
 export interface AssistantSession {
   role: "assistant";

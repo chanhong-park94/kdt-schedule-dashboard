@@ -100,7 +100,7 @@ export interface HandlerSet {
   // Demo / auth
   onLoadDemoSampleButtonClick: () => Promise<void>;
   onRestorePreviousStateButtonClick: () => void;
-  onAuthLoginButtonClick: () => void;
+  onAuthLoginButtonClick: () => void | Promise<void>;
   onAuthCodeInputKeydown: (event: KeyboardEvent) => void;
   // Schedule inputs
   onScheduleInputInput: () => void;

@@ -689,7 +689,7 @@ function openRiskPanel(): void {
 
 // ─── Settings Integration ───────────────────────────────────
 
-function renderHrdSettingsSection(): void {
+async function renderHrdSettingsSection(): Promise<void> {
   const container = $("settingsCourseRegistration") ?? $("hrdSettingsSection");
   if (!container) return;
 
@@ -708,13 +708,21 @@ function renderHrdSettingsSection(): void {
   if (slackInput && isUnlocked) slackInput.value = currentConfig.slackWebhookUrl || "";
 
   if (courseList) {
+    // Supabase에서 보조강사 코드 비동기 조회
+    let allAsstCodes: Awaited<ReturnType<typeof loadAssistantCodes>> = [];
+    try {
+      allAsstCodes = await loadAssistantCodes();
+    } catch {
+      // Supabase 미설정 시 빈 배열
+    }
+
     courseList.innerHTML =
       currentConfig.courses.length === 0
         ? '<div class="att-empty-mini">등록된 과정이 없습니다. "기본 과정 복원" 버튼을 눌러주세요.</div>'
         : currentConfig.courses
             .map(
               (c, i) => {
-                const asstCodes = loadAssistantCodes().filter((ac) => ac.trainPrId === c.trainPrId);
+                const asstCodes = allAsstCodes.filter((ac) => ac.trainPrId === c.trainPrId);
                 const codeRows = asstCodes.map((ac) =>
                   `<div class="asst-code-row" data-asst-code="${ac.code}">
                     <span class="asst-code-degr">${ac.degr}기</span>
@@ -749,25 +757,27 @@ function renderHrdSettingsSection(): void {
         const idx = parseInt((btn as HTMLElement).dataset.idx || "0");
         currentConfig.courses.splice(idx, 1);
         saveHrdConfig(currentConfig);
-        renderHrdSettingsSection();
+        void renderHrdSettingsSection();
         populateFilters();
       });
     });
 
     // 보조강사 코드 삭제
     courseList.querySelectorAll(".asst-code-del").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const code = (btn as HTMLElement).dataset.asstDel;
         if (code) {
-          removeAssistantCode(code);
-          renderHrdSettingsSection();
+          try {
+            await removeAssistantCode(code);
+          } catch { /* ignore */ }
+          void renderHrdSettingsSection();
         }
       });
     });
 
     // 보조강사 코드 저장
     courseList.querySelectorAll(".asst-code-save").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const idx = parseInt((btn as HTMLElement).dataset.courseIdx || "0");
         const course = currentConfig.courses[idx];
         if (!course) return;
@@ -780,16 +790,20 @@ function renderHrdSettingsSection(): void {
         const code = codeInput?.value.trim() || "";
         const degr = degrSel?.value || "";
 
-        const error = validateAssistantCode(code);
-        if (error) {
-          if (msgEl) { msgEl.textContent = error; (msgEl as HTMLElement).style.color = "#dc2626"; }
-          return;
-        }
+        try {
+          const error = await validateAssistantCode(code);
+          if (error) {
+            if (msgEl) { msgEl.textContent = error; (msgEl as HTMLElement).style.color = "#dc2626"; }
+            return;
+          }
 
-        saveAssistantCode({ code, trainPrId: course.trainPrId, degr, courseName: course.name });
-        if (codeInput) codeInput.value = "";
-        if (msgEl) { msgEl.textContent = ""; (msgEl as HTMLElement).style.color = ""; }
-        renderHrdSettingsSection();
+          await saveAssistantCode({ code, trainPrId: course.trainPrId, degr, courseName: course.name });
+          if (codeInput) codeInput.value = "";
+          if (msgEl) { msgEl.textContent = ""; (msgEl as HTMLElement).style.color = ""; }
+          void renderHrdSettingsSection();
+        } catch (e) {
+          if (msgEl) { msgEl.textContent = `저장 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`; (msgEl as HTMLElement).style.color = "#dc2626"; }
+        }
       });
     });
   }
@@ -984,7 +998,7 @@ function setupSettingsHandlers(): void {
       endTime,
     });
     saveHrdConfig(currentConfig);
-    renderHrdSettingsSection();
+    void renderHrdSettingsSection();
     populateFilters();
 
     // Clear inputs
@@ -1001,7 +1015,7 @@ function setupSettingsHandlers(): void {
   resetBtn?.addEventListener("click", () => {
     currentConfig.courses = DEFAULT_COURSES.map((c) => ({ ...c, degrs: [...c.degrs] }));
     saveHrdConfig(currentConfig);
-    renderHrdSettingsSection();
+    void renderHrdSettingsSection();
     populateFilters();
     const status = $("hrdTestStatus");
     if (status) {
@@ -1042,7 +1056,7 @@ function setupSettingsHandlers(): void {
     if (updated) {
       saveHrdConfig(config);
       currentConfig = config;
-      renderHrdSettingsSection();
+      void renderHrdSettingsSection();
       populateFilters();
     }
 
@@ -1368,7 +1382,7 @@ export function initAttendanceDashboard(): void {
   });
 
   // Settings section
-  renderHrdSettingsSection();
+  void renderHrdSettingsSection();
   setupSettingsHandlers();
 
   // Slack 스케줄러 시작
