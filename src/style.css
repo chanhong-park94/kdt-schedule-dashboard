@@ -5271,3 +5271,41 @@ tbody tr:hover {
     align-items: stretch;
   }
 }
+
+/* ── Weekly Ops Report Settings ── */
+.weekly-report-data-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.weekly-report-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #92400e;
+}
+.weekly-report-indicator.is-ok {
+  background: #d1fae5;
+  color: #065f46;
+}
+.weekly-report-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.weekly-report-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.weekly-report-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}

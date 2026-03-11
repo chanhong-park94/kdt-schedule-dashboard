@@ -751,6 +751,9 @@ async function fetchAndRenderDropout(): Promise<void> {
   }
 }
 
+// ─── Data Getter (for reports) ───────────────────────────────
+export function getCachedDropoutData(): DropoutRosterEntry[] { return dropoutData; }
+
 export function initDropoutDashboard(): void {
   // Query button
   const queryBtn = $("doQueryBtn");

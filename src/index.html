@@ -2076,6 +2076,41 @@
             </div>
           </div>
 
+          <!-- 주간 운영회의 보고팩 -->
+          <div class="settings-section" id="settingsWeeklyReport" data-page-group="settings">
+            <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
+              <span class="settings-icon">📊</span>
+              <div class="settings-title">
+                <strong>주간 운영회의 보고팩</strong>
+                <div class="muted">출결, 하차방어율, KPI 데이터를 인쇄용 보고서로 생성합니다</div>
+              </div>
+              <span class="settings-chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="settings-section-body is-collapsed">
+              <div id="weeklyReportDataStatus" class="weekly-report-data-status"></div>
+              <div class="weekly-report-pages u-mt-8">
+                <label class="weekly-report-check">
+                  <input type="checkbox" id="weeklyReportPage3" checked />
+                  <span>3장: 출결·관리대상 현황</span>
+                </label>
+                <label class="weekly-report-check">
+                  <input type="checkbox" id="weeklyReportPage4" checked />
+                  <span>4장: 하차방어율·조기경보</span>
+                </label>
+                <label class="weekly-report-check">
+                  <input type="checkbox" id="weeklyReportPage5" />
+                  <span>5장: 학습 품질·성과 (KPI)</span>
+                </label>
+              </div>
+              <div class="row u-mt-10 u-row-center">
+                <button id="weeklyReportGenerateBtn" type="button" style="background:#6366f1;color:#fff;padding:8px 20px;border:none;border-radius:6px;font-weight:600;cursor:pointer">
+                  📄 보고팩 생성
+                </button>
+              </div>
+              <div id="weeklyReportStatus" class="muted u-mt-6"></div>
+            </div>
+          </div>
+
           <div class="settings-section simple-hidden" id="sectionStateManagement" data-page-group="settings">
             <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
               <span class="settings-icon">💾</span>

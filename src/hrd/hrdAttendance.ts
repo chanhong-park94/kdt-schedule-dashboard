@@ -1246,6 +1246,11 @@ async function fetchAndRender(): Promise<void> {
   }
 }
 
+// ─── Data Getters (for reports) ──────────────────────────────
+export function getCachedAttendanceStudents(): AttendanceStudent[] { return currentStudents; }
+export function getCachedDailyRecords(): Map<string, AttendanceDayRecord[]> { return allDailyRecords; }
+export function getCachedHrdConfig(): HrdConfig { return currentConfig; }
+
 // ─── Init ───────────────────────────────────────────────────
 
 export function initAttendanceDashboard(): void {

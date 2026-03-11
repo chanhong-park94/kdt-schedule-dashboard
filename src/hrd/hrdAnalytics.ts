@@ -1022,6 +1022,9 @@ function setupCourseStatusFilter(): void {
   });
 }
 
+// ─── Data Getter (for reports) ───────────────────────────────
+export function getCachedAnalysisData(): TraineeAnalysis[] { return analysisData; }
+
 // ─── 공개 초기화 함수 ───────────────────────────────────────
 
 export function initAnalytics(): void {
