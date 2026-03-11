@@ -3248,11 +3248,10 @@ function renderInitialUiState(): void {
   renderScheduleTemplateOptions();
   renderHolidayAndBreakLists();
   renderGeneratedScheduleResult();
-  renderTimeline();
+  regenerateSummariesAndTimeline();
   renderErrors();
   renderHrdValidationErrors();
   renderTimeConflicts();
-  renderStaffingSection();
   setConflictTab("time");
   updateActionStates();
 }
