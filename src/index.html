@@ -1658,17 +1658,33 @@
         <div id="hrdDiscoverStatus" style="font-size:12px;color:#6b7280;margin-bottom:6px;display:none;"></div>
         <div id="hrdCourseList" class="hrd-course-list"></div>
         <div class="hrd-add-course">
-          <div class="hrd-add-row">
-            <input type="text" id="hrdNewCourseName" class="hrd-input" placeholder="과정명" />
-            <input type="text" id="hrdNewCourseId" class="hrd-input" placeholder="훈련과정ID (srchTrprId)" />
-            <input type="text" id="hrdNewCourseDegrs" class="hrd-input hrd-input-sm" placeholder="기수 (예: 1,2,3)" />
+          <div class="hrd-add-grid">
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseName">과정명</label>
+              <input type="text" id="hrdNewCourseName" class="hrd-input" placeholder="예: 데이터 분석 과정" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseId">훈련과정 ID</label>
+              <input type="text" id="hrdNewCourseId" class="hrd-input" placeholder="srchTrprId" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseDegrs">기수</label>
+              <input type="text" id="hrdNewCourseDegrs" class="hrd-input" placeholder="예: 1,2,3" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseStart">개강일</label>
+              <input type="date" id="hrdNewCourseStart" class="hrd-input" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseDays">총 훈련일수</label>
+              <input type="number" id="hrdNewCourseDays" class="hrd-input" placeholder="예: 120" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseEndTime">수업 종료시간</label>
+              <input type="time" id="hrdNewCourseEndTime" class="hrd-input" value="18:00" />
+            </div>
           </div>
-          <div class="hrd-add-row u-mt-4">
-            <input type="date" id="hrdNewCourseStart" class="hrd-input" />
-            <input type="number" id="hrdNewCourseDays" class="hrd-input hrd-input-sm" placeholder="총 훈련일수" />
-            <input type="time" id="hrdNewCourseEndTime" class="hrd-input hrd-input-sm" value="18:00" />
-            <button id="hrdCourseAdd" class="btn-primary btn-sm" type="button">+ 추가</button>
-          </div>
+          <button id="hrdCourseAdd" class="btn-primary btn-sm u-mt-6" type="button" style="width:100%">+ 추가</button>
         </div>
       </div>
     </div>

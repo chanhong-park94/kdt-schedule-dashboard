@@ -111,17 +111,34 @@ function buildMonthAxis(globalStart: number, globalEnd: number): MonthAxisItem[]
   const endDate = new Date(globalEnd);
   const cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
 
+  // 전체 월 개수 계산하여 라벨 밀도 결정
+  const totalMonths = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12
+    + (endDate.getUTCMonth() - startDate.getUTCMonth()) + 1;
+  // 12개월 이하: 매월 표시, 13~24: 격월, 25+: 3개월 간격
+  const step = totalMonths <= 12 ? 1 : totalMonths <= 24 ? 2 : 3;
+  let idx = 0;
+
   while (cursor.getTime() <= endDate.getTime()) {
     const leftPercent = ((cursor.getTime() - globalStart) / span) * 100;
     const safeLeft = Math.max(0, Math.min(100, leftPercent));
     const year = cursor.getUTCFullYear();
-    const month = String(cursor.getUTCMonth() + 1).padStart(2, "0");
+    const monthNum = cursor.getUTCMonth() + 1;
+    const month = String(monthNum).padStart(2, "0");
+
+    // 라벨: 1월이면 "YYYY-01", 그 외 "MM" (밀도가 높을 때 축약)
+    const showLabel = idx % step === 0;
+    let label = "";
+    if (showLabel) {
+      label = (monthNum === 1 || idx === 0) ? `${year}-${month}` : month;
+    }
+
     axis.push({
       key: `${year}-${month}`,
-      label: `${year}-${month}`,
+      label,
       leftPercent: safeLeft
     });
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    idx++;
   }
 
   return axis;
@@ -278,7 +295,7 @@ function renderCohortTimelineView(
       globalStart,
       globalEnd,
       title: `시작일: ${formatDate(item.startDate)}\n종료일: ${formatDate(item.endDate)}\n훈련일수: ${item.summary.훈련일수}\n수업시간표 건수: ${item.summary.세션수}\n${instructorText}\n전체 강사: ${instructorTooltip}`,
-      barText: `${formatShortDateFromCompact(item.summary.시작일)} -> ${formatShortDateFromCompact(item.summary.종료일)}`,
+      barText: item.summary.훈련일수 > 0 ? `${item.summary.훈련일수}일` : "",
       barDateText: `${formatShortDateFromCompact(item.summary.시작일)} -> ${formatShortDateFromCompact(item.summary.종료일)}`,
       barColor: instructorMeta?.barColor,
       monthAxis,
