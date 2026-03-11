@@ -15,7 +15,7 @@ Chart.register(...registerables);
 
 // ─── KPI Targets ─────────────────────────────────────────────
 const KPI_TARGET = {
-  employed: 75,   // 재직자 과정 목표 75%
+  employed: 75, // 재직자 과정 목표 75%
   unemployed: 85, // 실업자 과정 목표 85%
 } as const;
 
@@ -85,10 +85,7 @@ function isDropout(raw: HrdRawTrainee): boolean {
   return stNm.includes("중도탈락") || stNm.includes("수료포기");
 }
 
-async function fetchAllRosters(
-  config: HrdConfig,
-  onProgress?: (msg: string) => void,
-): Promise<DropoutRosterEntry[]> {
+async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => void): Promise<DropoutRosterEntry[]> {
   const results: DropoutRosterEntry[] = [];
   const total = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
   let done = 0;
@@ -152,7 +149,10 @@ function getOverallSummary(): DropoutSummary {
 }
 
 function getCategorySummary(cat: CourseCategory): DropoutSummary {
-  return aggregateEntries(dropoutData.filter((e) => e.category === cat), cat);
+  return aggregateEntries(
+    dropoutData.filter((e) => e.category === cat),
+    cat,
+  );
 }
 
 function getCourseSummaries(): DropoutSummary[] {
@@ -201,8 +201,13 @@ function renderSubtotalRow(label: string, entries: DropoutRosterEntry[], colSpan
   const summary = aggregateEntries(entries, label);
   if (entries.length === 0) return "";
   // 카테고리 기반 색상
-  const cats = new Set(entries.map(e => e.category));
-  const mainCat: CourseCategory = cats.has("재직자") && !cats.has("실업자") ? "재직자" : cats.has("실업자") && !cats.has("재직자") ? "실업자" : "실업자";
+  const cats = new Set(entries.map((e) => e.category));
+  const mainCat: CourseCategory =
+    cats.has("재직자") && !cats.has("실업자")
+      ? "재직자"
+      : cats.has("실업자") && !cats.has("재직자")
+        ? "실업자"
+        : "실업자";
   const rateClass = rateClassByTarget(summary.defenseRate, mainCat);
   const target = getTargetRate(mainCat);
   const diff = summary.defenseRate - target;
@@ -406,8 +411,8 @@ function populateMonthlyFilters(): void {
     if (y) years.add(y);
   }
   const sortedYears = Array.from(years).sort();
-  yearSel.innerHTML = `<option value="0">전체</option>` +
-    sortedYears.map((y) => `<option value="${y}">${y}년</option>`).join("");
+  yearSel.innerHTML =
+    `<option value="0">전체</option>` + sortedYears.map((y) => `<option value="${y}">${y}년</option>`).join("");
 
   // 현재 연도 기본 선택
   const currentYear = String(new Date().getFullYear());
@@ -441,8 +446,7 @@ function renderMonthlyTable(): void {
   }
 
   const sorted = sortByStartDateAsc(filtered);
-  tbody.innerHTML = sorted.map((e) => renderDetailRow(e, true)).join("")
-    + renderSubtotalRow("조회 결과", filtered, 4);
+  tbody.innerHTML = sorted.map((e) => renderDetailRow(e, true)).join("") + renderSubtotalRow("조회 결과", filtered, 4);
 
   if (statusEl) {
     statusEl.textContent = `${filtered.length}개 기수 표시`;
@@ -485,9 +489,10 @@ function renderWeeklyTable(): void {
   });
 
   const sorted = sortByStartDateAsc(filtered);
-  tbody.innerHTML = sorted.length > 0
-    ? sorted.map((e) => renderDetailRow(e, true)).join("") + renderSubtotalRow("주간 소계", filtered, 4)
-    : `<tr><td colspan="10" style="text-align:center;color:#6b7280;">해당 주간에 개강한 과정이 없습니다.</td></tr>`;
+  tbody.innerHTML =
+    sorted.length > 0
+      ? sorted.map((e) => renderDetailRow(e, true)).join("") + renderSubtotalRow("주간 소계", filtered, 4)
+      : `<tr><td colspan="10" style="text-align:center;color:#6b7280;">해당 주간에 개강한 과정이 없습니다.</td></tr>`;
 
   if (statusEl) {
     statusEl.textContent = `${filtered.length}개 기수 표시 (${targetYear}년 ${targetWeek}주차)`;
@@ -510,19 +515,23 @@ function renderCourseChart(): void {
   const chart = new Chart(canvas, {
     type: "bar",
     data: {
-      labels: summaries.map((s) => s.label.length > 10 ? s.label.slice(0, 10) + "…" : s.label),
-      datasets: [{
-        label: "하차방어율 (%)",
-        data: summaries.map((s) => Math.round(s.defenseRate * 10) / 10),
-        backgroundColor: summaries.map((s) => {
-          const cat = catMap.get(s.label) || "실업자";
-          const target = getTargetRate(cat);
-          return s.defenseRate >= target ? "rgba(16,185,129,0.7)" :
-                 s.defenseRate >= target - 5 ? "rgba(245,158,11,0.7)" :
-                 "rgba(239,68,68,0.7)";
-        }),
-        borderRadius: 6,
-      }],
+      labels: summaries.map((s) => (s.label.length > 10 ? s.label.slice(0, 10) + "…" : s.label)),
+      datasets: [
+        {
+          label: "하차방어율 (%)",
+          data: summaries.map((s) => Math.round(s.defenseRate * 10) / 10),
+          backgroundColor: summaries.map((s) => {
+            const cat = catMap.get(s.label) || "실업자";
+            const target = getTargetRate(cat);
+            return s.defenseRate >= target
+              ? "rgba(16,185,129,0.7)"
+              : s.defenseRate >= target - 5
+                ? "rgba(245,158,11,0.7)"
+                : "rgba(239,68,68,0.7)";
+          }),
+          borderRadius: 6,
+        },
+      ],
     },
     options: {
       indexAxis: "y",
@@ -531,33 +540,35 @@ function renderCourseChart(): void {
       plugins: { legend: { display: false } },
       scales: { x: { min: 0, max: 100, title: { display: true, text: "하차방어율 (%)" } } },
     },
-    plugins: [{
-      id: "targetLines",
-      afterDraw(chart) {
-        const { ctx, chartArea, scales } = chart;
-        if (!scales.x) return;
-        const targets = [
-          { val: KPI_TARGET.employed, color: "#6366f1", label: `재직자 ${KPI_TARGET.employed}%` },
-          { val: KPI_TARGET.unemployed, color: "#10b981", label: `실업자 ${KPI_TARGET.unemployed}%` },
-        ];
-        for (const t of targets) {
-          const x = scales.x.getPixelForValue(t.val);
-          ctx.save();
-          ctx.strokeStyle = t.color;
-          ctx.lineWidth = 2;
-          ctx.setLineDash([6, 4]);
-          ctx.beginPath();
-          ctx.moveTo(x, chartArea.top);
-          ctx.lineTo(x, chartArea.bottom);
-          ctx.stroke();
-          ctx.fillStyle = t.color;
-          ctx.font = "bold 10px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(t.label, x, chartArea.top - 4);
-          ctx.restore();
-        }
+    plugins: [
+      {
+        id: "targetLines",
+        afterDraw(chart) {
+          const { ctx, chartArea, scales } = chart;
+          if (!scales.x) return;
+          const targets = [
+            { val: KPI_TARGET.employed, color: "#6366f1", label: `재직자 ${KPI_TARGET.employed}%` },
+            { val: KPI_TARGET.unemployed, color: "#10b981", label: `실업자 ${KPI_TARGET.unemployed}%` },
+          ];
+          for (const t of targets) {
+            const x = scales.x.getPixelForValue(t.val);
+            ctx.save();
+            ctx.strokeStyle = t.color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(x, chartArea.top);
+            ctx.lineTo(x, chartArea.bottom);
+            ctx.stroke();
+            ctx.fillStyle = t.color;
+            ctx.font = "bold 10px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(t.label, x, chartArea.top - 4);
+            ctx.restore();
+          }
+        },
       },
-    }],
+    ],
   });
   chartInstances.push(chart);
 }
@@ -573,15 +584,19 @@ function renderCategoryChart(): void {
     type: "doughnut",
     data: {
       labels: ["재직자 방어", "재직자 이탈", "실업자 방어", "실업자 이탈"],
-      datasets: [{
-        data: [employed.active, employed.dropout, unemployed.active, unemployed.dropout],
-        backgroundColor: [
-          "rgba(99,102,241,0.8)", "rgba(99,102,241,0.25)",
-          "rgba(16,185,129,0.8)", "rgba(16,185,129,0.25)",
-        ],
-        borderWidth: 2,
-        borderColor: "#fff",
-      }],
+      datasets: [
+        {
+          data: [employed.active, employed.dropout, unemployed.active, unemployed.dropout],
+          backgroundColor: [
+            "rgba(99,102,241,0.8)",
+            "rgba(99,102,241,0.25)",
+            "rgba(16,185,129,0.8)",
+            "rgba(16,185,129,0.25)",
+          ],
+          borderWidth: 2,
+          borderColor: "#fff",
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -625,33 +640,35 @@ function renderDegrChart(): void {
       plugins: { legend: { position: "top", labels: { font: { size: 10 } } } },
       scales: { y: { min: 0, max: 100, title: { display: true, text: "하차방어율 (%)" } } },
     },
-    plugins: [{
-      id: "targetHorizontalLines",
-      afterDraw(chart) {
-        const { ctx, chartArea, scales } = chart;
-        if (!scales.y) return;
-        const targets = [
-          { val: KPI_TARGET.employed, color: "#6366f1", label: `재직자 목표 ${KPI_TARGET.employed}%` },
-          { val: KPI_TARGET.unemployed, color: "#10b981", label: `실업자 목표 ${KPI_TARGET.unemployed}%` },
-        ];
-        for (const t of targets) {
-          const y = scales.y.getPixelForValue(t.val);
-          ctx.save();
-          ctx.strokeStyle = t.color;
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([6, 4]);
-          ctx.beginPath();
-          ctx.moveTo(chartArea.left, y);
-          ctx.lineTo(chartArea.right, y);
-          ctx.stroke();
-          ctx.fillStyle = t.color;
-          ctx.font = "bold 10px sans-serif";
-          ctx.textAlign = "right";
-          ctx.fillText(t.label, chartArea.right, y - 4);
-          ctx.restore();
-        }
+    plugins: [
+      {
+        id: "targetHorizontalLines",
+        afterDraw(chart) {
+          const { ctx, chartArea, scales } = chart;
+          if (!scales.y) return;
+          const targets = [
+            { val: KPI_TARGET.employed, color: "#6366f1", label: `재직자 목표 ${KPI_TARGET.employed}%` },
+            { val: KPI_TARGET.unemployed, color: "#10b981", label: `실업자 목표 ${KPI_TARGET.unemployed}%` },
+          ];
+          for (const t of targets) {
+            const y = scales.y.getPixelForValue(t.val);
+            ctx.save();
+            ctx.strokeStyle = t.color;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(chartArea.left, y);
+            ctx.lineTo(chartArea.right, y);
+            ctx.stroke();
+            ctx.fillStyle = t.color;
+            ctx.font = "bold 10px sans-serif";
+            ctx.textAlign = "right";
+            ctx.fillText(t.label, chartArea.right, y - 4);
+            ctx.restore();
+          }
+        },
       },
-    }],
+    ],
   });
   chartInstances.push(chart);
 }
@@ -725,7 +742,8 @@ async function fetchAndRenderDropout(): Promise<void> {
     renderDegrChart();
 
     const overall = getOverallSummary();
-    if (statusEl) statusEl.textContent = `✅ ${config.courses.length}개 과정, ${dropoutData.length}개 기수 조회 완료 (총 ${overall.total}명)`;
+    if (statusEl)
+      statusEl.textContent = `✅ ${config.courses.length}개 과정, ${dropoutData.length}개 기수 조회 완료 (총 ${overall.total}명)`;
     if (emptyEl) emptyEl.style.display = "none";
     if (contentEl) contentEl.style.display = "block";
   } catch (e) {

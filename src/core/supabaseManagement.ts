@@ -6,7 +6,7 @@ export const MANAGEMENT_TABLES = {
   subjects: "subjects",
   instructors: "instructors",
   courseSubjectInstructorMap: "course_subject_instructor_map",
-  courseTemplates: "course_templates"
+  courseTemplates: "course_templates",
 } as const;
 
 type CourseRow = {
@@ -103,8 +103,8 @@ const client = hasSupabaseConfig
       auth: {
         autoRefreshToken: false,
         persistSession: false,
-        detectSessionInUrl: false
-      }
+        detectSessionInUrl: false,
+      },
     })
   : null;
 
@@ -132,7 +132,7 @@ function toCourseRecord(row: CourseRow): CourseRecord {
     id: row.id,
     courseId: normalizeCode(row.course_id),
     courseName: normalizeText(row.course_name),
-    createdAt: row.created_at ?? ""
+    createdAt: row.created_at ?? "",
   };
 }
 
@@ -141,7 +141,7 @@ function toSubjectRecord(row: SubjectRow): SubjectRecord {
     id: row.id,
     courseId: normalizeCode(row.course_id),
     subjectCode: normalizeCode(row.subject_code),
-    subjectName: normalizeText(row.subject_name ?? "")
+    subjectName: normalizeText(row.subject_name ?? ""),
   };
 }
 
@@ -150,7 +150,7 @@ function toInstructorRecord(row: InstructorRow): InstructorRecord {
     id: row.id,
     instructorCode: normalizeCode(row.instructor_code),
     name: normalizeText(row.name ?? ""),
-    createdAt: row.created_at ?? ""
+    createdAt: row.created_at ?? "",
   };
 }
 
@@ -160,7 +160,7 @@ function toCourseTemplateRecord(row: CourseTemplateRow): CourseTemplateRecord {
     courseId: normalizeCode(row.course_id),
     templateName: normalizeText(row.template_name),
     templateJson: row.template_json,
-    createdAt: row.created_at ?? ""
+    createdAt: row.created_at ?? "",
   };
 }
 
@@ -204,7 +204,7 @@ export async function createCourse(input: CreateCourseInput): Promise<CourseReco
   const supabase = getClient();
   const payload = {
     course_id: normalizeCode(input.courseId),
-    course_name: normalizeText(input.courseName)
+    course_name: normalizeText(input.courseName),
   };
 
   const response = await supabase
@@ -242,7 +242,7 @@ export async function createSubject(input: CreateSubjectInput): Promise<SubjectR
   const payload = {
     course_id: normalizeCode(input.courseId),
     subject_code: normalizeCode(input.subjectCode),
-    subject_name: normalizeText(input.subjectName)
+    subject_name: normalizeText(input.subjectName),
   };
 
   const response = await supabase
@@ -277,7 +277,7 @@ export async function createInstructor(input: CreateInstructorInput): Promise<In
   const supabase = getClient();
   const payload = {
     instructor_code: normalizeCode(input.instructorCode),
-    name: normalizeText(input.name)
+    name: normalizeText(input.name),
   };
 
   const response = await supabase
@@ -323,7 +323,7 @@ export async function saveCourseTemplate(input: SaveCourseTemplateInput): Promis
     ...(templateId ? { id: templateId } : {}),
     course_id: normalizeCode(input.courseId),
     template_name: normalizeText(input.templateName),
-    template_json: input.templateJson
+    template_json: input.templateJson,
   };
 
   const response = await supabase

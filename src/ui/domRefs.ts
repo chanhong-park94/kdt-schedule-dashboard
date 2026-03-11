@@ -43,10 +43,10 @@ export const domRefs = {
   jibbleSubInstructorButton: document.querySelector<HTMLButtonElement>("#jibbleSubInstructor"),
   jibbleMainNav: document.querySelector<HTMLElement>("#jibbleMainNav"),
   jibblePrimaryNavButtons: Array.from(
-    document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]")
+    document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]"),
   ),
   jibbleSubNavButtons: Array.from(
-    document.querySelectorAll<HTMLButtonElement>(".jibble-nav-sub .jibble-nav-item[data-scroll-target]")
+    document.querySelectorAll<HTMLButtonElement>(".jibble-nav-sub .jibble-nav-item[data-scroll-target]"),
   ),
   jibblePageGroupElements: Array.from(document.querySelectorAll<HTMLElement>("[data-page-group]")),
   menuConfigList: getRequiredElement<HTMLElement>("#menuConfigList"),
@@ -243,5 +243,5 @@ export const domRefs = {
   instructorCoursePanel: getRequiredElement<HTMLElement>("#instructorCoursePanel"),
   instructorRegisterPanel: getRequiredElement<HTMLElement>("#instructorRegisterPanel"),
   instructorMappingPanel: getRequiredElement<HTMLElement>("#instructorMappingPanel"),
-  instructorSubjectPanel: getRequiredElement<HTMLElement>("#instructorSubjectPanel")
+  instructorSubjectPanel: getRequiredElement<HTMLElement>("#instructorSubjectPanel"),
 };

@@ -24,7 +24,7 @@ export function buildCohortSummaries(sessions: Session[]): CohortSummary[] {
       시작일: dates[0] ?? "",
       종료일: dates[dates.length - 1] ?? "",
       훈련일수: dates.length,
-      세션수: cohortSessions.length
+      세션수: cohortSessions.length,
     });
   }
 

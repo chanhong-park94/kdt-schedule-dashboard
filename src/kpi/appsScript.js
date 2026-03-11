@@ -34,9 +34,7 @@ function doGet(e) {
     data.summary = getSheetData(ss, "과정별_집계");
   }
 
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function getSheetData(ss, sheetName) {

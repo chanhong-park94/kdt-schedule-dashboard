@@ -31,5 +31,5 @@ export const INTERNAL_V7E_RECORD_KEYS = [
   "classroomCode",
   "sessionCount",
   "start",
-  "end"
+  "end",
 ] as const satisfies ReadonlyArray<keyof InternalV7ERecord>;

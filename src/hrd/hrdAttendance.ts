@@ -17,7 +17,13 @@ import type {
   AttendanceViewMode,
   SlackScheduleConfig,
 } from "./hrdTypes";
-import { ATTENDANCE_STATUS_CODE, isAbsentStatus, isAttendedStatus, isExcusedStatus, DEFAULT_SLACK_SCHEDULE } from "./hrdTypes";
+import {
+  ATTENDANCE_STATUS_CODE,
+  isAbsentStatus,
+  isAttendedStatus,
+  isExcusedStatus,
+  DEFAULT_SLACK_SCHEDULE,
+} from "./hrdTypes";
 import { sendSlackReport, testSlackWebhook, sendSlackReportDirect } from "./hrdSlack";
 import { startScheduler, restartScheduler } from "./hrdScheduler";
 
@@ -72,27 +78,35 @@ function formatTime(raw: string | undefined): string {
 /** 잔여 허용 결석일수 기반 위험등급 */
 function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   if (totalDays === 0) return "safe"; // 설정 미완료
-  if (remainingAbsent <= 0) return "danger";  // 제적 대상
-  if (remainingAbsent <= 2) return "warning";  // 결석 2일 이내 제적
-  if (remainingAbsent <= 5) return "caution";  // 결석 5일 이내 주의
+  if (remainingAbsent <= 0) return "danger"; // 제적 대상
+  if (remainingAbsent <= 2) return "warning"; // 결석 2일 이내 제적
+  if (remainingAbsent <= 5) return "caution"; // 결석 5일 이내 주의
   return "safe";
 }
 
 function getRiskLabel(level: RiskLevel): string {
   switch (level) {
-    case "safe": return "안전";
-    case "caution": return "주의";
-    case "warning": return "경고";
-    case "danger": return "위험";
+    case "safe":
+      return "안전";
+    case "caution":
+      return "주의";
+    case "warning":
+      return "경고";
+    case "danger":
+      return "위험";
   }
 }
 
 function getRiskEmoji(level: RiskLevel): string {
   switch (level) {
-    case "safe": return "🟢";
-    case "caution": return "🟡";
-    case "warning": return "🟠";
-    case "danger": return "🔴";
+    case "safe":
+      return "🟢";
+    case "caution":
+      return "🟡";
+    case "warning":
+      return "🟠";
+    case "danger":
+      return "🔴";
   }
 }
 
@@ -109,10 +123,12 @@ function buildStudents(
   roster: HrdRawTrainee[],
   dailyRecords: HrdRawAttendance[],
   selectedDate: string,
-  course: HrdCourse | undefined
+  course: HrdCourse | undefined,
 ): AttendanceStudent[] {
   const dayStr = selectedDate.replace(/[^0-9]/g, "");
-  const dayData = dayStr ? dailyRecords.filter((d) => ((d.atendDe || "").toString().replace(/[^0-9]/g, "")) === dayStr) : dailyRecords;
+  const dayData = dayStr
+    ? dailyRecords.filter((d) => (d.atendDe || "").toString().replace(/[^0-9]/g, "") === dayStr)
+    : dailyRecords;
 
   const dailyMap = new Map<string, HrdRawAttendance>();
   for (const d of dayData) {
@@ -125,7 +141,7 @@ function buildStudents(
     const key = normalizeName(t.name);
     const daily = dailyMap.get(key);
 
-    const status: AttendanceStatus = daily ? resolveStatus(daily) : (t.dropout ? "중도탈락" : "-");
+    const status: AttendanceStatus = daily ? resolveStatus(daily) : t.dropout ? "중도탈락" : "-";
     const inTime = daily ? formatTime(daily.lpsilTime || daily.atendTmIn) : "";
     const outTime = daily ? formatTime(daily.levromTime || daily.atendTmOut) : "";
 
@@ -139,8 +155,8 @@ function buildStudents(
     const remainingAbsent = maxAbsent - absentDays;
 
     // 출석률: 출석인정일 / (전체훈련일 - 공결일) * 100
-    const effectiveDays = totalDays > 0 ? totalDays - excusedDays : (records.length || 1);
-    const attendanceRate = effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : (totalDays === 0 ? 100 : 0);
+    const effectiveDays = totalDays > 0 ? totalDays - excusedDays : records.length || 1;
+    const attendanceRate = effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : totalDays === 0 ? 100 : 0;
 
     const student: AttendanceStudent = {
       name: t.name,
@@ -207,9 +223,7 @@ function calculateMetrics(students: AttendanceStudent[]): AttendanceMetrics {
   const present = active.filter((s) => s.status === "출석").length;
   const late = active.filter((s) => s.status.includes("지각")).length;
   const absent = active.filter((s) => isAbsentStatus(s.status)).length;
-  const earlyLeave = active.filter((s) =>
-    s.status.includes("조퇴") || s.status.includes("외출"),
-  ).length;
+  const earlyLeave = active.filter((s) => s.status.includes("조퇴") || s.status.includes("외출")).length;
   const excused = active.filter((s) => isExcusedStatus(s.status)).length;
   const riskCount = active.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length;
   const missingCheckout = active.filter((s) => s.missingCheckout).length;
@@ -335,7 +349,10 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
 
   tbody.innerHTML = filtered
     .map(
-      (s, i) => `<tr class="${s.dropout ? "att-row-dropout" : ""} ${s.riskLevel === "danger" ? "att-row-danger" : s.riskLevel === "warning" ? "att-row-warning" : ""}">
+      (
+        s,
+        i,
+      ) => `<tr class="${s.dropout ? "att-row-dropout" : ""} ${s.riskLevel === "danger" ? "att-row-danger" : s.riskLevel === "warning" ? "att-row-warning" : ""}">
     <td>${i + 1}</td>
     <td><span class="att-name-link" data-student="${s.name}">${s.name}</span></td>
     <td class="att-td-birth">${s.birth}</td>
@@ -344,7 +361,7 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
     <td class="att-td-time">${s.outTime || "-"}</td>
     <td>${s.totalDays > 0 ? `${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`}</td>
     <td><span class="att-risk-badge att-risk-${s.riskLevel}">${getRiskEmoji(s.riskLevel)} ${getRiskLabel(s.riskLevel)}${s.totalDays > 0 && s.remainingAbsent > 0 ? ` (${s.remainingAbsent}일)` : ""}</span></td>
-  </tr>`
+  </tr>`,
     )
     .join("");
 
@@ -448,14 +465,15 @@ function renderPatternInsights(patterns: DayPattern[]): void {
     if (p.absentRate > 15) insights.push(`📌 ${p.day}요일 결석률 ${p.absentRate.toFixed(1)}% — 주의 필요`);
   }
 
-  const worst = [...patterns].sort((a, b) => (b.lateRate + b.absentRate) - (a.lateRate + a.absentRate))[0];
-  if (worst && (worst.lateRate + worst.absentRate) > 10) {
+  const worst = [...patterns].sort((a, b) => b.lateRate + b.absentRate - (a.lateRate + a.absentRate))[0];
+  if (worst && worst.lateRate + worst.absentRate > 10) {
     insights.unshift(`⚡ 가장 출결 이슈가 많은 요일: ${worst.day}요일`);
   }
 
-  container.innerHTML = insights.length > 0
-    ? insights.map((i) => `<div class="att-insight">${i}</div>`).join("")
-    : '<div class="att-insight att-insight-ok">✅ 특이 패턴 없음</div>';
+  container.innerHTML =
+    insights.length > 0
+      ? insights.map((i) => `<div class="att-insight">${i}</div>`).join("")
+      : '<div class="att-insight att-insight-ok">✅ 특이 패턴 없음</div>';
 }
 
 // ─── Student Detail Modal ───────────────────────────────────
@@ -487,7 +505,10 @@ function openStudentDetail(name: string): void {
   const late = records.filter((r) => r.status.includes("지각")).length;
   const absent = records.filter((r) => isAbsentStatus(r.status)).length;
 
-  const setSummary = (id: string, val: number) => { const el = $(id); if (el) el.textContent = String(val); };
+  const setSummary = (id: string, val: number) => {
+    const el = $(id);
+    if (el) el.textContent = String(val);
+  };
   setSummary("attDetailAttended", attended);
   setSummary("attDetailLate", late);
   setSummary("attDetailAbsent", absent);
@@ -502,7 +523,7 @@ function openStudentDetail(name: string): void {
         <td><span class="att-chip ${getStatusChipClass(r.status)}">${r.status}</span></td>
         <td class="att-td-time">${r.inTime}</td>
         <td class="att-td-time">${r.outTime}</td>
-      </tr>`
+      </tr>`,
       )
       .join("");
   }
@@ -532,12 +553,13 @@ function renderStudentRow(s: AttendanceStudent, reason: string): string {
   const rateClass = s.riskLevel === "danger" ? "rd" : s.riskLevel === "warning" ? "rw" : "rc";
   const tagClass = reason === "missing" ? "tg-missing" : `tg-${s.riskLevel}`;
   const tagText = reason === "missing" ? "퇴실미체크" : getRiskLabel(s.riskLevel);
-  const rateText = s.totalDays > 0
-    ? `결석 ${s.absentDays}/${s.maxAbsent}일`
-    : `${s.attendanceRate.toFixed(1)}%`;
-  const remainText = s.totalDays > 0 && s.remainingAbsent > 0
-    ? ` · 잔여 ${s.remainingAbsent}일`
-    : s.remainingAbsent <= 0 && s.totalDays > 0 ? " · 제적대상" : "";
+  const rateText = s.totalDays > 0 ? `결석 ${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`;
+  const remainText =
+    s.totalDays > 0 && s.remainingAbsent > 0
+      ? ` · 잔여 ${s.remainingAbsent}일`
+      : s.remainingAbsent <= 0 && s.totalDays > 0
+        ? " · 제적대상"
+        : "";
   return `<div class="att-risk-student" data-student="${s.name}">
     <div class="att-risk-student-left">
       <span class="att-risk-student-name">${s.name}</span>
@@ -567,19 +589,32 @@ function openRiskPanel(): void {
   caution.sort(byRate);
 
   // Summary counts
-  const set = (id: string, val: number) => { const el = $(id); if (el) el.textContent = String(val); };
+  const set = (id: string, val: number) => {
+    const el = $(id);
+    if (el) el.textContent = String(val);
+  };
   set("attRpsDanger", danger.length);
   set("attRpsWarning", warning.length);
   set("attRpsCaution", caution.length);
   set("attRpsMissing", missing.length);
 
   // Render groups
-  const renderGroup = (containerId: string, students: AttendanceStudent[], title: string, cssClass: string, reason: string) => {
+  const renderGroup = (
+    containerId: string,
+    students: AttendanceStudent[],
+    title: string,
+    cssClass: string,
+    reason: string,
+  ) => {
     const container = $(containerId);
     if (!container) return;
-    if (students.length === 0) { container.innerHTML = ""; return; }
-    container.innerHTML = `<div class="att-risk-group-title ${cssClass}">${title} (${students.length}명)</div>`
-      + students.map((s) => renderStudentRow(s, reason)).join("");
+    if (students.length === 0) {
+      container.innerHTML = "";
+      return;
+    }
+    container.innerHTML =
+      `<div class="att-risk-group-title ${cssClass}">${title} (${students.length}명)</div>` +
+      students.map((s) => renderStudentRow(s, reason)).join("");
   };
 
   renderGroup("attRiskListDanger", danger, "🔴 위험 — 허용 결석일 초과 (제적 대상)", "rg-danger", "risk");
@@ -619,7 +654,7 @@ function openRiskPanel(): void {
       try {
         // 하차방어율 계산
         const totalCount = currentStudents.length;
-        const dropoutCount = currentStudents.filter(s => s.dropout).length;
+        const dropoutCount = currentStudents.filter((s) => s.dropout).length;
         const defRate = totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 100;
         await sendSlackReport(
           course.name,
@@ -672,19 +707,20 @@ function renderHrdSettingsSection(): void {
   if (slackInput && isUnlocked) slackInput.value = currentConfig.slackWebhookUrl || "";
 
   if (courseList) {
-    courseList.innerHTML = currentConfig.courses.length === 0
-      ? '<div class="att-empty-mini">등록된 과정이 없습니다. "기본 과정 복원" 버튼을 눌러주세요.</div>'
-      : currentConfig.courses
-          .map(
-            (c, i) => `<div class="hrd-course-item">
+    courseList.innerHTML =
+      currentConfig.courses.length === 0
+        ? '<div class="att-empty-mini">등록된 과정이 없습니다. "기본 과정 복원" 버튼을 눌러주세요.</div>'
+        : currentConfig.courses
+            .map(
+              (c, i) => `<div class="hrd-course-item">
           <div class="hrd-course-info">
             <strong>${c.name}</strong>
             <span class="hrd-course-meta">${c.trainPrId} | 기수: ${c.degrs.join(",")}기 (${c.degrs.length}개)${c.startDate ? ` | 개강: ${c.startDate}` : ""}${c.totalDays ? ` | ${c.totalDays}일` : ""}</span>
           </div>
           <button class="btn-sm btn-danger hrd-course-remove" data-idx="${i}">삭제</button>
-        </div>`
-          )
-          .join("");
+        </div>`,
+            )
+            .join("");
 
     courseList.querySelectorAll(".hrd-course-remove").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -729,13 +765,15 @@ function renderSlackScheduleUI(config: HrdConfig): void {
   // 대상 과정 체크박스
   const coursesContainer = $("slackScheduleCourses");
   if (coursesContainer) {
-    coursesContainer.innerHTML = config.courses.map((c) => {
-      const checked = schedule.targetCourses.length === 0 || schedule.targetCourses.includes(c.trainPrId);
-      return `<label class="slack-course-check ${checked ? "checked" : ""}">
+    coursesContainer.innerHTML = config.courses
+      .map((c) => {
+        const checked = schedule.targetCourses.length === 0 || schedule.targetCourses.includes(c.trainPrId);
+        return `<label class="slack-course-check ${checked ? "checked" : ""}">
         <input type="checkbox" value="${c.trainPrId}" ${checked ? "checked" : ""} />
         ${c.name}
       </label>`;
-    }).join("");
+      })
+      .join("");
 
     // 체크 상태 변경 시 시각 피드백
     coursesContainer.querySelectorAll("input[type='checkbox']").forEach((cb) => {
@@ -768,7 +806,10 @@ function setupSettingsHandlers(): void {
       body.classList.toggle("is-collapsed", isExpanded);
     });
     header.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); header.click(); }
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        header.click();
+      }
     });
   });
 
@@ -796,10 +837,19 @@ function setupSettingsHandlers(): void {
       if (gateError) gateError.style.display = "none";
       // Auth key 표시
       const keyInput = $("hrdAuthKey") as HTMLInputElement | null;
-      if (keyInput) { keyInput.type = "text"; keyInput.value = currentConfig.authKey; }
+      if (keyInput) {
+        keyInput.type = "text";
+        keyInput.value = currentConfig.authKey;
+      }
     } else {
-      if (gateError) { gateError.style.display = "block"; gateError.textContent = "비밀번호가 올바르지 않습니다"; }
-      if (gatePasswordInput) { gatePasswordInput.value = ""; gatePasswordInput.focus(); }
+      if (gateError) {
+        gateError.style.display = "block";
+        gateError.textContent = "비밀번호가 올바르지 않습니다";
+      }
+      if (gatePasswordInput) {
+        gatePasswordInput.value = "";
+        gatePasswordInput.focus();
+      }
     }
   };
 
@@ -819,17 +869,26 @@ function setupSettingsHandlers(): void {
     currentConfig.slackWebhookUrl = slackUrl || undefined;
     saveHrdConfig(currentConfig);
     const status = $("hrdTestStatus");
-    if (status) { status.textContent = "✅ 저장됨"; status.className = "att-api-status att-api-ok"; }
+    if (status) {
+      status.textContent = "✅ 저장됨";
+      status.className = "att-api-status att-api-ok";
+    }
   });
 
   // Test connection
   const testBtn = $("hrdTestBtn");
   testBtn?.addEventListener("click", async () => {
     const status = $("hrdTestStatus");
-    if (status) { status.textContent = "테스트 중..."; status.className = "att-api-status"; }
+    if (status) {
+      status.textContent = "테스트 중...";
+      status.className = "att-api-status";
+    }
     const config = loadHrdConfig();
     if (config.courses.length === 0) {
-      if (status) { status.textContent = "❌ 등록된 과정이 없습니다"; status.className = "att-api-status att-api-err"; }
+      if (status) {
+        status.textContent = "❌ 등록된 과정이 없습니다";
+        status.className = "att-api-status att-api-err";
+      }
       return;
     }
     const c = config.courses[0];
@@ -850,7 +909,10 @@ function setupSettingsHandlers(): void {
     const totalDays = parseInt(($("hrdNewCourseDays") as HTMLInputElement)?.value || "0");
     const endTime = ($("hrdNewCourseEndTime") as HTMLInputElement)?.value?.trim() || "18:00";
 
-    if (!name || !id || !degrs) { alert("과정명, 훈련과정ID, 기수는 필수입니다."); return; }
+    if (!name || !id || !degrs) {
+      alert("과정명, 훈련과정ID, 기수는 필수입니다.");
+      return;
+    }
 
     currentConfig.courses.push({
       name,
@@ -865,7 +927,9 @@ function setupSettingsHandlers(): void {
     populateFilters();
 
     // Clear inputs
-    (["hrdNewCourseName", "hrdNewCourseId", "hrdNewCourseDegrs", "hrdNewCourseStart", "hrdNewCourseDays"] as const).forEach((id) => {
+    (
+      ["hrdNewCourseName", "hrdNewCourseId", "hrdNewCourseDegrs", "hrdNewCourseStart", "hrdNewCourseDays"] as const
+    ).forEach((id) => {
       const el = $(id) as HTMLInputElement | null;
       if (el) el.value = "";
     });
@@ -879,14 +943,20 @@ function setupSettingsHandlers(): void {
     renderHrdSettingsSection();
     populateFilters();
     const status = $("hrdTestStatus");
-    if (status) { status.textContent = `✅ 기본 과정 복원됨 (${DEFAULT_COURSES.length}개 과정)`; status.className = "att-api-status att-api-ok"; }
+    if (status) {
+      status.textContent = `✅ 기본 과정 복원됨 (${DEFAULT_COURSES.length}개 과정)`;
+      status.className = "att-api-status att-api-ok";
+    }
   });
 
   // Discover all degrs
   const discoverBtn = $("hrdDiscoverAll");
   discoverBtn?.addEventListener("click", async () => {
     const statusEl = $("hrdDiscoverStatus");
-    if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "🔍 기수 탐색 시작..."; }
+    if (statusEl) {
+      statusEl.style.display = "block";
+      statusEl.textContent = "🔍 기수 탐색 시작...";
+    }
     if (discoverBtn instanceof HTMLButtonElement) discoverBtn.disabled = true;
 
     const config = loadHrdConfig();
@@ -903,7 +973,9 @@ function setupSettingsHandlers(): void {
           course.degrs = newDegrs;
           updated = true;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     if (updated) {
@@ -928,10 +1000,16 @@ function setupSettingsHandlers(): void {
     const statusEl = $("hrdSlackTestStatus");
     const url = slackInput?.value?.trim() || "";
     if (!url) {
-      if (statusEl) { statusEl.textContent = "Webhook URL을 입력해주세요."; statusEl.style.color = "#dc2626"; }
+      if (statusEl) {
+        statusEl.textContent = "Webhook URL을 입력해주세요.";
+        statusEl.style.color = "#dc2626";
+      }
       return;
     }
-    if (statusEl) { statusEl.textContent = "테스트 전송 중..."; statusEl.style.color = "#6b7280"; }
+    if (statusEl) {
+      statusEl.textContent = "테스트 전송 중...";
+      statusEl.style.color = "#6b7280";
+    }
     if (slackTestBtn instanceof HTMLButtonElement) slackTestBtn.disabled = true;
 
     const result = await testSlackWebhook(url);
@@ -1014,13 +1092,22 @@ function setupSettingsHandlers(): void {
     const webhookUrl = config.slackWebhookUrl;
     if (!webhookUrl) {
       const statusEl = $("slackScheduleStatus");
-      if (statusEl) { statusEl.textContent = "❌ Webhook URL을 먼저 설정해주세요"; statusEl.className = "slack-schedule-status slack-schedule-error"; }
+      if (statusEl) {
+        statusEl.textContent = "❌ Webhook URL을 먼저 설정해주세요";
+        statusEl.className = "slack-schedule-status slack-schedule-error";
+      }
       return;
     }
 
-    if (testSendBtn instanceof HTMLButtonElement) { testSendBtn.disabled = true; testSendBtn.textContent = "전송 중..."; }
+    if (testSendBtn instanceof HTMLButtonElement) {
+      testSendBtn.disabled = true;
+      testSendBtn.textContent = "전송 중...";
+    }
     const statusEl = $("slackScheduleStatus");
-    if (statusEl) { statusEl.textContent = "⏳ 수동 전송 중..."; statusEl.className = "slack-schedule-status slack-schedule-info"; }
+    if (statusEl) {
+      statusEl.textContent = "⏳ 수동 전송 중...";
+      statusEl.className = "slack-schedule-status slack-schedule-info";
+    }
 
     try {
       // 현재 대시보드에 로드된 데이터가 있으면 사용, 없으면 첫 번째 과정으로 조회
@@ -1033,7 +1120,10 @@ function setupSettingsHandlers(): void {
         const today = new Date().toISOString().slice(0, 10);
 
         await sendSlackReportDirect(webhookUrl, courseName, degr, today, currentStudents);
-        if (statusEl) { statusEl.textContent = `✅ ${courseName} ${degr}기 리포트 전송 완료`; statusEl.className = "slack-schedule-status slack-schedule-success"; }
+        if (statusEl) {
+          statusEl.textContent = `✅ ${courseName} ${degr}기 리포트 전송 완료`;
+          statusEl.className = "slack-schedule-status slack-schedule-success";
+        }
       } else {
         // 데이터 미로드 상태 — 테스트 메시지만 전송
         const result = await testSlackWebhook(webhookUrl);
@@ -1043,9 +1133,15 @@ function setupSettingsHandlers(): void {
         }
       }
     } catch (e) {
-      if (statusEl) { statusEl.textContent = `❌ 전송 실패: ${e instanceof Error ? e.message : String(e)}`; statusEl.className = "slack-schedule-status slack-schedule-error"; }
+      if (statusEl) {
+        statusEl.textContent = `❌ 전송 실패: ${e instanceof Error ? e.message : String(e)}`;
+        statusEl.className = "slack-schedule-status slack-schedule-error";
+      }
     }
-    if (testSendBtn instanceof HTMLButtonElement) { testSendBtn.disabled = false; testSendBtn.textContent = "수동 전송 테스트"; }
+    if (testSendBtn instanceof HTMLButtonElement) {
+      testSendBtn.disabled = false;
+      testSendBtn.textContent = "수동 전송 테스트";
+    }
   });
 }
 
@@ -1057,7 +1153,9 @@ function populateFilters(): void {
   if (!courseSelect) return;
 
   currentConfig = loadHrdConfig();
-  courseSelect.innerHTML = currentConfig.courses.map((c) => `<option value="${c.trainPrId}">${c.name}</option>`).join("");
+  courseSelect.innerHTML = currentConfig.courses
+    .map((c) => `<option value="${c.trainPrId}">${c.name}</option>`)
+    .join("");
 
   if (currentConfig.courses.length === 0) {
     courseSelect.innerHTML = '<option value="">과정을 등록해주세요</option>';

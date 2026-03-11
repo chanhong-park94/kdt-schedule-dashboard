@@ -16,7 +16,7 @@ function mapHoliday(raw: unknown): Holiday | null {
   const holiday: Holiday = {
     date: item.date,
     localName: item.localName,
-    name: item.name
+    name: item.name,
   };
 
   if (typeof item.fixed === "boolean") {
@@ -59,7 +59,7 @@ export async function fetchPublicHolidaysKR(year: number): Promise<Holiday[]> {
 
   if (!response.ok) {
     throw new Error(
-      `공휴일 정보를 불러오지 못했습니다. (연도: ${year}, 상태코드: ${response.status}) 잠시 후 다시 시도해 주세요.`
+      `공휴일 정보를 불러오지 못했습니다. (연도: ${year}, 상태코드: ${response.status}) 잠시 후 다시 시도해 주세요.`,
     );
   }
 

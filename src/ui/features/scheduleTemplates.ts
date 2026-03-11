@@ -4,7 +4,7 @@ import {
   mergeScheduleTemplates,
   removeScheduleTemplate,
   SCHEDULE_TEMPLATE_STORAGE_KEY,
-  upsertScheduleTemplate
+  upsertScheduleTemplate,
 } from "../../core/scheduleTemplates";
 import { type TemplateRowState } from "../../core/state";
 import { appState } from "../appState";
@@ -19,7 +19,7 @@ type ScheduleTemplatesFeatureDeps = {
 const defaultDeps: ScheduleTemplatesFeatureDeps = {
   scheduleAutoSave: () => {},
   updateActionStates: () => {},
-  pushRecentActionLog: () => {}
+  pushRecentActionLog: () => {},
 };
 
 let deps: ScheduleTemplatesFeatureDeps = defaultDeps;
@@ -48,16 +48,14 @@ export function collectTemplateRowsState(): TemplateRowState[] {
       }
 
       const checked = row.querySelector<HTMLInputElement>(".tpl-break-check")?.checked ?? false;
-      const breakStartVal = checked
-        ? (row.querySelector<HTMLInputElement>(".tpl-break-start")?.value ?? "")
-        : "";
+      const breakStartVal = checked ? (row.querySelector<HTMLInputElement>(".tpl-break-start")?.value ?? "") : "";
 
       return {
         weekday,
         start: row.querySelector<HTMLInputElement>(".tpl-start")?.value ?? "",
         end: row.querySelector<HTMLInputElement>(".tpl-end")?.value ?? "",
         breakStart: breakStartVal,
-        breakEnd: breakStartVal ? computeBreakEnd(breakStartVal) : ""
+        breakEnd: breakStartVal ? computeBreakEnd(breakStartVal) : "",
       };
     })
     .filter((item): item is TemplateRowState => item !== null)

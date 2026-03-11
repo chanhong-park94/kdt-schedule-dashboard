@@ -21,7 +21,7 @@ export function parseCohortSubjectKey(key: string): { cohort: string; subjectCod
   const [cohortRaw, subjectRaw] = key.split("|||");
   return {
     cohort: (cohortRaw ?? "").trim(),
-    subjectCode: normalizeSubjectCode(subjectRaw ?? "").toUpperCase()
+    subjectCode: normalizeSubjectCode(subjectRaw ?? "").toUpperCase(),
   };
 }
 
@@ -43,7 +43,7 @@ function toCourseSubjectKey(courseId: string, subjectCode: string): string {
 export function applyCohortSubjectInstructorMappingsToSessions(
   sessions: Session[],
   mappings: CohortSubjectInstructorMapping[],
-  subjectDirectoryCodes?: Set<string>
+  subjectDirectoryCodes?: Set<string>,
 ): { sessions: Session[]; updatedRows: number; overwrittenRows: number } {
   const normalizedDirectoryCodes = subjectDirectoryCodes
     ? new Set(Array.from(subjectDirectoryCodes).map((code) => normalizeSubjectCode(code).toUpperCase()))
@@ -87,14 +87,14 @@ export function applyCohortSubjectInstructorMappingsToSessions(
     return {
       ...session,
       훈련강사코드: mappedInstructor,
-      "교과목(및 능력단위)코드": subjectCode
+      "교과목(및 능력단위)코드": subjectCode,
     };
   });
 
   return {
     sessions: nextSessions,
     updatedRows,
-    overwrittenRows
+    overwrittenRows,
   };
 }
 
@@ -102,7 +102,7 @@ export function applyCourseSubjectInstructorMappingsToCohortSessions(
   sessions: Session[],
   targetCohort: string,
   mappings: CourseSubjectInstructorMapping[],
-  subjectDirectoryCodes?: Set<string>
+  subjectDirectoryCodes?: Set<string>,
 ): { sessions: Session[]; updatedRows: number; overwrittenRows: number } {
   const target = targetCohort.trim();
   const normalizedDirectoryCodes = subjectDirectoryCodes
@@ -150,7 +150,7 @@ export function applyCourseSubjectInstructorMappingsToCohortSessions(
     return {
       ...session,
       훈련강사코드: mappedInstructor,
-      "교과목(및 능력단위)코드": subjectCode
+      "교과목(및 능력단위)코드": subjectCode,
     };
   });
 

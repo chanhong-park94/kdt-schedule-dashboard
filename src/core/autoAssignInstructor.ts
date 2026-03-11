@@ -13,13 +13,13 @@ function parseModuleScope(moduleKey: string): { cohort: string | null; module: s
     const [cohortRaw, moduleRaw] = raw.split("|||");
     return {
       cohort: cohortRaw?.trim() || null,
-      module: normalizeSubjectCode(moduleRaw ?? "")
+      module: normalizeSubjectCode(moduleRaw ?? ""),
     };
   }
 
   return {
     cohort: null,
-    module: normalizeSubjectCode(raw)
+    module: normalizeSubjectCode(raw),
   };
 }
 
@@ -43,7 +43,7 @@ export function assignInstructorToModule(params: AssignInstructorToModuleParams)
 
     return {
       ...session,
-      훈련강사코드: normalizedInstructor
+      훈련강사코드: normalizedInstructor,
     };
   });
 }

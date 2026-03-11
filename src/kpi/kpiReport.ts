@@ -26,11 +26,11 @@ function getCtx(id: string): CanvasRenderingContext2D | null {
 function filterByCourse<T extends { course: string; cohort: string }>(
   records: T[],
   course: string,
-  cohort: string
+  cohort: string,
 ): T[] {
   let result = records;
-  if (course !== "all") result = result.filter(r => r.course === course);
-  if (cohort !== "all") result = result.filter(r => r.cohort === cohort);
+  if (course !== "all") result = result.filter((r) => r.course === course);
+  if (cohort !== "all") result = result.filter((r) => r.cohort === cohort);
   return result;
 }
 
@@ -58,14 +58,14 @@ export function populateFilters(data: KpiAllData): void {
   if (!courseSelect || !cohortSelect) return;
 
   // 과정
-  const courses = [...new Set(data.achievement.map(r => r.course))];
+  const courses = [...new Set(data.achievement.map((r) => r.course))];
   courseSelect.innerHTML = '<option value="all">전체 과정</option>';
   for (const c of courses) {
     courseSelect.innerHTML += `<option value="${c}">${c}</option>`;
   }
 
   // 기수
-  const cohorts = [...new Set(data.achievement.map(r => r.cohort))];
+  const cohorts = [...new Set(data.achievement.map((r) => r.cohort))];
   cohortSelect.innerHTML = '<option value="all">전체 기수</option>';
   for (const c of cohorts) {
     cohortSelect.innerHTML += `<option value="${c}">${c}</option>`;
@@ -73,11 +73,7 @@ export function populateFilters(data: KpiAllData): void {
 }
 
 // ── KPI 카드 ─────────────────────────────────────────────
-function renderCards(
-  ach: AchievementRecord[],
-  frm: FormativeRecord[],
-  fa: FieldAppRecord[]
-): void {
+function renderCards(ach: AchievementRecord[], frm: FormativeRecord[], fa: FieldAppRecord[]): void {
   const totalStudents = ach.length;
   const preAvg = totalStudents > 0 ? ach.reduce((s, r) => s + r.preTotal, 0) / totalStudents : 0;
   const postAvg = totalStudents > 0 ? ach.reduce((s, r) => s + r.postTotal, 0) / totalStudents : 0;
@@ -110,15 +106,18 @@ const COLORS = {
   phase2: "rgba(99, 102, 241, 0.8)",
 };
 
-function renderCharts(
-  ach: AchievementRecord[],
-  frm: FormativeRecord[],
-  fa: FieldAppRecord[],
-  data: KpiAllData
-): void {
+function renderCharts(ach: AchievementRecord[], frm: FormativeRecord[], fa: FieldAppRecord[], data: KpiAllData): void {
   renderAchievementChart(ach);
-  renderGradeDistribution("kpiChartGradePre", ach.map(r => r.preGrade), "사전 등급 분포");
-  renderGradeDistribution("kpiChartGradePost", ach.map(r => r.postGrade), "사후 등급 분포");
+  renderGradeDistribution(
+    "kpiChartGradePre",
+    ach.map((r) => r.preGrade),
+    "사전 등급 분포",
+  );
+  renderGradeDistribution(
+    "kpiChartGradePost",
+    ach.map((r) => r.postGrade),
+    "사후 등급 분포",
+  );
   renderFormativeChart(frm);
   renderRadarChart(fa);
   renderResponseChart(ach, frm, fa);
@@ -140,11 +139,11 @@ function renderAchievementChart(ach: AchievementRecord[]): void {
   }
 
   const labels = [...courseMap.keys()];
-  const preAvgs = labels.map(k => {
+  const preAvgs = labels.map((k) => {
     const arr = courseMap.get(k)!.pre;
     return arr.reduce((a, b) => a + b, 0) / arr.length;
   });
-  const postAvgs = labels.map(k => {
+  const postAvgs = labels.map((k) => {
     const arr = courseMap.get(k)!.post;
     return arr.reduce((a, b) => a + b, 0) / arr.length;
   });
@@ -181,10 +180,12 @@ function renderGradeDistribution(canvasId: string, grades: string[], title: stri
     type: "doughnut",
     data: {
       labels: Object.keys(counts),
-      datasets: [{
-        data: Object.values(counts),
-        backgroundColor: COLORS.grades,
-      }],
+      datasets: [
+        {
+          data: Object.values(counts),
+          backgroundColor: COLORS.grades,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -210,7 +211,7 @@ function renderFormativeChart(frm: FormativeRecord[]): void {
   const labels = ["1주차", "2주차", "3주차", "4주차", "5주차", "6주차", "7주차", "8주차"];
   const datasets = [...courseMap.entries()].map(([course, allScores], idx) => {
     const weekAvgs = labels.map((_, wi) => {
-      const vals = allScores.map(s => s[wi]).filter(v => v > 0);
+      const vals = allScores.map((s) => s[wi]).filter((v) => v > 0);
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     });
     const colors = ["rgba(99, 102, 241, 0.8)", "rgba(16, 185, 129, 0.8)", "rgba(245, 158, 11, 0.8)"];
@@ -244,7 +245,7 @@ function renderRadarChart(fa: FieldAppRecord[]): void {
 
   const radarLabels = ["업무이해", "적용계획", "도구활용", "성과기대", "장애요인", "지속의지"];
   const avgScores = radarLabels.map((_, qi) => {
-    const vals = fa.map(r => r.scores[qi]).filter(v => v > 0);
+    const vals = fa.map((r) => r.scores[qi]).filter((v) => v > 0);
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
   });
 
@@ -252,13 +253,15 @@ function renderRadarChart(fa: FieldAppRecord[]): void {
     type: "radar",
     data: {
       labels: radarLabels,
-      datasets: [{
-        label: "현업적용 평균",
-        data: avgScores,
-        backgroundColor: COLORS.radar,
-        borderColor: COLORS.radarBorder,
-        pointBackgroundColor: COLORS.radarBorder,
-      }],
+      datasets: [
+        {
+          label: "현업적용 평균",
+          data: avgScores,
+          backgroundColor: COLORS.radar,
+          borderColor: COLORS.radarBorder,
+          pointBackgroundColor: COLORS.radarBorder,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -268,19 +271,15 @@ function renderRadarChart(fa: FieldAppRecord[]): void {
   });
 }
 
-function renderResponseChart(
-  ach: AchievementRecord[],
-  frm: FormativeRecord[],
-  fa: FieldAppRecord[]
-): void {
+function renderResponseChart(ach: AchievementRecord[], frm: FormativeRecord[], fa: FieldAppRecord[]): void {
   const id = "kpiChartResponse";
   destroyChart(id);
   const ctx = getCtx(id);
   if (!ctx) return;
 
-  const achCompleted = ach.filter(r => r.status.includes("완료")).length;
-  const frmCompleted = frm.filter(r => r.status.includes("양호") || r.status.includes("우수")).length;
-  const faCompleted = fa.filter(r => r.status.includes("완료")).length;
+  const achCompleted = ach.filter((r) => r.status.includes("완료")).length;
+  const frmCompleted = frm.filter((r) => r.status.includes("양호") || r.status.includes("우수")).length;
+  const faCompleted = fa.filter((r) => r.status.includes("완료")).length;
 
   const total = Math.max(ach.length, 1);
   const achRate = (achCompleted / total) * 100;
@@ -291,12 +290,14 @@ function renderResponseChart(
     type: "bar",
     data: {
       labels: ["성취평가", "형성평가", "현업적용"],
-      datasets: [{
-        label: "응답/완료율 (%)",
-        data: [achRate, frmRate, faRate],
-        backgroundColor: [COLORS.post, COLORS.accent, "rgba(245, 158, 11, 0.8)"],
-        borderRadius: 4,
-      }],
+      datasets: [
+        {
+          label: "응답/완료율 (%)",
+          data: [achRate, frmRate, faRate],
+          backgroundColor: [COLORS.post, COLORS.accent, "rgba(245, 158, 11, 0.8)"],
+          borderRadius: 4,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -315,7 +316,7 @@ function renderTables(
   fa: FieldAppRecord[],
   data: KpiAllData,
   course: string,
-  cohort: string
+  cohort: string,
 ): void {
   renderSummaryTable(data, course, cohort);
   renderAchievementTable(ach);
@@ -336,9 +337,9 @@ function renderSummaryTable(data: KpiAllData, course: string, cohort: string): v
   let faRows = data.fieldAppSummary;
 
   if (course !== "all") {
-    achRows = achRows.filter(r => r.course === course || r.course === "전체");
-    frmRows = frmRows.filter(r => r.course === course || r.course === "전체");
-    faRows = faRows.filter(r => r.course === course || r.course === "전체");
+    achRows = achRows.filter((r) => r.course === course || r.course === "전체");
+    frmRows = frmRows.filter((r) => r.course === course || r.course === "전체");
+    faRows = faRows.filter((r) => r.course === course || r.course === "전체");
   }
 
   el.innerHTML = `
@@ -351,13 +352,17 @@ function renderSummaryTable(data: KpiAllData, course: string, cohort: string): v
           <th>A등급(사전)</th><th>A등급(사후)</th><th>응답률</th>
         </tr></thead>
         <tbody>
-          ${achRows.map(r => `<tr>
+          ${achRows
+            .map(
+              (r) => `<tr>
             <td>${r.course}</td><td>${r.cohort}</td><td>${r.studentCount}</td>
             <td>${r.preAvg.toFixed(1)}</td><td><strong>${r.postAvg.toFixed(1)}</strong></td>
             <td class="kpi-improvement">+${r.improvement.toFixed(1)}</td>
             <td>${r.preGradeA}</td><td><strong>${r.postGradeA}</strong></td>
             <td>${(r.responseRate * 100).toFixed(0)}%</td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -369,11 +374,15 @@ function renderSummaryTable(data: KpiAllData, course: string, cohort: string): v
           <th>1차 평균</th><th>2차 평균</th><th>종합 평균</th>
         </tr></thead>
         <tbody>
-          ${frmRows.map(r => `<tr>
+          ${frmRows
+            .map(
+              (r) => `<tr>
             <td>${r.course}</td><td>${r.cohort}</td><td>${r.studentCount}</td>
             <td>${r.phase1Avg.toFixed(2)}</td><td>${r.phase2Avg.toFixed(2)}</td>
             <td><strong>${r.overallAvg.toFixed(2)}</strong></td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -385,12 +394,16 @@ function renderSummaryTable(data: KpiAllData, course: string, cohort: string): v
           <th>평균점수</th><th>응답완료</th><th>응답률</th>
         </tr></thead>
         <tbody>
-          ${faRows.map(r => `<tr>
+          ${faRows
+            .map(
+              (r) => `<tr>
             <td>${r.course}</td><td>${r.cohort}</td><td>${r.studentCount}</td>
             <td><strong>${r.avgScore.toFixed(2)}</strong></td>
             <td>${r.completed}</td>
             <td>${(r.responseRate * 100).toFixed(0)}%</td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -410,13 +423,17 @@ function renderAchievementTable(ach: AchievementRecord[]): void {
           <th>향상도</th><th>등급변화</th>
         </tr></thead>
         <tbody>
-          ${ach.map(r => `<tr>
+          ${ach
+            .map(
+              (r) => `<tr>
             <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
             <td>${r.preTotal}</td><td><span class="${gradeClass(r.preGrade)}">${r.preGrade}</span></td>
             <td><strong>${r.postTotal}</strong></td><td><span class="${gradeClass(r.postGrade)}">${r.postGrade}</span></td>
             <td class="kpi-improvement">+${r.improvement}</td>
             <td>${r.gradeChange}</td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -437,15 +454,19 @@ function renderFormativeTable(frm: FormativeRecord[]): void {
           <th>종합</th><th>상태</th>
         </tr></thead>
         <tbody>
-          ${frm.map(r => `<tr>
+          ${frm
+            .map(
+              (r) => `<tr>
             <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
-            ${r.phase1Scores.map(s => `<td>${s}</td>`).join("")}
+            ${r.phase1Scores.map((s) => `<td>${s}</td>`).join("")}
             <td><strong>${r.phase1Avg.toFixed(1)}</strong></td>
-            ${r.phase2Scores.map(s => `<td>${s}</td>`).join("")}
+            ${r.phase2Scores.map((s) => `<td>${s}</td>`).join("")}
             <td><strong>${r.phase2Avg.toFixed(1)}</strong></td>
             <td><strong>${r.overallAvg.toFixed(2)}</strong></td>
             <td>${r.status}</td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -463,16 +484,20 @@ function renderFieldAppTable(fa: FieldAppRecord[]): void {
       <table class="kpi-table">
         <thead><tr>
           <th>No</th><th>이름</th><th>과정</th><th>기수</th>
-          ${labels.map(l => `<th>${l}</th>`).join("")}
+          ${labels.map((l) => `<th>${l}</th>`).join("")}
           <th>평균</th><th>등급</th>
         </tr></thead>
         <tbody>
-          ${fa.map(r => `<tr>
+          ${fa
+            .map(
+              (r) => `<tr>
             <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
-            ${r.scores.map(s => `<td>${s}</td>`).join("")}
+            ${r.scores.map((s) => `<td>${s}</td>`).join("")}
             <td><strong>${r.avgScore.toFixed(2)}</strong></td>
             <td><span class="${gradeClass(r.grade)}">${r.grade}</span></td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -503,7 +528,14 @@ export function resetKpiDashboard(): void {
   }
 
   // 카드 초기화
-  for (const cardId of ["kpiTotalStudents", "kpiPreAvg", "kpiPostAvg", "kpiImprovement", "kpiFormativeAvg", "kpiFieldAppAvg"]) {
+  for (const cardId of [
+    "kpiTotalStudents",
+    "kpiPreAvg",
+    "kpiPostAvg",
+    "kpiImprovement",
+    "kpiFormativeAvg",
+    "kpiFieldAppAvg",
+  ]) {
     setText(cardId, "-");
   }
 

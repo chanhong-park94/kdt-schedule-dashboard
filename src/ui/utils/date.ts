@@ -10,10 +10,7 @@ export function parseCompactDate(value: string): Date | null {
   const day = Number.parseInt(value.slice(6, 8), 10);
 
   const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+  const validDate = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 
   return validDate ? date : null;
 }
@@ -28,10 +25,7 @@ export function parseIsoDate(value: string): Date | null {
   const day = Number.parseInt(value.slice(8, 10), 10);
 
   const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+  const validDate = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 
   return validDate ? date : null;
 }

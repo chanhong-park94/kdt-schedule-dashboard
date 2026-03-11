@@ -24,10 +24,7 @@ export function normalizeDateYYYYMMDD(value: string): string | null {
   const day = Number.parseInt(trimmed.slice(6, 8), 10);
 
   const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+  const validDate = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 
   if (!validDate) {
     return null;

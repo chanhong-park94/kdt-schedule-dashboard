@@ -30,7 +30,7 @@ function parseCourseSubjectKey(key: string): { courseId: string; subjectCode: st
   const [courseIdRaw, subjectRaw] = key.split("|||");
   return {
     courseId: normalizeCourseId(courseIdRaw ?? ""),
-    subjectCode: normalizeSubjectCode(subjectRaw ?? "").toUpperCase()
+    subjectCode: normalizeSubjectCode(subjectRaw ?? "").toUpperCase(),
   };
 }
 
@@ -52,16 +52,14 @@ export function applyCourseTemplateToState(params: {
 } {
   const targetCourseId = normalizeCourseId(params.template.courseId);
 
-  const keptSubjects = params.subjectDirectory.filter(
-    (item) => normalizeCourseId(item.courseId) !== targetCourseId
-  );
+  const keptSubjects = params.subjectDirectory.filter((item) => normalizeCourseId(item.courseId) !== targetCourseId);
   const replacedSubjectCount = params.subjectDirectory.length - keptSubjects.length;
   const nextSubjects = params.template.subjectList
     .map((item) => ({
       courseId: targetCourseId,
       subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
       subjectName: item.subjectName ?? "",
-      memo: item.memo ?? ""
+      memo: item.memo ?? "",
     }))
     .filter((item) => item.subjectCode.length > 0);
 
@@ -75,7 +73,7 @@ export function applyCourseTemplateToState(params: {
       const parsed = parseCourseSubjectKey(item.key);
       return {
         key: toCourseSubjectKey(targetCourseId, parsed.subjectCode),
-        instructorCode: normalizeInstructorCode(item.instructorCode)
+        instructorCode: normalizeInstructorCode(item.instructorCode),
       };
     })
     .filter((item) => item.key.length > 0 && item.instructorCode.length > 0);
@@ -88,7 +86,7 @@ export function applyCourseTemplateToState(params: {
     subjectInstructorMappings: [...keptMappings, ...nextMappings],
     overwrite: {
       subjectEntriesReplaced: replacedSubjectCount,
-      mappingEntriesReplaced: replacedMappingCount
-    }
+      mappingEntriesReplaced: replacedMappingCount,
+    },
   };
 }

@@ -15,7 +15,7 @@ const defaultDeps: HolidaysFeatureDeps = {
   refreshHrdValidation: () => {},
   scheduleAutoSave: () => {},
   setHolidayLoadingState: () => {},
-  setScheduleError: () => {}
+  setScheduleError: () => {},
 };
 
 let deps: HolidaysFeatureDeps = defaultDeps;
@@ -28,7 +28,7 @@ export function renderDateList(
   listElement: HTMLUListElement,
   values: string[],
   toLabel: (value: string) => string,
-  onRemove: (value: string) => void
+  onRemove: (value: string) => void,
 ): void {
   listElement.innerHTML = "";
 
@@ -65,19 +65,29 @@ export function getHolidayDisplayLabel(date: string): string {
 }
 
 export function renderHolidayAndBreakLists(): void {
-  renderDateList(domRefs.holidayList, appState.holidayDates, (value) => {
-    return getHolidayDisplayLabel(value);
-  }, (value) => {
-    appState.holidayDates = appState.holidayDates.filter((item) => item !== value);
-    renderHolidayAndBreakLists();
-  });
+  renderDateList(
+    domRefs.holidayList,
+    appState.holidayDates,
+    (value) => {
+      return getHolidayDisplayLabel(value);
+    },
+    (value) => {
+      appState.holidayDates = appState.holidayDates.filter((item) => item !== value);
+      renderHolidayAndBreakLists();
+    },
+  );
 
-  renderDateList(domRefs.customBreakList, appState.customBreakDates, (value) => {
-    return value;
-  }, (value) => {
-    appState.customBreakDates = appState.customBreakDates.filter((item) => item !== value);
-    renderHolidayAndBreakLists();
-  });
+  renderDateList(
+    domRefs.customBreakList,
+    appState.customBreakDates,
+    (value) => {
+      return value;
+    },
+    (value) => {
+      appState.customBreakDates = appState.customBreakDates.filter((item) => item !== value);
+      renderHolidayAndBreakLists();
+    },
+  );
 
   deps.refreshHrdValidation();
   deps.scheduleAutoSave();

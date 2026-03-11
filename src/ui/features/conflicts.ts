@@ -20,7 +20,7 @@ export const CONFLICT_COLUMNS = [
   "A교과목",
   "과정B",
   "B시간",
-  "B교과목"
+  "B교과목",
 ] as const;
 
 export const DAY_CONFLICT_COLUMNS = [
@@ -34,13 +34,13 @@ export const DAY_CONFLICT_COLUMNS = [
   "모듈B",
   "시작B",
   "종료B",
-  "겹침일수(정책반영)"
+  "겹침일수(정책반영)",
 ] as const;
 
 export const RESOURCE_TYPE_LABEL: Record<ResourceType, string> = {
   INSTRUCTOR: "강사",
   FACILITATOR: "퍼실",
-  OPERATION: "운영"
+  OPERATION: "운영",
 };
 
 // Private to this module
@@ -114,7 +114,7 @@ export function renderTimeConflicts(): void {
       conflict.A교과목,
       conflict.과정B,
       conflict.B시간,
-      conflict.B교과목
+      conflict.B교과목,
     ];
 
     for (const [index, value] of columns.entries()) {
@@ -153,7 +153,7 @@ export function applyConflictFilters(): void {
         a.일자.localeCompare(b.일자) ||
         a.기준.localeCompare(b.기준) ||
         a.키.localeCompare(b.키) ||
-        a.과정A.localeCompare(b.과정A)
+        a.과정A.localeCompare(b.과정A),
     );
 
   renderTimeConflicts();
@@ -188,7 +188,7 @@ export function downloadVisibleTimeConflictsCsv(): void {
     conflict.A교과목,
     conflict.과정B,
     conflict.B시간,
-    conflict.B교과목
+    conflict.B교과목,
   ]);
 
   downloadCsvFile(`conflicts_instructor_time_${getTodayCompactDate()}.csv`, CONFLICT_COLUMNS, rows);
@@ -233,19 +233,19 @@ export function renderConflictDetailModalContent(): void {
         conflict.A교과목,
         conflict.과정B,
         conflict.B시간,
-        conflict.B교과목
-      ])
+        conflict.B교과목,
+      ]),
     },
     {
       label: "강사 배치(일) 충돌",
       columns: DAY_CONFLICT_COLUMNS,
-      rows: appState.instructorDayOverlaps.map((overlap) => toDayConflictRow(overlap))
+      rows: appState.instructorDayOverlaps.map((overlap) => toDayConflictRow(overlap)),
     },
     {
       label: "퍼실/운영 배치(일) 충돌",
       columns: DAY_CONFLICT_COLUMNS,
-      rows: appState.facilitatorOperationOverlaps.map((overlap) => toDayConflictRow(overlap))
-    }
+      rows: appState.facilitatorOperationOverlaps.map((overlap) => toDayConflictRow(overlap)),
+    },
   ];
 
   const hasAnyConflict = sections.some((section) => section.rows.length > 0);
@@ -321,7 +321,7 @@ function overlapToSearchText(overlap: StaffOverlap): string {
     overlap.assignmentB.cohort,
     overlap.assignmentB.phase,
     overlap.assignmentB.startDate,
-    overlap.assignmentB.endDate
+    overlap.assignmentB.endDate,
   ]
     .join(" ")
     .toLowerCase();
@@ -358,13 +358,13 @@ export function renderInstructorDayOverlapPanel(): void {
 
     tr.appendChild(
       createClickableCell(overlap.assignmentA.cohort, () =>
-        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase),
+      ),
     );
     tr.appendChild(
       createClickableCell(overlap.assignmentA.phase, () =>
-        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase),
+      ),
     );
 
     const startACell = document.createElement("td");
@@ -383,13 +383,13 @@ export function renderInstructorDayOverlapPanel(): void {
 
     tr.appendChild(
       createClickableCell(overlap.assignmentB.cohort, () =>
-        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase),
+      ),
     );
     tr.appendChild(
       createClickableCell(overlap.assignmentB.phase, () =>
-        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase),
+      ),
     );
 
     const startBCell = document.createElement("td");
@@ -424,7 +424,7 @@ export function applyInstructorDayFilters(): void {
       (a, b) =>
         a.assignee.localeCompare(b.assignee) ||
         a.overlapStartDate.localeCompare(b.overlapStartDate) ||
-        a.assignmentA.cohort.localeCompare(b.assignmentA.cohort)
+        a.assignmentA.cohort.localeCompare(b.assignmentA.cohort),
     );
 
   renderInstructorDayOverlapPanel();
@@ -466,13 +466,13 @@ export function renderFoDayOverlapPanel(): void {
 
     tr.appendChild(
       createClickableCell(overlap.assignmentA.cohort, () =>
-        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase),
+      ),
     );
     tr.appendChild(
       createClickableCell(overlap.assignmentA.phase, () =>
-        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentA.cohort, overlap.assignmentA.phase),
+      ),
     );
 
     const startACell = document.createElement("td");
@@ -491,13 +491,13 @@ export function renderFoDayOverlapPanel(): void {
 
     tr.appendChild(
       createClickableCell(overlap.assignmentB.cohort, () =>
-        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase),
+      ),
     );
     tr.appendChild(
       createClickableCell(overlap.assignmentB.phase, () =>
-        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase)
-      )
+        _highlightGanttByCohortModule(overlap.assignmentB.cohort, overlap.assignmentB.phase),
+      ),
     );
 
     const startBCell = document.createElement("td");
@@ -532,7 +532,7 @@ export function applyFoDayFilters(): void {
       (a, b) =>
         a.resourceType.localeCompare(b.resourceType) ||
         a.assignee.localeCompare(b.assignee) ||
-        a.overlapStartDate.localeCompare(b.overlapStartDate)
+        a.overlapStartDate.localeCompare(b.overlapStartDate),
     );
 
   renderFoDayOverlapPanel();

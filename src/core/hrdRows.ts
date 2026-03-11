@@ -74,7 +74,7 @@ function resolveDayCodeContext(daySessions: Session[]): DayCodeContext {
     remoteType: source?.["방학/원격여부"] ?? "",
     instructorCode: normalizeInstructorCode(source?.훈련강사코드 ?? ""),
     classroomCode: normalizeClassroomCode(source?.["교육장소(강의실)코드"] ?? ""),
-    subjectCode: normalizeSubjectCode(source?.["교과목(및 능력단위)코드"] ?? "")
+    subjectCode: normalizeSubjectCode(source?.["교과목(및 능력단위)코드"] ?? ""),
   };
 }
 
@@ -111,16 +111,14 @@ function buildClassRows(
   compactDate: string,
   dayStart: string,
   dayEnd: string,
-  context: DayCodeContext
+  context: DayCodeContext,
 ): HrdRow[] {
   const rows: HrdRow[] = [];
   for (const block of blocks) {
     for (const slotStart of expandHourlyStarts(block.startHHMM, block.endHHMM)) {
       const slotMinute = hhmmToMinutes(slotStart);
       if (slotMinute === null) continue;
-      const inBreak = breakRanges.some(
-        (range) => slotMinute >= range.startMin && slotMinute < range.endMin
-      );
+      const inBreak = breakRanges.some((range) => slotMinute >= range.startMin && slotMinute < range.endMin);
       if (inBreak) continue;
       rows.push({
         훈련일자: compactDate,
@@ -131,7 +129,7 @@ function buildClassRows(
         시간구분: "1",
         훈련강사코드: context.instructorCode,
         "교육장소(강의실)코드": context.classroomCode,
-        교과목코드: context.subjectCode
+        교과목코드: context.subjectCode,
       });
     }
   }
@@ -143,7 +141,7 @@ function buildBreakRows(
   compactDate: string,
   dayStart: string,
   dayEnd: string,
-  remoteType: string
+  remoteType: string,
 ): HrdRow[] {
   return breakRanges.map((br) => ({
     훈련일자: compactDate,
@@ -154,15 +152,11 @@ function buildBreakRows(
     시간구분: "2",
     훈련강사코드: "",
     "교육장소(강의실)코드": "",
-    교과목코드: ""
+    교과목코드: "",
   }));
 }
 
-function buildRowsFromGeneratedDay(
-  compactDate: string,
-  day: ScheduleDay,
-  context: DayCodeContext
-): HrdRow[] {
+function buildRowsFromGeneratedDay(compactDate: string, day: ScheduleDay, context: DayCodeContext): HrdRow[] {
   const blockPoints: number[] = [];
   for (const block of day.blocks) {
     const start = hhmmToMinutes(block.startHHMM);
@@ -184,7 +178,7 @@ function buildRowsFromGeneratedDay(
 
   const rows = [
     ...buildClassRows(day.blocks, breakRanges, compactDate, dayStart, dayEnd, context),
-    ...buildBreakRows(breakRanges, compactDate, dayStart, dayEnd, context.remoteType)
+    ...buildBreakRows(breakRanges, compactDate, dayStart, dayEnd, context.remoteType),
   ];
 
   return sortRows(dedupeRows(rows));
@@ -229,7 +223,7 @@ function buildRowsFromSessions(compactDate: string, daySessions: Session[]): Hrd
         시간구분: "2",
         훈련강사코드: "",
         "교육장소(강의실)코드": "",
-        교과목코드: ""
+        교과목코드: "",
       });
       continue;
     }
@@ -243,7 +237,7 @@ function buildRowsFromSessions(compactDate: string, daySessions: Session[]): Hrd
       시간구분: "1",
       훈련강사코드: normalizeInstructorCode(session.훈련강사코드 || context.instructorCode),
       "교육장소(강의실)코드": normalizeClassroomCode(session["교육장소(강의실)코드"] || context.classroomCode),
-      교과목코드: normalizeSubjectCode(session["교과목(및 능력단위)코드"] || context.subjectCode)
+      교과목코드: normalizeSubjectCode(session["교과목(및 능력단위)코드"] || context.subjectCode),
     });
   }
 
@@ -272,7 +266,7 @@ export function buildHrdRowsForCohort(input: HrdRowsBuildInput): HrdRow[] {
 
   const dates = new Set<string>([
     ...Array.from(sessionsByDate.keys()),
-    ...Array.from(generatedDayByCompactDate.keys())
+    ...Array.from(generatedDayByCompactDate.keys()),
   ]);
 
   const allRows: HrdRow[] = [];

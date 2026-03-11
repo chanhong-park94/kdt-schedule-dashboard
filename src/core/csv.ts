@@ -100,7 +100,7 @@ export function parseCsvWithDiagnostics(text: string): CsvParseResult {
         message:
           columns.length < expectedCount
             ? `${rowNumber}행: 열이 ${columns.length}개지만 헤더는 ${expectedCount}개입니다. 누락된 열은 빈 문자열로 처리됩니다.`
-            : `${rowNumber}행: 열이 ${columns.length}개지만 헤더는 ${expectedCount}개입니다. 초과된 열은 무시됩니다.`
+            : `${rowNumber}행: 열이 ${columns.length}개지만 헤더는 ${expectedCount}개입니다. 초과된 열은 무시됩니다.`,
       });
     }
 

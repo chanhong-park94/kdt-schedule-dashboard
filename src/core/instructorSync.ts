@@ -8,11 +8,7 @@ type InstructorRow = {
   memo: string | null;
 };
 
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxAttempts: number,
-  baseDelayMs: number = 300
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, maxAttempts: number, baseDelayMs: number = 300): Promise<T> {
   if (maxAttempts < 1) {
     throw new RangeError(`withRetry: maxAttempts must be >= 1, got ${maxAttempts}`);
   }
@@ -37,7 +33,7 @@ export async function withRetry<T>(
  */
 export async function paginateAll<T>(
   fetcher: (from: number, to: number) => Promise<T[]>,
-  pageSize: number
+  pageSize: number,
 ): Promise<T[]> {
   if (pageSize < 1) {
     throw new RangeError(`paginateAll: pageSize must be >= 1, got ${pageSize}`);
@@ -84,7 +80,7 @@ function toInstructorEntry(row: unknown): InstructorDirectoryEntry | null {
   return {
     instructorCode,
     name: toText(data.name),
-    memo: toText(data.memo)
+    memo: toText(data.memo),
   };
 }
 
@@ -98,7 +94,7 @@ function mergeRows(existing: InstructorDirectoryEntry[]): Map<string, Instructor
     map.set(normalizedCode, {
       instructorCode: normalizedCode,
       name: toText(row.name),
-      memo: toText(row.memo)
+      memo: toText(row.memo),
     });
   }
   return map;
@@ -109,8 +105,8 @@ const client = hasSupabaseConfig
       auth: {
         autoRefreshToken: false,
         persistSession: false,
-        detectSessionInUrl: false
-      }
+        detectSessionInUrl: false,
+      },
     })
   : null;
 
@@ -137,7 +133,7 @@ export async function loadInstructorDirectoryFromCloud(): Promise<InstructorDire
         if (res.error) throw new Error(res.error.message);
         return Array.isArray(res.data) ? res.data : [];
       }, PAGE_SIZE),
-    3
+    3,
   );
 
   const rows: InstructorDirectoryEntry[] = [];
@@ -158,12 +154,12 @@ export async function upsertInstructorInCloud(entry: InstructorDirectoryEntry): 
   const payload: InstructorRow = {
     instructor_code: entry.instructorCode,
     name: entry.name || null,
-    memo: entry.memo || null
+    memo: entry.memo || null,
   };
 
   await withRetry(async () => {
     const res = await client!.from(TABLE_NAME).upsert(payload, {
-      onConflict: "instructor_code"
+      onConflict: "instructor_code",
     });
     if (res.error) throw new Error(res.error.message);
   }, 3);
@@ -187,7 +183,7 @@ export async function deleteInstructorFromCloud(instructorCode: string): Promise
 
 export function mergeWithLocalInstructorDirectory(
   local: InstructorDirectoryEntry[],
-  cloud: InstructorDirectoryEntry[]
+  cloud: InstructorDirectoryEntry[],
 ): InstructorDirectoryEntry[] {
   if (cloud.length === 0) {
     return [...local];

@@ -13,7 +13,7 @@ function toCompactDate(value: string): string {
 function sanitizeOptionalCode(
   value: string | undefined,
   fallback: string,
-  normalizer: (raw: string) => string
+  normalizer: (raw: string) => string,
 ): string {
   const trimmed = (value ?? "").trim();
   return normalizer(trimmed.length > 0 ? trimmed : fallback);
@@ -45,7 +45,7 @@ function normalizeBlock(startValue: string, endValue: string, context: string): 
     startHHMM,
     endHHMM,
     startMin,
-    endMin
+    endMin,
   };
 }
 
@@ -71,9 +71,7 @@ export function fromScheduleDaysToSessions(params: FromScheduleDaysToSessionsPar
     }
 
     const normalizedBlocks = day.blocks
-      .map((block, blockIndex) =>
-        normalizeBlock(block.startHHMM, block.endHHMM, `${context}.blocks[${blockIndex}]`)
-      )
+      .map((block, blockIndex) => normalizeBlock(block.startHHMM, block.endHHMM, `${context}.blocks[${blockIndex}]`))
       .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
 
     const dayStart = normalizedBlocks[0];
@@ -93,7 +91,7 @@ export function fromScheduleDaysToSessions(params: FromScheduleDaysToSessionsPar
         과정기수: cohort,
         normalizedDate,
         startMin: dayStart.startMin,
-        endMin: dayEnd.endMin
+        endMin: dayEnd.endMin,
       });
     });
   });

@@ -15,8 +15,12 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
 
 /** NaN-safe hour/minute from schedule config */
-function safeHour(h: number): number { return Number.isFinite(h) ? h : DEFAULT_SLACK_SCHEDULE.hour; }
-function safeMinute(m: number): number { return Number.isFinite(m) ? m : DEFAULT_SLACK_SCHEDULE.minute; }
+function safeHour(h: number): number {
+  return Number.isFinite(h) ? h : DEFAULT_SLACK_SCHEDULE.hour;
+}
+function safeMinute(m: number): number {
+  return Number.isFinite(m) ? m : DEFAULT_SLACK_SCHEDULE.minute;
+}
 
 // ─── 유틸 ────────────────────────────────────────────────────
 
@@ -146,7 +150,7 @@ async function fetchAttendanceForReport(
 
   // 대상 날짜 출결만 추출
   const targetRaw = targetDate.replace(/-/g, "");
-  const targetDaily = daily.filter((d) => ((d.atendDe || "").toString().replace(/[^0-9]/g, "")) === targetRaw);
+  const targetDaily = daily.filter((d) => (d.atendDe || "").toString().replace(/[^0-9]/g, "") === targetRaw);
   const todayMap = new Map<string, HrdRawAttendance>();
   for (const d of targetDaily) {
     const nm = normalizeName(d.cstmrNm || d.trneeCstmrNm || d.trneNm || "");
@@ -161,7 +165,7 @@ async function fetchAttendanceForReport(
     const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
 
     const todayData = todayMap.get(key);
-    const status = todayData ? resolveStatus(todayData) : (dropout ? "중도탈락" : "-");
+    const status = todayData ? resolveStatus(todayData) : dropout ? "중도탈락" : "-";
     const inTime = todayData ? formatTime(todayData.lpsilTime || todayData.atendTmIn) : "";
     const outTime = todayData ? formatTime(todayData.levromTime || todayData.atendTmOut) : "";
 
@@ -172,14 +176,17 @@ async function fetchAttendanceForReport(
     const excusedDays = records.filter((r) => isExcusedStatus(r.status)).length;
     const maxAbsent = totalDays > 0 ? Math.floor(totalDays * 0.2) : 0;
     const remainingAbsent = maxAbsent - absentDays;
-    const effectiveDays = totalDays > 0 ? totalDays - excusedDays : (records.length || 1);
-    const attendanceRate = effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : (totalDays === 0 ? 100 : 0);
+    const effectiveDays = totalDays > 0 ? totalDays - excusedDays : records.length || 1;
+    const attendanceRate = effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : totalDays === 0 ? 100 : 0;
 
     // 퇴실 미체크 판단
     const missingCheckout = !!(
       course.endTime &&
-      status !== "결석" && status !== "-" && !dropout &&
-      inTime && inTime !== "-" &&
+      status !== "결석" &&
+      status !== "-" &&
+      !dropout &&
+      inTime &&
+      inTime !== "-" &&
       (!outTime || outTime === "-")
     );
 
@@ -234,7 +241,7 @@ async function checkAndSend(): Promise<void> {
   console.log(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
 
   // 대상 과정 결정
-  const courses = config.courses.filter(c => {
+  const courses = config.courses.filter((c) => {
     if (schedule.targetCourses.length === 0) return true;
     return schedule.targetCourses.includes(c.trainPrId);
   });
@@ -264,19 +271,23 @@ async function checkAndSend(): Promise<void> {
 
       // 하차방어율 계산 (명단 기반: 전체 인원 대비 재적 인원)
       const total = students.length;
-      const dropouts = students.filter(s => s.dropout).length;
+      const dropouts = students.filter((s) => s.dropout).length;
       const active = total - dropouts;
       const defenseRate = total > 0 ? (active / total) * 100 : 100;
 
       // 관리대상(위험+경고+주의+퇴실미체크)만 있을 때 전송
-      const riskStudents = students.filter(s => !s.dropout && (
-        s.riskLevel === "danger" || s.riskLevel === "warning" || s.riskLevel === "caution" || s.missingCheckout
-      ));
+      const riskStudents = students.filter(
+        (s) =>
+          !s.dropout &&
+          (s.riskLevel === "danger" || s.riskLevel === "warning" || s.riskLevel === "caution" || s.missingCheckout),
+      );
       if (riskStudents.length === 0 && students.length === 0) continue;
 
       await sendSlackReportDirect(webhookUrl, course.name, latestDegr, reportDate, students, defenseRate);
       sentCount++;
-      console.log(`[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결, ${course.category || "실업자"})`);
+      console.log(
+        `[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결, ${course.category || "실업자"})`,
+      );
     } catch (e) {
       failCount++;
       console.error(`[Scheduler] Failed for ${course.name}:`, e);
@@ -316,9 +327,7 @@ function emitStatus(msg: string, type: "info" | "success" | "error"): void {
 /**
  * 스케줄러 시작 — 매 분마다 체크
  */
-export function startScheduler(
-  onStatus?: (msg: string, type: "info" | "success" | "error") => void,
-): void {
+export function startScheduler(onStatus?: (msg: string, type: "info" | "success" | "error") => void): void {
   if (intervalId) return; // 이미 실행 중
   statusCallback = onStatus ?? null;
 
@@ -337,13 +346,13 @@ export function startScheduler(
 
   // 60초마다 체크
   intervalId = setInterval(() => {
-    checkAndSend().catch(e => {
+    checkAndSend().catch((e) => {
       console.error("[Scheduler] Unexpected error:", e);
     });
   }, 60_000);
 
   // 시작 직후 1회 체크
-  checkAndSend().catch(e => {
+  checkAndSend().catch((e) => {
     console.error("[Scheduler] Initial check error:", e);
   });
 

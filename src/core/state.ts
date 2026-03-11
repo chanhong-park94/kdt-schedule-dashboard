@@ -183,14 +183,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     icons?: Record<string, unknown>;
   };
 
-  const defaultOrder: AppSidebarNavKey[] = [
-    "timeline",
-    "generator",
-    "kpi",
-    "attendance",
-    "analytics",
-    "settings"
-  ];
+  const defaultOrder: AppSidebarNavKey[] = ["timeline", "generator", "kpi", "attendance", "analytics", "settings"];
 
   const order: AppSidebarNavKey[] = [];
   if (Array.isArray(row.order)) {
@@ -219,7 +212,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
       analytics: toSidebarLabel(labelsSource.analytics, "훈련생 분석"),
-      settings: toSidebarLabel(labelsSource.settings, "설정")
+      settings: toSidebarLabel(labelsSource.settings, "설정"),
     },
     icons: {
       timeline: toSidebarIcon(iconsSource.timeline, "📅"),
@@ -227,8 +220,8 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       kpi: toSidebarIcon(iconsSource.kpi, "📊"),
       attendance: toSidebarIcon(iconsSource.attendance, "📋"),
       analytics: toSidebarIcon(iconsSource.analytics, "📈"),
-      settings: toSidebarIcon(iconsSource.settings, "⚙️")
-    }
+      settings: toSidebarIcon(iconsSource.settings, "⚙️"),
+    },
   };
 }
 
@@ -252,7 +245,7 @@ function normalizeSession(raw: unknown): Session | null {
     과정기수: toStringValue(row.과정기수),
     normalizedDate: typeof row.normalizedDate === "string" ? row.normalizedDate : null,
     startMin: typeof row.startMin === "number" ? row.startMin : null,
-    endMin: typeof row.endMin === "number" ? row.endMin : null
+    endMin: typeof row.endMin === "number" ? row.endMin : null,
   };
 }
 
@@ -278,7 +271,7 @@ function normalizeTemplateRows(raw: unknown): TemplateRowState[] {
       start: toStringValue(row.start),
       end: toStringValue(row.end),
       breakStart: toStringValue(row.breakStart),
-      breakEnd: toStringValue(row.breakEnd)
+      breakEnd: toStringValue(row.breakEnd),
     });
   }
 
@@ -307,7 +300,7 @@ function normalizeStaffingCells(raw: unknown): SavedStaffCell[] {
       assignee: toStringValue(row.assignee),
       startDate: toStringValue(row.startDate),
       endDate: toStringValue(row.endDate),
-      resourceType: row.resourceType
+      resourceType: row.resourceType,
     });
   }
 
@@ -362,9 +355,7 @@ function normalizeStringArray(raw: unknown): string[] {
   return raw.filter((item): item is string => typeof item === "string");
 }
 
-function normalizeInstructorDirectory(
-  raw: unknown
-): Array<{ instructorCode: string; name: string; memo: string }> {
+function normalizeInstructorDirectory(raw: unknown): Array<{ instructorCode: string; name: string; memo: string }> {
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -382,16 +373,14 @@ function normalizeInstructorDirectory(
     rows.push({
       instructorCode,
       name: toStringValue(row.name),
-      memo: toStringValue(row.memo)
+      memo: toStringValue(row.memo),
     });
   }
 
   return rows;
 }
 
-function normalizeCourseRegistry(
-  raw: unknown
-): Array<{ courseId: string; courseName: string; memo: string }> {
+function normalizeCourseRegistry(raw: unknown): Array<{ courseId: string; courseName: string; memo: string }> {
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -410,7 +399,7 @@ function normalizeCourseRegistry(
     rows.push({
       courseId,
       courseName: toStringValue(row.courseName),
-      memo: toStringValue(row.memo)
+      memo: toStringValue(row.memo),
     });
   }
 
@@ -418,7 +407,7 @@ function normalizeCourseRegistry(
 }
 
 function normalizeSubjectDirectory(
-  raw: unknown
+  raw: unknown,
 ): Array<{ courseId: string; subjectCode: string; subjectName: string; memo: string }> {
   if (!Array.isArray(raw)) {
     return [];
@@ -439,7 +428,7 @@ function normalizeSubjectDirectory(
       courseId,
       subjectCode,
       subjectName: toStringValue(row.subjectName),
-      memo: toStringValue(row.memo)
+      memo: toStringValue(row.memo),
     });
   }
 
@@ -469,7 +458,7 @@ function normalizeSubjectInstructorMappings(raw: unknown): Array<{ moduleKey: st
 }
 
 function normalizeCourseSubjectInstructorMapping(
-  raw: unknown
+  raw: unknown,
 ): Array<{ courseId: string; moduleKey: string; instructorCode: string }> {
   if (!Array.isArray(raw)) {
     return [];
@@ -515,7 +504,7 @@ function normalizeCourseTemplates(raw: unknown): AppStateShared["courseTemplates
       .map((v) => ({
         subjectCode: normalizeSubjectCode(toStringValue(v.subjectCode)).toUpperCase(),
         subjectName: toStringValue(v.subjectName),
-        memo: toStringValue(v.memo)
+        memo: toStringValue(v.memo),
       }))
       .filter((v) => v.subjectCode.length > 0);
     const mappingRaw = Array.isArray(row.subjectInstructorMapping) ? row.subjectInstructorMapping : [];
@@ -523,7 +512,7 @@ function normalizeCourseTemplates(raw: unknown): AppStateShared["courseTemplates
       .filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
       .map((v) => ({
         key: toStringValue(v.key).trim(),
-        instructorCode: normalizeInstructorCode(toStringValue(v.instructorCode))
+        instructorCode: normalizeInstructorCode(toStringValue(v.instructorCode)),
       }))
       .filter((v) => v.key.length > 0 && v.instructorCode.length > 0);
 
@@ -535,7 +524,7 @@ function normalizeCourseTemplates(raw: unknown): AppStateShared["courseTemplates
       holidays: normalizeStringArray(row.holidays),
       customBreaks: normalizeStringArray(row.customBreaks),
       subjectList,
-      subjectInstructorMapping
+      subjectInstructorMapping,
     });
   }
 
@@ -549,18 +538,14 @@ function normalizeStateLike(input: Record<string, unknown>): AppStateV1 {
       : {};
 
   const uiRaw =
-    input.ui && typeof input.ui === "object" && !Array.isArray(input.ui)
-      ? (input.ui as Record<string, unknown>)
-      : {};
+    input.ui && typeof input.ui === "object" && !Array.isArray(input.ui) ? (input.ui as Record<string, unknown>) : {};
   const normalizedSubjectDirectory = normalizeSubjectDirectory(input.subjectDirectory);
   const normalizedSubjectRegistryByCourse = normalizeSubjectDirectory(input.subjectRegistryByCourse);
   const normalizedInstructorDirectory = normalizeInstructorDirectory(input.instructorDirectory);
   const normalizedInstructorRegistry = normalizeInstructorDirectory(input.instructorRegistry);
 
   const sessions = Array.isArray(input.sessions)
-    ? input.sessions
-        .map((item) => normalizeSession(item))
-        .filter((item): item is Session => item !== null)
+    ? input.sessions.map((item) => normalizeSession(item)).filter((item): item is Session => item !== null)
     : [];
 
   return {
@@ -582,12 +567,13 @@ function normalizeStateLike(input: Record<string, unknown>): AppStateV1 {
       customBreaks: normalizeStringArray(scheduleGeneratorRaw.customBreaks),
       generatedResult: (scheduleGeneratorRaw.generatedResult as GenerateScheduleResult | null | undefined) ?? null,
       generatedCohort: toStringValue(scheduleGeneratorRaw.generatedCohort),
-      publicHolidayLoaded: toBooleanValue(scheduleGeneratorRaw.publicHolidayLoaded)
+      publicHolidayLoaded: toBooleanValue(scheduleGeneratorRaw.publicHolidayLoaded),
     },
     staffingCells: normalizeStaffingCells(input.staffingCells),
     courseRegistry: normalizeCourseRegistry(input.courseRegistry),
     instructorDirectory: normalizedInstructorDirectory,
-    instructorRegistry: normalizedInstructorRegistry.length > 0 ? normalizedInstructorRegistry : normalizedInstructorDirectory,
+    instructorRegistry:
+      normalizedInstructorRegistry.length > 0 ? normalizedInstructorRegistry : normalizedInstructorDirectory,
     subjectDirectory: normalizedSubjectDirectory,
     subjectRegistryByCourse:
       normalizedSubjectRegistryByCourse.length > 0 ? normalizedSubjectRegistryByCourse : normalizedSubjectDirectory,
@@ -602,15 +588,15 @@ function normalizeStateLike(input: Record<string, unknown>): AppStateV1 {
       keySearch: toStringValue(uiRaw.keySearch),
       instructorDaySearch: toStringValue(uiRaw.instructorDaySearch),
       foDaySearch: toStringValue(uiRaw.foDaySearch),
-      sidebarMenu: normalizeSidebarMenuConfig(uiRaw.sidebarMenu)
-    }
+      sidebarMenu: normalizeSidebarMenuConfig(uiRaw.sidebarMenu),
+    },
   };
 }
 
 export function migrateV1ToV2(state: AppStateV1): AppStateV2 {
   return {
     ...state,
-    schemaVersion: CURRENT_SCHEMA_VERSION
+    schemaVersion: CURRENT_SCHEMA_VERSION,
   };
 }
 
@@ -638,13 +624,13 @@ export function migrateState(state: unknown): { state: AppStateVCurrent; warning
     return {
       state: {
         ...normalizedV1,
-        schemaVersion: CURRENT_SCHEMA_VERSION
+        schemaVersion: CURRENT_SCHEMA_VERSION,
       },
-      warnings
+      warnings,
     };
   }
 
   throw new Error(
-    `지원하지 않는 schemaVersion(${String(rawVersion)})입니다. 지원 가능한 버전: 1, ${CURRENT_SCHEMA_VERSION}`
+    `지원하지 않는 schemaVersion(${String(rawVersion)})입니다. 지원 가능한 버전: 1, ${CURRENT_SCHEMA_VERSION}`,
   );
 }

@@ -6,7 +6,7 @@ const ALL_RESOURCE_TYPES: ResourceType[] = ["INSTRUCTOR", "FACILITATOR", "OPERAT
 
 const BASIS_CONFIG: Array<{ key: BasisKey; label: Conflict["기준"]; resourceType: ResourceType }> = [
   { key: "교육장소(강의실)코드", label: "강의실", resourceType: "OPERATION" },
-  { key: "훈련강사코드", label: "강사", resourceType: "INSTRUCTOR" }
+  { key: "훈련강사코드", label: "강사", resourceType: "INSTRUCTOR" },
 ];
 
 export type DetectConflictOptions = {
@@ -46,7 +46,7 @@ export function detectConflicts(sessions: Session[], options: DetectConflictOpti
         (a, b) =>
           (a.startMin ?? Number.MAX_SAFE_INTEGER) - (b.startMin ?? Number.MAX_SAFE_INTEGER) ||
           (a.endMin ?? Number.MAX_SAFE_INTEGER) - (b.endMin ?? Number.MAX_SAFE_INTEGER) ||
-          a.과정기수.localeCompare(b.과정기수)
+          a.과정기수.localeCompare(b.과정기수),
       );
 
       for (let i = 0; i < bucket.length; i += 1) {
@@ -80,7 +80,7 @@ export function detectConflicts(sessions: Session[], options: DetectConflictOpti
               A교과목: a["교과목(및 능력단위)코드"],
               과정B: b.과정기수,
               B시간: `${b.훈련시작시간}-${b.훈련종료시간}`,
-              B교과목: b["교과목(및 능력단위)코드"]
+              B교과목: b["교과목(및 능력단위)코드"],
             });
           }
         }
@@ -89,9 +89,6 @@ export function detectConflicts(sessions: Session[], options: DetectConflictOpti
   }
 
   return conflicts.sort(
-    (a, b) =>
-      a.일자.localeCompare(b.일자) ||
-      a.키.localeCompare(b.키) ||
-      a.과정A.localeCompare(b.과정A)
+    (a, b) => a.일자.localeCompare(b.일자) || a.키.localeCompare(b.키) || a.과정A.localeCompare(b.과정A),
   );
 }

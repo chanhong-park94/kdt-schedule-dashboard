@@ -18,14 +18,12 @@ function pushError(
   column: string,
   code: ParseError["code"],
   value: string,
-  message: string
+  message: string,
 ): void {
   errors.push({ rowIndex, column, code, value, message });
 }
 
-export function buildSessions(
-  rows: Record<string, string>[]
-): { sessions: Session[]; errors: ParseError[] } {
+export function buildSessions(rows: Record<string, string>[]): { sessions: Session[]; errors: ParseError[] } {
   const sessions: Session[] = [];
   const errors: ParseError[] = [];
 
@@ -33,14 +31,7 @@ export function buildSessions(
   const missingColumns = REQUIRED_INPUT_COLUMNS.filter((column) => !availableColumns.has(column));
 
   for (const column of missingColumns) {
-    pushError(
-      errors,
-      1,
-      column,
-      "missing_required_column",
-      "",
-      `필수 컬럼 누락: ${column}`
-    );
+    pushError(errors, 1, column, "missing_required_column", "", `필수 컬럼 누락: ${column}`);
   }
 
   if (missingColumns.length > 0) {
@@ -65,7 +56,7 @@ export function buildSessions(
         "훈련일자",
         "missing_required_value",
         row["훈련일자"] ?? "",
-        "훈련일자 값이 비어 있습니다."
+        "훈련일자 값이 비어 있습니다.",
       );
     }
 
@@ -77,7 +68,7 @@ export function buildSessions(
         "훈련시작시간",
         "missing_required_value",
         row["훈련시작시간"] ?? "",
-        "훈련시작시간 값이 비어 있습니다."
+        "훈련시작시간 값이 비어 있습니다.",
       );
     }
 
@@ -89,7 +80,7 @@ export function buildSessions(
         "훈련종료시간",
         "missing_required_value",
         row["훈련종료시간"] ?? "",
-        "훈련종료시간 값이 비어 있습니다."
+        "훈련종료시간 값이 비어 있습니다.",
       );
     }
 
@@ -101,7 +92,7 @@ export function buildSessions(
         "과정기수",
         "missing_required_value",
         row["과정기수"] ?? "",
-        "과정기수 값이 비어 있습니다."
+        "과정기수 값이 비어 있습니다.",
       );
     }
 
@@ -114,7 +105,7 @@ export function buildSessions(
         "훈련일자",
         "invalid_date",
         trainingDate,
-        "훈련일자 형식이 올바르지 않습니다. (YYYYMMDD)"
+        "훈련일자 형식이 올바르지 않습니다. (YYYYMMDD)",
       );
     }
 
@@ -127,7 +118,7 @@ export function buildSessions(
         "훈련시작시간",
         "invalid_time",
         trainingStartTimeRaw,
-        "훈련시작시간 형식이 올바르지 않습니다. (HHMM)"
+        "훈련시작시간 형식이 올바르지 않습니다. (HHMM)",
       );
     }
 
@@ -140,7 +131,7 @@ export function buildSessions(
         "훈련종료시간",
         "invalid_time",
         trainingEndTimeRaw,
-        "훈련종료시간 형식이 올바르지 않습니다. (HHMM)"
+        "훈련종료시간 형식이 올바르지 않습니다. (HHMM)",
       );
     }
 
@@ -155,7 +146,7 @@ export function buildSessions(
         "훈련시작시간/훈련종료시간",
         "invalid_time_range",
         `${normalizedStart}-${normalizedEnd}`,
-        "훈련시작시간은 훈련종료시간보다 빨라야 합니다."
+        "훈련시작시간은 훈련종료시간보다 빨라야 합니다.",
       );
     }
 
@@ -178,7 +169,7 @@ export function buildSessions(
       과정기수: cohort,
       normalizedDate,
       startMin,
-      endMin
+      endMin,
     });
   });
 

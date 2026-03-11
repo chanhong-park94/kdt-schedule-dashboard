@@ -39,7 +39,7 @@ function validateV7eStrict(records: InternalV7ERecord[]): ValidationResult {
     const phaseEmpty = [
       [getValue(record, "p1Assignee"), getValue(record, "p1Range")],
       [getValue(record, "p2Assignee"), getValue(record, "p2Range")],
-      [getValue(record, "p365Assignee"), getValue(record, "p365Range")]
+      [getValue(record, "p365Assignee"), getValue(record, "p365Range")],
     ].filter(([assignee, range]) => !assignee || !range).length;
 
     if (phaseEmpty > 0) {
@@ -76,10 +76,7 @@ function validateModulesGeneric(records: InternalV7ERecord[]): ValidationResult 
   return { errors, warnings: [] };
 }
 
-export function validateRecordsForFormat(
-  formatKey: ExportFormatKey,
-  records: InternalV7ERecord[]
-): ValidationResult {
+export function validateRecordsForFormat(formatKey: ExportFormatKey, records: InternalV7ERecord[]): ValidationResult {
   if (records.length === 0) {
     return { errors: ["내보낼 데이터가 없습니다."], warnings: [] };
   }

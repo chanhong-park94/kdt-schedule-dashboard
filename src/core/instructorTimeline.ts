@@ -59,7 +59,7 @@ export function buildCohortInstructorMetaMap(sessions: Session[]): Map<string, C
       instructorCount,
       instructorLabel,
       instructorTooltip,
-      barColor: instructorCodeToStableHsl(representativeInstructor ?? "")
+      barColor: instructorCodeToStableHsl(representativeInstructor ?? ""),
     });
   }
 

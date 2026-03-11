@@ -7,7 +7,7 @@ import {
   StaffAssignmentInput,
   StaffingConfig,
   StaffOverlap,
-  TrackType
+  TrackType,
 } from "./types";
 import { exportWithMapping } from "./exportMapping";
 import { InternalV7ERecord } from "./schema";
@@ -17,7 +17,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const DEFAULT_POLICY_BY_TRACK: Record<TrackType, number[]> = {
   UNEMPLOYED: [1, 2, 3, 4, 5],
-  EMPLOYED: [1, 2, 3, 4, 5, 6]
+  EMPLOYED: [1, 2, 3, 4, 5, 6],
 };
 
 const INSTRUCTOR_INCLUDE_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -40,7 +40,7 @@ export const V7E_STRICT_DETAIL_HEADER = [
   "시작",
   "종료",
   "업무일수",
-  "산정기준"
+  "산정기준",
 ] as const;
 
 export function exportV7eStrictCsv(rows: InternalV7ERecord[]): string {
@@ -57,10 +57,7 @@ function parseIsoDate(value: string): Date | null {
   const day = Number.parseInt(value.slice(8, 10), 10);
 
   const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+  const validDate = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 
   return validDate ? date : null;
 }
@@ -75,10 +72,7 @@ function parseCompactDate(value: string): Date | null {
   const day = Number.parseInt(value.slice(6, 8), 10);
 
   const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+  const validDate = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 
   return validDate ? date : null;
 }
@@ -127,12 +121,12 @@ function normalizeConfig(config?: StaffingConfig): Record<TrackType, number[]> {
   return {
     UNEMPLOYED: normalizeIncludeWeekdays(
       config?.unemployedIncludeWeekdays ?? DEFAULT_POLICY_BY_TRACK.UNEMPLOYED,
-      "UNEMPLOYED 정책"
+      "UNEMPLOYED 정책",
     ),
     EMPLOYED: normalizeIncludeWeekdays(
       config?.employedIncludeWeekdays ?? DEFAULT_POLICY_BY_TRACK.EMPLOYED,
-      "EMPLOYED 정책"
-    )
+      "EMPLOYED 정책",
+    ),
   };
 }
 
@@ -182,7 +176,7 @@ function resolveTrackType(item: StaffAssignmentInput, context: string): TrackTyp
 function resolveIncludeWeekdays(
   item: StaffAssignmentInput,
   trackPolicies: Record<TrackType, number[]>,
-  context: string
+  context: string,
 ): number[] {
   if (item.resourceType === "INSTRUCTOR") {
     return [...INSTRUCTOR_INCLUDE_WEEKDAYS];
@@ -197,10 +191,7 @@ function resolveIncludeWeekdays(
   return normalizeIncludeWeekdays(policy, `${context}(${trackType})`);
 }
 
-export function buildAssignments(
-  input: StaffAssignmentInput[],
-  config?: StaffingConfig
-): StaffAssignment[] {
+export function buildAssignments(input: StaffAssignmentInput[], config?: StaffingConfig): StaffAssignment[] {
   const trackPolicies = normalizeConfig(config);
 
   return input.map((item, index) => {
@@ -248,7 +239,7 @@ export function buildAssignments(
       resourceType: item.resourceType,
       trackType,
       includeWeekdays,
-      workDays: countDays(startDate, endDate, includeWeekdays)
+      workDays: countDays(startDate, endDate, includeWeekdays),
     };
   });
 }
@@ -270,7 +261,7 @@ export function detectStaffOverlaps(assignments: StaffAssignment[]): StaffOverla
       (a, b) =>
         a.startDate.localeCompare(b.startDate) ||
         a.endDate.localeCompare(b.endDate) ||
-        a.cohort.localeCompare(b.cohort)
+        a.cohort.localeCompare(b.cohort),
     );
 
     for (let i = 0; i < sorted.length; i += 1) {
@@ -320,7 +311,7 @@ export function detectStaffOverlaps(assignments: StaffAssignment[]): StaffOverla
           assignmentB: right,
           overlapStartDate: overlapStart,
           overlapEndDate: overlapEnd,
-          overlapDays
+          overlapDays,
         });
       }
     }
@@ -331,12 +322,15 @@ export function detectStaffOverlaps(assignments: StaffAssignment[]): StaffOverla
       a.resourceType.localeCompare(b.resourceType) ||
       a.assignee.localeCompare(b.assignee) ||
       a.overlapStartDate.localeCompare(b.overlapStartDate) ||
-      a.assignmentA.cohort.localeCompare(b.assignmentA.cohort)
+      a.assignmentA.cohort.localeCompare(b.assignmentA.cohort),
   );
 }
 
 export function summarizeWorkload(assignments: StaffAssignment[]): AssigneeSummary[] {
-  const byAssigneeAndType = new Map<string, { assignee: string; resourceType: ResourceType; rows: StaffAssignment[] }>();
+  const byAssigneeAndType = new Map<
+    string,
+    { assignee: string; resourceType: ResourceType; rows: StaffAssignment[] }
+  >();
 
   for (const assignment of assignments) {
     const key = `${assignment.resourceType}|||${assignment.assignee}`;
@@ -344,7 +338,7 @@ export function summarizeWorkload(assignments: StaffAssignment[]): AssigneeSumma
       byAssigneeAndType.set(key, {
         assignee: assignment.assignee,
         resourceType: assignment.resourceType,
-        rows: []
+        rows: [],
       });
     }
     byAssigneeAndType.get(key)?.rows.push(assignment);
@@ -388,15 +382,11 @@ export function summarizeWorkload(assignments: StaffAssignment[]): AssigneeSumma
       totalWorkDays,
       phaseWorkDays,
       overlapDays,
-      assignmentCount: group.rows.length
+      assignmentCount: group.rows.length,
     });
   }
 
-  return summaries.sort(
-    (a, b) =>
-      a.resourceType.localeCompare(b.resourceType) ||
-      a.assignee.localeCompare(b.assignee)
-  );
+  return summaries.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.assignee.localeCompare(b.assignee));
 }
 
 export function deriveModuleRangesFromSessions(sessions: Session[]): ModuleRange[] {
@@ -427,7 +417,7 @@ export function deriveModuleRangesFromSessions(sessions: Session[]): ModuleRange
         classroomCode,
         startDate: date,
         endDate: date,
-        sessionCount: 1
+        sessionCount: 1,
       });
       continue;
     }
@@ -439,8 +429,6 @@ export function deriveModuleRangesFromSessions(sessions: Session[]): ModuleRange
 
   return Array.from(rangeMap.values()).sort(
     (a, b) =>
-      a.cohort.localeCompare(b.cohort) ||
-      a.module.localeCompare(b.module) ||
-      a.startDate.localeCompare(b.startDate)
+      a.cohort.localeCompare(b.cohort) || a.module.localeCompare(b.module) || a.startDate.localeCompare(b.startDate),
   );
 }

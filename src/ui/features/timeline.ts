@@ -12,7 +12,7 @@ import {
   getTodayIsoDate,
   parseCompactDate,
   parseIsoDate,
-  toCompactDateFromIso
+  toCompactDateFromIso,
 } from "../utils/date";
 import { formatHHMM, getReadableTextColorFromCssColor, parseCourseGroupFromCohortName } from "../utils/format";
 
@@ -33,12 +33,12 @@ const TIMELINE_VIEW_ORDER: TimelineViewType[] = [
   "COURSE_GROUPED",
   "ASSIGNEE_TIMELINE",
   "WEEK_GRID",
-  "MONTH_CALENDAR"
+  "MONTH_CALENDAR",
 ];
 const TIMELINE_RENDER_LIMIT = 600;
 
-let _getCohortNotificationMap: () => Map<string, { warning: number; error: number }> =
-  () => new Map<string, { warning: number; error: number }>();
+let _getCohortNotificationMap: () => Map<string, { warning: number; error: number }> = () =>
+  new Map<string, { warning: number; error: number }>();
 let _focusNotification: (focus: TimelineNotificationFocus) => void = () => {};
 
 export function initTimelineFeature(deps: {
@@ -58,9 +58,7 @@ export function setTimelineViewType(nextView: TimelineViewType): void {
 }
 
 export function parseTimelineViewType(value: string): TimelineViewType {
-  return TIMELINE_VIEW_ORDER.includes(value as TimelineViewType)
-    ? (value as TimelineViewType)
-    : "COHORT_TIMELINE";
+  return TIMELINE_VIEW_ORDER.includes(value as TimelineViewType) ? (value as TimelineViewType) : "COHORT_TIMELINE";
 }
 
 export function renderTimelineDetail(title: string, details: string[]): void {
@@ -112,8 +110,10 @@ function buildMonthAxis(globalStart: number, globalEnd: number): MonthAxisItem[]
   const cursor = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
 
   // 전체 월 개수 계산하여 라벨 밀도 결정
-  const totalMonths = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12
-    + (endDate.getUTCMonth() - startDate.getUTCMonth()) + 1;
+  const totalMonths =
+    (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 +
+    (endDate.getUTCMonth() - startDate.getUTCMonth()) +
+    1;
   // 12개월 이하: 매월 표시, 13~24: 격월, 25+: 3개월 간격
   const step = totalMonths <= 12 ? 1 : totalMonths <= 24 ? 2 : 3;
   let idx = 0;
@@ -129,13 +129,13 @@ function buildMonthAxis(globalStart: number, globalEnd: number): MonthAxisItem[]
     const showLabel = idx % step === 0;
     let label = "";
     if (showLabel) {
-      label = (monthNum === 1 || idx === 0) ? `${year}-${month}` : month;
+      label = monthNum === 1 || idx === 0 ? `${year}-${month}` : month;
     }
 
     axis.push({
       key: `${year}-${month}`,
       label,
-      leftPercent: safeLeft
+      leftPercent: safeLeft,
     });
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     idx++;
@@ -174,11 +174,11 @@ function buildCohortTimelineItems(): Array<{ summary: CohortSummary; startDate: 
     .map((summary) => ({
       summary,
       startDate: parseCompactDate(summary.시작일),
-      endDate: parseCompactDate(summary.종료일)
+      endDate: parseCompactDate(summary.종료일),
     }))
     .filter(
       (item): item is { summary: CohortSummary; startDate: Date; endDate: Date } =>
-        item.startDate !== null && item.endDate !== null
+        item.startDate !== null && item.endDate !== null,
     )
     .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 }
@@ -270,7 +270,7 @@ function appendTimelineBarRow(params: {
 function renderCohortTimelineView(
   items: Array<{ summary: CohortSummary; startDate: Date; endDate: Date }>,
   cohortNotificationMap: Map<string, { warning: number; error: number }>,
-  cohortInstructorMetaMap: ReturnType<typeof buildCohortInstructorMetaMap>
+  cohortInstructorMetaMap: ReturnType<typeof buildCohortInstructorMetaMap>,
 ): void {
   const limited = items.slice(0, TIMELINE_RENDER_LIMIT);
   if (items.length > limited.length) {
@@ -305,7 +305,7 @@ function renderCohortTimelineView(
       },
       onBarClick: () => {
         _focusNotification({ cohort: item.summary.과정기수 });
-      }
+      },
     });
   }
 
@@ -315,9 +315,12 @@ function renderCohortTimelineView(
 function renderCourseGroupedTimelineView(
   items: Array<{ summary: CohortSummary; startDate: Date; endDate: Date }>,
   cohortNotificationMap: Map<string, { warning: number; error: number }>,
-  cohortInstructorMetaMap: ReturnType<typeof buildCohortInstructorMetaMap>
+  cohortInstructorMetaMap: ReturnType<typeof buildCohortInstructorMetaMap>,
 ): void {
-  const groupMap = new Map<string, Array<{ summary: CohortSummary; startDate: Date; endDate: Date; cohortLabel: string }>>();
+  const groupMap = new Map<
+    string,
+    Array<{ summary: CohortSummary; startDate: Date; endDate: Date; cohortLabel: string }>
+  >();
   for (const item of items) {
     const parsed = parseCourseGroupFromCohortName(item.summary.과정기수);
     const list = groupMap.get(parsed.course) ?? [];
@@ -380,7 +383,10 @@ function renderCourseGroupedTimelineView(
       continue;
     }
 
-    const groupStart = limitedRows.reduce((min, item) => Math.min(min, item.startDate.getTime()), Number.POSITIVE_INFINITY);
+    const groupStart = limitedRows.reduce(
+      (min, item) => Math.min(min, item.startDate.getTime()),
+      Number.POSITIVE_INFINITY,
+    );
     const groupEnd = limitedRows.reduce((max, item) => Math.max(max, item.endDate.getTime()), Number.NEGATIVE_INFINITY);
     const monthAxis = buildMonthAxis(groupStart, groupEnd);
 
@@ -406,7 +412,10 @@ function renderCourseGroupedTimelineView(
       bar.className = "timeline-bar";
       const span = Math.max(groupEnd - groupStart, 1);
       const left = ((item.startDate.getTime() - groupStart) / span) * 100;
-      const width = groupEnd === groupStart ? 100 : Math.max(((item.endDate.getTime() - item.startDate.getTime()) / span) * 100, 1.2);
+      const width =
+        groupEnd === groupStart
+          ? 100
+          : Math.max(((item.endDate.getTime() - item.startDate.getTime()) / span) * 100, 1.2);
       const safeLeft = Math.max(0, Math.min(100, left));
       const safeWidth = Math.max(0, Math.min(100 - safeLeft, width));
       bar.style.left = `${safeLeft}%`;
@@ -517,7 +526,7 @@ function renderAssigneeTimelineView(): void {
         endDate: value.endDate,
         count: value.count,
         conflictCount: conflictMap.get(key) ?? 0,
-        conflictComputed: appState.hasComputedConflicts
+        conflictComputed: appState.hasComputedConflicts,
       });
     }
   } else {
@@ -553,7 +562,7 @@ function renderAssigneeTimelineView(): void {
         endDate: value.endDate,
         count: value.count,
         conflictCount: overlapMap.get(key) ?? 0,
-        conflictComputed: true
+        conflictComputed: true,
       });
     }
   }
@@ -567,15 +576,24 @@ function renderAssigneeTimelineView(): void {
   if (limited.length === 0) {
     domRefs.timelineRange.textContent = "기간: -";
     domRefs.timelineEmpty.style.display = "block";
-    domRefs.timelineEmpty.textContent = appState.assigneeTimelineKind === "INSTRUCTOR" ? "강사 기준 데이터가 없습니다." : "담당자 기준 데이터가 없습니다.";
+    domRefs.timelineEmpty.textContent =
+      appState.assigneeTimelineKind === "INSTRUCTOR"
+        ? "강사 기준 데이터가 없습니다."
+        : "담당자 기준 데이터가 없습니다.";
     return;
   }
 
   domRefs.timelineEmpty.style.display = "none";
   domRefs.timelineEmpty.textContent = "수업시간표를 불러오면 타임라인이 생성됩니다.";
 
-  const globalStart = limited.reduce((min, item) => Math.min(min, parseIsoDate(item.startDate)?.getTime() ?? min), Number.POSITIVE_INFINITY);
-  const globalEnd = limited.reduce((max, item) => Math.max(max, parseIsoDate(item.endDate)?.getTime() ?? max), Number.NEGATIVE_INFINITY);
+  const globalStart = limited.reduce(
+    (min, item) => Math.min(min, parseIsoDate(item.startDate)?.getTime() ?? min),
+    Number.POSITIVE_INFINITY,
+  );
+  const globalEnd = limited.reduce(
+    (max, item) => Math.max(max, parseIsoDate(item.endDate)?.getTime() ?? max),
+    Number.NEGATIVE_INFINITY,
+  );
   const monthAxis = renderTimelineMonthAxis(globalStart, globalEnd);
 
   for (const row of limited) {
@@ -601,7 +619,7 @@ function renderAssigneeTimelineView(): void {
       },
       onBarClick: () => {
         _focusNotification({ assignee: row.key });
-      }
+      },
     });
   }
 
@@ -630,7 +648,11 @@ function renderWeekGridView(): void {
     if (appState.holidayDates.includes(day) || appState.customBreakDates.includes(day)) {
       cell.classList.add("holiday");
       const holidayName = holidayNameByDate.get(day);
-      const dayType = holidayName ? `공휴일: ${holidayName}` : appState.customBreakDates.includes(day) ? "자체휴강" : "공휴일";
+      const dayType = holidayName
+        ? `공휴일: ${holidayName}`
+        : appState.customBreakDates.includes(day)
+          ? "자체휴강"
+          : "공휴일";
       cell.title = `${day} ${dayType}`;
     }
 
@@ -645,7 +667,8 @@ function renderWeekGridView(): void {
 
     cell.addEventListener("click", () => {
       const details = sessionsOnDay.map(
-        (session) => `${session.과정기수} / ${session["교과목(및 능력단위)코드"]} / ${formatHHMM(session.훈련시작시간)}-${formatHHMM(session.훈련종료시간)}`
+        (session) =>
+          `${session.과정기수} / ${session["교과목(및 능력단위)코드"]} / ${formatHHMM(session.훈련시작시간)}-${formatHHMM(session.훈련종료시간)}`,
       );
       renderTimelineDetail(`${day} 수업시간표`, details);
       if (sessionsOnDay.length > 0) {
@@ -700,7 +723,11 @@ function renderMonthCalendarView(): void {
     if (appState.holidayDates.includes(day) || appState.customBreakDates.includes(day)) {
       cell.classList.add("holiday");
       const holidayName = holidayNameByDate.get(day);
-      const dayType = holidayName ? `공휴일: ${holidayName}` : appState.customBreakDates.includes(day) ? "자체휴강" : "공휴일";
+      const dayType = holidayName
+        ? `공휴일: ${holidayName}`
+        : appState.customBreakDates.includes(day)
+          ? "자체휴강"
+          : "공휴일";
       cell.title = `${day} ${dayType}`;
     }
     if (!inCurrentMonth) {
@@ -724,7 +751,8 @@ function renderMonthCalendarView(): void {
 
     cell.addEventListener("click", () => {
       const details = sessionsOnDay.map(
-        (session) => `${session.과정기수} / ${session["교과목(및 능력단위)코드"]} / ${formatHHMM(session.훈련시작시간)}-${formatHHMM(session.훈련종료시간)}`
+        (session) =>
+          `${session.과정기수} / ${session["교과목(및 능력단위)코드"]} / ${formatHHMM(session.훈련시작시간)}-${formatHHMM(session.훈련종료시간)}`,
       );
       renderTimelineDetail(`${day} 요약`, details);
       if (sessionsOnDay.length > 0) {
@@ -748,7 +776,10 @@ export function renderTimeline(): void {
   domRefs.timelineDetailPanel.style.display = "none";
   domRefs.timelineDetailPanel.textContent = "";
 
-  if (timelineItems.length === 0 && (appState.timelineViewType === "COHORT_TIMELINE" || appState.timelineViewType === "COURSE_GROUPED")) {
+  if (
+    timelineItems.length === 0 &&
+    (appState.timelineViewType === "COHORT_TIMELINE" || appState.timelineViewType === "COURSE_GROUPED")
+  ) {
     domRefs.timelineRange.textContent = "기간: -";
     domRefs.timelineEmpty.style.display = "block";
     return;

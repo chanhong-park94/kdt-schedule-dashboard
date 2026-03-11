@@ -12,7 +12,7 @@ import {
   StaffAssignment,
   StaffOverlap,
   TrackType,
-  type InstructorDirectoryEntry
+  type InstructorDirectoryEntry,
 } from "../core/types";
 import {
   type AppSidebarMenuConfig,
@@ -20,7 +20,7 @@ import {
   type AppStateVCurrent,
   type AppTimelineViewType,
   type AppViewMode,
-  type TemplateRowState
+  type TemplateRowState,
 } from "../core/state";
 import { NamedScheduleTemplate } from "../core/scheduleTemplates";
 import { ConflictTab } from "./utils/format";
@@ -180,7 +180,7 @@ export const holidayNameByDate = new Map<string, string>();
 export const skipExpanded: Record<SkippedDay["reason"], boolean> = {
   holiday: false,
   custom_break: false,
-  weekday_excluded: false
+  weekday_excluded: false,
 };
 export const staffingCellState = new Map<string, StaffCellState>();
 export const cohortTrackType = new Map<string, TrackType>();

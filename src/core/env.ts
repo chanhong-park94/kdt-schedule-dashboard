@@ -25,8 +25,7 @@ export function assertClientEnv(keys: string[]): string {
     }
   }
   throw new Error(
-    `필수 환경변수가 없습니다: ${keys.join(", ")}\n` +
-    `.env.local 또는 배포 환경의 환경변수를 확인하세요.`
+    `필수 환경변수가 없습니다: ${keys.join(", ")}\n` + `.env.local 또는 배포 환경의 환경변수를 확인하세요.`,
   );
 }
 

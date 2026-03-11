@@ -26,14 +26,14 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
   let fa = data.fieldApp;
 
   if (course !== "all") {
-    ach = ach.filter(r => r.course === course);
-    frm = frm.filter(r => r.course === course);
-    fa = fa.filter(r => r.course === course);
+    ach = ach.filter((r) => r.course === course);
+    frm = frm.filter((r) => r.course === course);
+    fa = fa.filter((r) => r.course === course);
   }
   if (cohort !== "all") {
-    ach = ach.filter(r => r.cohort === cohort);
-    frm = frm.filter(r => r.cohort === cohort);
-    fa = fa.filter(r => r.cohort === cohort);
+    ach = ach.filter((r) => r.cohort === cohort);
+    frm = frm.filter((r) => r.cohort === cohort);
+    fa = fa.filter((r) => r.cohort === cohort);
   }
 
   // 통계 계산
@@ -311,31 +311,47 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
       <div class="grade-box">
         <h3>사전 평가</h3>
         <div class="grade-bar-container">
-          ${["A", "B", "C", "D", "E"].map(g => {
-            const count = preGrades[g];
-            const height = total > 0 ? Math.max((count / total) * 50, 4) : 4;
-            const colors: Record<string, string> = { A: "#6366f1", B: "#3b82f6", C: "#f59e0b", D: "#ef4444", E: "#9ca3af" };
-            return `<div class="grade-bar">
+          ${["A", "B", "C", "D", "E"]
+            .map((g) => {
+              const count = preGrades[g];
+              const height = total > 0 ? Math.max((count / total) * 50, 4) : 4;
+              const colors: Record<string, string> = {
+                A: "#6366f1",
+                B: "#3b82f6",
+                C: "#f59e0b",
+                D: "#ef4444",
+                E: "#9ca3af",
+              };
+              return `<div class="grade-bar">
               <div class="grade-bar-count">${count}</div>
               <div class="grade-bar-fill" style="height:${height}px;background:${colors[g]}"></div>
               <div class="grade-bar-label">${g}</div>
             </div>`;
-          }).join("")}
+            })
+            .join("")}
         </div>
       </div>
       <div class="grade-box">
         <h3>사후 평가</h3>
         <div class="grade-bar-container">
-          ${["A", "B", "C", "D", "E"].map(g => {
-            const count = postGrades[g];
-            const height = total > 0 ? Math.max((count / total) * 50, 4) : 4;
-            const colors: Record<string, string> = { A: "#6366f1", B: "#3b82f6", C: "#f59e0b", D: "#ef4444", E: "#9ca3af" };
-            return `<div class="grade-bar">
+          ${["A", "B", "C", "D", "E"]
+            .map((g) => {
+              const count = postGrades[g];
+              const height = total > 0 ? Math.max((count / total) * 50, 4) : 4;
+              const colors: Record<string, string> = {
+                A: "#6366f1",
+                B: "#3b82f6",
+                C: "#f59e0b",
+                D: "#ef4444",
+                E: "#9ca3af",
+              };
+              return `<div class="grade-bar">
               <div class="grade-bar-count">${count}</div>
               <div class="grade-bar-fill" style="height:${height}px;background:${colors[g]}"></div>
               <div class="grade-bar-label">${g}</div>
             </div>`;
-          }).join("")}
+            })
+            .join("")}
         </div>
       </div>
     </div>
@@ -351,12 +367,16 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
         <th>향상도</th><th>등급변화</th>
       </tr></thead>
       <tbody>
-        ${ach.map(r => `<tr>
+        ${ach
+          .map(
+            (r) => `<tr>
           <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
           <td>${r.preTotal}</td><td class="grade-${r.preGrade}">${r.preGrade}</td>
           <td><strong>${r.postTotal}</strong></td><td class="grade-${r.postGrade}">${r.postGrade}</td>
           <td class="improve">+${r.improvement}</td><td>${r.gradeChange}</td>
-        </tr>`).join("")}
+        </tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -372,15 +392,19 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
         <th>종합</th><th>상태</th>
       </tr></thead>
       <tbody>
-        ${frm.map(r => `<tr>
+        ${frm
+          .map(
+            (r) => `<tr>
           <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
-          ${r.phase1Scores.map(s => `<td>${s}</td>`).join("")}
+          ${r.phase1Scores.map((s) => `<td>${s}</td>`).join("")}
           <td><strong>${r.phase1Avg.toFixed(1)}</strong></td>
-          ${r.phase2Scores.map(s => `<td>${s}</td>`).join("")}
+          ${r.phase2Scores.map((s) => `<td>${s}</td>`).join("")}
           <td><strong>${r.phase2Avg.toFixed(1)}</strong></td>
           <td><strong>${r.overallAvg.toFixed(2)}</strong></td>
           <td>${r.status}</td>
-        </tr>`).join("")}
+        </tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -395,12 +419,16 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
         <th>평균</th><th>등급</th>
       </tr></thead>
       <tbody>
-        ${fa.map(r => `<tr>
+        ${fa
+          .map(
+            (r) => `<tr>
           <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
-          ${r.scores.map(s => `<td>${s}</td>`).join("")}
+          ${r.scores.map((s) => `<td>${s}</td>`).join("")}
           <td><strong>${r.avgScore.toFixed(2)}</strong></td>
           <td class="grade-${r.grade}">${r.grade}</td>
-        </tr>`).join("")}
+        </tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>

@@ -128,11 +128,7 @@ function ensureColumns(columns: unknown, fileName: string): MappingColumn[] {
   return parsed;
 }
 
-function ensureHeaderAliases(
-  aliases: unknown,
-  header: string[],
-  fileName: string
-): Record<string, string> {
+function ensureHeaderAliases(aliases: unknown, header: string[], fileName: string): Record<string, string> {
   if (aliases === undefined) {
     return {};
   }
@@ -153,7 +149,7 @@ function ensureHeaderAliases(
 
     if (!canonicalSet.has(canonicalLabel)) {
       throw new Error(
-        `[mapping:${fileName}] headerAliases canonical 값(${canonicalLabel})이 header에 존재하지 않습니다.`
+        `[mapping:${fileName}] headerAliases canonical 값(${canonicalLabel})이 header에 존재하지 않습니다.`,
       );
     }
 
@@ -202,14 +198,14 @@ function parseMappingConfig(raw: unknown, fileName: string): MappingDefinition {
         const value = row[column.key];
         return value === undefined || value === null ? "" : String(value);
       });
-    }
+    },
   };
 }
 
 const parsedMappings = [
   parseMappingConfig(v7eStrictRaw, "v7e_strict.json"),
   parseMappingConfig(v7eLegacyRaw, "v7e_legacy.json"),
-  parseMappingConfig(modulesGenericRaw, "modules_generic.json")
+  parseMappingConfig(modulesGenericRaw, "modules_generic.json"),
 ];
 
 const mappingMap = new Map<ExportFormatKey, MappingDefinition>();
@@ -228,7 +224,7 @@ function requireMapping(formatKey: ExportFormatKey): MappingDefinition {
 export const HEADER_MAPPINGS: Record<ExportFormatKey, MappingDefinition> = {
   v7e_strict: requireMapping("v7e_strict"),
   v7e_legacy: requireMapping("v7e_legacy"),
-  modules_generic: requireMapping("modules_generic")
+  modules_generic: requireMapping("modules_generic"),
 };
 
 export function normalizeHeaderLabel(formatKey: ExportFormatKey, label: string): string {
@@ -244,7 +240,7 @@ export function normalizeHeaderRow(formatKey: ExportFormatKey, headers: string[]
 export function exportWithMapping(
   formatKey: ExportFormatKey,
   records: InternalV7ERecord[],
-  options?: { useAliasHeader?: boolean }
+  options?: { useAliasHeader?: boolean },
 ): string {
   const mapping = requireMapping(formatKey);
 
@@ -261,7 +257,12 @@ export function exportWithMapping(
 
   const lines = [header.join(",")];
   for (const record of records) {
-    lines.push(mapping.map(record).map((value) => escapeCsv(value)).join(","));
+    lines.push(
+      mapping
+        .map(record)
+        .map((value) => escapeCsv(value))
+        .join(","),
+    );
   }
 
   return lines.join("\r\n");

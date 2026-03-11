@@ -2,13 +2,13 @@
 
 export interface TraineeAnalysis {
   name: string;
-  birth: string;            // YYYYMMDD or YY.MM.DD
-  age: number;              // 만 나이
+  birth: string; // YYYYMMDD or YY.MM.DD
+  age: number; // 만 나이
   courseName: string;
   trainPrId: string;
   category: "재직자" | "실업자";
   degr: string;
-  attendanceRate: number;   // 출석률 %
+  attendanceRate: number; // 출석률 %
   absentDays: number;
   lateDays: number;
   excusedDays: number;

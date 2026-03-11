@@ -53,7 +53,7 @@ export function toDayConflictRow(overlap: StaffOverlap): string[] {
     overlap.assignmentB.phase,
     overlap.assignmentB.startDate,
     overlap.assignmentB.endDate,
-    String(overlap.overlapDays)
+    String(overlap.overlapDays),
   ];
 }
 

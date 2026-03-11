@@ -6,11 +6,7 @@ import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from ".
 import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
 import { printKpiReport } from "./kpi/kpiPdf";
 import type { KpiAllData, KpiConfig } from "./kpi/kpiTypes";
-import {
-  createClickableCell,
-  createTableElement,
-  setRenderNotice
-} from "./ui/utils/dom";
+import { createClickableCell, createTableElement, setRenderNotice } from "./ui/utils/dom";
 import { domRefs } from "./ui/domRefs";
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
@@ -22,20 +18,15 @@ import {
   downloadCsvFile,
   downloadCsvText,
   getOverlapRangeLabel,
-  toDayConflictRow
+  toDayConflictRow,
 } from "./ui/utils/csv";
 import { detectConflicts } from "./core/conflicts";
 import { assignInstructorToModule } from "./core/autoAssignInstructor";
 import { exportHrdCsvForCohort } from "./core/export";
 import { fromScheduleDaysToSessions } from "./core/fromSchedule";
 import { normalizeHHMM } from "./core/normalize";
-import {
-  findScheduleTemplate,
-  NamedScheduleTemplate,
-} from "./core/scheduleTemplates";
-import {
-  applyCourseSubjectInstructorMappingsToCohortSessions
-} from "./core/subjectMapping";
+import { findScheduleTemplate, NamedScheduleTemplate } from "./core/scheduleTemplates";
+import { applyCourseSubjectInstructorMappingsToCohortSessions } from "./core/subjectMapping";
 import { buildSessions } from "./core/sessions";
 import {
   CURRENT_SCHEMA_VERSION,
@@ -46,19 +37,15 @@ import {
   type AppTimelineViewType,
   type AppViewMode,
   type SavedStaffCell,
-  type TemplateRowState
+  type TemplateRowState,
 } from "./core/state";
 import { type InternalV7ERecord } from "./core/schema";
 import { resolveShowAdvancedPolicy } from "./core/showAdvancedPolicy";
-import {
-  deriveModuleRangesFromSessions,
-} from "./core/staffing";
+import { deriveModuleRangesFromSessions } from "./core/staffing";
 import { normalizeInstructorCode, normalizeSubjectCode } from "./core/standardize";
 import { buildCohortSummaries } from "./core/summary";
 import { getKdtScheduleSummaries } from "./hrd/hrdScheduleData";
-import {
-  validateHrdExportForCohortDetailed
-} from "./core/hrdValidation";
+import { validateHrdExportForCohortDetailed } from "./core/hrdValidation";
 import { isDevRuntime, isProdRuntime } from "./core/env";
 import {
   AssigneeSummary,
@@ -77,14 +64,14 @@ import {
   StaffAssignmentInput,
   StaffOverlap,
   type InstructorDirectoryEntry,
-  TrackType
+  TrackType,
 } from "./core/types";
 import {
   deleteInstructorFromCloud,
   isInstructorCloudEnabled,
   loadInstructorDirectoryFromCloud,
   mergeWithLocalInstructorDirectory,
-  upsertInstructorInCloud
+  upsertInstructorInCloud,
 } from "./core/instructorSync";
 import {
   createCourse,
@@ -95,7 +82,7 @@ import {
   listCourses,
   listSubjects,
   saveCourseTemplate,
-  type CourseTemplateRecord
+  type CourseTemplateRecord,
 } from "./core/supabaseManagement";
 import {
   DAY_MS,
@@ -110,7 +97,7 @@ import {
   isDateInsideRange,
   parseCompactDate,
   parseIsoDate,
-  toCompactDateFromIso
+  toCompactDateFromIso,
 } from "./ui/utils/date";
 import {
   ConflictTab,
@@ -130,7 +117,7 @@ import {
   parseCourseSubjectKey,
   getPolicyForTrack,
   getPolicyLabel,
-  toCourseSubjectKey
+  toCourseSubjectKey,
 } from "./ui/utils/format";
 import {
   appState,
@@ -155,7 +142,7 @@ import {
   type SubjectDirectoryEntry,
   type ViewMode,
   type TimelineViewType,
-  type PrimarySidebarNavKey
+  type PrimarySidebarNavKey,
 } from "./ui/appState";
 import { initEventListeners } from "./ui/events";
 import {
@@ -175,7 +162,7 @@ import {
   applyFoDayFilters,
   CONFLICT_COLUMNS,
   DAY_CONFLICT_COLUMNS,
-  RESOURCE_TYPE_LABEL
+  RESOURCE_TYPE_LABEL,
 } from "./ui/features/conflicts";
 import {
   initTimelineFeature,
@@ -184,7 +171,7 @@ import {
   renderTimelineDetail,
   setTimelineViewType,
   startOfWeekIso,
-  type TimelineNotificationFocus
+  type TimelineNotificationFocus,
 } from "./ui/features/timeline";
 import {
   addDateToList as holidayAddDateToList,
@@ -199,7 +186,7 @@ import {
   loadPublicHolidays as holidayLoadPublicHolidays,
   mergeFetchedHolidays as holidayMergeFetchedHolidays,
   renderDateList as holidayRenderDateList,
-  renderHolidayAndBreakLists as holidayRenderHolidayAndBreakLists
+  renderHolidayAndBreakLists as holidayRenderHolidayAndBreakLists,
 } from "./ui/features/holidays";
 import {
   applySelectedScheduleTemplate as scheduleTemplatesApplySelectedScheduleTemplate,
@@ -210,7 +197,7 @@ import {
   loadScheduleTemplatesFromLocalStorage as scheduleTemplatesLoadScheduleTemplatesFromLocalStorage,
   renderScheduleTemplateOptions as scheduleTemplatesRenderScheduleTemplateOptions,
   saveCurrentScheduleTemplate as scheduleTemplatesSaveCurrentScheduleTemplate,
-  saveScheduleTemplatesToLocalStorage as scheduleTemplatesSaveScheduleTemplatesToLocalStorage
+  saveScheduleTemplatesToLocalStorage as scheduleTemplatesSaveScheduleTemplatesToLocalStorage,
 } from "./ui/features/scheduleTemplates";
 import {
   autoFillStaffingFromCohorts as staffingAutoFillStaffingFromCohorts,
@@ -227,7 +214,7 @@ import {
   renderStaffGantt as staffingRenderStaffGantt,
   renderStaffingMatrix as staffingRenderStaffingMatrix,
   renderStaffingSection as staffingRenderStaffingSection,
-  renderStaffKpiAndDetails as staffingRenderStaffKpiAndDetails
+  renderStaffKpiAndDetails as staffingRenderStaffKpiAndDetails,
 } from "./ui/features/staffing";
 type ActivatePrimaryPageOptions = {
   scrollToTop?: boolean;
@@ -251,16 +238,14 @@ const MATRIX_RESOURCE_TYPES: ResourceType[] = ["INSTRUCTOR", "FACILITATOR", "OPE
 
 const TRACK_LABEL: Record<TrackType, string> = {
   UNEMPLOYED: "실업자",
-  EMPLOYED: "재직자"
+  EMPLOYED: "재직자",
 };
-
 
 const RESOURCE_TYPE_ORDER: Record<ResourceType, number> = {
   INSTRUCTOR: 0,
   FACILITATOR: 1,
-  OPERATION: 2
+  OPERATION: 2,
 };
-
 
 const STORAGE_KEY = "academic_schedule_manager_state_v1";
 const AUTH_SESSION_KEY = "academic_schedule_manager_auth_v2";
@@ -276,7 +261,7 @@ const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "kpi",
   "attendance",
   "analytics",
-  "settings"
+  "settings",
 ];
 
 const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
@@ -285,7 +270,7 @@ const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
   kpi: "재직자 자율성과지표",
   attendance: "출결현황",
   analytics: "훈련생 분석",
-  settings: "설정"
+  settings: "설정",
 };
 
 const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
@@ -294,7 +279,7 @@ const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
   kpi: "📊",
   attendance: "📋",
   analytics: "📈",
-  settings: "⚙️"
+  settings: "⚙️",
 };
 
 const DEFAULT_DOWNLOAD_LABEL = "선택한 기수 CSV 다운로드";
@@ -306,10 +291,9 @@ const TIMELINE_VIEW_ORDER: TimelineViewType[] = [
   "COURSE_GROUPED",
   "ASSIGNEE_TIMELINE",
   "WEEK_GRID",
-  "MONTH_CALENDAR"
+  "MONTH_CALENDAR",
 ];
 const TIMELINE_RENDER_LIMIT = 600;
-
 
 const fileInput = domRefs.fileInput;
 const uploadStatus = domRefs.uploadStatus;
@@ -608,7 +592,6 @@ function submitAuthCode(): void {
   authCodeInput.select();
 }
 
-
 function buildModuleAssignSummaries(): ModuleAssignSummary[] {
   const ranges = deriveModuleRangesFromSessions(appState.sessions);
   const map = new Map<
@@ -636,7 +619,7 @@ function buildModuleAssignSummaries(): ModuleAssignSummary[] {
         sessionCount: range.sessionCount,
         instructorCodes: [],
         missingInstructorSessions: range.instructorCode ? 0 : range.sessionCount,
-        instructorSet
+        instructorSet,
       });
       continue;
     }
@@ -660,9 +643,12 @@ function buildModuleAssignSummaries(): ModuleAssignSummary[] {
       endDate: item.endDate,
       sessionCount: item.sessionCount,
       instructorCodes: Array.from(item.instructorSet).sort((a, b) => a.localeCompare(b)),
-      missingInstructorSessions: item.missingInstructorSessions
+      missingInstructorSessions: item.missingInstructorSessions,
     }))
-    .sort((a, b) => a.cohort.localeCompare(b.cohort) || a.module.localeCompare(b.module) || a.startDate.localeCompare(b.startDate));
+    .sort(
+      (a, b) =>
+        a.cohort.localeCompare(b.cohort) || a.module.localeCompare(b.module) || a.startDate.localeCompare(b.startDate),
+    );
 }
 
 function getCurrentInstructorCodeForModule(summary: ModuleAssignSummary): string {
@@ -723,7 +709,7 @@ function applyInstructorToModuleSummary(summary: ModuleAssignSummary, rawInstruc
   const beforeTargets = appState.sessions.filter(
     (session) =>
       session.과정기수.trim() === summary.cohort &&
-      normalizeSubjectCode(session["교과목(및 능력단위)코드"]) === summary.module
+      normalizeSubjectCode(session["교과목(및 능력단위)코드"]) === summary.module,
   );
 
   if (beforeTargets.length === 0) {
@@ -739,7 +725,7 @@ function applyInstructorToModuleSummary(summary: ModuleAssignSummary, rawInstruc
   appState.sessions = assignInstructorToModule({
     sessions: appState.sessions,
     moduleKey: summary.moduleKey,
-    instructorCode: normalizedCode
+    instructorCode: normalizedCode,
   });
   moduleInstructorDraft.set(summary.moduleKey, normalizedCode);
 
@@ -749,7 +735,7 @@ function applyInstructorToModuleSummary(summary: ModuleAssignSummary, rawInstruc
 
   if (overwriteCount > 0) {
     setStaffingStatus(
-      `⚠ ${summary.moduleKey}: ${beforeTargets.length}개 수업시간표 배정 완료 (${overwriteCount}개 기존 강사코드 덮어씀).`
+      `⚠ ${summary.moduleKey}: ${beforeTargets.length}개 수업시간표 배정 완료 (${overwriteCount}개 기존 강사코드 덮어씀).`,
     );
     return;
   }
@@ -1053,7 +1039,11 @@ function renderInstructorDirectory(): void {
   }
 }
 
-async function syncInstructorDirectoryCloud(mode: "upsert" | "delete", instructorCode: string, payload?: InstructorDirectoryEntry): Promise<void> {
+async function syncInstructorDirectoryCloud(
+  mode: "upsert" | "delete",
+  instructorCode: string,
+  payload?: InstructorDirectoryEntry,
+): Promise<void> {
   if (!isCloudAccessAllowed()) {
     return;
   }
@@ -1118,7 +1108,7 @@ function toCourseTemplateFromCloudRecord(record: CourseTemplateRecord): CourseTe
         start: typeof row.start === "string" ? row.start : "",
         end: typeof row.end === "string" ? row.end : "",
         breakStart: typeof row.breakStart === "string" ? row.breakStart : "",
-        breakEnd: typeof row.breakEnd === "string" ? row.breakEnd : ""
+        breakEnd: typeof row.breakEnd === "string" ? row.breakEnd : "",
       });
     }
     return rows;
@@ -1134,14 +1124,16 @@ function toCourseTemplateFromCloudRecord(record: CourseTemplateRecord): CourseTe
         continue;
       }
       const row = item as Record<string, unknown>;
-      const subjectCode = normalizeSubjectCode(typeof row.subjectCode === "string" ? row.subjectCode : "").toUpperCase();
+      const subjectCode = normalizeSubjectCode(
+        typeof row.subjectCode === "string" ? row.subjectCode : "",
+      ).toUpperCase();
       if (!subjectCode) {
         continue;
       }
       rows.push({
         subjectCode,
         subjectName: typeof row.subjectName === "string" ? row.subjectName.trim() : "",
-        memo: typeof row.memo === "string" ? row.memo.trim() : ""
+        memo: typeof row.memo === "string" ? row.memo.trim() : "",
       });
     }
     return rows;
@@ -1168,18 +1160,19 @@ function toCourseTemplateFromCloudRecord(record: CourseTemplateRecord): CourseTe
   };
 
   const templateCourseId = normalizeCourseId(
-    typeof sourceRecord.courseId === "string" ? sourceRecord.courseId : record.courseId
+    typeof sourceRecord.courseId === "string" ? sourceRecord.courseId : record.courseId,
   );
 
   return {
     name: record.templateName,
-    version: typeof sourceRecord.version === "string" && sourceRecord.version.trim() ? sourceRecord.version.trim() : "v1",
+    version:
+      typeof sourceRecord.version === "string" && sourceRecord.version.trim() ? sourceRecord.version.trim() : "v1",
     courseId: templateCourseId,
     dayTemplates: readTemplateRows(sourceRecord.dayTemplates),
     holidays: dedupeAndSortDates(readStringList(sourceRecord.holidays)),
     customBreaks: dedupeAndSortDates(readStringList(sourceRecord.customBreaks)),
     subjectList: readSubjectList(sourceRecord.subjectList),
-    subjectInstructorMapping: readSubjectInstructorMapping(sourceRecord.subjectInstructorMapping)
+    subjectInstructorMapping: readSubjectInstructorMapping(sourceRecord.subjectInstructorMapping),
   };
 }
 
@@ -1189,7 +1182,8 @@ async function syncCourseRegistryCloud(entry: CourseRegistryEntry): Promise<void
   }
 
   if (!isManagementCloudEnabled()) {
-    appState.managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    appState.managementCloudWarning =
+      "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
     renderGlobalWarnings();
     return;
   }
@@ -1211,7 +1205,8 @@ async function syncSubjectDirectoryCloud(entry: SubjectDirectoryEntry): Promise<
   }
 
   if (!isManagementCloudEnabled()) {
-    appState.managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    appState.managementCloudWarning =
+      "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
     renderGlobalWarnings();
     return;
   }
@@ -1220,7 +1215,7 @@ async function syncSubjectDirectoryCloud(entry: SubjectDirectoryEntry): Promise<
     await createSubject({
       courseId: entry.courseId,
       subjectCode: entry.subjectCode,
-      subjectName: entry.subjectName
+      subjectName: entry.subjectName,
     });
     appState.managementCloudWarning = "";
   } catch (error) {
@@ -1237,7 +1232,8 @@ async function syncCourseTemplateCloud(template: CourseTemplate): Promise<void> 
   }
 
   if (!isManagementCloudEnabled()) {
-    appState.managementCloudWarning = "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
+    appState.managementCloudWarning =
+      "클라우드 관리 동기화 비활성화: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY를 확인해 주세요.";
     renderGlobalWarnings();
     return;
   }
@@ -1253,8 +1249,8 @@ async function syncCourseTemplateCloud(template: CourseTemplate): Promise<void> 
         holidays: template.holidays,
         customBreaks: template.customBreaks,
         subjectList: template.subjectList,
-        subjectInstructorMapping: template.subjectInstructorMapping
-      }
+        subjectInstructorMapping: template.subjectInstructorMapping,
+      },
     });
     appState.managementCloudWarning = "";
   } catch (error) {
@@ -1302,7 +1298,7 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
         appState.courseRegistry = cloudCourses.map((item) => ({
           courseId: normalizeCourseId(item.courseId),
           courseName: item.courseName,
-          memo: ""
+          memo: "",
         }));
         hasChanged = true;
       }
@@ -1316,7 +1312,7 @@ async function loadManagementDataFromCloudFallback(): Promise<void> {
           courseId: normalizeCourseId(item.courseId),
           subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
           subjectName: item.subjectName,
-          memo: ""
+          memo: "",
         }));
         hasChanged = true;
       }
@@ -1384,7 +1380,7 @@ function renderSubjectDirectory(): void {
     deleteButton.textContent = "삭제";
     deleteButton.addEventListener("click", () => {
       appState.subjectDirectory = appState.subjectDirectory.filter(
-        (item) => !(item.courseId === entry.courseId && item.subjectCode === entry.subjectCode)
+        (item) => !(item.courseId === entry.courseId && item.subjectCode === entry.subjectCode),
       );
       subjectInstructorMappings.delete(toCourseSubjectKey(entry.courseId, entry.subjectCode));
       renderSubjectDirectory();
@@ -1418,7 +1414,9 @@ function upsertSubjectDirectoryEntry(): void {
 
   const subjectName = subjectNameInput.value.trim();
   const memo = subjectMemoInput.value.trim();
-  const existing = appState.subjectDirectory.find((item) => item.courseId === courseId && item.subjectCode === subjectCode);
+  const existing = appState.subjectDirectory.find(
+    (item) => item.courseId === courseId && item.subjectCode === subjectCode,
+  );
   if (existing) {
     existing.subjectName = subjectName;
     existing.memo = memo;
@@ -1448,7 +1446,7 @@ function renderSubjectMappingTable(): void {
   }
 
   const summaries = buildModuleAssignSummaries().filter(
-    (summary) => normalizeCourseId(parseCourseGroupFromCohortName(summary.cohort).course) === selectedCourseId
+    (summary) => normalizeCourseId(parseCourseGroupFromCohortName(summary.cohort).course) === selectedCourseId,
   );
   if (summaries.length === 0) {
     const empty = document.createElement("div");
@@ -1478,7 +1476,7 @@ function renderSubjectMappingTable(): void {
     cohortTd.textContent = summary.cohort;
     const moduleTd = document.createElement("td");
     const subjectEntry = appState.subjectDirectory.find(
-      (item) => item.courseId === selectedCourseId && item.subjectCode === summary.module
+      (item) => item.courseId === selectedCourseId && item.subjectCode === summary.module,
     );
     moduleTd.textContent = subjectEntry?.subjectName
       ? `${summary.module} (${subjectEntry.subjectName})`
@@ -1577,7 +1575,7 @@ function applySubjectMappingsToSessions(): void {
     appState.sessions
       .filter((session) => session.과정기수.trim() === selectedCohort)
       .map((session) => normalizeSubjectCode(session["교과목(및 능력단위)코드"]).toUpperCase())
-      .filter((value) => value.length > 0)
+      .filter((value) => value.length > 0),
   );
   let missingSubjectCount = 0;
   for (const subjectCode of cohortSessionSubjects) {
@@ -1590,7 +1588,7 @@ function applySubjectMappingsToSessions(): void {
   for (const subject of courseSubjects) {
     const mappingKey = toCourseSubjectKey(selectedCourseId, subject.subjectCode);
     const selectedCode = normalizeInstructorCode(
-      subjectInstructorMappingDraft.get(mappingKey) ?? subjectInstructorMappings.get(mappingKey) ?? ""
+      subjectInstructorMappingDraft.get(mappingKey) ?? subjectInstructorMappings.get(mappingKey) ?? "",
     );
     if (!selectedCode) {
       continue;
@@ -1600,7 +1598,7 @@ function applySubjectMappingsToSessions(): void {
     normalizedMappings.push({
       cohort: selectedCohort,
       subjectCode: subject.subjectCode,
-      instructorCode: selectedCode
+      instructorCode: selectedCode,
     });
   }
 
@@ -1610,9 +1608,9 @@ function applySubjectMappingsToSessions(): void {
     normalizedMappings.map((item) => ({
       courseId: selectedCourseId,
       subjectCode: item.subjectCode,
-      instructorCode: item.instructorCode
+      instructorCode: item.instructorCode,
     })),
-    subjectDirectoryCodes
+    subjectDirectoryCodes,
   );
   const updatedRows = applyResult.updatedRows;
   const overwriteRows = applyResult.overwrittenRows;
@@ -1624,7 +1622,7 @@ function applySubjectMappingsToSessions(): void {
 
   appState.sessions = applyResult.sessions.map((session) => ({
     ...session,
-    "교과목(및 능력단위)코드": normalizeSubjectCode(session["교과목(및 능력단위)코드"]).toUpperCase()
+    "교과목(및 능력단위)코드": normalizeSubjectCode(session["교과목(및 능력단위)코드"]).toUpperCase(),
   }));
   moduleInstructorDraft.clear();
   subjectInstructorMappingDraft.clear();
@@ -1635,13 +1633,13 @@ function applySubjectMappingsToSessions(): void {
   setStaffingStatus(
     overwriteRows > 0
       ? `교과목 매핑 일괄 적용 완료: ${updatedRows}개 수업시간표 반영 (${overwriteRows}개 덮어씀)`
-      : `교과목 매핑 일괄 적용 완료: ${updatedRows}개 수업시간표 반영`
+      : `교과목 매핑 일괄 적용 완료: ${updatedRows}개 수업시간표 반영`,
   );
   if (missingSubjectCount > 0) {
     pushRecentActionLog(
       "WARNING",
       `경고: 교과목 미등록 ${missingSubjectCount}개 (HRD 다운로드는 가능)`,
-      "instructorDrawer"
+      "instructorDrawer",
     );
   }
   pushRecentActionLog("INFO", `강사 매핑 적용: 교과목 ${normalizedMappings.length}개 업데이트`, "instructorDrawer");
@@ -1654,7 +1652,7 @@ function buildNotifications(): NotificationItem[] {
     severity: log.severity,
     source: "HRD_VALIDATION",
     title: log.severity === "ERROR" ? "오류" : log.severity === "WARNING" ? "경고" : "정보",
-    message: log.message
+    message: log.message,
   }));
 }
 
@@ -1711,20 +1709,16 @@ function renderNotificationCenter(): void {
   notificationStatusList.appendChild(wrap);
 }
 
-function pushRecentActionLog(
-  severity: "INFO" | "WARNING" | "ERROR",
-  message: string,
-  focusSectionId?: string
-): void {
+function pushRecentActionLog(severity: "INFO" | "WARNING" | "ERROR", message: string, focusSectionId?: string): void {
   appState.recentActionLogs = [
     {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       severity,
       message,
       focusSectionId,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     },
-    ...appState.recentActionLogs
+    ...appState.recentActionLogs,
   ].slice(0, 5);
 }
 
@@ -1738,7 +1732,7 @@ function resolveShowAdvanced(savedShowAdvanced: boolean | undefined): boolean {
     savedShowAdvanced,
     search: window.location.search,
     isDev: isDevRuntime(),
-    isProd: isProdRuntime()
+    isProd: isProdRuntime(),
   });
 }
 
@@ -1927,7 +1921,7 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       kpi: config.labels.kpi,
       attendance: config.labels.attendance,
       analytics: config.labels.analytics,
-      settings: config.labels.settings
+      settings: config.labels.settings,
     },
     icons: {
       timeline: config.icons.timeline,
@@ -1935,8 +1929,8 @@ function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfig {
       kpi: config.icons.kpi,
       attendance: config.icons.attendance,
       analytics: config.icons.analytics,
-      settings: config.icons.settings
-    }
+      settings: config.icons.settings,
+    },
   };
 }
 
@@ -1976,7 +1970,7 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
       analytics: normalizeSidebarMenuLabel("analytics", config.labels.analytics),
-      settings: normalizeSidebarMenuLabel("settings", config.labels.settings)
+      settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
       timeline: normalizeSidebarMenuIcon("timeline", config.icons.timeline),
@@ -1984,8 +1978,8 @@ function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuConfi
       kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
       analytics: normalizeSidebarMenuIcon("analytics", config.icons.analytics),
-      settings: normalizeSidebarMenuIcon("settings", config.icons.settings)
-    }
+      settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
+    },
   };
 }
 
@@ -1998,7 +1992,7 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
       analytics: DEFAULT_PRIMARY_SIDEBAR_LABELS.analytics,
-      settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings
+      settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
       timeline: DEFAULT_PRIMARY_SIDEBAR_ICONS.timeline,
@@ -2006,8 +2000,8 @@ function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
       analytics: DEFAULT_PRIMARY_SIDEBAR_ICONS.analytics,
-      settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings
-    }
+      settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
+    },
   };
 }
 
@@ -2029,79 +2023,55 @@ function loadSidebarMenuConfig(): SidebarMenuConfig {
     const labels = {
       timeline: normalizeSidebarMenuLabel(
         "timeline",
-        typeof parsed.labels?.timeline === "string"
-          ? parsed.labels.timeline
-          : fallback.labels.timeline
+        typeof parsed.labels?.timeline === "string" ? parsed.labels.timeline : fallback.labels.timeline,
       ),
       generator: normalizeSidebarMenuLabel(
         "generator",
-        typeof parsed.labels?.generator === "string"
-          ? parsed.labels.generator
-          : fallback.labels.generator
+        typeof parsed.labels?.generator === "string" ? parsed.labels.generator : fallback.labels.generator,
       ),
       kpi: normalizeSidebarMenuLabel(
         "kpi",
-        typeof parsed.labels?.kpi === "string"
-          ? parsed.labels.kpi
-          : fallback.labels.kpi
+        typeof parsed.labels?.kpi === "string" ? parsed.labels.kpi : fallback.labels.kpi,
       ),
       attendance: normalizeSidebarMenuLabel(
         "attendance",
-        typeof parsed.labels?.attendance === "string"
-          ? parsed.labels.attendance
-          : fallback.labels.attendance
+        typeof parsed.labels?.attendance === "string" ? parsed.labels.attendance : fallback.labels.attendance,
       ),
       analytics: normalizeSidebarMenuLabel(
         "analytics",
-        typeof parsed.labels?.analytics === "string"
-          ? parsed.labels.analytics
-          : fallback.labels.analytics
+        typeof parsed.labels?.analytics === "string" ? parsed.labels.analytics : fallback.labels.analytics,
       ),
       settings: normalizeSidebarMenuLabel(
         "settings",
-        typeof parsed.labels?.settings === "string"
-          ? parsed.labels.settings
-          : fallback.labels.settings
-      )
+        typeof parsed.labels?.settings === "string" ? parsed.labels.settings : fallback.labels.settings,
+      ),
     };
 
     const icons = {
       timeline: normalizeSidebarMenuIcon(
         "timeline",
-        typeof parsed.icons?.timeline === "string"
-          ? parsed.icons.timeline
-          : fallback.icons.timeline
+        typeof parsed.icons?.timeline === "string" ? parsed.icons.timeline : fallback.icons.timeline,
       ),
       generator: normalizeSidebarMenuIcon(
         "generator",
-        typeof parsed.icons?.generator === "string"
-          ? parsed.icons.generator
-          : fallback.icons.generator
+        typeof parsed.icons?.generator === "string" ? parsed.icons.generator : fallback.icons.generator,
       ),
       kpi: normalizeSidebarMenuIcon(
         "kpi",
-        typeof parsed.icons?.kpi === "string"
-          ? parsed.icons.kpi
-          : fallback.icons.kpi
+        typeof parsed.icons?.kpi === "string" ? parsed.icons.kpi : fallback.icons.kpi,
       ),
       attendance: normalizeSidebarMenuIcon(
         "attendance",
-        typeof parsed.icons?.attendance === "string"
-          ? parsed.icons.attendance
-          : fallback.icons.attendance
+        typeof parsed.icons?.attendance === "string" ? parsed.icons.attendance : fallback.icons.attendance,
       ),
       analytics: normalizeSidebarMenuIcon(
         "analytics",
-        typeof parsed.icons?.analytics === "string"
-          ? parsed.icons.analytics
-          : fallback.icons.analytics
+        typeof parsed.icons?.analytics === "string" ? parsed.icons.analytics : fallback.icons.analytics,
       ),
       settings: normalizeSidebarMenuIcon(
         "settings",
-        typeof parsed.icons?.settings === "string"
-          ? parsed.icons.settings
-          : fallback.icons.settings
-      )
+        typeof parsed.icons?.settings === "string" ? parsed.icons.settings : fallback.icons.settings,
+      ),
     };
 
     return { order, labels, icons };
@@ -2167,7 +2137,7 @@ function moveSidebarMenuDraft(navKey: PrimarySidebarNavKey, direction: -1 | 1): 
   nextOrder.splice(nextIndex, 0, moved);
   appState.sidebarMenuDraft = {
     ...appState.sidebarMenuDraft,
-    order: nextOrder
+    order: nextOrder,
   };
 
   applySidebarMenuConfigToSidebar(appState.sidebarMenuDraft);
@@ -2245,10 +2215,7 @@ function setPageGroupVisibility(activePage: PrimarySidebarNavKey): void {
   }
 }
 
-function activatePrimarySidebarPage(
-  navKey: PrimarySidebarNavKey,
-  options: ActivatePrimaryPageOptions = {}
-): void {
+function activatePrimarySidebarPage(navKey: PrimarySidebarNavKey, options: ActivatePrimaryPageOptions = {}): void {
   appState.activePrimarySidebarPage = navKey;
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
@@ -2315,7 +2282,7 @@ function setupJibbleSidebarNavigation(): void {
 
       activatePrimarySidebarPage(navKeyRaw, {
         scrollToTop: true,
-        openManagementTab: navKeyRaw === "settings"
+        openManagementTab: navKeyRaw === "settings",
       });
     });
   }
@@ -2332,14 +2299,13 @@ function setupJibbleSidebarNavigation(): void {
   }
 
   const activeButton =
-    jibblePrimaryNavButtons.find((button) => button.classList.contains("is-active")) ||
-    jibblePrimaryNavButtons[0];
+    jibblePrimaryNavButtons.find((button) => button.classList.contains("is-active")) || jibblePrimaryNavButtons[0];
   const initialNavKeyRaw = activeButton?.dataset.navKey?.trim() ?? "timeline";
   const initialNavKey = isPrimarySidebarNavKey(initialNavKeyRaw) ? initialNavKeyRaw : "timeline";
 
   activatePrimarySidebarPage(initialNavKey, {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
 
   // Mobile bottom nav
@@ -2356,7 +2322,7 @@ function setupJibbleSidebarNavigation(): void {
       // Also sync desktop sidebar
       activatePrimarySidebarPage(navKeyRaw, {
         scrollToTop: true,
-        openManagementTab: navKeyRaw === "settings"
+        openManagementTab: navKeyRaw === "settings",
       });
     });
   }
@@ -2384,7 +2350,7 @@ function getUnassignedInstructorModules(): string[] {
       (assignment) =>
         assignment.cohort === cohort &&
         assignment.resourceType === "INSTRUCTOR" &&
-        assignment.assignee.trim().length > 0
+        assignment.assignee.trim().length > 0,
     );
     if (!hasInstructorAssignee) {
       missing.add(`${cohort} (강사 미배정)`);
@@ -2476,7 +2442,12 @@ function renderGlobalWarnings(): void {
   renderHeaderRuntimeStatus();
 }
 
-function setRiskCardState(card: HTMLElement, valueElement: HTMLElement, text: string, tone: "ok" | "warn" | "error"): void {
+function setRiskCardState(
+  card: HTMLElement,
+  valueElement: HTMLElement,
+  text: string,
+  tone: "ok" | "warn" | "error",
+): void {
   card.classList.remove("risk-ok", "risk-warn", "risk-error");
   card.classList.add(tone === "ok" ? "risk-ok" : tone === "warn" ? "risk-warn" : "risk-error");
   valueElement.textContent = text;
@@ -2490,7 +2461,7 @@ function renderRiskSummary(): void {
       riskCardTime,
       riskTimeConflict,
       `0 / ${appState.allConflicts.length}`,
-      appState.allConflicts.length === 0 ? "ok" : "error"
+      appState.allConflicts.length === 0 ? "ok" : "error",
     );
   }
 
@@ -2502,13 +2473,13 @@ function renderRiskSummary(): void {
       riskCardInstructorDay,
       riskInstructorDayConflict,
       `0 / ${appState.instructorDayOverlaps.length}`,
-      appState.instructorDayOverlaps.length === 0 ? "ok" : "error"
+      appState.instructorDayOverlaps.length === 0 ? "ok" : "error",
     );
     setRiskCardState(
       riskCardFoDay,
       riskFoDayConflict,
       `0 / ${appState.facilitatorOperationOverlaps.length}`,
-      appState.facilitatorOperationOverlaps.length === 0 ? "ok" : "error"
+      appState.facilitatorOperationOverlaps.length === 0 ? "ok" : "error",
     );
   }
 
@@ -2519,7 +2490,7 @@ function renderRiskSummary(): void {
       riskCardHrd,
       riskHrdValidation,
       isHrdChecklistPassed() ? "통과" : "미통과",
-      isHrdChecklistPassed() ? "ok" : "warn"
+      isHrdChecklistPassed() ? "ok" : "warn",
     );
   }
 
@@ -2527,7 +2498,7 @@ function renderRiskSummary(): void {
     riskCardHoliday,
     riskHolidayApplied,
     isHolidayApplied() ? "적용" : "미적용",
-    isHolidayApplied() ? "ok" : "warn"
+    isHolidayApplied() ? "ok" : "warn",
   );
 }
 
@@ -2573,8 +2544,7 @@ function renderJibbleRightRail(): void {
 
   if (appState.allConflicts.length > 0 || appState.instructorDayOverlaps.length > 0 || unassignedCount > 0) {
     jibbleOpsStatus.textContent = "점검필요";
-    jibbleOpsSummary.textContent =
-      `${cohortSelect.value} · 시간충돌 ${appState.allConflicts.length}건 / 일충돌 ${appState.instructorDayOverlaps.length}건 / 미배정 ${unassignedCount}건`;
+    jibbleOpsSummary.textContent = `${cohortSelect.value} · 시간충돌 ${appState.allConflicts.length}건 / 일충돌 ${appState.instructorDayOverlaps.length}건 / 미배정 ${unassignedCount}건`;
     return;
   }
 
@@ -2592,7 +2562,9 @@ function clearGanttHighlights(): void {
 function highlightGanttByCohortModule(cohort: string, module?: string): void {
   clearGanttHighlights();
 
-  const bars = document.querySelectorAll<HTMLElement>("#staffCohortGantt .staff-gantt-bar, #staffAssigneeGantt .staff-gantt-bar");
+  const bars = document.querySelectorAll<HTMLElement>(
+    "#staffCohortGantt .staff-gantt-bar, #staffAssigneeGantt .staff-gantt-bar",
+  );
   const matched: HTMLElement[] = [];
 
   for (const bar of bars) {
@@ -2658,7 +2630,7 @@ function parseCourseTemplateOptionValue(value: string): { courseId: string; name
   const [courseIdRaw, nameRaw] = value.split("|||");
   return {
     courseId: normalizeCourseId(courseIdRaw ?? ""),
-    name: (nameRaw ?? "").trim()
+    name: (nameRaw ?? "").trim(),
   };
 }
 
@@ -2688,9 +2660,7 @@ function renderCourseTemplateOptions(preferredValue = ""): void {
   }
 
   const hasPrevious = templates.some((item) => buildCourseTemplateOptionValue(item) === previous);
-  courseTemplateSelect.value = hasPrevious
-    ? previous
-    : buildCourseTemplateOptionValue(templates[0]);
+  courseTemplateSelect.value = hasPrevious ? previous : buildCourseTemplateOptionValue(templates[0]);
 }
 
 function saveCurrentCourseTemplate(): void {
@@ -2717,7 +2687,7 @@ function saveCurrentCourseTemplate(): void {
     holidays: [...appState.holidayDates],
     customBreaks: [...appState.customBreakDates],
     subjectList,
-    subjectInstructorMapping
+    subjectInstructorMapping,
   };
 
   const existingIndex = appState.courseTemplates.findIndex((item) => item.courseId === courseId && item.name === name);
@@ -2739,7 +2709,7 @@ function saveCurrentCourseTemplate(): void {
 function applySelectedCourseTemplate(): void {
   const selected = parseCourseTemplateOptionValue(courseTemplateSelect.value);
   const template = appState.courseTemplates.find(
-    (item) => item.courseId === selected.courseId && item.name === selected.name
+    (item) => item.courseId === selected.courseId && item.name === selected.name,
   );
   if (!template) {
     courseTemplateStatus.textContent = "불러올 템플릿을 찾을 수 없습니다.";
@@ -2750,9 +2720,9 @@ function applySelectedCourseTemplate(): void {
     subjectDirectory: appState.subjectDirectory,
     subjectInstructorMappings: Array.from(subjectInstructorMappings.entries()).map(([key, instructorCode]) => ({
       key,
-      instructorCode
+      instructorCode,
     })),
-    template
+    template,
   });
 
   applyTemplateRowsState(applied.dayTemplates);
@@ -2786,7 +2756,7 @@ function deleteSelectedCourseTemplate(): void {
   }
 
   const nextTemplates = appState.courseTemplates.filter(
-    (item) => !(item.courseId === selected.courseId && item.name === selected.name)
+    (item) => !(item.courseId === selected.courseId && item.name === selected.name),
   );
   if (nextTemplates.length === appState.courseTemplates.length) {
     courseTemplateStatus.textContent = "삭제할 템플릿을 찾지 못했습니다.";
@@ -2816,7 +2786,7 @@ function collectSavedStaffingCells(): SavedStaffCell[] {
         assignee: state.assignee,
         startDate: state.startDate,
         endDate: state.endDate,
-        resourceType: state.resourceType
+        resourceType: state.resourceType,
       });
     }
   }
@@ -2844,7 +2814,7 @@ function normalizeInstructorDirectoryEntries(rawInstructors: unknown): Instructo
     entries.push({
       instructorCode,
       name: typeof record.name === "string" ? record.name.trim() : "",
-      memo: typeof record.memo === "string" ? record.memo.trim() : ""
+      memo: typeof record.memo === "string" ? record.memo.trim() : "",
     });
   }
 
@@ -2866,7 +2836,7 @@ function mergeInstructorDirectoryWarning(sizeWarning: string): string {
 }
 
 async function loadInstructorDirectoryWithCloudFallback(
-  localInstructors: InstructorDirectoryEntry[]
+  localInstructors: InstructorDirectoryEntry[],
 ): Promise<InstructorDirectoryEntry[]> {
   if (!isCloudAccessAllowed()) {
     return localInstructors;
@@ -2881,13 +2851,13 @@ async function loadInstructorDirectoryWithCloudFallback(
   try {
     const cloudInstructors = await loadInstructorDirectoryFromCloud();
     if (cloudInstructors.length > 0) {
-      appState.instructorDirectoryCloudWarning = localInstructors.length > 0
-        ? "클라우드 강사 목록을 병합했습니다."
-        : "클라우드 강사 목록을 가져와 적용했습니다.";
+      appState.instructorDirectoryCloudWarning =
+        localInstructors.length > 0
+          ? "클라우드 강사 목록을 병합했습니다."
+          : "클라우드 강사 목록을 가져와 적용했습니다.";
     } else {
-      appState.instructorDirectoryCloudWarning = localInstructors.length > 0
-        ? ""
-        : "클라우드에 저장된 강사 목록이 없습니다. 로컬 데이터를 사용합니다.";
+      appState.instructorDirectoryCloudWarning =
+        localInstructors.length > 0 ? "" : "클라우드에 저장된 강사 목록이 없습니다. 로컬 데이터를 사용합니다.";
     }
     return mergeWithLocalInstructorDirectory(localInstructors, cloudInstructors);
   } catch (error) {
@@ -2930,7 +2900,7 @@ function serializeProjectState(): AppStateVCurrent {
       customBreaks: [...appState.customBreakDates],
       generatedResult: appState.generatedScheduleResult,
       generatedCohort: appState.generatedScheduleCohort,
-      publicHolidayLoaded: appState.hasLoadedPublicHoliday
+      publicHolidayLoaded: appState.hasLoadedPublicHoliday,
     },
     staffingCells: collectSavedStaffingCells(),
     instructorDirectory: appState.instructorDirectory,
@@ -2941,7 +2911,7 @@ function serializeProjectState(): AppStateVCurrent {
       courseId: item.courseId,
       subjectCode: item.subjectCode,
       subjectName: item.subjectName,
-      memo: item.memo
+      memo: item.memo,
     })),
     subjectInstructorMappings: Array.from(subjectInstructorMappings.entries())
       .map(([moduleKey, instructorCode]) => {
@@ -2957,7 +2927,7 @@ function serializeProjectState(): AppStateVCurrent {
         return {
           courseId: parsed.courseId,
           moduleKey: toCourseSubjectKey(parsed.courseId, parsed.subjectCode),
-          instructorCode: normalizeInstructorCode(instructorCode)
+          instructorCode: normalizeInstructorCode(instructorCode),
         };
       })
       .filter((item) => item.courseId.length > 0 && item.moduleKey.length > 0 && item.instructorCode.length > 0),
@@ -2970,8 +2940,8 @@ function serializeProjectState(): AppStateVCurrent {
       keySearch: keySearchInput.value,
       instructorDaySearch: instructorDaySearchInput.value,
       foDaySearch: foDaySearchInput.value,
-      sidebarMenu: normalizeSidebarMenuConfig(appState.sidebarMenuDraft)
-    }
+      sidebarMenu: normalizeSidebarMenuConfig(appState.sidebarMenuDraft),
+    },
   };
 }
 
@@ -3022,8 +2992,11 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
 
     const scheduleState = state.scheduleGenerator;
     appState.holidayDates = dedupeAndSortDates(Array.isArray(scheduleState?.holidays) ? scheduleState.holidays : []);
-    appState.customBreakDates = dedupeAndSortDates(Array.isArray(scheduleState?.customBreaks) ? scheduleState.customBreaks : []);
-    appState.generatedScheduleResult = (scheduleState?.generatedResult as GenerateScheduleResult | null | undefined) ?? null;
+    appState.customBreakDates = dedupeAndSortDates(
+      Array.isArray(scheduleState?.customBreaks) ? scheduleState.customBreaks : [],
+    );
+    appState.generatedScheduleResult =
+      (scheduleState?.generatedResult as GenerateScheduleResult | null | undefined) ?? null;
     appState.generatedScheduleCohort = scheduleState?.generatedCohort ?? "";
     appState.hasLoadedPublicHoliday = Boolean(scheduleState?.publicHolidayLoaded);
 
@@ -3079,7 +3052,7 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
           assignee: row.assignee ?? "",
           startDate: row.startDate ?? "",
           endDate: row.endDate ?? "",
-          resourceType
+          resourceType,
         });
       }
     }
@@ -3091,13 +3064,13 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
             ? state.instructorRegistry
             : Array.isArray(state.instructorDirectory)
               ? state.instructorDirectory
-              : []
+              : [],
         );
     appState.instructorDirectory = instructorSource
       .map((item) => ({
         instructorCode: normalizeInstructorCode(item.instructorCode),
         name: item.name ?? "",
-        memo: item.memo ?? ""
+        memo: item.memo ?? "",
       }))
       .filter((item) => item.instructorCode.length > 0)
       .sort((a, b) => a.instructorCode.localeCompare(b.instructorCode));
@@ -3106,7 +3079,7 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
       ? state.courseRegistry.map((item) => ({
           courseId: normalizeCourseId(item.courseId),
           courseName: item.courseName ?? "",
-          memo: item.memo ?? ""
+          memo: item.memo ?? "",
         }))
       : [];
 
@@ -3116,12 +3089,14 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
         ? state.subjectDirectory
         : [];
     appState.subjectDirectory = rawSubjects.map((item) => ({
-          courseId: normalizeCourseId(item.courseId ?? ""),
-          subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
-          subjectName: item.subjectName ?? "",
-          memo: item.memo ?? ""
-        }));
-    appState.subjectDirectory = appState.subjectDirectory.filter((item) => item.courseId.length > 0 && item.subjectCode.length > 0);
+      courseId: normalizeCourseId(item.courseId ?? ""),
+      subjectCode: normalizeSubjectCode(item.subjectCode).toUpperCase(),
+      subjectName: item.subjectName ?? "",
+      memo: item.memo ?? "",
+    }));
+    appState.subjectDirectory = appState.subjectDirectory.filter(
+      (item) => item.courseId.length > 0 && item.subjectCode.length > 0,
+    );
     for (const courseId of new Set(appState.subjectDirectory.map((item) => item.courseId))) {
       if (!appState.courseRegistry.some((item) => item.courseId === courseId)) {
         appState.courseRegistry.push({ courseId, courseName: courseId, memo: "" });
@@ -3135,11 +3110,11 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
       const rawCourseId = normalizeCourseId(row.courseId ?? parsed.courseId);
       const courseId = normalizeCourseId(parseCourseGroupFromCohortName(rawCourseId).course);
       const moduleKey = toCourseSubjectKey(courseId, parsed.subjectCode);
-        const instructorCode = normalizeInstructorCode(row.instructorCode ?? "");
-        if (!moduleKey || !instructorCode) {
-          continue;
-        }
-        subjectInstructorMappings.set(moduleKey, instructorCode);
+      const instructorCode = normalizeInstructorCode(row.instructorCode ?? "");
+      if (!moduleKey || !instructorCode) {
+        continue;
+      }
+      subjectInstructorMappings.set(moduleKey, instructorCode);
     }
     for (const row of state.subjectInstructorMappings) {
       const parsed = parseCourseSubjectKey(row.moduleKey ?? "");
@@ -3160,14 +3135,15 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
     const ui = state.ui;
     const loadedSidebarMenu = ui?.sidebarMenu;
     // 마이그레이션: 이전 사이드바 설정(기수 일정 생성기, 설정 순서 등)이면 기본값으로 리셋
-    const needsMigration = loadedSidebarMenu &&
+    const needsMigration =
+      loadedSidebarMenu &&
       (loadedSidebarMenu.labels?.generator?.includes("기수") ||
-       loadedSidebarMenu.order?.indexOf("settings") < loadedSidebarMenu.order?.indexOf("attendance"));
+        loadedSidebarMenu.order?.indexOf("settings") < loadedSidebarMenu.order?.indexOf("attendance"));
     if (loadedSidebarMenu && !needsMigration) {
       appState.sidebarMenuConfig = normalizeSidebarMenuConfig({
         order: loadedSidebarMenu.order,
         labels: loadedSidebarMenu.labels,
-        icons: loadedSidebarMenu.icons
+        icons: loadedSidebarMenu.icons,
       });
     } else {
       appState.sidebarMenuConfig = getDefaultSidebarMenuConfig();
@@ -3195,7 +3171,8 @@ function applyLoadedProjectState(raw: unknown, instructorDirectoryOverride?: Ins
     const tab = ui?.activeConflictTab;
     setConflictTab(tab === "time" || tab === "instructor_day" || tab === "fo_day" ? tab : "time");
 
-    uploadStatus.textContent = appState.sessions.length > 0 ? `현재 수업시간표 ${appState.sessions.length}건` : "대기중";
+    uploadStatus.textContent =
+      appState.sessions.length > 0 ? `현재 수업시간표 ${appState.sessions.length}건` : "대기중";
     stateStorageStatus.textContent = `프로젝트 불러오기 완료 (${new Date().toLocaleTimeString()})`;
   } finally {
     appState.isApplyingProjectState = false;
@@ -3221,7 +3198,7 @@ async function loadProjectStateFromLocalStorage(): Promise<void> {
         ? stateLike.instructorRegistry
         : Array.isArray(stateLike.instructorDirectory)
           ? stateLike.instructorDirectory
-          : []
+          : [],
     );
     const resolvedInstructorDirectory = await loadInstructorDirectoryWithCloudFallback(localInstructors);
     applyLoadedProjectState(parsed, resolvedInstructorDirectory);
@@ -3278,7 +3255,7 @@ function getStaffCellState(cohort: string, phase: Phase): StaffCellState {
       assignee: "",
       startDate: "",
       endDate: "",
-      resourceType: "FACILITATOR"
+      resourceType: "FACILITATOR",
     }
   );
 }
@@ -3304,7 +3281,6 @@ function setStaffingStatus(message: string, isError = false): void {
   staffingStatus.style.color = isError ? "#b42318" : "";
 }
 
-
 function setUploadProcessingState(processing: boolean): void {
   appState.isUploadProcessing = processing;
   uploadStatus.textContent = processing ? "처리중..." : uploadStatus.textContent;
@@ -3328,7 +3304,8 @@ function setHolidayLoadingState(loading: boolean): void {
 function updateActionStates(): void {
   const hasSessions = appState.sessions.length > 0;
   const canComputeConflicts = hasSessions && !appState.isUploadProcessing;
-  const canUseConflictControls = appState.hasComputedConflicts && !appState.isConflictComputing && !appState.isUploadProcessing;
+  const canUseConflictControls =
+    appState.hasComputedConflicts && !appState.isConflictComputing && !appState.isUploadProcessing;
   const isBusy = appState.isUploadProcessing || appState.isConflictComputing || appState.isHolidayLoading;
   const advancedMode = appState.staffingMode === "advanced";
   const canDownloadHrd = hasSessions && !appState.isUploadProcessing;
@@ -3357,7 +3334,8 @@ function updateActionStates(): void {
     deleteScheduleTemplateButton.disabled = true;
   } else {
     const selectedTemplate = findScheduleTemplate(appState.scheduleTemplates, scheduleTemplateSelect.value);
-    deleteScheduleTemplateButton.disabled = Boolean(selectedTemplate?.builtIn) || appState.scheduleTemplates.length === 0;
+    deleteScheduleTemplateButton.disabled =
+      Boolean(selectedTemplate?.builtIn) || appState.scheduleTemplates.length === 0;
   }
 
   staffAutoFillButton.disabled = isBusy || appState.staffingCohortRanges.length === 0 || !advancedMode;
@@ -3434,7 +3412,7 @@ function updateCohortInfo(): void {
   const summary = appState.summaries.find((item) => item.과정기수 === cohort);
 
   if (!summary) {
-  cohortInfo.textContent = "기간:  ~  / 훈련일수: 0 / 수업시간표 건수: 0";
+    cohortInfo.textContent = "기간:  ~  / 훈련일수: 0 / 수업시간표 건수: 0";
     appState.hrdValidationErrors = [];
     appState.hrdValidationWarnings = [];
     renderHrdValidationErrors();
@@ -3584,14 +3562,18 @@ function restoreStateBeforeSampleLoad(): void {
 
 function validateHrdExportForCohortWithWarnings(cohort: string): { errors: string[]; warnings: string[] } {
   const subjectCodes = new Set(appState.subjectDirectory.map((item) => item.subjectCode));
-  return validateHrdExportForCohortDetailed(appState.sessions, cohort, appState.holidayDates, holidayNameByDate, subjectCodes);
+  return validateHrdExportForCohortDetailed(
+    appState.sessions,
+    cohort,
+    appState.holidayDates,
+    holidayNameByDate,
+    subjectCodes,
+  );
 }
 
 function refreshHrdValidation(): void {
   const cohort = cohortSelect.value;
-  const validation = cohort
-    ? validateHrdExportForCohortWithWarnings(cohort)
-    : { errors: [], warnings: [] };
+  const validation = cohort ? validateHrdExportForCohortWithWarnings(cohort) : { errors: [], warnings: [] };
   appState.hrdValidationErrors = validation.errors;
   appState.hrdValidationWarnings = validation.warnings;
   renderHrdValidationErrors();
@@ -3607,40 +3589,42 @@ function renderOpsChecklist(): void {
   const trackTypeComplete =
     trackTypeMissing.length === 0 &&
     (appState.staffingCohortRanges.length === 0 ||
-      appState.staffingCohortRanges.every((range) => isTrackType(range.trackType) && getPolicyForTrack(range.trackType).length > 0));
+      appState.staffingCohortRanges.every(
+        (range) => isTrackType(range.trackType) && getPolicyForTrack(range.trackType).length > 0,
+      ));
 
   const items: Array<{ label: string; ok: boolean; warn?: boolean }> = [
     {
       label: `HRD CSV 다운로드 검증 ${hrdPass ? "통과" : "미통과"}`,
       ok: hrdPass,
-      warn: true
+      warn: true,
     },
     {
       label: appState.hasComputedConflicts
         ? `강사 시간 충돌 ${appState.allConflicts.length === 0 ? "0건" : `${appState.allConflicts.length}건`}`
         : "강사 시간 충돌 미계산",
       ok: appState.hasComputedConflicts && appState.allConflicts.length === 0,
-      warn: true
+      warn: true,
     },
     {
       label: `강사 배치(일) 충돌 ${appState.instructorDayOverlaps.length === 0 ? "0건" : `${appState.instructorDayOverlaps.length}건`}`,
       ok: appState.instructorDayOverlaps.length === 0,
-      warn: appState.staffingAssignments.length > 0
+      warn: appState.staffingAssignments.length > 0,
     },
     {
       label: `퍼실/운영 배치(일) 충돌 ${appState.facilitatorOperationOverlaps.length === 0 ? "0건" : `${appState.facilitatorOperationOverlaps.length}건`}`,
       ok: appState.facilitatorOperationOverlaps.length === 0,
-      warn: appState.staffingAssignments.length > 0
+      warn: appState.staffingAssignments.length > 0,
     },
     {
       label: `공휴일 자동 로드 ${appState.hasLoadedPublicHoliday ? "적용" : "미적용"}`,
       ok: appState.hasLoadedPublicHoliday,
-      warn: true
+      warn: true,
     },
     {
       label: `trackType 설정 ${trackTypeComplete ? "완료" : "누락"}`,
       ok: trackTypeComplete,
-      warn: appState.staffingCohortRanges.length > 0
+      warn: appState.staffingCohortRanges.length > 0,
     },
     {
       label:
@@ -3648,8 +3632,8 @@ function renderOpsChecklist(): void {
           ? "강사 배정 누락 없음"
           : `강사 배정 누락 ${unassignedInstructorModules.length}건`,
       ok: unassignedInstructorModules.length === 0,
-      warn: true
-    }
+      warn: true,
+    },
   ];
 
   for (const item of items) {
@@ -3667,7 +3651,6 @@ function renderOpsChecklist(): void {
     opsChecklistList.appendChild(li);
   }
 }
-
 
 async function computeConflicts(): Promise<void> {
   if (appState.sessions.length === 0 || appState.isConflictComputing) {
@@ -3717,7 +3700,9 @@ function downloadCohortCSV(): void {
   }
 
   const generatedDays =
-    cohort === appState.generatedScheduleCohort && appState.generatedScheduleResult ? appState.generatedScheduleResult.days : undefined;
+    cohort === appState.generatedScheduleCohort && appState.generatedScheduleResult
+      ? appState.generatedScheduleResult.days
+      : undefined;
   const { csv, rowWarning } = exportHrdCsvForCohort(appState.sessions, cohort, { generatedDays });
   if (rowWarning) {
     pushRecentActionLog("WARNING", rowWarning, "hrdDownloadCard");
@@ -3732,12 +3717,15 @@ function downloadCohortCSV(): void {
 
   URL.revokeObjectURL(url);
   if (validation.warnings.length > 0) {
-    pushRecentActionLog("WARNING", `경고: 교과목/강사 누락 ${validation.warnings.length}건 (다운로드는 허용)`, "hrdDownloadCard");
+    pushRecentActionLog(
+      "WARNING",
+      `경고: 교과목/강사 누락 ${validation.warnings.length}건 (다운로드는 허용)`,
+      "hrdDownloadCard",
+    );
   }
   pushRecentActionLog("INFO", `HRD CSV 다운로드 완료: ${cohort}`, "hrdDownloadCard");
   updateActionStates();
 }
-
 
 function downloadProjectStateJson(): void {
   const state = serializeProjectState();
@@ -3789,20 +3777,24 @@ function buildPrintReport(): void {
 
   if (appState.activeConflictTab === "time") {
     conflictColumns = CONFLICT_COLUMNS;
-    conflictRows = appState.visibleConflicts.slice(0, PRINT_CONFLICT_LIMIT).map((conflict) => [
-      conflict.기준,
-      conflict.일자,
-      conflict.키,
-      conflict.과정A,
-      conflict.A시간,
-      conflict.A교과목,
-      conflict.과정B,
-      conflict.B시간,
-      conflict.B교과목
-    ]);
+    conflictRows = appState.visibleConflicts
+      .slice(0, PRINT_CONFLICT_LIMIT)
+      .map((conflict) => [
+        conflict.기준,
+        conflict.일자,
+        conflict.키,
+        conflict.과정A,
+        conflict.A시간,
+        conflict.A교과목,
+        conflict.과정B,
+        conflict.B시간,
+        conflict.B교과목,
+      ]);
   } else if (appState.activeConflictTab === "instructor_day") {
     conflictColumns = DAY_CONFLICT_COLUMNS;
-    conflictRows = appState.visibleInstructorDayOverlaps.slice(0, PRINT_CONFLICT_LIMIT).map((item) => toDayConflictRow(item));
+    conflictRows = appState.visibleInstructorDayOverlaps
+      .slice(0, PRINT_CONFLICT_LIMIT)
+      .map((item) => toDayConflictRow(item));
   } else {
     conflictColumns = DAY_CONFLICT_COLUMNS;
     conflictRows = appState.visibleFoDayOverlaps.slice(0, PRINT_CONFLICT_LIMIT).map((item) => toDayConflictRow(item));
@@ -3823,7 +3815,7 @@ function renderDateList(
   listElement: HTMLUListElement,
   values: string[],
   toLabel: (value: string) => string,
-  onRemove: (value: string) => void
+  onRemove: (value: string) => void,
 ): void {
   holidayRenderDateList(listElement, values, toLabel, onRemove);
 }
@@ -3906,14 +3898,14 @@ function parseTemplateRows(): { dayTemplates: DayTimeTemplate[]; weekdays: numbe
     dayTemplates.push({
       weekday,
       blocks: [{ startHHMM, endHHMM }],
-      breaks
+      breaks,
     });
     weekdaySet.add(weekday);
   }
 
   return {
     dayTemplates,
-    weekdays: Array.from(weekdaySet).sort((a, b) => a - b)
+    weekdays: Array.from(weekdaySet).sort((a, b) => a - b),
   };
 }
 
@@ -3962,8 +3954,8 @@ function readScheduleConfigFromUi(): { cohort: string; config: ScheduleConfig } 
       weekdays: parsedTemplate.weekdays,
       holidays: [...appState.holidayDates],
       customBreaks: [...appState.customBreakDates],
-      dayTemplates: parsedTemplate.dayTemplates
-    }
+      dayTemplates: parsedTemplate.dayTemplates,
+    },
   };
 }
 
@@ -4009,9 +4001,7 @@ function renderSkippedDetails(skipped: SkippedDay[]): void {
   const reasons: SkippedDay["reason"][] = ["holiday", "custom_break", "weekday_excluded"];
 
   for (const reason of reasons) {
-    const items = skipped
-      .filter((item) => item.reason === reason)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const items = skipped.filter((item) => item.reason === reason).sort((a, b) => a.date.localeCompare(b.date));
 
     const section = document.createElement("div");
     section.className = "skip-section";
@@ -4119,7 +4109,7 @@ function compactToIso(value: string): string | null {
 
 function upsertCohortRange<T extends { cohort: string; startDate: string; endDate: string }>(
   target: Map<string, T>,
-  range: T
+  range: T,
 ): void {
   const existing = target.get(range.cohort);
   if (!existing) {
@@ -4131,34 +4121,65 @@ function upsertCohortRange<T extends { cohort: string; startDate: string; endDat
   existing.endDate = existing.endDate > range.endDate ? existing.endDate : range.endDate;
 }
 
-function rebuildStaffingCohortRanges(): void { staffingRebuildStaffingCohortRanges(); }
+function rebuildStaffingCohortRanges(): void {
+  staffingRebuildStaffingCohortRanges();
+}
 
-function renderStaffingMatrix(): void { staffingRenderStaffingMatrix(); }
+function renderStaffingMatrix(): void {
+  staffingRenderStaffingMatrix();
+}
 
-function collectStaffingInputs(): StaffAssignmentInput[] { return staffingCollectStaffingInputs(); }
+function collectStaffingInputs(): StaffAssignmentInput[] {
+  return staffingCollectStaffingInputs();
+}
 
+function renderStaffGantt(
+  container: HTMLElement,
+  groups: Array<{ label: string; assignments: StaffAssignment[] }>,
+  barLabel: (assignment: StaffAssignment) => string,
+): void {
+  staffingRenderStaffGantt(container, groups, barLabel);
+}
 
-function renderStaffGantt(container: HTMLElement, groups: Array<{ label: string; assignments: StaffAssignment[] }>, barLabel: (assignment: StaffAssignment) => string): void { staffingRenderStaffGantt(container, groups, barLabel); }
+function buildOverlapDayMapByAssignment(): Map<StaffAssignment, number> {
+  return staffingBuildOverlapDayMapByAssignment();
+}
 
-function buildOverlapDayMapByAssignment(): Map<StaffAssignment, number> { return staffingBuildOverlapDayMapByAssignment(); }
+function getPolicyLabelsForAssignee(assignee: string, resourceType: ResourceType): string[] {
+  return staffingGetPolicyLabelsForAssignee(assignee, resourceType);
+}
 
-function getPolicyLabelsForAssignee(assignee: string, resourceType: ResourceType): string[] { return staffingGetPolicyLabelsForAssignee(assignee, resourceType); }
+function renderStaffKpiAndDetails(): void {
+  staffingRenderStaffKpiAndDetails();
+}
 
-function renderStaffKpiAndDetails(): void { staffingRenderStaffKpiAndDetails(); }
+function refreshStaffingAnalytics(showStatus = true): void {
+  staffingRefreshStaffingAnalytics(showStatus);
+}
 
-function refreshStaffingAnalytics(showStatus = true): void { staffingRefreshStaffingAnalytics(showStatus); }
+function renderStaffingSection(): void {
+  staffingRenderStaffingSection();
+}
 
-function renderStaffingSection(): void { staffingRenderStaffingSection(); }
+function autoFillStaffingFromCohorts(): void {
+  staffingAutoFillStaffingFromCohorts();
+}
 
-function autoFillStaffingFromCohorts(): void { staffingAutoFillStaffingFromCohorts(); }
+function isV7eStrictReady(): { ok: boolean; reason?: string } {
+  return staffingIsV7eStrictReady();
+}
 
-function isV7eStrictReady(): { ok: boolean; reason?: string } { return staffingIsV7eStrictReady(); }
+function buildStrictExportRecords(): InternalV7ERecord[] {
+  return staffingBuildStrictExportRecords();
+}
 
-function buildStrictExportRecords(): InternalV7ERecord[] { return staffingBuildStrictExportRecords(); }
+function buildModulesGenericExportRecords(): InternalV7ERecord[] {
+  return staffingBuildModulesGenericExportRecords();
+}
 
-function buildModulesGenericExportRecords(): InternalV7ERecord[] { return staffingBuildModulesGenericExportRecords(); }
-
-function downloadStaffingCsv(): void { staffingDownloadStaffingCsv(); }
+function downloadStaffingCsv(): void {
+  staffingDownloadStaffingCsv();
+}
 
 function regenerateSummariesAndTimeline(preferredCohort = ""): void {
   const sessionSummaries = buildCohortSummaries(appState.sessions);
@@ -4189,7 +4210,7 @@ function generateScheduleFromUi(): void {
       generatedCohortRanges.set(appState.generatedScheduleCohort, {
         cohort: appState.generatedScheduleCohort,
         startDate: appState.generatedScheduleResult.days[0].date,
-        endDate: appState.generatedScheduleResult.endDate
+        endDate: appState.generatedScheduleResult.endDate,
       });
       renderStaffingSection();
     }
@@ -4199,7 +4220,7 @@ function generateScheduleFromUi(): void {
     pushRecentActionLog(
       "INFO",
       `일정 생성 완료: ${appState.generatedScheduleCohort} (종강 ${appState.generatedScheduleResult.endDate})`,
-      "sectionScheduleGenerate"
+      "sectionScheduleGenerate",
     );
     updateActionStates();
     scheduleAutoSave();
@@ -4233,7 +4254,7 @@ function appendGeneratedScheduleToSessions(): void {
       days: appState.generatedScheduleResult.days,
       instructorCode: scheduleInstructorCodeInput.value,
       classroomCode: scheduleClassroomCodeInput.value,
-      subjectCode: scheduleSubjectCodeInput.value
+      subjectCode: scheduleSubjectCodeInput.value,
     });
 
     appState.sessions = [...appState.sessions, ...createdSessions];
@@ -4250,7 +4271,7 @@ function appendGeneratedScheduleToSessions(): void {
     pushRecentActionLog(
       "INFO",
       `일정 반영 완료: ${appState.generatedScheduleCohort} ${createdSessions.length}건 추가`,
-      "sectionTimeline"
+      "sectionTimeline",
     );
     updateActionStates();
     scheduleAutoSave();
@@ -4338,7 +4359,7 @@ function handleConflictModalClick(event: MouseEvent): void {
 function handleOpenInstructorDrawer(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   openInstructorDrawerWithTab("course");
 }
@@ -4346,7 +4367,7 @@ function handleOpenInstructorDrawer(): void {
 function handleQuickNavCourse(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   openInstructorDrawerWithTab("course");
 }
@@ -4354,7 +4375,7 @@ function handleQuickNavCourse(): void {
 function handleQuickNavSubject(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   openInstructorDrawerWithTab("subject");
 }
@@ -4362,7 +4383,7 @@ function handleQuickNavSubject(): void {
 function handleQuickNavInstructor(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   openInstructorDrawerWithTab("register");
 }
@@ -4370,7 +4391,7 @@ function handleQuickNavInstructor(): void {
 function handleQuickNavMapping(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   openInstructorDrawerWithTab("mapping");
 }
@@ -4544,7 +4565,7 @@ function handleResetMenuConfig(): void {
 function handleJibbleSubCourse(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("course");
@@ -4554,7 +4575,7 @@ function handleJibbleSubCourse(): void {
 function handleJibbleSubSubject(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("subject");
@@ -4564,7 +4585,7 @@ function handleJibbleSubSubject(): void {
 function handleJibbleSubInstructor(): void {
   activatePrimarySidebarPage("settings", {
     scrollToTop: false,
-    openManagementTab: false
+    openManagementTab: false,
   });
   setJibbleManagementSubmenuVisible(true);
   setJibbleManagementSubmenuActive("instructor");
@@ -4658,25 +4679,25 @@ function handleWindowAfterprint(): void {
 initConflictsFeature({
   highlightGanttByCohortModule,
   updateActionStates,
-  scheduleAutoSave
+  scheduleAutoSave,
 });
 
 initTimelineFeature({
   getCohortNotificationMap: () => getCohortNotificationCountMap(refreshNotificationItems()),
-  focusNotification: focusNotificationCenter
+  focusNotification: focusNotificationCenter,
 });
 
 initHolidaysFeature({
   refreshHrdValidation,
   scheduleAutoSave,
   setHolidayLoadingState,
-  setScheduleError
+  setScheduleError,
 });
 
 initScheduleTemplatesFeature({
   scheduleAutoSave,
   updateActionStates,
-  pushRecentActionLog
+  pushRecentActionLog,
 });
 
 initStaffingFeature({
@@ -4698,7 +4719,7 @@ initStaffingFeature({
   applyFoDayFilters,
   renderStaffExportValidation,
   renderStaffModuleManagerTable,
-  buildModuleAssignSummaries
+  buildModuleAssignSummaries,
 });
 
 initEventListeners({

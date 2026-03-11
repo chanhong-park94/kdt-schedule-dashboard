@@ -8,7 +8,7 @@ export const REQUIRED_INPUT_COLUMNS = [
   "훈련강사코드",
   "교육장소(강의실)코드",
   "교과목(및 능력단위)코드",
-  "과정기수"
+  "과정기수",
 ] as const;
 
 export const HRD_EXPORT_COLUMNS = [
@@ -20,7 +20,7 @@ export const HRD_EXPORT_COLUMNS = [
   "시간구분",
   "훈련강사코드",
   "교육장소(강의실)코드",
-  "교과목(및 능력단위)코드"
+  "교과목(및 능력단위)코드",
 ] as const;
 
 export type BasisKey = "훈련강사코드" | "교육장소(강의실)코드";

@@ -6,7 +6,7 @@ export type ConflictTab = "time" | "instructor_day" | "fo_day";
 
 const POLICY_BY_TRACK: Record<TrackType, number[]> = {
   UNEMPLOYED: [1, 2, 3, 4, 5],
-  EMPLOYED: [1, 2, 3, 4, 5, 6]
+  EMPLOYED: [1, 2, 3, 4, 5, 6],
 };
 
 export function parseCourseGroupFromCohortName(cohortName: string): { course: string; cohortLabel: string } {
@@ -35,7 +35,7 @@ export function parseCourseSubjectKey(key: string): { courseId: string; subjectC
   const [courseIdRaw, subjectRaw] = key.split("|||");
   return {
     courseId: normalizeCourseId(courseIdRaw ?? ""),
-    subjectCode: normalizeSubjectCode(subjectRaw ?? "").toUpperCase()
+    subjectCode: normalizeSubjectCode(subjectRaw ?? "").toUpperCase(),
   };
 }
 
@@ -81,9 +81,7 @@ export function estimateUtf8SizeBytes(value: string): number {
 }
 
 export function normalizePolicyDays(days: number[]): number[] {
-  return Array.from(new Set(days.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))).sort(
-    (a, b) => a - b
-  );
+  return Array.from(new Set(days.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))).sort((a, b) => a - b);
 }
 
 export function getPolicyForTrack(trackType: TrackType): number[] {

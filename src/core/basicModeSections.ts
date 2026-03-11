@@ -7,7 +7,7 @@ export const BASIC_MODE_HIDDEN_SELECTORS = [
   "#sectionChecklist",
   "#standardizeHelp",
   "#standardizeStatus",
-  "#staffModuleManagerContainer"
+  "#staffModuleManagerContainer",
 ] as const;
 
 export function removeBasicModeSections(root: ParentNode): void {

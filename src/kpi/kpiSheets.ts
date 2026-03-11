@@ -34,9 +34,7 @@ const CORS_PROXIES: ProxyEntry[] = [
 async function corsFetch(rawUrl: string): Promise<string> {
   for (const proxy of CORS_PROXIES) {
     try {
-      const url = proxy.encode
-        ? proxy.prefix + encodeURIComponent(rawUrl)
-        : proxy.prefix + rawUrl;
+      const url = proxy.encode ? proxy.prefix + encodeURIComponent(rawUrl) : proxy.prefix + rawUrl;
       const r = await fetch(url);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return await r.text();
@@ -66,13 +64,23 @@ function parseCsvRows(text: string): string[][] {
       }
       continue;
     }
-    if (ch === "," && !inQuotes) { row.push(cell); cell = ""; continue; }
-    if (ch === "\n" && !inQuotes) { row.push(cell); rows.push(row); row = []; cell = ""; continue; }
+    if (ch === "," && !inQuotes) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+    if (ch === "\n" && !inQuotes) {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
     cell += ch;
   }
   row.push(cell);
   rows.push(row);
-  return rows.filter(r => r.some(v => v.trim().length > 0));
+  return rows.filter((r) => r.some((v) => v.trim().length > 0));
 }
 
 function num(v: string): number {
@@ -224,9 +232,18 @@ function parseSummary(csv: string): {
   for (const row of rows) {
     const first = row[0]?.trim() || "";
 
-    if (first.includes("성취평가 집계")) { section = "ach"; continue; }
-    if (first.includes("형성평가 집계")) { section = "frm"; continue; }
-    if (first.includes("현업적용평가 집계")) { section = "fa"; continue; }
+    if (first.includes("성취평가 집계")) {
+      section = "ach";
+      continue;
+    }
+    if (first.includes("형성평가 집계")) {
+      section = "frm";
+      continue;
+    }
+    if (first.includes("현업적용평가 집계")) {
+      section = "fa";
+      continue;
+    }
     if (first === "과정" || first === "전체") {
       // "전체" row = 합산 행
       if (first === "과정") continue; // 헤더 스킵
@@ -282,7 +299,9 @@ export function loadKpiConfig(): KpiConfig {
   try {
     const raw = localStorage.getItem(KPI_CONFIG_KEY);
     if (raw) return JSON.parse(raw) as KpiConfig;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { webAppUrl: "", spreadsheetId: "" };
 }
 
@@ -318,7 +337,7 @@ async function fetchViaAppsScript(webAppUrl: string): Promise<KpiAllData> {
 
   // Apps Script는 2D 배열 형태로 반환 → CSV 문자열로 변환 후 파싱
   const toCsv = (rows: string[][]): string =>
-    rows.map(row => row.map(cell => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
 
   const settingsCsv = toCsv(json.settings || []);
   const achievementCsv = toCsv(json.achievement || []);
@@ -337,9 +356,7 @@ async function fetchViaAppsScript(webAppUrl: string): Promise<KpiAllData> {
 
 async function fetchViaCsv(spreadsheetId: string): Promise<KpiAllData> {
   const base = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv`;
-  const csvs = await Promise.all(
-    SHEET_NAMES.map(name => corsFetch(`${base}&sheet=${encodeURIComponent(name)}`))
-  );
+  const csvs = await Promise.all(SHEET_NAMES.map((name) => corsFetch(`${base}&sheet=${encodeURIComponent(name)}`)));
 
   const [settingsCsv, achievementCsv, formativeCsv, fieldAppCsv, summaryCsv] = csvs;
 
@@ -355,7 +372,9 @@ async function fetchViaCsv(spreadsheetId: string): Promise<KpiAllData> {
 /**
  * 연결 테스트 — 첫 시트(설정)만 가져와 봄
  */
-export async function testKpiConnection(config: KpiConfig): Promise<{ ok: boolean; message: string; courseCount?: number }> {
+export async function testKpiConnection(
+  config: KpiConfig,
+): Promise<{ ok: boolean; message: string; courseCount?: number }> {
   try {
     if (config.webAppUrl) {
       const url = config.webAppUrl.includes("?")

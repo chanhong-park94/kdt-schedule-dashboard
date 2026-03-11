@@ -20,18 +20,14 @@ function isIsoDate(value: string): boolean {
   const month = Number.parseInt(value.slice(5, 7), 10);
   const day = Number.parseInt(value.slice(8, 10), 10);
   const date = new Date(Date.UTC(year, month - 1, day));
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
 export function validateHrdExportForCohort(
   sessions: Session[],
   cohort: string,
   holidayDates: string[],
-  holidayNameByDate?: Map<string, string>
+  holidayNameByDate?: Map<string, string>,
 ): string[] {
   return validateHrdExportForCohortDetailed(sessions, cohort, holidayDates, holidayNameByDate).errors;
 }
@@ -41,13 +37,13 @@ export function validateHrdExportForCohortDetailed(
   cohort: string,
   holidayDates: string[],
   holidayNameByDate?: Map<string, string>,
-  subjectDirectoryCodes?: Set<string>
+  subjectDirectoryCodes?: Set<string>,
 ): HrdValidationResult {
   const cohortSessions = sessions.filter((session) => session.과정기수 === cohort);
   if (cohortSessions.length === 0) {
     return {
       errors: ["선택한 기수에 세션이 없어 HRD CSV를 다운로드할 수 없습니다."],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -73,11 +69,13 @@ export function validateHrdExportForCohortDetailed(
         missingInstructorModules.add(subjectCode);
       }
       warnings.add(
-        `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 강사코드가 비어 있습니다. 다운로드는 가능하지만 업로드 전 보완이 필요합니다.`
+        `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 강사코드가 비어 있습니다. 다운로드는 가능하지만 업로드 전 보완이 필요합니다.`,
       );
     }
     if (!subjectCode) {
-      warnings.add(`[${session.훈련일자}] 교과목 코드가 비어 있습니다. 다운로드는 가능하지만 업로드 전 보완이 필요합니다.`);
+      warnings.add(
+        `[${session.훈련일자}] 교과목 코드가 비어 있습니다. 다운로드는 가능하지만 업로드 전 보완이 필요합니다.`,
+      );
     } else if (subjectDirectoryCodes && subjectDirectoryCodes.size > 0 && !subjectDirectoryCodes.has(subjectCode)) {
       unregisteredSubjects.add(subjectCode);
     }
@@ -93,18 +91,18 @@ export function validateHrdExportForCohortDetailed(
 
     if (session.startMin === null || session.endMin === null) {
       errors.add(
-        `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 시작/종료 시간 형식이 올바르지 않아 다운로드할 수 없습니다.`
+        `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 시작/종료 시간 형식이 올바르지 않아 다운로드할 수 없습니다.`,
       );
     } else {
       if (session.startMin === session.endMin) {
         warnings.add(
-          `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 시작시간과 종료시간이 동일한 세션이 있습니다.`
+          `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 시작시간과 종료시간이 동일한 세션이 있습니다.`,
         );
       }
 
       if (session.endMin < session.startMin) {
         warnings.add(
-          `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 종료시간이 시작시간보다 빠른 세션이 있습니다.`
+          `[${session.훈련일자}] ${subjectCode || "교과목 미기재"}: 종료시간이 시작시간보다 빠른 세션이 있습니다.`,
         );
       }
     }
@@ -112,7 +110,7 @@ export function validateHrdExportForCohortDetailed(
     if (normalizedDate && holidaySet.has(normalizedDate)) {
       const holidayName = holidayNameByDate?.get(normalizedDate);
       warnings.add(
-        `[${normalizedDate}] ${subjectCode || "교과목 미기재"}: 공휴일${holidayName ? `(${holidayName})` : ""} 세션이 포함되어 있습니다.`
+        `[${normalizedDate}] ${subjectCode || "교과목 미기재"}: 공휴일${holidayName ? `(${holidayName})` : ""} 세션이 포함되어 있습니다.`,
       );
     }
   }
@@ -131,6 +129,6 @@ export function validateHrdExportForCohortDetailed(
 
   return {
     errors: Array.from(errors),
-    warnings: Array.from(warnings)
+    warnings: Array.from(warnings),
   };
 }

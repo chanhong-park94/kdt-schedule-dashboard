@@ -38,23 +38,23 @@ export type CourseCategory = "재직자" | "실업자";
 
 export interface HrdCourse {
   name: string;
-  trainPrId: string;   // srchTrprId
-  degrs: string[];     // 기수 목록 ["1","2",...]
-  startDate: string;   // 개강일 YYYY-MM-DD
-  totalDays: number;   // 총 훈련일수
-  endTime: string;     // 수업 종료시간 HH:MM (퇴실 미체크 판단용)
-  category?: CourseCategory;  // 재직자/실업자 구분
+  trainPrId: string; // srchTrprId
+  degrs: string[]; // 기수 목록 ["1","2",...]
+  startDate: string; // 개강일 YYYY-MM-DD
+  totalDays: number; // 총 훈련일수
+  endTime: string; // 수업 종료시간 HH:MM (퇴실 미체크 판단용)
+  category?: CourseCategory; // 재직자/실업자 구분
 }
 
 export interface SlackScheduleConfig {
   enabled: boolean;
-  hour: number;           // 0-23
-  minute: number;         // 0-59
-  weekdaysOnly: boolean;  // 평일만
+  hour: number; // 0-23
+  minute: number; // 0-59
+  weekdaysOnly: boolean; // 평일만
   targetCourses: string[]; // trainPrId[] — 빈 배열이면 전체
-  headerText: string;     // 메시지 헤더
-  footerText: string;     // 메시지 푸터
-  lastSentDate?: string;  // YYYY-MM-DD (중복 방지)
+  headerText: string; // 메시지 헤더
+  footerText: string; // 메시지 푸터
+  lastSentDate?: string; // YYYY-MM-DD (중복 방지)
 }
 
 export const DEFAULT_SLACK_SCHEDULE: SlackScheduleConfig = {
@@ -138,19 +138,19 @@ export interface AttendanceStudent {
   outTime: string;
   dropout: boolean;
   riskLevel: RiskLevel;
-  totalDays: number;        // 총 훈련일수 (과정 설정)
-  attendedDays: number;     // 출석 인정일수 (출석+지각+조퇴+외출+복합)
-  absentDays: number;       // 결석일수 (순수 결석만)
-  excusedDays: number;      // 공결/사유 일수
-  maxAbsent: number;        // 최대 허용 결석일수 (totalDays * 0.2)
-  remainingAbsent: number;  // 잔여 허용 결석일수
+  totalDays: number; // 총 훈련일수 (과정 설정)
+  attendedDays: number; // 출석 인정일수 (출석+지각+조퇴+외출+복합)
+  absentDays: number; // 결석일수 (순수 결석만)
+  excusedDays: number; // 공결/사유 일수
+  maxAbsent: number; // 최대 허용 결석일수 (totalDays * 0.2)
+  remainingAbsent: number; // 잔여 허용 결석일수
   attendanceRate: number;
   missingCheckout: boolean;
 }
 
 export interface AttendanceDayRecord {
-  date: string;       // YYYY-MM-DD
-  dayOfWeek: string;  // 월~일
+  date: string; // YYYY-MM-DD
+  dayOfWeek: string; // 월~일
   status: AttendanceStatus;
   inTime: string;
   outTime: string;
@@ -169,15 +169,15 @@ export interface AttendanceMetrics {
 }
 
 export interface WeeklyTrend {
-  weekLabel: string;   // "1주차", "2주차"...
-  weekStart: string;   // YYYY-MM-DD
+  weekLabel: string; // "1주차", "2주차"...
+  weekStart: string; // YYYY-MM-DD
   attendanceRate: number;
   presentCount: number;
   totalCount: number;
 }
 
 export interface DayPattern {
-  day: string;         // 월~금
+  day: string; // 월~금
   lateRate: number;
   absentRate: number;
   totalDays: number;
@@ -192,11 +192,11 @@ export interface DropoutRosterEntry {
   trainPrId: string;
   degr: string;
   category: CourseCategory;
-  total: number;        // 전체 인원
-  dropout: number;      // 중도탈락 인원
-  active: number;       // 재적 인원
-  defenseRate: number;  // 하차방어율 (%)
-  startDate: string;    // 개강일 YYYY-MM-DD (과정 설정에서 가져옴)
+  total: number; // 전체 인원
+  dropout: number; // 중도탈락 인원
+  active: number; // 재적 인원
+  defenseRate: number; // 하차방어율 (%)
+  startDate: string; // 개강일 YYYY-MM-DD (과정 설정에서 가져옴)
 }
 
 export interface DropoutSummary {

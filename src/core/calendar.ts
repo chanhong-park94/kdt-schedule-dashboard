@@ -1,12 +1,5 @@
 import { hhmmToMinutes, normalizeHHMM } from "./normalize";
-import {
-  DayTimeTemplate,
-  GenerateScheduleResult,
-  ScheduleConfig,
-  ScheduleDay,
-  SkippedDay,
-  TimeRange
-} from "./types";
+import { DayTimeTemplate, GenerateScheduleResult, ScheduleConfig, ScheduleDay, SkippedDay, TimeRange } from "./types";
 
 const MAX_ITERATION_DAYS = 1000;
 
@@ -20,10 +13,7 @@ function parseIsoDate(value: string): Date | null {
   const day = Number.parseInt(value.slice(8, 10), 10);
 
   const date = new Date(Date.UTC(year, month - 1, day));
-  const validDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+  const validDate = date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 
   return validDate ? date : null;
 }
@@ -71,7 +61,7 @@ function toWeekdaySet(weekdays: number[]): Set<number> {
 function normalizeTimeRange(
   range: TimeRange,
   label: string,
-  context: string
+  context: string,
 ): { startHHMM: string; endHHMM: string; startMin: number; endMin: number } {
   const normalizedStart = normalizeHHMM(range.startHHMM);
   const normalizedEnd = normalizeHHMM(range.endHHMM);
@@ -91,13 +81,13 @@ function normalizeTimeRange(
     startHHMM: normalizedStart,
     endHHMM: normalizedEnd,
     startMin,
-    endMin
+    endMin,
   };
 }
 
 function normalizeTemplate(
   template: DayTimeTemplate,
-  context: string
+  context: string,
 ): {
   weekday: number;
   blocks: Array<{ startHHMM: string; endHHMM: string; startMin: number; endMin: number }>;
@@ -112,23 +102,23 @@ function normalizeTemplate(
   }
 
   const normalizedBlocks = template.blocks.map((block, index) =>
-    normalizeTimeRange(block, `blocks[${index}]`, context)
+    normalizeTimeRange(block, `blocks[${index}]`, context),
   );
 
   const normalizedBreaks = (template.breaks ?? []).map((breakRange, index) =>
-    normalizeTimeRange(breakRange, `breaks[${index}]`, context)
+    normalizeTimeRange(breakRange, `breaks[${index}]`, context),
   );
 
   return {
     weekday: template.weekday,
     blocks: normalizedBlocks,
-    breaks: normalizedBreaks
+    breaks: normalizedBreaks,
   };
 }
 
 function sumBlockMinutes(
   blocks: Array<{ startMin: number; endMin: number }>,
-  breaks: Array<{ startMin: number; endMin: number }>
+  breaks: Array<{ startMin: number; endMin: number }>,
 ): number {
   let total = 0;
 
@@ -267,13 +257,13 @@ export function generateSchedule(config: ScheduleConfig): GenerateScheduleResult
         date: dateText,
         blocks: template.blocks.map((block) => ({
           startHHMM: block.startHHMM,
-          endHHMM: block.endHHMM
+          endHHMM: block.endHHMM,
         })),
         breaks: template.breaks.map((breakRange) => ({
           startHHMM: breakRange.startHHMM,
-          endHHMM: breakRange.endHHMM
+          endHHMM: breakRange.endHHMM,
         })),
-        netMinutes
+        netMinutes,
       };
 
       days.push(scheduleDay);
@@ -285,7 +275,7 @@ export function generateSchedule(config: ScheduleConfig): GenerateScheduleResult
           endDate: dateText,
           totalHoursPlanned: totalPlannedMinutes / 60,
           totalDays: days.length,
-          skipped
+          skipped,
         };
       }
     }

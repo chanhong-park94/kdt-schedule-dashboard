@@ -21,9 +21,7 @@ let activeProxyIndex = 0;
 
 async function proxyFetch(rawUrl: string, config: HrdConfig, label: string): Promise<unknown> {
   const tryOne = async (entry: ProxyEntry): Promise<Response> => {
-    const url = entry.encode
-      ? entry.prefix + encodeURIComponent(rawUrl)
-      : entry.prefix + rawUrl;
+    const url = entry.encode ? entry.prefix + encodeURIComponent(rawUrl) : entry.prefix + rawUrl;
     const r = await fetch(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -79,11 +77,7 @@ function parseResponse(data: unknown): unknown[] {
 // ─── 공개 API 함수 ──────────────────────────────────────────
 
 /** 명단 조회 (전체기간) */
-export async function fetchRoster(
-  config: HrdConfig,
-  trainPrId: string,
-  degr: string
-): Promise<HrdRawTrainee[]> {
+export async function fetchRoster(config: HrdConfig, trainPrId: string, degr: string): Promise<HrdRawTrainee[]> {
   const params = new URLSearchParams({
     returnType: "JSON",
     authKey: config.authKey,
@@ -101,7 +95,7 @@ export async function fetchDailyAttendance(
   config: HrdConfig,
   trainPrId: string,
   degr: string,
-  month: string  // YYYYMM
+  month: string, // YYYYMM
 ): Promise<HrdRawAttendance[]> {
   const params = new URLSearchParams({
     returnType: "JSON",
@@ -118,7 +112,11 @@ export async function fetchDailyAttendance(
 }
 
 /** API 연결 테스트 */
-export async function testConnection(config: HrdConfig, trainPrId: string, degr: string): Promise<{ ok: boolean; count: number; message: string }> {
+export async function testConnection(
+  config: HrdConfig,
+  trainPrId: string,
+  degr: string,
+): Promise<{ ok: boolean; count: number; message: string }> {
   try {
     const list = await fetchRoster(config, trainPrId, degr);
     if (list.length > 0) {
@@ -142,10 +140,7 @@ export async function discoverDegrs(
   // 3개씩 병렬 실행하여 API 부하 분산
   const BATCH = 3;
   for (let start = 1; start <= maxDegr; start += BATCH) {
-    const batch = Array.from(
-      { length: Math.min(BATCH, maxDegr - start + 1) },
-      (_, i) => start + i,
-    );
+    const batch = Array.from({ length: Math.min(BATCH, maxDegr - start + 1) }, (_, i) => start + i);
     const checks = batch.map(async (d) => {
       try {
         const list = await fetchRoster(config, trainPrId, String(d));

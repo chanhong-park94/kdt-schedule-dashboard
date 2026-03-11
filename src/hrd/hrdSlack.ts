@@ -13,31 +13,27 @@ const CORS_PROXIES = [
 
 function getRiskEmoji(level: RiskLevel): string {
   switch (level) {
-    case "danger": return "🔴";
-    case "warning": return "🟠";
-    case "caution": return "🟡";
-    default: return "🟢";
+    case "danger":
+      return "🔴";
+    case "warning":
+      return "🟠";
+    case "caution":
+      return "🟡";
+    default:
+      return "🟢";
   }
 }
 
 function formatStudentLine(s: AttendanceStudent): string {
-  const rateText = s.totalDays > 0
-    ? `결석 ${s.absentDays}/${s.maxAbsent}일`
-    : `${s.attendanceRate.toFixed(1)}%`;
-  const remainText = s.totalDays > 0
-    ? s.remainingAbsent <= 0 ? " · *제적대상*" : ` · 잔여 ${s.remainingAbsent}일`
-    : "";
+  const rateText = s.totalDays > 0 ? `결석 ${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`;
+  const remainText =
+    s.totalDays > 0 ? (s.remainingAbsent <= 0 ? " · *제적대상*" : ` · 잔여 ${s.remainingAbsent}일`) : "";
   return `  • ${s.name} (${rateText}${remainText})`;
 }
 
-function buildRiskGroup(
-  label: string,
-  students: AttendanceStudent[],
-): string {
+function buildRiskGroup(label: string, students: AttendanceStudent[]): string {
   if (students.length === 0) return "";
-  const lines = students
-    .sort((a, b) => a.attendanceRate - b.attendanceRate)
-    .map(formatStudentLine);
+  const lines = students.sort((a, b) => a.attendanceRate - b.attendanceRate).map(formatStudentLine);
   return `${label} — *${students.length}명*\n${lines.join("\n")}`;
 }
 
@@ -92,7 +88,9 @@ export function buildSlackMessage(
   // Summary stats — 하차방어율 포함
   sections.push("");
   const defRateText = defenseRate != null ? `하차방어율: ${defenseRate.toFixed(1)}%` : "";
-  sections.push(`📊 전체: ${active.length}명 | 관리대상: ${totalRisk}명 | 퇴실미체크: ${missing.length}명 | ${defRateText}`);
+  sections.push(
+    `📊 전체: ${active.length}명 | 관리대상: ${totalRisk}명 | 퇴실미체크: ${missing.length}명 | ${defRateText}`,
+  );
 
   // Footer (커스터마이징 가능)
   if (footer) {

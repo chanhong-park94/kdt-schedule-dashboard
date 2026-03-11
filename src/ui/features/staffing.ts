@@ -1,9 +1,30 @@
-import { V7E_STRICT_DETAIL_HEADER, buildAssignments, deriveModuleRangesFromSessions, detectStaffOverlaps, exportV7eStrictCsv, summarizeWorkload } from "../../core/staffing";
+import {
+  V7E_STRICT_DETAIL_HEADER,
+  buildAssignments,
+  deriveModuleRangesFromSessions,
+  detectStaffOverlaps,
+  exportV7eStrictCsv,
+  summarizeWorkload,
+} from "../../core/staffing";
 import { exportWithMapping, type ExportFormatKey } from "../../core/exportMapping";
 import { validateRecordsForFormat } from "../../core/exportValidation";
 import { type InternalV7ERecord } from "../../core/schema";
-import { type AssigneeSummary, type Phase, type ResourceType, type StaffAssignment, type StaffAssignmentInput, type TrackType } from "../../core/types";
-import { appState, cohortTrackType, generatedCohortRanges, staffingCellState, type CohortRange, type StaffCellState } from "../appState";
+import {
+  type AssigneeSummary,
+  type Phase,
+  type ResourceType,
+  type StaffAssignment,
+  type StaffAssignmentInput,
+  type TrackType,
+} from "../../core/types";
+import {
+  appState,
+  cohortTrackType,
+  generatedCohortRanges,
+  staffingCellState,
+  type CohortRange,
+  type StaffCellState,
+} from "../appState";
 import { domRefs } from "../domRefs";
 import { RESOURCE_TYPE_LABEL } from "./conflicts";
 import { DAY_MS, addDaysToIso, formatDate, getTodayCompactDate, parseIsoDate } from "../utils/date";
@@ -30,7 +51,7 @@ type StaffingFeatureDeps = {
   compactToIso: (value: string) => string | null;
   upsertCohortRange: <T extends { cohort: string; startDate: string; endDate: string }>(
     target: Map<string, T>,
-    range: T
+    range: T,
   ) => void;
   getDefaultTrackTypeForCohort: (cohort: string) => TrackType;
   getStaffCellState: (cohort: string, phase: Phase) => StaffCellState;
@@ -52,12 +73,12 @@ const defaultDeps: StaffingFeatureDeps = {
   matrixResourceTypes: ["INSTRUCTOR", "FACILITATOR", "OPERATION"],
   trackLabel: {
     UNEMPLOYED: "실업자",
-    EMPLOYED: "재직자"
+    EMPLOYED: "재직자",
   },
   resourceTypeOrder: {
     INSTRUCTOR: 0,
     FACILITATOR: 1,
-    OPERATION: 2
+    OPERATION: 2,
   },
   compactToIso: () => null,
   upsertCohortRange: () => {},
@@ -72,7 +93,7 @@ const defaultDeps: StaffingFeatureDeps = {
   applyFoDayFilters: () => {},
   renderStaffExportValidation: () => {},
   renderStaffModuleManagerTable: () => {},
-  buildModuleAssignSummaries: () => []
+  buildModuleAssignSummaries: () => [],
 };
 
 let deps: StaffingFeatureDeps = defaultDeps;
@@ -94,7 +115,7 @@ export function rebuildStaffingCohortRanges(): void {
     deps.upsertCohortRange(rangeMap, {
       cohort: summary.과정기수,
       startDate,
-      endDate
+      endDate,
     });
   }
 
@@ -156,7 +177,8 @@ export function renderStaffingMatrix(): void {
 
     const trackCell = document.createElement("td");
     const trackSelect = document.createElement("select");
-    const currentTrack = range.trackType ?? cohortTrackType.get(range.cohort) ?? deps.getDefaultTrackTypeForCohort(range.cohort);
+    const currentTrack =
+      range.trackType ?? cohortTrackType.get(range.cohort) ?? deps.getDefaultTrackTypeForCohort(range.cohort);
 
     for (const trackType of deps.trackTypes) {
       const option = document.createElement("option");
@@ -222,7 +244,7 @@ export function renderStaffingMatrix(): void {
           assignee: assigneeInput.value,
           startDate: startInput.value,
           endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
+          resourceType: resourceSelect.value as ResourceType,
         });
         refreshStaffingAnalytics(false);
       });
@@ -238,7 +260,7 @@ export function renderStaffingMatrix(): void {
           assignee: assigneeInput.value,
           startDate: startInput.value,
           endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
+          resourceType: resourceSelect.value as ResourceType,
         });
         refreshStaffingAnalytics(false);
       });
@@ -254,7 +276,7 @@ export function renderStaffingMatrix(): void {
           assignee: assigneeInput.value,
           startDate: startInput.value,
           endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
+          resourceType: resourceSelect.value as ResourceType,
         });
         refreshStaffingAnalytics(false);
       });
@@ -270,7 +292,7 @@ export function renderStaffingMatrix(): void {
           assignee: assigneeInput.value,
           startDate: startInput.value,
           endDate: endInput.value,
-          resourceType: resourceSelect.value as ResourceType
+          resourceType: resourceSelect.value as ResourceType,
         });
         refreshStaffingAnalytics(false);
       });
@@ -296,7 +318,8 @@ export function collectStaffingInputs(): StaffAssignmentInput[] {
   const inputs: StaffAssignmentInput[] = [];
 
   for (const range of appState.staffingCohortRanges) {
-    const trackType = range.trackType ?? cohortTrackType.get(range.cohort) ?? deps.getDefaultTrackTypeForCohort(range.cohort);
+    const trackType =
+      range.trackType ?? cohortTrackType.get(range.cohort) ?? deps.getDefaultTrackTypeForCohort(range.cohort);
 
     for (const phase of deps.phases) {
       const state = deps.getStaffCellState(range.cohort, phase);
@@ -321,7 +344,7 @@ export function collectStaffingInputs(): StaffAssignmentInput[] {
         startDate,
         endDate,
         resourceType,
-        trackType
+        trackType,
       });
     }
   }
@@ -332,7 +355,7 @@ export function collectStaffingInputs(): StaffAssignmentInput[] {
 export function renderStaffGantt(
   container: HTMLElement,
   groups: Array<{ label: string; assignments: StaffAssignment[] }>,
-  barLabel: (assignment: StaffAssignment) => string
+  barLabel: (assignment: StaffAssignment) => string,
 ): void {
   container.innerHTML = "";
 
@@ -361,7 +384,7 @@ export function renderStaffGantt(
   const phaseColor: Record<Phase, string> = {
     P1: "#60a5fa",
     P2: "#34d399",
-    "365": "#fbbf24"
+    "365": "#fbbf24",
   };
 
   for (const group of groups) {
@@ -383,8 +406,7 @@ export function renderStaffGantt(
       }
 
       const left = ((startParsed.getTime() - minParsed.getTime()) / DAY_MS / totalSpan) * 100;
-      const width =
-        Math.max(((endParsed.getTime() - startParsed.getTime()) / DAY_MS / totalSpan) * 100, 1.2);
+      const width = Math.max(((endParsed.getTime() - startParsed.getTime()) / DAY_MS / totalSpan) * 100, 1.2);
 
       const bar = document.createElement("div");
       bar.className = "staff-gantt-bar";
@@ -416,7 +438,7 @@ export function buildOverlapDayMapByAssignment(): Map<StaffAssignment, number> {
     }
 
     const overlapPolicy = normalizePolicyDays(
-      overlap.assignmentA.includeWeekdays.filter((day) => overlap.assignmentB.includeWeekdays.includes(day))
+      overlap.assignmentA.includeWeekdays.filter((day) => overlap.assignmentB.includeWeekdays.includes(day)),
     );
     if (overlapPolicy.length === 0) {
       continue;
@@ -472,7 +494,7 @@ export function renderStaffKpiAndDetails(): void {
   const kpiRows = [...appState.instructorSummaries, ...appState.staffingSummaries].sort(
     (a, b) =>
       deps.resourceTypeOrder[a.resourceType] - deps.resourceTypeOrder[b.resourceType] ||
-      a.assignee.localeCompare(b.assignee)
+      a.assignee.localeCompare(b.assignee),
   );
 
   if (kpiRows.length === 0) {
@@ -505,17 +527,9 @@ export function renderStaffKpiAndDetails(): void {
       const phaseValues =
         summary.resourceType === "INSTRUCTOR"
           ? ["-", "-", "-"]
-          : [
-              String(summary.phaseWorkDays.P1),
-              String(summary.phaseWorkDays.P2),
-              String(summary.phaseWorkDays["365"])
-            ];
+          : [String(summary.phaseWorkDays.P1), String(summary.phaseWorkDays.P2), String(summary.phaseWorkDays["365"])];
 
-      const values = [
-        String(summary.totalWorkDays),
-        ...phaseValues,
-        String(summary.overlapDays)
-      ];
+      const values = [String(summary.totalWorkDays), ...phaseValues, String(summary.overlapDays)];
 
       values.forEach((value, index) => {
         const td = document.createElement("td");
@@ -582,13 +596,11 @@ export function renderStaffKpiAndDetails(): void {
     const tbody = document.createElement("tbody");
     const rows = appState.staffingAssignments
       .filter(
-        (assignment) => assignment.assignee === summary.assignee && assignment.resourceType === summary.resourceType
+        (assignment) => assignment.assignee === summary.assignee && assignment.resourceType === summary.resourceType,
       )
       .sort(
         (a, b) =>
-          a.startDate.localeCompare(b.startDate) ||
-          a.phase.localeCompare(b.phase) ||
-          a.cohort.localeCompare(b.cohort)
+          a.startDate.localeCompare(b.startDate) || a.phase.localeCompare(b.phase) || a.cohort.localeCompare(b.cohort),
       );
 
     for (const assignment of rows) {
@@ -599,7 +611,7 @@ export function renderStaffKpiAndDetails(): void {
         assignment.cohort,
         assignment.startDate,
         assignment.endDate,
-        String(assignment.workDays)
+        String(assignment.workDays),
       ];
 
       values.forEach((value) => {
@@ -656,7 +668,7 @@ export function refreshStaffingAnalytics(showStatus = true): void {
     renderStaffGantt(
       domRefs.staffCohortGantt,
       Array.from(byCohort.entries()).map(([label, assignments]) => ({ label, assignments })),
-      (assignment) => `${assignment.phase} ${assignment.assignee}`
+      (assignment) => `${assignment.phase} ${assignment.assignee}`,
     );
 
     const byAssignee = new Map<string, StaffAssignment[]>();
@@ -669,7 +681,7 @@ export function refreshStaffingAnalytics(showStatus = true): void {
     renderStaffGantt(
       domRefs.staffAssigneeGantt,
       Array.from(byAssignee.entries()).map(([label, assignments]) => ({ label, assignments })),
-      (assignment) => `${assignment.cohort} ${assignment.phase}`
+      (assignment) => `${assignment.cohort} ${assignment.phase}`,
     );
 
     renderStaffKpiAndDetails();
@@ -677,7 +689,7 @@ export function refreshStaffingAnalytics(showStatus = true): void {
     if (showStatus) {
       const kpiTarget = appState.instructorSummaries.length + appState.staffingSummaries.length;
       deps.setStaffingStatus(
-        `배치 ${appState.staffingAssignments.length}건 / 강사 일충돌 ${appState.instructorDayOverlaps.length}건 / 퍼실·운영 일충돌 ${appState.facilitatorOperationOverlaps.length}건 / KPI ${kpiTarget}명`
+        `배치 ${appState.staffingAssignments.length}건 / 강사 일충돌 ${appState.instructorDayOverlaps.length}건 / 퍼실·운영 일충돌 ${appState.facilitatorOperationOverlaps.length}건 / KPI ${kpiTarget}명`,
       );
     }
 
@@ -763,21 +775,21 @@ export function autoFillStaffingFromCohorts(): void {
       assignee: p1State.assignee,
       startDate: range.startDate,
       endDate: p1End,
-      resourceType: p1State.resourceType
+      resourceType: p1State.resourceType,
     });
 
     deps.setStaffCellState(range.cohort, "P2", {
       assignee: p2State.assignee,
       startDate: hasP2 ? p2StartCandidate : "",
       endDate: hasP2 ? range.endDate : "",
-      resourceType: p2State.resourceType
+      resourceType: p2State.resourceType,
     });
 
     deps.setStaffCellState(range.cohort, "365", {
       assignee: d365State.assignee,
       startDate: d365Start,
       endDate: d365End,
-      resourceType: d365State.resourceType
+      resourceType: d365State.resourceType,
     });
   }
 
@@ -845,7 +857,7 @@ export function buildStrictExportRecords(): InternalV7ERecord[] {
       p2Assignee: p2.assignee,
       p2Range: p2.startDate && p2.endDate ? `${p2.startDate}~${p2.endDate}` : "",
       p365Assignee: d365.assignee,
-      p365Range: d365.startDate && d365.endDate ? `${d365.startDate}~${d365.endDate}` : ""
+      p365Range: d365.startDate && d365.endDate ? `${d365.startDate}~${d365.endDate}` : "",
     });
   }
 
@@ -864,7 +876,7 @@ export function buildModulesGenericExportRecords(): InternalV7ERecord[] {
     endDate: range.endDate,
     start: range.startDate,
     end: range.endDate,
-    sessionCount: String(range.sessionCount)
+    sessionCount: String(range.sessionCount),
   }));
 }
 
@@ -882,7 +894,7 @@ export function downloadStaffingCsv(): void {
     if (!strictReady.ok) {
       deps.setStaffingStatus(
         `v7e_strict는 P1/P2/365 프리셋 적용 상태에서만 내보낼 수 있습니다. (${strictReady.reason})`,
-        true
+        true,
       );
       return;
     }
@@ -913,9 +925,7 @@ export function downloadStaffingCsv(): void {
     const detailRows = appState.staffingAssignments
       .sort(
         (a, b) =>
-          a.assignee.localeCompare(b.assignee) ||
-          a.cohort.localeCompare(b.cohort) ||
-          a.phase.localeCompare(b.phase)
+          a.assignee.localeCompare(b.assignee) || a.cohort.localeCompare(b.cohort) || a.phase.localeCompare(b.phase),
       )
       .map((assignment) => [
         assignment.assignee,
@@ -925,7 +935,7 @@ export function downloadStaffingCsv(): void {
         assignment.startDate,
         assignment.endDate,
         String(assignment.workDays),
-        getPolicyLabel(assignment.includeWeekdays)
+        getPolicyLabel(assignment.includeWeekdays),
       ]);
 
     downloadCsvFile(`staffing_v7e_strict_details_${getTodayCompactDate()}.csv`, V7E_STRICT_DETAIL_HEADER, detailRows);

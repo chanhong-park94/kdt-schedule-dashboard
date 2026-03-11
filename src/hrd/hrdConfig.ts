@@ -107,7 +107,9 @@ export function loadHrdConfig(): HrdConfig {
       if (updated) saveHrdConfig(config);
       return config;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { authKey: DEFAULT_KEY, proxy: "", courses: [...DEFAULT_COURSES] };
 }
 
