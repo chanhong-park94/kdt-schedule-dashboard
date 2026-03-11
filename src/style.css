@@ -3585,6 +3585,22 @@ tbody tr:hover {
 .att-api-ok { background: #d1fae5; color: #065f46; }
 .att-api-err { background: #fee2e2; color: #991b1b; }
 
+/* Settings — Collapsible Sections */
+.settings-section { grid-column: 1 / -1; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0; margin-bottom: 12px; overflow: hidden; }
+.settings-section-header { display: flex; align-items: center; gap: 10px; padding: 16px 20px; cursor: pointer; user-select: none; transition: background .15s; }
+.settings-section-header:hover { background: #f9fafb; }
+.settings-section-header .settings-icon { font-size: 18px; flex-shrink: 0; }
+.settings-section-header .settings-title { flex: 1; min-width: 0; }
+.settings-section-header .settings-title strong { font-size: 14px; display: block; }
+.settings-section-header .settings-title .muted { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.settings-section-header .settings-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.settings-badge--on { background: #d1fae5; color: #065f46; }
+.settings-badge--off { background: #f3f4f6; color: #9ca3af; }
+.settings-chevron { font-size: 12px; color: #9ca3af; transition: transform .2s; flex-shrink: 0; }
+.settings-section-header[aria-expanded="false"] .settings-chevron { transform: rotate(-90deg); }
+.settings-section-body { padding: 0 20px 20px; }
+.settings-section-body.is-collapsed { display: none; }
+
 /* HRD Settings */
 .hrd-settings-body { }
 .hrd-key-gate { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 16px; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 10px; }

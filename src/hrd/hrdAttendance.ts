@@ -758,6 +758,29 @@ function renderSlackScheduleUI(config: HrdConfig): void {
 const HRD_KEY_GATE_PASSWORD = "admin";
 
 function setupSettingsHandlers(): void {
+  // ─── 접이식 섹션 토글 ──────────────────────────
+  document.querySelectorAll<HTMLElement>("[data-settings-toggle]").forEach((header) => {
+    header.addEventListener("click", () => {
+      const body = header.nextElementSibling as HTMLElement | null;
+      if (!body) return;
+      const isExpanded = header.getAttribute("aria-expanded") === "true";
+      header.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+      body.classList.toggle("is-collapsed", isExpanded);
+    });
+    header.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); header.click(); }
+    });
+  });
+
+  // ─── Slack 배지 초기 상태 ──────────────────────
+  const slackBadge = $("slackScheduleBadge");
+  const updateSlackBadge = (enabled: boolean) => {
+    if (!slackBadge) return;
+    slackBadge.textContent = enabled ? "ON" : "OFF";
+    slackBadge.className = `settings-badge ${enabled ? "settings-badge--on" : "settings-badge--off"}`;
+  };
+  updateSlackBadge(currentConfig.slackSchedule?.enabled ?? false);
+
   // API Key 잠금 해제 게이트
   const gateUnlockBtn = $("hrdKeyGateUnlock");
   const gatePasswordInput = $("hrdKeyGatePassword") as HTMLInputElement | null;
@@ -924,6 +947,7 @@ function setupSettingsHandlers(): void {
   scheduleToggle?.addEventListener("change", () => {
     const toggleLabel = $("slackScheduleToggleLabel");
     const settingsPanel = $("slackScheduleSettings");
+    updateSlackBadge(scheduleToggle.checked);
     if (toggleLabel) toggleLabel.textContent = scheduleToggle.checked ? "활성화" : "비활성화";
     if (settingsPanel) settingsPanel.style.display = scheduleToggle.checked ? "block" : "none";
   });

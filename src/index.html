@@ -83,7 +83,7 @@
         <button
           class="jibble-nav-item"
           type="button"
-          data-scroll-target="sectionStateManagement"
+          data-scroll-target="settingsCourseRegistration"
           data-nav-key="settings"
           data-nav-icon="⚙️"
           data-default-label="설정"
@@ -1505,61 +1505,74 @@
     </div>
 
     <!-- HRD API 설정 -->
-    <div class="card card-span-12 u-mt-14" id="hrdSettingsSection" data-page-group="settings">
-      <div class="row u-row-between u-row-center">
-        <div>
-          <strong>🔗 HRD API 설정</strong>
-          <div class="muted">HRD-Net 출결 API 연동 설정 (authKey, 과정 등록, 프록시)</div>
+    <!-- 설정 카드 A: 과정 등록 (가장 자주 사용 — 기본 펼침) -->
+    <div class="settings-section u-mt-14" id="settingsCourseRegistration" data-page-group="settings">
+      <div class="settings-section-header" role="button" aria-expanded="true" tabindex="0" data-settings-toggle>
+        <span class="settings-icon">📋</span>
+        <div class="settings-title">
+          <strong>과정 등록</strong>
+          <div class="muted">운영 중인 훈련 과정을 등록하고 관리합니다</div>
+        </div>
+        <span class="settings-chevron" aria-hidden="true">▼</span>
+      </div>
+      <div class="settings-section-body">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:8px;">
+          <button id="hrdResetDefaults" class="btn-sm" type="button" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">🔄 기본 과정 복원</button>
+          <button id="hrdDiscoverAll" class="btn-sm" type="button" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">🔍 전체 기수 자동탐색</button>
+        </div>
+        <div id="hrdDiscoverStatus" style="font-size:12px;color:#6b7280;margin-bottom:6px;display:none;"></div>
+        <div id="hrdCourseList" class="hrd-course-list"></div>
+        <div class="hrd-add-course">
+          <div class="hrd-add-grid">
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseName">과정명</label>
+              <input type="text" id="hrdNewCourseName" class="hrd-input" placeholder="예: 데이터 분석 과정" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseId">훈련과정 ID</label>
+              <input type="text" id="hrdNewCourseId" class="hrd-input" placeholder="srchTrprId" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseDegrs">기수</label>
+              <input type="text" id="hrdNewCourseDegrs" class="hrd-input" placeholder="예: 1,2,3" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseStart">개강일</label>
+              <input type="date" id="hrdNewCourseStart" class="hrd-input" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseDays">총 훈련일수</label>
+              <input type="number" id="hrdNewCourseDays" class="hrd-input" placeholder="예: 120" />
+            </div>
+            <div class="hrd-add-field">
+              <label for="hrdNewCourseEndTime">수업 종료시간</label>
+              <input type="time" id="hrdNewCourseEndTime" class="hrd-input" value="18:00" />
+            </div>
+          </div>
+          <button id="hrdCourseAdd" class="btn-primary btn-sm u-mt-6" type="button" style="width:100%">+ 추가</button>
         </div>
       </div>
-      <div class="hrd-settings-body u-mt-8">
-        <!-- API Key 비밀번호 게이트 -->
-        <div id="hrdKeyGate" class="hrd-key-gate">
-          <div class="hrd-key-gate-icon">🔒</div>
-          <div class="hrd-key-gate-text">API 키 설정은 관리자 비밀번호가 필요합니다</div>
-          <div class="hrd-key-gate-row">
-            <input type="password" id="hrdKeyGatePassword" class="hrd-input" placeholder="비밀번호 입력" autocomplete="off" />
-            <button id="hrdKeyGateUnlock" class="btn-sm" type="button" style="background:#6366f1;color:#fff;">잠금 해제</button>
-          </div>
-          <div id="hrdKeyGateError" class="hrd-key-gate-error" style="display:none;">비밀번호가 올바르지 않습니다</div>
-        </div>
-        <!-- Auth Key (잠금 해제 시 노출) -->
-        <div id="hrdKeySection" class="hrd-settings-row" style="display:none;">
-          <div class="hrd-field">
-            <label>Auth Key</label>
-            <input type="password" id="hrdAuthKey" class="hrd-input" placeholder="HRD-Net API 인증키" />
-          </div>
-          <div class="hrd-field">
-            <label>CORS 프록시 (선택)</label>
-            <input type="text" id="hrdProxy" class="hrd-input" placeholder="비워두면 자동 폴백" />
-          </div>
-          <div class="hrd-field" style="flex-basis:100%;">
-            <label>Slack Webhook URL <span style="font-weight:400;color:#9ca3af;font-size:11px;">관리대상 리포트 전송용</span></label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input type="password" id="hrdSlackWebhook" class="hrd-input" placeholder="https://hooks.slack.com/services/..." style="flex:1;" />
-              <button id="hrdSlackTestBtn" class="btn-sm" type="button" style="background:#4f46e5;color:#fff;white-space:nowrap;">Slack 테스트</button>
-            </div>
-            <div id="hrdSlackTestStatus" style="font-size:12px;margin-top:4px;color:#6b7280;"></div>
-          </div>
-          <div class="hrd-field-actions">
-            <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
-            <button id="hrdTestBtn" class="btn-sm" type="button" style="background:#6366f1;color:#fff;">연결 테스트</button>
-          </div>
-        </div>
-        <div id="hrdTestStatus" class="att-api-status" style="margin-top:8px;"></div>
+    </div>
 
-        <!-- Slack 자동 알림 설정 -->
-        <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <h4 style="margin:0;">Slack 자동 알림</h4>
-            <label class="slack-toggle-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-              <span style="font-size:13px;color:#6b7280;" id="slackScheduleToggleLabel">비활성화</span>
-              <input type="checkbox" id="slackScheduleEnabled" class="slack-toggle" />
-              <span class="slack-toggle-slider"></span>
-            </label>
-          </div>
-          <div class="muted" style="font-size:12px;">설정된 시간에 자동으로 관리대상 리포트를 Slack으로 전송합니다.</div>
+    <!-- 설정 카드 B: Slack 자동 알림 (기본 접힘 + 활성화 배지) -->
+    <div class="settings-section" id="settingsSlackNotification" data-page-group="settings">
+      <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
+        <span class="settings-icon">💬</span>
+        <div class="settings-title">
+          <strong>Slack 자동 알림</strong>
+          <div class="muted">설정 시간에 관리대상 리포트를 자동 전송합니다</div>
+        </div>
+        <span id="slackScheduleBadge" class="settings-badge settings-badge--off">OFF</span>
+        <span class="settings-chevron" aria-hidden="true">▼</span>
+      </div>
+      <div class="settings-section-body is-collapsed">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h4 style="margin:0;">알림 활성화</h4>
+          <label class="slack-toggle-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <span style="font-size:13px;color:#6b7280;" id="slackScheduleToggleLabel">비활성화</span>
+            <input type="checkbox" id="slackScheduleEnabled" class="slack-toggle" />
+            <span class="slack-toggle-slider"></span>
+          </label>
         </div>
 
         <div id="slackScheduleSettings" style="display:none;">
@@ -1646,56 +1659,67 @@
         </div>
 
         <div id="slackScheduleStatus" class="slack-schedule-status" style="margin-top:8px;font-size:12px;"></div>
-
-        <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <h4 style="margin:0;">과정 등록</h4>
-          <div style="display:flex;gap:6px;">
-            <button id="hrdResetDefaults" class="btn-sm" type="button" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">🔄 기본 과정 복원</button>
-            <button id="hrdDiscoverAll" class="btn-sm" type="button" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">🔍 전체 기수 자동탐색</button>
-          </div>
-        </div>
-        <div id="hrdDiscoverStatus" style="font-size:12px;color:#6b7280;margin-bottom:6px;display:none;"></div>
-        <div id="hrdCourseList" class="hrd-course-list"></div>
-        <div class="hrd-add-course">
-          <div class="hrd-add-grid">
-            <div class="hrd-add-field">
-              <label for="hrdNewCourseName">과정명</label>
-              <input type="text" id="hrdNewCourseName" class="hrd-input" placeholder="예: 데이터 분석 과정" />
-            </div>
-            <div class="hrd-add-field">
-              <label for="hrdNewCourseId">훈련과정 ID</label>
-              <input type="text" id="hrdNewCourseId" class="hrd-input" placeholder="srchTrprId" />
-            </div>
-            <div class="hrd-add-field">
-              <label for="hrdNewCourseDegrs">기수</label>
-              <input type="text" id="hrdNewCourseDegrs" class="hrd-input" placeholder="예: 1,2,3" />
-            </div>
-            <div class="hrd-add-field">
-              <label for="hrdNewCourseStart">개강일</label>
-              <input type="date" id="hrdNewCourseStart" class="hrd-input" />
-            </div>
-            <div class="hrd-add-field">
-              <label for="hrdNewCourseDays">총 훈련일수</label>
-              <input type="number" id="hrdNewCourseDays" class="hrd-input" placeholder="예: 120" />
-            </div>
-            <div class="hrd-add-field">
-              <label for="hrdNewCourseEndTime">수업 종료시간</label>
-              <input type="time" id="hrdNewCourseEndTime" class="hrd-input" value="18:00" />
-            </div>
-          </div>
-          <button id="hrdCourseAdd" class="btn-primary btn-sm u-mt-6" type="button" style="width:100%">+ 추가</button>
-        </div>
       </div>
     </div>
 
-    <div class="card card-span-12 simple-hidden u-mt-14" id="sectionStateManagement" data-page-group="settings">
-      <div class="row u-row-between u-row-center">
-        <div>
-          <strong>💾 프로젝트 상태 관리</strong>
-          <div class="muted">localStorage 자동저장(500ms debounce) + JSON 저장/불러오기</div>
+    <!-- 설정 카드 C: API 연동 (기본 접힘) -->
+    <div class="settings-section" id="settingsApiConnection" data-page-group="settings">
+      <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
+        <span class="settings-icon">🔑</span>
+        <div class="settings-title">
+          <strong>API 연동</strong>
+          <div class="muted">HRD-Net API 키, CORS 프록시, Slack Webhook URL</div>
         </div>
+        <span class="settings-chevron" aria-hidden="true">▼</span>
       </div>
+      <div class="settings-section-body is-collapsed">
+        <!-- API Key 비밀번호 게이트 -->
+        <div id="hrdKeyGate" class="hrd-key-gate">
+          <div class="hrd-key-gate-icon">🔒</div>
+          <div class="hrd-key-gate-text">API 키 설정은 관리자 비밀번호가 필요합니다</div>
+          <div class="hrd-key-gate-row">
+            <input type="password" id="hrdKeyGatePassword" class="hrd-input" placeholder="비밀번호 입력" autocomplete="off" />
+            <button id="hrdKeyGateUnlock" class="btn-sm" type="button" style="background:#6366f1;color:#fff;">잠금 해제</button>
+          </div>
+          <div id="hrdKeyGateError" class="hrd-key-gate-error" style="display:none;">비밀번호가 올바르지 않습니다</div>
+        </div>
+        <!-- Auth Key (잠금 해제 시 노출) -->
+        <div id="hrdKeySection" class="hrd-settings-row" style="display:none;">
+          <div class="hrd-field">
+            <label>Auth Key</label>
+            <input type="password" id="hrdAuthKey" class="hrd-input" placeholder="HRD-Net API 인증키" />
+          </div>
+          <div class="hrd-field">
+            <label>CORS 프록시 (선택)</label>
+            <input type="text" id="hrdProxy" class="hrd-input" placeholder="비워두면 자동 폴백" />
+          </div>
+          <div class="hrd-field" style="flex-basis:100%;">
+            <label>Slack Webhook URL <span style="font-weight:400;color:#9ca3af;font-size:11px;">관리대상 리포트 전송용</span></label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="password" id="hrdSlackWebhook" class="hrd-input" placeholder="https://hooks.slack.com/services/..." style="flex:1;" />
+              <button id="hrdSlackTestBtn" class="btn-sm" type="button" style="background:#4f46e5;color:#fff;white-space:nowrap;">Slack 테스트</button>
+            </div>
+            <div id="hrdSlackTestStatus" style="font-size:12px;margin-top:4px;color:#6b7280;"></div>
+          </div>
+          <div class="hrd-field-actions">
+            <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
+            <button id="hrdTestBtn" class="btn-sm" type="button" style="background:#6366f1;color:#fff;">연결 테스트</button>
+          </div>
+        </div>
+        <div id="hrdTestStatus" class="att-api-status" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div class="settings-section simple-hidden" id="sectionStateManagement" data-page-group="settings">
+      <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
+        <span class="settings-icon">💾</span>
+        <div class="settings-title">
+          <strong>프로젝트 상태 관리</strong>
+          <div class="muted">localStorage 자동저장 + JSON 저장/불러오기</div>
+        </div>
+        <span class="settings-chevron" aria-hidden="true">▼</span>
+      </div>
+      <div class="settings-section-body is-collapsed">
       <div class="row u-mt-10 u-row-center">
         <button id="saveProjectButton" type="button">프로젝트 저장(JSON 다운로드)</button>
         <button id="loadProjectButton" type="button">프로젝트 불러오기(JSON 업로드)</button>
@@ -1730,6 +1754,7 @@
           <button id="restorePreviousStateButton" type="button" disabled>되돌리기</button>
         </div>
         <div id="demoSampleBanner" class="warning-box u-hidden u-mt-6"></div>
+      </div>
       </div>
     </div>
 
