@@ -338,7 +338,7 @@ function computeSummary(data: TraineeAnalysis[]): AnalyticsSummary {
     withData.length > 0 ? withData.reduce((sum, d) => sum + d.attendanceRate, 0) / withData.length : 0;
   const consecutiveAbsentCount = data.filter((d) => !d.dropout && d.currentConsecutiveAbsent >= 3).length;
   // 수료율 (HRD-Net 상태 기반): "수료" 상태인 훈련생 / 전체
-  const completionCount = data.filter((d) => d.completionStatus.includes("수료") && !d.completionStatus.includes("포기")).length;
+  const completionCount = data.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
   const completionRate = total > 0 ? (completionCount / total) * 100 : 0;
   // 전체 훈련 진행률 (가중평균)
   const progressData = data.filter((d) => d.courseProgressRate > 0);
@@ -621,7 +621,7 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
 
         if (filter === "종강") {
           // 수료율 계산
-          const completed = g.list.filter((d) => d.completionStatus.includes("수료") && !d.completionStatus.includes("포기")).length;
+          const completed = g.list.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
           const compRate = (completed / cnt) * 100;
           const compClass = compRate >= 80 ? "ana-cell-good" : compRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
           // 이전기수 대비 탈락률
@@ -695,7 +695,7 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
     // 합계 행
     if (statusFoot) {
       if (filter === "종강") {
-        const totalComp = data.filter((d) => d.completionStatus.includes("수료") && !d.completionStatus.includes("포기")).length;
+        const totalComp = data.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
         const totalCompRate = data.length > 0 ? (totalComp / data.length) * 100 : 0;
         const compClass = totalCompRate >= 80 ? "ana-cell-good" : totalCompRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
         statusFoot.innerHTML = `<tr>
@@ -1186,7 +1186,7 @@ function renderAllTabs(data: TraineeAnalysis[]): void {
 
 function getFilteredData(): TraineeAnalysis[] {
   if (!activeCourseStatusFilter) return analysisData;
-  return analysisData.filter((d) => d.courseStatus === activeCourseStatusFilter);
+  return analysisData.filter((d) => (d.courseStatus || "") === activeCourseStatusFilter);
 }
 
 function updateLastQueried(timestamp: string): void {
