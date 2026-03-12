@@ -4998,7 +4998,7 @@ tbody tr:hover {
 
 .ana-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -5217,6 +5217,65 @@ tbody tr:hover {
 .ana-insight-icon {
   font-size: 16px;
   flex-shrink: 0;
+}
+
+/* 종강 상세 패널 */
+.ana-expandable-row:hover {
+  background: #f0f4ff !important;
+}
+.ana-expandable-row td:first-child::before {
+  content: "▶ ";
+  font-size: 10px;
+  color: #9ca3af;
+  margin-right: 4px;
+}
+.ana-row-expanded td:first-child::before {
+  content: "▼ ";
+}
+.ana-detail-panel td {
+  padding: 0 !important;
+  background: #fafbfc;
+}
+.ana-detail-content {
+  padding: 16px 20px;
+  border-left: 3px solid #4f46e5;
+}
+.ana-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ana-detail-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.ana-detail-stat-label {
+  color: #6b7280;
+  font-weight: 600;
+}
+.ana-detail-stat-value {
+  font-weight: 700;
+  color: #1e293b;
+}
+/* 훈련생 상태 칩 */
+.ana-status-chip.ana-status-dropout {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.ana-status-chip.ana-status-active {
+  background: #dcfce7;
+  color: #166534;
+}
+.ana-status-chip.ana-status-completed {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 /* Responsive */

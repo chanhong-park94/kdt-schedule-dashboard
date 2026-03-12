@@ -52,6 +52,7 @@ function makeTraineeAnalysis(overrides: Partial<TraineeAnalysis> = {}): TraineeA
     absentByMonth: [1,1,1], maxConsecutiveAbsent: 1, currentConsecutiveAbsent: 0,
     lateByHour: [0,0,0,0,0,0], weeklyAttendanceRates: [95,90,92],
     dropoutWeekIdx: -1, alertReasons: [], courseStatus: "진행중",
+    completionStatus: "훈련중", courseProgressRate: 50, courseStartDate: "2025-01-06",
     ...overrides,
   };
 }

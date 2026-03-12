@@ -35,6 +35,12 @@ export interface TraineeAnalysis {
   alertReasons: string[];
   /** 과정 상태: 진행중 or 종강 */
   courseStatus: "진행중" | "종강";
+  /** HRD-Net 원본 상태명 (수료, 훈련중, 중도탈락 등) */
+  completionStatus: string;
+  /** 과정 진행률 % (진행중만 유효, 종강=100) */
+  courseProgressRate: number;
+  /** 과정 개강일 */
+  courseStartDate: string;
 }
 
 export interface AnalyticsSummary {
@@ -45,6 +51,12 @@ export interface AnalyticsSummary {
   avgAttendanceRate: number;
   /** 연속결석 3일+ 학생 수 */
   consecutiveAbsentCount: number;
+  /** 수료율 % (종강 필터 시 사용, HRD-Net 상태 기반) */
+  completionRate: number;
+  /** 수료 인원 */
+  completionCount: number;
+  /** 전체 훈련 진행률 (가중평균, 진행중 필터 시 사용) */
+  avgProgressRate: number;
 }
 
 export interface InsightCard {

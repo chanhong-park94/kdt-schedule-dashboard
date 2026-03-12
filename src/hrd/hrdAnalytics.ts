@@ -86,10 +86,22 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
     const category = course.category || "실업자";
     // 과정 상태 판정: startDate + totalDays(주5일 기준 달력일수 환산)
     let courseStatus: "진행중" | "종강" = "진행중";
+    let courseProgressRate = 0;
     if (course.startDate && course.totalDays > 0) {
       const estimatedEnd = new Date(course.startDate);
       estimatedEnd.setDate(estimatedEnd.getDate() + Math.ceil((course.totalDays / 5) * 7));
       courseStatus = estimatedEnd < new Date() ? "종강" : "진행중";
+      // 훈련 진행률 계산: 경과 평일수 / totalDays
+      const start = new Date(course.startDate);
+      const now = new Date();
+      let weekdaysPassed = 0;
+      const cursor = new Date(start);
+      while (cursor <= now && weekdaysPassed < course.totalDays) {
+        const day = cursor.getDay();
+        if (day !== 0 && day !== 6) weekdaysPassed++;
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      courseProgressRate = courseStatus === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
     }
     for (const degr of course.degrs) {
       done++;
@@ -105,6 +117,7 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
           const birthStr = parseBirthYYYYMMDD(raw);
           const age = calcAge(birthStr);
           const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
+          const completionStatus = stNm.trim() || "훈련중";
           const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
 
           // 이 훈련생의 출결 레코드 필터
@@ -245,6 +258,9 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
             dropoutWeekIdx,
             alertReasons,
             courseStatus,
+            completionStatus,
+            courseProgressRate,
+            courseStartDate: course.startDate || "",
           });
         }
       } catch (e) {
@@ -321,7 +337,13 @@ function computeSummary(data: TraineeAnalysis[]): AnalyticsSummary {
   const avgAttendanceRate =
     withData.length > 0 ? withData.reduce((sum, d) => sum + d.attendanceRate, 0) / withData.length : 0;
   const consecutiveAbsentCount = data.filter((d) => !d.dropout && d.currentConsecutiveAbsent >= 3).length;
-  return { totalTrainees: total, avgAge, dropoutCount, dropoutRate, avgAttendanceRate, consecutiveAbsentCount };
+  // 수료율 (HRD-Net 상태 기반): "수료" 상태인 훈련생 / 전체
+  const completionCount = data.filter((d) => d.completionStatus.includes("수료") && !d.completionStatus.includes("포기")).length;
+  const completionRate = total > 0 ? (completionCount / total) * 100 : 0;
+  // 전체 훈련 진행률 (가중평균)
+  const progressData = data.filter((d) => d.courseProgressRate > 0);
+  const avgProgressRate = progressData.length > 0 ? progressData.reduce((s, d) => s + d.courseProgressRate, 0) / progressData.length : 0;
+  return { totalTrainees: total, avgAge, dropoutCount, dropoutRate, avgAttendanceRate, consecutiveAbsentCount, completionRate, completionCount, avgProgressRate };
 }
 
 // ─── 인사이트 자동 생성 ──────────────────────────────────────
@@ -434,12 +456,82 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
   return insights;
 }
 
+// ─── 종강 기수 상세 패널 ─────────────────────────────────────
+
+function renderCourseDetailPanel(g: { course: string; degr: string; category: string; list: TraineeAnalysis[] }): string {
+  const list = g.list;
+  const cnt = list.length;
+  const ages = list.filter((d) => d.age > 0).map((d) => d.age);
+  const avgAge = ages.length ? (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(1) : "-";
+  const avgExcused = cnt > 0 ? (list.reduce((s, d) => s + d.excusedDays, 0) / cnt).toFixed(1) : "0";
+
+  // 주요 결석 요일
+  const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
+  for (const d of list) {
+    for (let i = 0; i < 7; i++) weekdayTotals[i] += d.absentByWeekday[i];
+  }
+  const topWeekdays = weekdayTotals
+    .map((v, i) => ({ day: weekdayNames[i], count: v }))
+    .filter((_, i) => i >= 1 && i <= 5)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  // 중도탈락 시점
+  const dropouts = list.filter((d) => d.dropout && d.dropoutWeekIdx >= 0);
+  let dropoutTimingHtml = "<span style='color:#9ca3af;'>탈락 데이터 없음</span>";
+  if (dropouts.length > 0) {
+    const timingMap: Record<string, number> = {};
+    for (const d of dropouts) {
+      const label = `${d.dropoutWeekIdx + 1}주차`;
+      timingMap[label] = (timingMap[label] || 0) + 1;
+    }
+    dropoutTimingHtml = Object.entries(timingMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([week, count]) => `${week}: ${count}명`)
+      .join(", ");
+  }
+
+  // 훈련생별 상세
+  const sorted = [...list].sort((a, b) => {
+    if (a.dropout !== b.dropout) return a.dropout ? -1 : 1;
+    return a.attendanceRate - b.attendanceRate;
+  });
+
+  return `<div class="ana-detail-content">
+    <div class="ana-detail-stats">
+      <div class="ana-detail-stat"><span class="ana-detail-stat-label">평균 나이</span><span class="ana-detail-stat-value">${avgAge}세</span></div>
+      <div class="ana-detail-stat"><span class="ana-detail-stat-label">평균 공가/사유결석</span><span class="ana-detail-stat-value">${avgExcused}일</span></div>
+      <div class="ana-detail-stat"><span class="ana-detail-stat-label">주요 결석 요일</span><span class="ana-detail-stat-value">${topWeekdays.map((w) => `${w.day}(${w.count}회)`).join(", ") || "-"}</span></div>
+      <div class="ana-detail-stat"><span class="ana-detail-stat-label">중도탈락 시점</span><span class="ana-detail-stat-value">${dropoutTimingHtml}</span></div>
+    </div>
+    <table class="hrd-table" style="margin-top:8px;font-size:12px;">
+      <thead><tr><th>이름</th><th>상태</th><th>출석률</th><th>결석</th><th>지각</th><th>공가</th><th>연속결석(최대)</th></tr></thead>
+      <tbody>${sorted.map((d) => {
+        const statusLabel = d.completionStatus || (d.dropout ? "중도탈락" : "훈련중");
+        const isCompleted = statusLabel.includes("수료") && !statusLabel.includes("포기");
+        const chipClass = d.dropout ? "ana-status-dropout" : isCompleted ? "ana-status-completed" : "ana-status-active";
+        return `<tr>
+          <td>${d.name}</td>
+          <td><span class="ana-status-chip ${chipClass}">${statusLabel}</span></td>
+          <td>${fmtRate(d.attendanceRate)}</td>
+          <td>${d.absentDays}일</td>
+          <td>${d.lateDays}일</td>
+          <td>${d.excusedDays}일</td>
+          <td>${d.maxConsecutiveAbsent}일</td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table>
+  </div>`;
+}
+
 // ─── 차트 렌더링 ────────────────────────────────────────────
 
 function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): void {
   const atRiskActive = data.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80);
+  const filter = activeCourseStatusFilter;
 
-  // ── 요약 카드 (5개) ──
+  // ── 요약 카드 (필터별 차별화) ──
   const cardEl = $("analyticsCards");
   if (cardEl) {
     const hasRate = summary.avgAttendanceRate > 0;
@@ -452,31 +544,66 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
           : "ana-cell-bad";
     const dropClass =
       summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
-    cardEl.innerHTML = `
-      <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
-      <div class="ana-card"><div class="ana-card-value ${rateClass}">${hasRate ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="ana-card-label">평균 출석률</div></div>
-      <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
-      <div class="ana-card"><div class="ana-card-value" style="color:${atRiskActive.length > 0 ? "#dc2626" : "#059669"}">${atRiskActive.length}명</div><div class="ana-card-label">위험군 (재학)</div><div class="ana-card-sub">출석률 80% 미만</div></div>
-      <div class="ana-card"><div class="ana-card-value" style="color:${summary.consecutiveAbsentCount > 0 ? "#dc2626" : "#059669"}">${summary.consecutiveAbsentCount}명</div><div class="ana-card-label">연속결석 경고</div><div class="ana-card-sub">3일+ 연속결석</div></div>
-    `;
+
+    if (filter === "종강") {
+      // 종강: 전체 훈련생 / 수료율 / 중도탈락률 / 평균 출석률
+      const compClass = summary.completionRate >= 80 ? "ana-cell-good" : summary.completionRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
+      cardEl.innerHTML = `
+        <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
+        <div class="ana-card"><div class="ana-card-value ${compClass}">${summary.completionRate.toFixed(1)}%</div><div class="ana-card-label">수료율</div><div class="ana-card-sub">${summary.completionCount}명 수료</div></div>
+        <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
+        <div class="ana-card"><div class="ana-card-value ${rateClass}">${hasRate ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="ana-card-label">평균 출석률</div></div>
+      `;
+    } else if (filter === "진행중") {
+      // 진행중: 전체 훈련생 / 전체 훈련 진행률 / 중도탈락률 / 위험군 / 연속결석
+      const progClass = summary.avgProgressRate >= 70 ? "ana-cell-good" : summary.avgProgressRate >= 40 ? "ana-cell-warn" : "ana-cell-bad";
+      cardEl.innerHTML = `
+        <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
+        <div class="ana-card"><div class="ana-card-value ${progClass}">${summary.avgProgressRate.toFixed(1)}%</div><div class="ana-card-label">전체 훈련 진행률</div></div>
+        <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
+        <div class="ana-card"><div class="ana-card-value" style="color:${atRiskActive.length > 0 ? "#dc2626" : "#059669"}">${atRiskActive.length}명</div><div class="ana-card-label">위험군 (재학)</div><div class="ana-card-sub">출석률 80% 미만</div></div>
+        <div class="ana-card"><div class="ana-card-value" style="color:${summary.consecutiveAbsentCount > 0 ? "#dc2626" : "#059669"}">${summary.consecutiveAbsentCount}명</div><div class="ana-card-label">연속결석 경고</div><div class="ana-card-sub">3일+ 연속결석</div></div>
+      `;
+    } else {
+      // 전체: 기존 5개 카드
+      cardEl.innerHTML = `
+        <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
+        <div class="ana-card"><div class="ana-card-value ${rateClass}">${hasRate ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</div><div class="ana-card-label">평균 출석률</div></div>
+        <div class="ana-card"><div class="ana-card-value ${dropClass}">${summary.dropoutRate.toFixed(1)}%</div><div class="ana-card-label">중도탈락률</div><div class="ana-card-sub">${summary.dropoutCount}명</div></div>
+        <div class="ana-card"><div class="ana-card-value" style="color:${atRiskActive.length > 0 ? "#dc2626" : "#059669"}">${atRiskActive.length}명</div><div class="ana-card-label">위험군 (재학)</div><div class="ana-card-sub">출석률 80% 미만</div></div>
+        <div class="ana-card"><div class="ana-card-value" style="color:${summary.consecutiveAbsentCount > 0 ? "#dc2626" : "#059669"}">${summary.consecutiveAbsentCount}명</div><div class="ana-card-label">연속결석 경고</div><div class="ana-card-sub">3일+ 연속결석</div></div>
+      `;
+    }
   }
 
   // ── 과정·기수별 종합 현황표 ──
   const statusBody = $("anaCourseStatusBody");
   const statusFoot = $("anaCourseStatusFoot");
+  const statusHead = $("anaCourseStatusHead");
   if (statusBody) {
     // 과정+기수 조합별 그룹
-    const groups: Array<{ course: string; degr: string; category: string; list: TraineeAnalysis[] }> = [];
+    interface CourseGroup { course: string; degr: string; category: string; list: TraineeAnalysis[]; progressRate: number; startDate: string; }
+    const groups: CourseGroup[] = [];
     for (const d of data) {
-      const key = `${d.courseName}__${d.degr}`;
       let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
       if (!g) {
-        g = { course: d.courseName, degr: d.degr, category: d.category, list: [] };
+        g = { course: d.courseName, degr: d.degr, category: d.category, list: [], progressRate: d.courseProgressRate, startDate: d.courseStartDate };
         groups.push(g);
       }
       g.list.push(d);
     }
     groups.sort((a, b) => a.course.localeCompare(b.course) || parseInt(a.degr) - parseInt(b.degr));
+
+    // 테이블 헤더 동적 변경
+    if (statusHead) {
+      if (filter === "종강") {
+        statusHead.innerHTML = `<tr><th>과정명</th><th>기수</th><th>유형</th><th>인원</th><th>수료율</th><th>탈락률</th><th>이전기수 대비</th><th>평균출석률</th></tr>`;
+      } else if (filter === "진행중") {
+        statusHead.innerHTML = `<tr><th>과정명</th><th>기수</th><th>유형</th><th>인원</th><th>훈련 진행률</th><th>평균출석률</th><th>탈락</th><th>탈락률</th><th>위험군</th></tr>`;
+      } else {
+        statusHead.innerHTML = `<tr><th>과정명</th><th>기수</th><th>유형</th><th>인원</th><th>평균출석률</th><th>탈락</th><th>탈락률</th><th>위험군</th></tr>`;
+      }
+    }
 
     statusBody.innerHTML = groups
       .map((g) => {
@@ -487,39 +614,120 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
         const dropRate = (dropouts / cnt) * 100;
         const atRisk = g.list.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80).length;
         const noData = avgRate < 0;
-        const rateClass = noData
-          ? ""
-          : avgRate >= 90
-            ? "ana-cell-good"
-            : avgRate >= 80
-              ? "ana-cell-warn"
-              : "ana-cell-bad";
+        const rateClass = noData ? "" : avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
         const dropClass = dropRate <= 5 ? "ana-cell-good" : dropRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
         const riskClass = noData ? "" : atRisk === 0 ? "ana-cell-good" : atRisk <= 2 ? "ana-cell-warn" : "ana-cell-bad";
-        return `<tr>
-        <td>${g.course.length > 18 ? g.course.slice(0, 18) + "…" : g.course}</td>
-        <td>${g.degr}기</td>
-        <td>${g.category}</td>
-        <td>${cnt}명</td>
-        <td class="${rateClass}">${fmtRate(avgRate)}</td>
-        <td>${dropouts}명</td>
-        <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
-        <td class="${riskClass}">${noData ? "-" : atRisk + "명"}</td>
-      </tr>`;
+        const courseTd = `<td>${g.course.length > 18 ? g.course.slice(0, 18) + "…" : g.course}</td>`;
+
+        if (filter === "종강") {
+          // 수료율 계산
+          const completed = g.list.filter((d) => d.completionStatus.includes("수료") && !d.completionStatus.includes("포기")).length;
+          const compRate = (completed / cnt) * 100;
+          const compClass = compRate >= 80 ? "ana-cell-good" : compRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
+          // 이전기수 대비 탈락률
+          const prevDegr = String(parseInt(g.degr) - 1);
+          const prevGroup = groups.find((x) => x.course === g.course && x.degr === prevDegr);
+          let prevCompare = "-";
+          if (prevGroup) {
+            const prevDropRate = (prevGroup.list.filter((d) => d.dropout).length / prevGroup.list.length) * 100;
+            const diff = dropRate - prevDropRate;
+            const sign = diff > 0 ? "+" : "";
+            const color = diff > 0 ? "#dc2626" : diff < 0 ? "#059669" : "#6b7280";
+            prevCompare = `<span style="color:${color};font-weight:600;">${sign}${diff.toFixed(1)}%p</span>`;
+          }
+          const rowId = `anaRow_${g.course.replace(/[^a-zA-Z0-9가-힣]/g, "")}_${g.degr}`;
+          return `<tr class="ana-expandable-row" data-row-id="${rowId}" style="cursor:pointer;" title="클릭하여 상세 보기">
+            ${courseTd}
+            <td>${g.degr}기</td>
+            <td>${g.category}</td>
+            <td>${cnt}명</td>
+            <td class="${compClass}">${compRate.toFixed(1)}%</td>
+            <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
+            <td>${prevCompare}</td>
+            <td class="${rateClass}">${fmtRate(avgRate)}</td>
+          </tr>
+          <tr class="ana-detail-panel" id="${rowId}" style="display:none;">
+            <td colspan="8">${renderCourseDetailPanel(g)}</td>
+          </tr>`;
+        } else if (filter === "진행중") {
+          const progClass = g.progressRate >= 70 ? "ana-cell-good" : g.progressRate >= 40 ? "ana-cell-warn" : "ana-cell-bad";
+          return `<tr>
+            ${courseTd}
+            <td>${g.degr}기</td>
+            <td>${g.category}</td>
+            <td>${cnt}명</td>
+            <td class="${progClass}">${g.progressRate.toFixed(1)}%</td>
+            <td class="${rateClass}">${fmtRate(avgRate)}</td>
+            <td>${dropouts}명</td>
+            <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
+            <td class="${riskClass}">${noData ? "-" : atRisk + "명"}</td>
+          </tr>`;
+        } else {
+          return `<tr>
+            ${courseTd}
+            <td>${g.degr}기</td>
+            <td>${g.category}</td>
+            <td>${cnt}명</td>
+            <td class="${rateClass}">${fmtRate(avgRate)}</td>
+            <td>${dropouts}명</td>
+            <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
+            <td class="${riskClass}">${noData ? "-" : atRisk + "명"}</td>
+          </tr>`;
+        }
       })
       .join("");
 
+    // 종강 행 클릭 이벤트 (상세 패널 토글)
+    if (filter === "종강") {
+      statusBody.querySelectorAll<HTMLElement>(".ana-expandable-row").forEach((row) => {
+        row.addEventListener("click", () => {
+          const panelId = row.dataset.rowId || "";
+          const panel = document.getElementById(panelId);
+          if (panel) {
+            const isHidden = panel.style.display === "none";
+            panel.style.display = isHidden ? "" : "none";
+            row.classList.toggle("ana-row-expanded", isHidden);
+          }
+        });
+      });
+    }
+
     // 합계 행
     if (statusFoot) {
-      const totalRisk = atRiskActive.length;
-      statusFoot.innerHTML = `<tr>
-        <td colspan="3"><strong>전체 합계</strong></td>
-        <td><strong>${data.length}명</strong></td>
-        <td class="${summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.avgAttendanceRate.toFixed(1)}%</strong></td>
-        <td><strong>${summary.dropoutCount}명</strong></td>
-        <td class="${summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.dropoutRate.toFixed(1)}%</strong></td>
-        <td class="${totalRisk === 0 ? "ana-cell-good" : "ana-cell-bad"}"><strong>${totalRisk}명</strong></td>
-      </tr>`;
+      if (filter === "종강") {
+        const totalComp = data.filter((d) => d.completionStatus.includes("수료") && !d.completionStatus.includes("포기")).length;
+        const totalCompRate = data.length > 0 ? (totalComp / data.length) * 100 : 0;
+        const compClass = totalCompRate >= 80 ? "ana-cell-good" : totalCompRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
+        statusFoot.innerHTML = `<tr>
+          <td colspan="3"><strong>전체 합계</strong></td>
+          <td><strong>${data.length}명</strong></td>
+          <td class="${compClass}"><strong>${totalCompRate.toFixed(1)}%</strong></td>
+          <td class="${summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.dropoutRate.toFixed(1)}%</strong></td>
+          <td>-</td>
+          <td class="${summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.avgAttendanceRate > 0 ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</strong></td>
+        </tr>`;
+      } else if (filter === "진행중") {
+        const totalRisk = atRiskActive.length;
+        statusFoot.innerHTML = `<tr>
+          <td colspan="3"><strong>전체 합계</strong></td>
+          <td><strong>${data.length}명</strong></td>
+          <td><strong>${summary.avgProgressRate.toFixed(1)}%</strong></td>
+          <td class="${summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.avgAttendanceRate > 0 ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</strong></td>
+          <td><strong>${summary.dropoutCount}명</strong></td>
+          <td class="${summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.dropoutRate.toFixed(1)}%</strong></td>
+          <td class="${totalRisk === 0 ? "ana-cell-good" : "ana-cell-bad"}"><strong>${totalRisk}명</strong></td>
+        </tr>`;
+      } else {
+        const totalRisk = atRiskActive.length;
+        statusFoot.innerHTML = `<tr>
+          <td colspan="3"><strong>전체 합계</strong></td>
+          <td><strong>${data.length}명</strong></td>
+          <td class="${summary.avgAttendanceRate >= 90 ? "ana-cell-good" : summary.avgAttendanceRate >= 80 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.avgAttendanceRate > 0 ? summary.avgAttendanceRate.toFixed(1) + "%" : "N/A"}</strong></td>
+          <td><strong>${summary.dropoutCount}명</strong></td>
+          <td class="${summary.dropoutRate <= 5 ? "ana-cell-good" : summary.dropoutRate <= 15 ? "ana-cell-warn" : "ana-cell-bad"}"><strong>${summary.dropoutRate.toFixed(1)}%</strong></td>
+          <td class="${totalRisk === 0 ? "ana-cell-good" : "ana-cell-bad"}"><strong>${totalRisk}명</strong></td>
+        </tr>`;
+      }
     }
   }
 
