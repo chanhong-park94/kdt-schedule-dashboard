@@ -731,12 +731,29 @@ async function renderHrdSettingsSection(): Promise<void> {
                   </div>`
                 ).join("");
                 const degrOpts = c.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
+                const statusBadge = c.startDate && c.totalDays
+                  ? (() => {
+                      const end = new Date(c.startDate);
+                      end.setDate(end.getDate() + Math.ceil((c.totalDays / 5) * 7));
+                      return end < new Date()
+                        ? '<span class="course-badge course-badge-done">종강</span>'
+                        : '<span class="course-badge course-badge-active">진행중</span>';
+                    })()
+                  : '';
                 return `<div class="hrd-course-item">
-                  <div class="hrd-course-info">
-                    <strong>${c.name}</strong>
-                    <span class="hrd-course-meta">${c.trainPrId} | 기수: ${c.degrs.join(",")}기 (${c.degrs.length}개)${c.startDate ? ` | 개강: ${c.startDate}` : ""}${c.totalDays ? ` | ${c.totalDays}일` : ""}</span>
+                  <div class="hrd-course-header">
+                    <div class="hrd-course-title-row">
+                      ${statusBadge}
+                      <strong class="hrd-course-name">${c.name}</strong>
+                      <button class="btn-icon hrd-course-remove" data-idx="${i}" title="과정 삭제">🗑</button>
+                    </div>
+                    <div class="hrd-course-tags">
+                      <span class="course-tag"><span class="course-tag-label">ID</span>${c.trainPrId}</span>
+                      <span class="course-tag"><span class="course-tag-label">기수</span>${c.degrs.join(", ")}기 (${c.degrs.length}개)</span>
+                      ${c.startDate ? `<span class="course-tag"><span class="course-tag-label">개강</span>${c.startDate}</span>` : ""}
+                      ${c.totalDays ? `<span class="course-tag"><span class="course-tag-label">훈련일수</span>${c.totalDays}일</span>` : ""}
+                    </div>
                   </div>
-                  <button class="btn-sm btn-danger hrd-course-remove" data-idx="${i}">삭제</button>
                   <div class="asst-code-section">
                     <div class="asst-code-header">🔑 보조강사 접근코드</div>
                     ${codeRows || '<div class="asst-code-empty">등록된 코드 없음</div>'}

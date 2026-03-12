@@ -4254,35 +4254,94 @@ tbody tr:hover {
 }
 .hrd-course-list {
   margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .hrd-course-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: #f9fafb;
+  flex-direction: column;
+  padding: 14px 18px;
+  background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 6px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.15s;
 }
-.hrd-course-info {
+.hrd-course-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.hrd-course-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hrd-course-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hrd-course-name {
+  font-size: 14px;
+  font-weight: 700;
   flex: 1;
-}
-.hrd-course-info strong {
-  font-size: 13px;
-  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.hrd-course-meta {
-  display: block;
-  font-size: 11px;
+.hrd-course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.course-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #374151;
+  background: #f3f4f6;
+  padding: 3px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.course-tag-label {
+  font-weight: 600;
   color: #6b7280;
-  margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.course-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.course-badge-active {
+  background: #dcfce7;
+  color: #166534;
+}
+.course-badge-done {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+.btn-icon:hover {
+  opacity: 1;
+  background: #fee2e2;
 }
 .hrd-course-remove {
   flex: 0 0 auto;
@@ -5411,9 +5470,9 @@ tbody tr:hover {
 /* ── Assistant Code Management ── */
 .asst-code-section {
   width: 100%;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #e5e7eb;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
 }
 .asst-code-header {
   font-size: 0.82rem;
