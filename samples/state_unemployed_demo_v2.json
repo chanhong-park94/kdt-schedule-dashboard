@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "savedAt": "2026-02-24T10:00:00.000Z",
+  "sessions": [
+    {
+      "훈련일자": "20260302",
+      "훈련시작시간": "0900",
+      "훈련종료시간": "1200",
+      "방학/원격여부": "",
+      "시작시간": "0900",
+      "시간구분": "1",
+      "훈련강사코드": "INST_U_01",
+      "교육장소(강의실)코드": "RM_U_01",
+      "교과목(및 능력단위)코드": "SUB_U_01",
+      "과정기수": "UEMP-A",
+      "normalizedDate": "2026-03-02",
+      "startMin": 540,
+      "endMin": 720
+    },
+    {
+      "훈련일자": "20260303",
+      "훈련시작시간": "0900",
+      "훈련종료시간": "1200",
+      "방학/원격여부": "",
+      "시작시간": "0900",
+      "시간구분": "1",
+      "훈련강사코드": "INST_U_01",
+      "교육장소(강의실)코드": "RM_U_01",
+      "교과목(및 능력단위)코드": "SUB_U_01",
+      "과정기수": "UEMP-A",
+      "normalizedDate": "2026-03-03",
+      "startMin": 540,
+      "endMin": 720
+    },
+    {
+      "훈련일자": "20260316",
+      "훈련시작시간": "1300",
+      "훈련종료시간": "1600",
+      "방학/원격여부": "",
+      "시작시간": "1300",
+      "시간구분": "1",
+      "훈련강사코드": "INST_U_02",
+      "교육장소(강의실)코드": "RM_U_02",
+      "교과목(및 능력단위)코드": "SUB_U_02",
+      "과정기수": "UEMP-B",
+      "normalizedDate": "2026-03-16",
+      "startMin": 780,
+      "endMin": 960
+    },
+    {
+      "훈련일자": "20260317",
+      "훈련시작시간": "1300",
+      "훈련종료시간": "1600",
+      "방학/원격여부": "",
+      "시작시간": "1300",
+      "시간구분": "1",
+      "훈련강사코드": "INST_U_02",
+      "교육장소(강의실)코드": "RM_U_02",
+      "교과목(및 능력단위)코드": "SUB_U_02",
+      "과정기수": "UEMP-B",
+      "normalizedDate": "2026-03-17",
+      "startMin": 780,
+      "endMin": 960
+    },
+    {
+      "훈련일자": "20260505",
+      "훈련시작시간": "0900",
+      "훈련종료시간": "1200",
+      "방학/원격여부": "",
+      "시작시간": "0900",
+      "시간구분": "1",
+      "훈련강사코드": "INST_U_03",
+      "교육장소(강의실)코드": "RM_U_03",
+      "교과목(및 능력단위)코드": "SUB_U_03",
+      "과정기수": "UEMP-C",
+      "normalizedDate": "2026-05-05",
+      "startMin": 540,
+      "endMin": 720
+    }
+  ],
+  "cohortTrackTypes": {
+    "UEMP-A": "UNEMPLOYED",
+    "UEMP-B": "UNEMPLOYED",
+    "UEMP-C": "UNEMPLOYED"
+  },
+  "generatedCohortRanges": [
+    { "cohort": "UEMP-A", "startDate": "2026-03-02", "endDate": "2026-04-30" },
+    { "cohort": "UEMP-B", "startDate": "2026-03-16", "endDate": "2026-05-15" },
+    { "cohort": "UEMP-C", "startDate": "2026-05-01", "endDate": "2026-06-30" }
+  ],
+  "scheduleGenerator": {
+    "cohort": "UEMP-A",
+    "startDate": "2026-03-02",
+    "totalHours": "30",
+    "instructorCode": "INST_U_AUTO",
+    "classroomCode": "RM_U_AUTO",
+    "subjectCode": "SUB_U_AUTO",
+    "pushToConflicts": true,
+    "dayTemplates": [
+      { "weekday": 1, "start": "09:00", "end": "18:00", "breakStart": "12:00", "breakEnd": "13:00" },
+      { "weekday": 2, "start": "09:00", "end": "18:00", "breakStart": "12:00", "breakEnd": "13:00" },
+      { "weekday": 3, "start": "09:00", "end": "18:00", "breakStart": "12:00", "breakEnd": "13:00" },
+      { "weekday": 4, "start": "09:00", "end": "18:00", "breakStart": "12:00", "breakEnd": "13:00" },
+      { "weekday": 5, "start": "09:00", "end": "18:00", "breakStart": "12:00", "breakEnd": "13:00" }
+    ],
+    "holidays": [],
+    "customBreaks": [],
+    "generatedResult": null,
+    "generatedCohort": "",
+    "publicHolidayLoaded": false
+  },
+  "staffingCells": [
+    {
+      "cohort": "UEMP-A",
+      "phase": "P1",
+      "assignee": "FAC_DEMO_01",
+      "startDate": "2026-03-02",
+      "endDate": "2026-03-20",
+      "resourceType": "FACILITATOR"
+    },
+    {
+      "cohort": "UEMP-B",
+      "phase": "P1",
+      "assignee": "FAC_DEMO_01",
+      "startDate": "2026-03-16",
+      "endDate": "2026-04-03",
+      "resourceType": "FACILITATOR"
+    },
+    {
+      "cohort": "UEMP-A",
+      "phase": "P2",
+      "assignee": "OPS_DEMO_01",
+      "startDate": "2026-03-23",
+      "endDate": "2026-04-24",
+      "resourceType": "OPERATION"
+    },
+    {
+      "cohort": "UEMP-C",
+      "phase": "P1",
+      "assignee": "OPS_DEMO_02",
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-20",
+      "resourceType": "OPERATION"
+    }
+  ],
+  "ui": {
+    "activeConflictTab": "fo_day",
+    "keySearch": "",
+    "instructorDaySearch": "",
+    "foDaySearch": ""
+  }
+}

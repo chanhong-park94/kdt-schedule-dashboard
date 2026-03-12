@@ -1,0 +1,17 @@
+node_modules/
+dist/
+out/
+coverage/
+.vite/
+.next/
+tsconfig.tsbuildinfo
+nul
+*.log
+*.msi
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+backup/
