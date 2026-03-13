@@ -18,29 +18,35 @@ export function initSidebarMenuFeature(nextDeps: SidebarMenuDeps): void {
 const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v3";
 
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
+  "dashboard",
   "timeline",
   "generator",
   "kpi",
   "attendance",
   "analytics",
+  "traineeHistory",
   "settings",
 ];
 
 export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
+  dashboard: "대시보드",
   timeline: "학사일정",
   generator: "HRD시간표 생성",
   kpi: "재직자 자율성과지표",
   attendance: "출결현황",
   analytics: "훈련생 분석",
+  traineeHistory: "훈련생 이력",
   settings: "설정",
 };
 
 export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
+  dashboard: "🏠",
   timeline: "📅",
   generator: "🛠️",
   kpi: "📊",
   attendance: "📋",
   analytics: "📈",
+  traineeHistory: "👤",
   settings: "⚙️",
 };
 
@@ -62,19 +68,23 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
   return {
     order: [...config.order],
     labels: {
+      dashboard: config.labels.dashboard,
       timeline: config.labels.timeline,
       generator: config.labels.generator,
       kpi: config.labels.kpi,
       attendance: config.labels.attendance,
       analytics: config.labels.analytics,
+      traineeHistory: config.labels.traineeHistory,
       settings: config.labels.settings,
     },
     icons: {
+      dashboard: config.icons.dashboard,
       timeline: config.icons.timeline,
       generator: config.icons.generator,
       kpi: config.icons.kpi,
       attendance: config.icons.attendance,
       analytics: config.icons.analytics,
+      traineeHistory: config.icons.traineeHistory,
       settings: config.icons.settings,
     },
   };
@@ -111,19 +121,23 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
   return {
     order: normalizeSidebarMenuOrder(config.order),
     labels: {
+      dashboard: normalizeSidebarMenuLabel("dashboard", config.labels.dashboard),
       timeline: normalizeSidebarMenuLabel("timeline", config.labels.timeline),
       generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
       kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
       analytics: normalizeSidebarMenuLabel("analytics", config.labels.analytics),
+      traineeHistory: normalizeSidebarMenuLabel("traineeHistory", config.labels.traineeHistory),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
+      dashboard: normalizeSidebarMenuIcon("dashboard", config.icons.dashboard),
       timeline: normalizeSidebarMenuIcon("timeline", config.icons.timeline),
       generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
       kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
       analytics: normalizeSidebarMenuIcon("analytics", config.icons.analytics),
+      traineeHistory: normalizeSidebarMenuIcon("traineeHistory", config.icons.traineeHistory),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };
@@ -133,19 +147,23 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
   return {
     order: [...PRIMARY_SIDEBAR_NAV_KEYS],
     labels: {
+      dashboard: DEFAULT_PRIMARY_SIDEBAR_LABELS.dashboard,
       timeline: DEFAULT_PRIMARY_SIDEBAR_LABELS.timeline,
       generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
       analytics: DEFAULT_PRIMARY_SIDEBAR_LABELS.analytics,
+      traineeHistory: DEFAULT_PRIMARY_SIDEBAR_LABELS.traineeHistory,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
+      dashboard: DEFAULT_PRIMARY_SIDEBAR_ICONS.dashboard,
       timeline: DEFAULT_PRIMARY_SIDEBAR_ICONS.timeline,
       generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
       analytics: DEFAULT_PRIMARY_SIDEBAR_ICONS.analytics,
+      traineeHistory: DEFAULT_PRIMARY_SIDEBAR_ICONS.traineeHistory,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
     },
   };
@@ -167,6 +185,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
 
     const order = normalizeSidebarMenuOrder(parsed.order);
     const labels = {
+      dashboard: normalizeSidebarMenuLabel(
+        "dashboard",
+        typeof parsed.labels?.dashboard === "string" ? parsed.labels.dashboard : fallback.labels.dashboard,
+      ),
       timeline: normalizeSidebarMenuLabel(
         "timeline",
         typeof parsed.labels?.timeline === "string" ? parsed.labels.timeline : fallback.labels.timeline,
@@ -187,6 +209,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
         "analytics",
         typeof parsed.labels?.analytics === "string" ? parsed.labels.analytics : fallback.labels.analytics,
       ),
+      traineeHistory: normalizeSidebarMenuLabel(
+        "traineeHistory",
+        typeof parsed.labels?.traineeHistory === "string" ? parsed.labels.traineeHistory : fallback.labels.traineeHistory,
+      ),
       settings: normalizeSidebarMenuLabel(
         "settings",
         typeof parsed.labels?.settings === "string" ? parsed.labels.settings : fallback.labels.settings,
@@ -194,6 +220,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
     };
 
     const icons = {
+      dashboard: normalizeSidebarMenuIcon(
+        "dashboard",
+        typeof parsed.icons?.dashboard === "string" ? parsed.icons.dashboard : fallback.icons.dashboard,
+      ),
       timeline: normalizeSidebarMenuIcon(
         "timeline",
         typeof parsed.icons?.timeline === "string" ? parsed.icons.timeline : fallback.icons.timeline,
@@ -213,6 +243,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
       analytics: normalizeSidebarMenuIcon(
         "analytics",
         typeof parsed.icons?.analytics === "string" ? parsed.icons.analytics : fallback.icons.analytics,
+      ),
+      traineeHistory: normalizeSidebarMenuIcon(
+        "traineeHistory",
+        typeof parsed.icons?.traineeHistory === "string" ? parsed.icons.traineeHistory : fallback.icons.traineeHistory,
       ),
       settings: normalizeSidebarMenuIcon(
         "settings",

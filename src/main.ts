@@ -3,6 +3,8 @@ import { findAssistantCode, getAssistantSession, setAssistantSession, clearAssis
 import { initAttendanceDashboard } from "./hrd/hrdAttendance";
 import { initAnalytics } from "./hrd/hrdAnalytics";
 import { initDropoutDashboard } from "./hrd/hrdDropout";
+import { initDashboard } from "./hrd/hrdDashboard";
+import { initTraineeHistory } from "./hrd/hrdTraineeHistory";
 import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from "./kpi/kpiSheets";
 import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
 import { printKpiReport } from "./kpi/kpiPdf";
@@ -2604,6 +2606,8 @@ document.getElementById("assistantLogoutBtn")?.addEventListener("click", handleL
 initAttendanceDashboard();
 initDropoutDashboard();
 initAnalytics();
+initDashboard();
+initTraineeHistory();
 
 // ─── 출결현황 / 하차방어율 상위 탭 전환 ───
 (() => {

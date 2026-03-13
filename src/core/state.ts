@@ -12,7 +12,7 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
-export type AppSidebarNavKey = "timeline" | "generator" | "kpi" | "attendance" | "analytics" | "settings";
+export type AppSidebarNavKey = "dashboard" | "timeline" | "generator" | "kpi" | "attendance" | "analytics" | "traineeHistory" | "settings";
 
 export type AppSidebarMenuConfig = {
   order: AppSidebarNavKey[];
@@ -153,11 +153,13 @@ function toTimelineViewType(value: unknown): AppTimelineViewType {
 
 function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
   return (
+    value === "dashboard" ||
     value === "timeline" ||
     value === "generator" ||
     value === "kpi" ||
     value === "attendance" ||
     value === "analytics" ||
+    value === "traineeHistory" ||
     value === "settings"
   );
 }
@@ -183,7 +185,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     icons?: Record<string, unknown>;
   };
 
-  const defaultOrder: AppSidebarNavKey[] = ["timeline", "generator", "kpi", "attendance", "analytics", "settings"];
+  const defaultOrder: AppSidebarNavKey[] = ["dashboard", "timeline", "generator", "kpi", "attendance", "analytics", "traineeHistory", "settings"];
 
   const order: AppSidebarNavKey[] = [];
   if (Array.isArray(row.order)) {
@@ -207,19 +209,23 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
   return {
     order,
     labels: {
+      dashboard: toSidebarLabel(labelsSource.dashboard, "대시보드"),
       timeline: toSidebarLabel(labelsSource.timeline, "학사일정"),
       generator: toSidebarLabel(labelsSource.generator, "HRD시간표 생성"),
       kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
       analytics: toSidebarLabel(labelsSource.analytics, "훈련생 분석"),
+      traineeHistory: toSidebarLabel(labelsSource.traineeHistory, "훈련생 이력"),
       settings: toSidebarLabel(labelsSource.settings, "설정"),
     },
     icons: {
+      dashboard: toSidebarIcon(iconsSource.dashboard, "🏠"),
       timeline: toSidebarIcon(iconsSource.timeline, "📅"),
       generator: toSidebarIcon(iconsSource.generator, "🛠️"),
       kpi: toSidebarIcon(iconsSource.kpi, "📊"),
       attendance: toSidebarIcon(iconsSource.attendance, "📋"),
       analytics: toSidebarIcon(iconsSource.analytics, "📈"),
+      traineeHistory: toSidebarIcon(iconsSource.traineeHistory, "👤"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️"),
     },
   };

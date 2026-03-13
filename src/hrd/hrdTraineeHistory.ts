@@ -1,0 +1,424 @@
+/** 훈련생 개인 이력 — 과정/기수 선택, 명단 조회, 개인 상세 (출결 캘린더, 주차별 추이) */
+import { Chart, registerables } from "chart.js";
+import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
+import { loadHrdConfig } from "./hrdConfig";
+import { isDropout } from "./hrdDropout";
+import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
+import type { HrdRawAttendance } from "./hrdTypes";
+
+Chart.register(...registerables);
+
+// ─── State ──────────────────────────────────────────────
+let chartInstances: Chart[] = [];
+
+function destroyCharts(): void {
+  chartInstances.forEach((c) => { try { c.destroy(); } catch { /* */ } });
+  chartInstances = [];
+}
+
+const $ = (id: string) => document.getElementById(id);
+
+// ─── Helpers ────────────────────────────────────────────
+function resolveStatusStr(raw: HrdRawAttendance): string {
+  return (raw.atendSttusNm || raw.atendSttusCd || "").toString().trim();
+}
+
+function isLateStatus(s: string): boolean {
+  return s.includes("지각");
+}
+
+function getRiskLevel(remaining: number, total: number): "safe" | "caution" | "warning" | "danger" {
+  if (total === 0) return "safe";
+  if (remaining <= 0) return "danger";
+  if (remaining <= 2) return "warning";
+  if (remaining <= 5) return "caution";
+  return "safe";
+}
+
+function riskBadgeHtml(level: string): string {
+  const cls = level === "danger" ? "badge-danger" : level === "warning" ? "badge-warning" : level === "caution" ? "badge-caution" : "badge-safe";
+  const label = level === "danger" ? "제적위험" : level === "warning" ? "경고" : level === "caution" ? "주의" : "정상";
+  return `<span class="dash-risk-badge ${cls}">${label}</span>`;
+}
+
+function statusBadgeHtml(status: string): string {
+  const color = status.includes("중도탈락") || status.includes("조기취업") || status.includes("수료포기")
+    ? "#dc2626"
+    : status.includes("수료") ? "#10b981" : "#3b82f6";
+  return `<span class="th-detail-badge" style="background:${color}15;color:${color}">${status}</span>`;
+}
+
+// ─── Filter Bar ─────────────────────────────────────────
+export function initTraineeHistory(): void {
+  const filterContainer = $("traineeHistoryFilter");
+  if (!filterContainer) return;
+
+  const config = loadHrdConfig();
+  const courses = config.courses;
+
+  filterContainer.innerHTML = `
+    <select id="thCourseSelect">
+      <option value="">과정 선택</option>
+      ${courses.map((c) => `<option value="${c.trainPrId}" data-degrs='${JSON.stringify(c.degrs)}' data-name="${c.name}" data-totaldays="${c.totalDays}">${c.name}</option>`).join("")}
+    </select>
+    <select id="thDegrSelect" disabled>
+      <option value="">기수 선택</option>
+    </select>
+    <input type="text" id="thSearchInput" placeholder="이름 검색" />
+    <button id="thLoadBtn" type="button">조회</button>
+  `;
+
+  const courseSelect = $("thCourseSelect") as HTMLSelectElement;
+  const degrSelect = $("thDegrSelect") as HTMLSelectElement;
+  const loadBtn = $("thLoadBtn") as HTMLButtonElement;
+
+  courseSelect?.addEventListener("change", () => {
+    const opt = courseSelect.selectedOptions[0];
+    const degrs = opt?.dataset.degrs ? JSON.parse(opt.dataset.degrs) as string[] : [];
+    if (degrSelect) {
+      degrSelect.innerHTML = `<option value="">기수 선택</option>` + degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
+      degrSelect.disabled = degrs.length === 0;
+    }
+  });
+
+  loadBtn?.addEventListener("click", () => {
+    const trainPrId = courseSelect?.value || "";
+    const degr = degrSelect?.value || "";
+    const opt = courseSelect?.selectedOptions[0];
+    const courseName = opt?.dataset.name || "";
+    const totalDays = parseInt(opt?.dataset.totaldays || "0", 10);
+    if (!trainPrId || !degr) return;
+    loadAndRenderList(trainPrId, degr, courseName, totalDays);
+  });
+
+  // 대시보드에서 네비게이션 이벤트 수신
+  window.addEventListener("openTraineeDetail", ((e: CustomEvent) => {
+    const { name, courseName, trainPrId, degr } = e.detail;
+    // 필터 설정
+    if (courseSelect) {
+      courseSelect.value = trainPrId;
+      courseSelect.dispatchEvent(new Event("change"));
+      setTimeout(() => {
+        if (degrSelect) degrSelect.value = degr;
+        const opt = courseSelect.selectedOptions[0];
+        const totalDays = parseInt(opt?.dataset.totaldays || "0", 10);
+        loadAndRenderList(trainPrId, degr, courseName, totalDays, name);
+      }, 100);
+    }
+  }) as EventListener);
+}
+
+// ─── Roster List ────────────────────────────────────────
+async function loadAndRenderList(
+  trainPrId: string,
+  degr: string,
+  courseName: string,
+  totalDays: number,
+  autoOpenName?: string,
+): Promise<void> {
+  const listContainer = $("traineeHistoryList");
+  const detailContainer = $("traineeHistoryDetail");
+  if (!listContainer) return;
+  if (detailContainer) detailContainer.style.display = "none";
+
+  listContainer.innerHTML = `<div class="dash-loading"><div class="dash-spinner"></div><p>명단 조회 중...</p></div>`;
+
+  try {
+    const config = loadHrdConfig();
+    const roster = await fetchRoster(config, trainPrId, degr);
+    const searchInput = $("thSearchInput") as HTMLInputElement;
+    const searchTerm = searchInput?.value.trim() || "";
+
+    const filtered = roster.filter((raw) => {
+      if (!searchTerm) return true;
+      const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "").toString();
+      return name.includes(searchTerm);
+    });
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = `<div class="dash-empty">조회 결과가 없습니다.</div>`;
+      return;
+    }
+
+    listContainer.innerHTML = `
+      <table class="th-roster-table">
+        <thead><tr><th>이름</th><th>상태</th><th>구분</th></tr></thead>
+        <tbody>
+          ${filtered.map((raw) => {
+            const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
+            const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString().trim() || "훈련중";
+            const dropout = isDropout(raw);
+            return `<tr>
+              <td><span class="th-name-link" data-name="${name}">${name}</span></td>
+              <td>${stNm}</td>
+              <td>${dropout ? "이탈" : "재적"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+
+    // 이름 클릭 이벤트
+    listContainer.querySelectorAll<HTMLElement>(".th-name-link").forEach((el) => {
+      el.addEventListener("click", () => {
+        const name = el.dataset.name || "";
+        showTraineeDetail(name, trainPrId, degr, courseName, totalDays);
+      });
+    });
+
+    // 자동 열기
+    if (autoOpenName) {
+      showTraineeDetail(autoOpenName, trainPrId, degr, courseName, totalDays);
+    }
+  } catch (e) {
+    listContainer.innerHTML = `<div class="dash-empty">데이터 조회 중 오류가 발생했습니다.</div>`;
+    console.warn("[TraineeHistory] Error:", e);
+  }
+}
+
+// ─── Individual Detail ──────────────────────────────────
+async function showTraineeDetail(
+  name: string,
+  trainPrId: string,
+  degr: string,
+  courseName: string,
+  totalDays: number,
+): Promise<void> {
+  const container = $("traineeHistoryDetail");
+  if (!container) return;
+
+  container.style.display = "block";
+  container.innerHTML = `<div class="dash-loading"><div class="dash-spinner"></div><p>${name} 출결 데이터 조회 중...</p></div>`;
+  destroyCharts();
+
+  try {
+    const config = loadHrdConfig();
+
+    // 명단에서 상태 확인
+    const roster = await fetchRoster(config, trainPrId, degr);
+    const trainee = roster.find((r) => {
+      const n = (r.trneeCstmrNm || r.trneNm || r.trneNm1 || r.cstmrNm || "").toString().trim();
+      return n === name;
+    });
+    const stNm = trainee ? (trainee.trneeSttusNm || trainee.atendSttsNm || trainee.stttsCdNm || "").toString().trim() || "훈련중" : "훈련중";
+    const dropout = trainee ? isDropout(trainee) : false;
+
+    // 출결 데이터 (최근 6개월)
+    const now = new Date();
+    const months: string[] = [];
+    for (let m = 5; m >= 0; m--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+      months.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+
+    const allRecords: HrdRawAttendance[] = [];
+    for (const month of months) {
+      try {
+        const records = await fetchDailyAttendance(config, trainPrId, degr, month);
+        allRecords.push(...records);
+      } catch { /* skip */ }
+    }
+
+    const nameKey = name.replace(/\s+/g, "");
+    const myRecords = allRecords.filter((r) => {
+      const rName = (r.cstmrNm || r.trneeCstmrNm || r.trneNm || "").toString().replace(/\s+/g, "");
+      return rName === nameKey;
+    });
+
+    // 출결 통계 계산
+    const statuses = myRecords.map(resolveStatusStr);
+    const attendedDays = statuses.filter(isAttendedStatus).length;
+    const absentDays = statuses.filter(isAbsentStatus).length;
+    const lateDays = statuses.filter(isLateStatus).length;
+    const excusedDays = statuses.filter(isExcusedStatus).length;
+    const maxAbsent = Math.floor(totalDays * 0.2);
+    const remainingAbsent = maxAbsent - absentDays;
+    const effectiveDays = totalDays > 0 ? totalDays - excusedDays : myRecords.length || 1;
+    const attendanceRate = myRecords.length === 0 ? -1 : effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : 100;
+    const riskLevel = getRiskLevel(remainingAbsent, totalDays);
+
+    // 경보 사유
+    const alerts: { text: string; level: string }[] = [];
+    if (riskLevel === "danger") alerts.push({ text: `잔여 결석 허용일 ${remainingAbsent}일 — 제적 위험`, level: "high" });
+    if (riskLevel === "warning") alerts.push({ text: `잔여 결석 허용일 ${remainingAbsent}일 — 경고`, level: "medium" });
+    if (lateDays >= 5) alerts.push({ text: `상습 지각 ${lateDays}회`, level: "medium" });
+
+    // 연속결석 체크
+    let maxConsec = 0, curConsec = 0;
+    const sortedRecords = [...myRecords].sort((a, b) => (a.atendDe || "").localeCompare(b.atendDe || ""));
+    for (const r of sortedRecords) {
+      const s = resolveStatusStr(r);
+      if (isAbsentStatus(s)) { curConsec++; if (curConsec > maxConsec) maxConsec = curConsec; }
+      else { curConsec = 0; }
+    }
+    if (maxConsec >= 3) alerts.push({ text: `최대 연속결석 ${maxConsec}일`, level: "high" });
+
+    // 일별 출결 맵 (캘린더용)
+    const dayMap = new Map<string, string>();
+    for (const r of myRecords) {
+      const date = (r.atendDe || "").toString();
+      if (date.length === 8) {
+        const iso = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
+        dayMap.set(iso, resolveStatusStr(r));
+      }
+    }
+
+    // 주차별 출석률 (최근 12주)
+    const weeklyRates: { label: string; rate: number }[] = [];
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - 7 * 12);
+    for (let w = 0; w < 12; w++) {
+      const wStart = new Date(weekStart);
+      wStart.setDate(wStart.getDate() + w * 7);
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wEnd.getDate() + 6);
+      let total = 0, attended = 0;
+      for (const [dateStr, status] of dayMap) {
+        const d = new Date(dateStr);
+        if (d >= wStart && d <= wEnd) {
+          total++;
+          if (isAttendedStatus(status)) attended++;
+        }
+      }
+      weeklyRates.push({ label: `${w + 1}주`, rate: total > 0 ? (attended / total) * 100 : -1 });
+    }
+
+    // HTML 렌더링
+    container.innerHTML = `
+      <div class="th-detail-header">
+        <span class="th-detail-name">${name}</span>
+        <span class="th-detail-meta">${courseName} ${degr}기</span>
+        ${statusBadgeHtml(stNm)}
+        ${riskBadgeHtml(riskLevel)}
+        <button class="th-detail-close" id="thDetailClose">닫기</button>
+      </div>
+
+      <div class="th-stat-cards">
+        <div class="th-stat-card">
+          <div class="th-stat-value" style="color:${attendanceRate >= 80 ? "#10b981" : attendanceRate >= 70 ? "#f59e0b" : "#ef4444"}">
+            ${attendanceRate >= 0 ? attendanceRate.toFixed(1) + "%" : "-"}
+          </div>
+          <div class="th-stat-label">출석률</div>
+        </div>
+        <div class="th-stat-card">
+          <div class="th-stat-value">${absentDays} / ${maxAbsent}</div>
+          <div class="th-stat-label">결석 / 최대허용</div>
+        </div>
+        <div class="th-stat-card">
+          <div class="th-stat-value" style="color:${remainingAbsent <= 0 ? "#ef4444" : remainingAbsent <= 2 ? "#f59e0b" : "#10b981"}">
+            ${remainingAbsent}일
+          </div>
+          <div class="th-stat-label">잔여 허용 결석</div>
+        </div>
+      </div>
+
+      ${alerts.length > 0 ? `
+        <ul class="th-alert-list">
+          ${alerts.map((a) => `<li class="th-alert-item alert-${a.level}">${a.text}</li>`).join("")}
+        </ul>
+      ` : ""}
+
+      <div class="th-calendar" id="thCalendar"></div>
+
+      <div class="th-chart-area">
+        <h4>주차별 출석률 추이</h4>
+        <canvas id="thWeeklyChart" height="200"></canvas>
+      </div>
+    `;
+
+    // 닫기 버튼
+    $("thDetailClose")?.addEventListener("click", () => {
+      container.style.display = "none";
+      destroyCharts();
+    });
+
+    // 캘린더 히트맵 렌더링
+    renderCalendarHeatmap(dayMap, months);
+
+    // 주차별 차트
+    const validWeeks = weeklyRates.filter((w) => w.rate >= 0);
+    const ctx = (document.getElementById("thWeeklyChart") as HTMLCanvasElement)?.getContext("2d");
+    if (ctx && validWeeks.length > 0) {
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: validWeeks.map((w) => w.label),
+          datasets: [{
+            label: "출석률 (%)",
+            data: validWeeks.map((w) => w.rate),
+            borderColor: "#6366f1",
+            backgroundColor: "rgba(99,102,241,.1)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: validWeeks.map((w) => w.rate < 70 ? "#ef4444" : w.rate < 80 ? "#f59e0b" : "#10b981"),
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { min: 0, max: 100, title: { display: true, text: "%" } } },
+          plugins: { legend: { display: false } },
+        },
+      });
+      chartInstances.push(chart);
+    }
+
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    container.innerHTML = `<div class="dash-empty">출결 데이터를 불러올 수 없습니다.</div>`;
+    console.warn("[TraineeHistory] Detail error:", e);
+  }
+}
+
+// ─── Calendar Heatmap ───────────────────────────────────
+function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string[]): void {
+  const calContainer = $("thCalendar");
+  if (!calContainer) return;
+
+  const dayHeaders = ["일", "월", "화", "수", "목", "금", "토"];
+  let html = "";
+
+  for (const ms of monthStrings) {
+    const year = parseInt(ms.slice(0, 4), 10);
+    const month = parseInt(ms.slice(4, 6), 10) - 1;
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDow = firstDay.getDay();
+
+    html += `<div class="th-calendar-month">`;
+    html += `<div class="th-calendar-month-label">${year}년 ${month + 1}월</div>`;
+    html += `<div class="th-calendar-grid">`;
+    html += dayHeaders.map((d) => `<div class="th-calendar-day-header">${d}</div>`).join("");
+
+    // 빈 칸
+    for (let i = 0; i < startDow; i++) {
+      html += `<div class="th-calendar-cell cal-empty"></div>`;
+    }
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const dow = date.getDay();
+      const status = dayMap.get(iso) || "";
+
+      let cls = "cal-empty";
+      let label = String(d);
+      if (dow === 0 || dow === 6) {
+        cls = "cal-weekend";
+      } else if (status) {
+        if (isAttendedStatus(status) && !isLateStatus(status)) cls = "cal-present";
+        else if (isLateStatus(status)) cls = "cal-late";
+        else if (isAbsentStatus(status)) cls = "cal-absent";
+        else if (isExcusedStatus(status)) cls = "cal-excused";
+        else cls = "cal-present";
+      }
+
+      html += `<div class="th-calendar-cell ${cls}" title="${iso}: ${status || "기록없음"}">${label}</div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  calContainer.innerHTML = html;
+}

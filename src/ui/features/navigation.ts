@@ -197,8 +197,8 @@ export function setupJibbleSidebarNavigation(): void {
 
   const activeButton =
     domRefs.jibblePrimaryNavButtons.find((button) => button.classList.contains("is-active")) || domRefs.jibblePrimaryNavButtons[0];
-  const initialNavKeyRaw = activeButton?.dataset.navKey?.trim() ?? "timeline";
-  const initialNavKey = isPrimarySidebarNavKey(initialNavKeyRaw) ? initialNavKeyRaw : "timeline";
+  const initialNavKeyRaw = activeButton?.dataset.navKey?.trim() ?? "dashboard";
+  const initialNavKey = isPrimarySidebarNavKey(initialNavKeyRaw) ? initialNavKeyRaw : "dashboard";
 
   activatePrimarySidebarPage(initialNavKey, {
     scrollToTop: false,
