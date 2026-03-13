@@ -162,7 +162,7 @@ async function fetchAttendanceForReport(
     const nm = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").trim();
     const key = normalizeName(nm);
     const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
-    const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
+    const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
 
     const todayData = todayMap.get(key);
     const status = todayData ? resolveStatus(todayData) : dropout ? "중도탈락" : "-";

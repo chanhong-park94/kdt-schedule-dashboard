@@ -118,7 +118,7 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
           const age = calcAge(birthStr);
           const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
           const completionStatus = stNm.trim() || "훈련중";
-          const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
+          const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
 
           // 이 훈련생의 출결 레코드 필터
           const nameKey = name.replace(/\s+/g, "");

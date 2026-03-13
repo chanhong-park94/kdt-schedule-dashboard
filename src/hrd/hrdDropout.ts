@@ -82,7 +82,7 @@ function getISOWeek(date: Date): { year: number; week: number } {
 
 function isDropout(raw: HrdRawTrainee): boolean {
   const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
-  return stNm.includes("중도탈락") || stNm.includes("수료포기");
+  return stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
 }
 
 async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => void): Promise<DropoutRosterEntry[]> {

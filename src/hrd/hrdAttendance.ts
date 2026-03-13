@@ -57,7 +57,7 @@ function normalizeTrainee(raw: HrdRawTrainee): { name: string; birth: string; dr
   if (br.length >= 8) birth = `${br.slice(0, 4)}.${br.slice(4, 6)}.${br.slice(6, 8)}`;
   else if (br.length >= 6) birth = `${br.slice(0, 2)}.${br.slice(2, 4)}.${br.slice(4, 6)}`;
   const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
-  const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
+  const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
   return { name: nm.trim(), birth, dropout };
 }
 
