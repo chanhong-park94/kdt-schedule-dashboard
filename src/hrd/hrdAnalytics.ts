@@ -847,6 +847,7 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
 }
 
 function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
+  const filter = activeCourseStatusFilter;
   // 인사이트 카드
   const insightEl = $("analyticsInsights");
   if (insightEl) {
@@ -860,75 +861,279 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
     }
   }
 
-  // ── 조기경보: 위험군 훈련생 (다중 조건) ──
-  const atRisk = data
-    .filter(
-      (d) =>
-        !d.dropout &&
-        d.hasAttendanceData &&
-        (d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0),
-    )
-    .sort((a, b) => {
-      // 연속결석 최우선, 그 다음 출석률 오름차순
-      const ca = b.currentConsecutiveAbsent - a.currentConsecutiveAbsent;
-      if (ca !== 0) return ca;
-      return a.attendanceRate - b.attendanceRate;
-    });
-  const warningBody = $("anaEarlyWarningBody");
-  const warningEmpty = $("anaEarlyWarningEmpty");
-  if (warningBody) {
-    if (atRisk.length === 0) {
-      warningBody.parentElement!.style.display = "none";
-      if (warningEmpty) warningEmpty.style.display = "block";
-    } else {
-      warningBody.parentElement!.style.display = "";
-      if (warningEmpty) warningEmpty.style.display = "none";
-      warningBody.innerHTML = atRisk
-        .map((d) => {
-          const riskLevel = d.attendanceRate < 60 ? "high" : d.attendanceRate < 70 ? "mid" : "low";
-          const riskLabel = d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰";
-          const alertTags = d.alertReasons
-            .map((r) => {
-              const cls =
-                r === "연속결석"
-                  ? "alert-tag--consecutive"
-                  : r === "출석률 급락"
-                    ? "alert-tag--drop"
-                    : "alert-tag--late";
-              return `<span class="alert-tag ${cls}">${r}</span>`;
-            })
-            .join("");
-          return `<tr>
-          <td><strong>${d.name}</strong></td>
-          <td>${d.courseName.length > 14 ? d.courseName.slice(0, 14) + "…" : d.courseName}</td>
-          <td>${d.degr}기</td>
-          <td style="color:${d.attendanceRate < 60 ? "#dc2626" : "#d97706"};font-weight:700;">${d.attendanceRate.toFixed(1)}%</td>
-          <td>${d.absentDays}일</td>
-          <td>${d.lateDays}일</td>
-          <td><span class="ana-risk-${riskLevel}">${riskLabel}</span></td>
-          <td>${alertTags || '<span style="color:#9ca3af;">-</span>'}</td>
-        </tr>`;
-        })
-        .join("");
+  const contentEl = $("riskTabContent");
+  if (!contentEl) return;
+
+  if (filter === "종강") {
+    renderRiskTabCompleted(contentEl, data);
+  } else {
+    renderRiskTabActive(contentEl, data);
+  }
+}
+
+// ── 전체 / 진행중: 과정·기수별 카드 ──
+function renderRiskTabActive(container: HTMLElement, data: TraineeAnalysis[]): void {
+  // 과정·기수별 그룹
+  interface RiskGroup { course: string; degr: string; list: TraineeAnalysis[]; atRisk: TraineeAnalysis[]; }
+  const groups: RiskGroup[] = [];
+  for (const d of data) {
+    let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
+    if (!g) { g = { course: d.courseName, degr: d.degr, list: [], atRisk: [] }; groups.push(g); }
+    g.list.push(d);
+    if (!d.dropout && d.hasAttendanceData && (d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0)) {
+      g.atRisk.push(d);
     }
   }
+  groups.sort((a, b) => b.atRisk.length - a.atRisk.length || a.course.localeCompare(b.course));
 
+  const totalAtRisk = groups.reduce((s, g) => s + g.atRisk.length, 0);
+
+  let html = `<h4 style="margin:16px 0 8px">⚠️ 과정·기수별 조기경보</h4>
+    <div class="risk-summary-bar">위험군 총 <strong>${totalAtRisk}명</strong> / 전체 ${data.length}명</div>`;
+
+  if (totalAtRisk === 0) {
+    html += '<div style="text-align:center;padding:24px;color:#10b981;font-weight:600;">✅ 현재 위험군 훈련생이 없습니다</div>';
+  } else {
+    html += '<div class="risk-group-list">';
+    for (const g of groups) {
+      const withData = g.list.filter((d) => d.hasAttendanceData);
+      const avgRate = withData.length > 0 ? withData.reduce((s, d) => s + d.attendanceRate, 0) / withData.length : -1;
+      const consAbsent = g.list.filter((d) => !d.dropout && d.currentConsecutiveAbsent >= 3).length;
+      const riskCount = g.atRisk.length;
+      const cardId = `riskCard_${g.course.replace(/[^a-zA-Z0-9가-힣]/g, "")}_${g.degr}`;
+      const severityClass = riskCount === 0 ? "risk-card-safe" : riskCount >= 3 ? "risk-card-danger" : "risk-card-warn";
+
+      html += `<div class="risk-group-card ${severityClass}" data-risk-card="${cardId}">
+        <div class="risk-card-header">
+          <div class="risk-card-title">${g.course} <span class="risk-card-degr">${g.degr}기</span></div>
+          <div class="risk-card-badges">
+            ${riskCount > 0 ? `<span class="risk-badge risk-badge-danger">위험 ${riskCount}명</span>` : '<span class="risk-badge risk-badge-safe">안전</span>'}
+            ${consAbsent > 0 ? `<span class="risk-badge risk-badge-warn">연속결석 ${consAbsent}명</span>` : ""}
+          </div>
+        </div>
+        <div class="risk-card-stats">
+          <span>인원 ${g.list.length}명</span>
+          <span>평균출석률 ${avgRate < 0 ? "N/A" : avgRate.toFixed(1) + "%"}</span>
+          <span>탈락 ${g.list.filter((d) => d.dropout).length}명</span>
+        </div>
+      </div>`;
+
+      // 상세 패널 (접힌 상태)
+      if (riskCount > 0) {
+        const sorted = g.atRisk.sort((a, b) => {
+          const ca = b.currentConsecutiveAbsent - a.currentConsecutiveAbsent;
+          return ca !== 0 ? ca : a.attendanceRate - b.attendanceRate;
+        });
+        html += `<div class="risk-detail-panel" id="${cardId}" style="display:none;">
+          <table class="hrd-table" style="margin:0;font-size:12px;">
+            <thead><tr><th>이름</th><th>출석률</th><th>결석</th><th>지각</th><th>연속결석</th><th>위험도</th><th>경고사유</th></tr></thead>
+            <tbody>${sorted.map((d) => {
+              const riskLevel = d.attendanceRate < 60 ? "high" : d.attendanceRate < 70 ? "mid" : "low";
+              const riskLabel = d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰";
+              const alertTags = d.alertReasons.map((r) => {
+                const cls = r === "연속결석" ? "alert-tag--consecutive" : r === "출석률 급락" ? "alert-tag--drop" : "alert-tag--late";
+                return `<span class="alert-tag ${cls}">${r}</span>`;
+              }).join("");
+              return `<tr>
+                <td><strong>${d.name}</strong></td>
+                <td style="color:${d.attendanceRate < 60 ? "#dc2626" : "#d97706"};font-weight:700;">${d.attendanceRate.toFixed(1)}%</td>
+                <td>${d.absentDays}일</td><td>${d.lateDays}일</td>
+                <td>${d.currentConsecutiveAbsent > 0 ? d.currentConsecutiveAbsent + "일" : "-"}</td>
+                <td><span class="ana-risk-${riskLevel}">${riskLabel}</span></td>
+                <td>${alertTags || "-"}</td>
+              </tr>`;
+            }).join("")}</tbody>
+          </table>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  // 차트 영역
+  html += `<h4 style="margin:24px 0 8px">출결 패턴</h4>
+    <div class="ana-chart-grid">
+      <div class="ana-chart-box"><canvas id="chartWeekdayAbsent"></canvas></div>
+      <div class="ana-chart-box"><canvas id="chartMonthlyAbsent"></canvas></div>
+    </div>
+    <h4 style="margin:16px 0 8px">탈락 요인 / 위험군 추이</h4>
+    <div class="ana-chart-grid">
+      <div class="ana-chart-box"><canvas id="chartDropoutTiming"></canvas></div>
+      <div class="ana-chart-box"><canvas id="chartIndividualTrend"></canvas></div>
+    </div>`;
+
+  container.innerHTML = html;
+
+  // 카드 클릭 토글
+  container.querySelectorAll<HTMLElement>(".risk-group-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const panelId = card.dataset.riskCard || "";
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        const isHidden = panel.style.display === "none";
+        panel.style.display = isHidden ? "" : "none";
+        card.classList.toggle("risk-card-expanded", isHidden);
+      }
+    });
+  });
+
+  // 차트 렌더링
+  renderRiskCharts(data);
+}
+
+// ── 종강: 과정별 인사이트 리포트 ──
+function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[]): void {
+  interface CompGroup { course: string; degr: string; list: TraineeAnalysis[]; }
+  const groups: CompGroup[] = [];
+  for (const d of data) {
+    let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
+    if (!g) { g = { course: d.courseName, degr: d.degr, list: [] }; groups.push(g); }
+    g.list.push(d);
+  }
+  groups.sort((a, b) => a.course.localeCompare(b.course) || parseInt(a.degr) - parseInt(b.degr));
+
+  let html = '<h4 style="margin:16px 0 8px">📊 종강 과정 인사이트</h4><div class="risk-group-list">';
+
+  for (const g of groups) {
+    const cnt = g.list.length;
+    const completed = g.list.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
+    const compRate = cnt > 0 ? (completed / cnt) * 100 : 0;
+    const dropouts = g.list.filter((d) => d.dropout);
+    const dropRate = cnt > 0 ? (dropouts.length / cnt) * 100 : 0;
+    const withData = g.list.filter((d) => d.hasAttendanceData);
+    const avgRate = withData.length > 0 ? withData.reduce((s, d) => s + d.attendanceRate, 0) / withData.length : -1;
+
+    // 탈락 시점 분포
+    const dropoutsByWeek: Record<string, number> = {};
+    for (const d of dropouts) {
+      if (d.dropoutWeekIdx >= 0) {
+        const period = d.dropoutWeekIdx < 4 ? "초기(1-4주)" : d.dropoutWeekIdx < 8 ? "중기(5-8주)" : "후기(9주+)";
+        dropoutsByWeek[period] = (dropoutsByWeek[period] || 0) + 1;
+      }
+    }
+    const dropTimingHtml = Object.entries(dropoutsByWeek).map(([k, v]) => `${k}: ${v}명`).join(", ") || "-";
+
+    // 요일별 결석 top
+    const weekdayTotals = [0, 0, 0, 0, 0];
+    const dayNames = ["월", "화", "수", "목", "금"];
+    for (const d of g.list) {
+      for (let i = 0; i < 5; i++) weekdayTotals[i] += d.absentByWeekday[i + 1];
+    }
+    const topDay = weekdayTotals.indexOf(Math.max(...weekdayTotals));
+    const topDayHtml = weekdayTotals[topDay] > 0 ? `${dayNames[topDay]}요일 (${weekdayTotals[topDay]}건)` : "-";
+
+    // 지각 top 시간대
+    const lateHourTotals = [0, 0, 0, 0, 0, 0];
+    const hourLabels = ["7시", "8시", "9시", "10시", "11시", "12시"];
+    for (const d of g.list) {
+      for (let i = 0; i < 6; i++) lateHourTotals[i] += d.lateByHour[i];
+    }
+    const topHour = lateHourTotals.indexOf(Math.max(...lateHourTotals));
+    const topHourHtml = lateHourTotals[topHour] > 0 ? `${hourLabels[topHour]}대 (${lateHourTotals[topHour]}건)` : "-";
+
+    // 이전기수 대비
+    const prevDegr = String(parseInt(g.degr) - 1);
+    const prevGroup = groups.find((x) => x.course === g.course && x.degr === prevDegr);
+    let prevCompareHtml = "";
+    if (prevGroup) {
+      const prevDrop = (prevGroup.list.filter((d) => d.dropout).length / prevGroup.list.length) * 100;
+      const diff = dropRate - prevDrop;
+      const color = diff > 0 ? "#dc2626" : diff < 0 ? "#059669" : "#6b7280";
+      const sign = diff > 0 ? "+" : "";
+      prevCompareHtml = `<div class="insight-compare">vs ${prevDegr}기 탈락률: <span style="color:${color};font-weight:700;">${sign}${diff.toFixed(1)}%p</span></div>`;
+    }
+
+    const compClass = compRate >= 80 ? "insight-card-good" : compRate >= 60 ? "insight-card-warn" : "insight-card-bad";
+    const cardId = `insightCard_${g.course.replace(/[^a-zA-Z0-9가-힣]/g, "")}_${g.degr}`;
+
+    html += `<div class="insight-course-card ${compClass}" data-insight-card="${cardId}">
+      <div class="insight-card-header">
+        <div class="insight-card-title">${g.course} <span class="risk-card-degr">${g.degr}기</span></div>
+        <div class="insight-card-rate">${compRate.toFixed(0)}% <span class="insight-card-rate-label">수료율</span></div>
+      </div>
+      <div class="insight-card-summary">
+        <span>인원 ${cnt}명</span>
+        <span>수료 ${completed}명</span>
+        <span>탈락 ${dropouts.length}명 (${dropRate.toFixed(1)}%)</span>
+      </div>
+      ${prevCompareHtml}
+    </div>
+    <div class="risk-detail-panel" id="${cardId}" style="display:none;">
+      <div class="insight-detail-grid">
+        <div class="insight-detail-item">
+          <div class="insight-detail-label">평균 출석률</div>
+          <div class="insight-detail-value">${avgRate < 0 ? "N/A" : avgRate.toFixed(1) + "%"}</div>
+        </div>
+        <div class="insight-detail-item">
+          <div class="insight-detail-label">탈락 시점 분포</div>
+          <div class="insight-detail-value">${dropTimingHtml}</div>
+        </div>
+        <div class="insight-detail-item">
+          <div class="insight-detail-label">결석 최다 요일</div>
+          <div class="insight-detail-value">${topDayHtml}</div>
+        </div>
+        <div class="insight-detail-item">
+          <div class="insight-detail-label">지각 최다 시간대</div>
+          <div class="insight-detail-value">${topHourHtml}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;">
+        <strong>훈련생 상태 분포:</strong>
+        ${(() => {
+          const statusMap: Record<string, number> = {};
+          for (const d of g.list) { const s = d.completionStatus || (d.dropout ? "중도탈락" : "훈련중"); statusMap[s] = (statusMap[s] || 0) + 1; }
+          return Object.entries(statusMap).map(([k, v]) => `<span class="insight-status-chip">${k} ${v}명</span>`).join(" ");
+        })()}
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+
+  // 차트 영역 (종강도 출결 패턴 차트는 유용)
+  html += `<h4 style="margin:24px 0 8px">출결 패턴 종합</h4>
+    <div class="ana-chart-grid">
+      <div class="ana-chart-box"><canvas id="chartWeekdayAbsent"></canvas></div>
+      <div class="ana-chart-box"><canvas id="chartMonthlyAbsent"></canvas></div>
+    </div>
+    <h4 style="margin:16px 0 8px">탈락 시점 분석</h4>
+    <div class="ana-chart-grid">
+      <div class="ana-chart-box"><canvas id="chartDropoutTiming"></canvas></div>
+      <div class="ana-chart-box"><canvas id="chartIndividualTrend"></canvas></div>
+    </div>`;
+
+  container.innerHTML = html;
+
+  // 카드 클릭 토글
+  container.querySelectorAll<HTMLElement>(".insight-course-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const panelId = card.dataset.insightCard || "";
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        const isHidden = panel.style.display === "none";
+        panel.style.display = isHidden ? "" : "none";
+        card.classList.toggle("risk-card-expanded", isHidden);
+      }
+    });
+  });
+
+  renderRiskCharts(data);
+}
+
+// ── 공통 차트 렌더링 ──
+function renderRiskCharts(data: TraineeAnalysis[]): void {
   // 요일별 결석률
   const wdCtx = ($("chartWeekdayAbsent") as HTMLCanvasElement)?.getContext("2d");
   if (wdCtx) {
     const weekdays = ["월", "화", "수", "목", "금"];
     const totals = [0, 0, 0, 0, 0];
     for (const d of data) {
-      for (let i = 0; i < 5; i++) totals[i] += d.absentByWeekday[i + 1]; // 1=월~5=금
+      for (let i = 0; i < 5; i++) totals[i] += d.absentByWeekday[i + 1];
     }
     charts.push(
       new Chart(wdCtx, {
         type: "bar",
         data: { labels: weekdays, datasets: [{ label: "결석 횟수", data: totals, backgroundColor: "#f56c6c" }] },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false }, title: { display: true, text: "요일별 결석 분포" } },
-        },
+        options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "요일별 결석 분포" } } },
       }),
     );
   }
@@ -940,34 +1145,20 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
     if (maxMonths > 0) {
       const labels = Array.from({ length: maxMonths }, (_, i) => `${i + 1}월차`);
       const totals = Array.from({ length: maxMonths }, () => 0);
-      const excusedTotals = Array.from({ length: maxMonths }, () => 0);
       for (const d of data) {
-        for (let i = 0; i < d.absentByMonth.length; i++) {
-          totals[i] += d.absentByMonth[i];
-        }
+        for (let i = 0; i < d.absentByMonth.length; i++) totals[i] += d.absentByMonth[i];
       }
       charts.push(
         new Chart(monthCtx, {
           type: "line",
-          data: {
-            labels,
-            datasets: [
-              {
-                label: "결석",
-                data: totals,
-                borderColor: "#f56c6c",
-                backgroundColor: "rgba(245,108,108,0.1)",
-                fill: true,
-              },
-            ],
-          },
+          data: { labels, datasets: [{ label: "결석", data: totals, borderColor: "#f56c6c", backgroundColor: "rgba(245,108,108,0.1)", fill: true }] },
           options: { responsive: true, plugins: { title: { display: true, text: "월차별 결석 추이" } } },
         }),
       );
     }
   }
 
-  // 탈락 시점 분석 (훈련 주차별 탈락 인원)
+  // 탈락 시점 분석
   const dropTimingCtx = ($("chartDropoutTiming") as HTMLCanvasElement)?.getContext("2d");
   if (dropTimingCtx) {
     const dropouts = data.filter((d) => d.dropout && d.dropoutWeekIdx >= 0);
@@ -979,26 +1170,17 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
       charts.push(
         new Chart(dropTimingCtx, {
           type: "bar",
-          data: {
-            labels: weekLabels,
-            datasets: [{ label: "탈락 인원", data: weekCounts, backgroundColor: "#f56c6c" }],
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false }, title: { display: true, text: "탈락 시점 분석 (훈련 주차별)" } },
-            scales: { y: { title: { display: true, text: "인원" }, beginAtZero: true } },
-          },
+          data: { labels: weekLabels, datasets: [{ label: "탈락 인원", data: weekCounts, backgroundColor: "#f56c6c" }] },
+          options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "탈락 시점 분석 (훈련 주차별)" } }, scales: { y: { title: { display: true, text: "인원" }, beginAtZero: true } } },
         }),
       );
     } else {
       const parent = dropTimingCtx.canvas.parentElement;
-      if (parent)
-        parent.innerHTML =
-          '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">탈락 데이터가 없습니다</div>';
+      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">탈락 데이터가 없습니다</div>';
     }
   }
 
-  // 위험군 개인별 출결 추이 (multi-line)
+  // 위험군 개인별 출결 추이
   const trendCtx = ($("chartIndividualTrend") as HTMLCanvasElement)?.getContext("2d");
   if (trendCtx) {
     const riskStudents = data
@@ -1012,29 +1194,13 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
       charts.push(
         new Chart(trendCtx, {
           type: "line",
-          data: {
-            labels,
-            datasets: riskStudents.map((d, i) => ({
-              label: d.name,
-              data: d.weeklyAttendanceRates,
-              borderColor: colors[i % colors.length],
-              backgroundColor: "transparent",
-              tension: 0.3,
-              pointRadius: 3,
-            })),
-          },
-          options: {
-            responsive: true,
-            plugins: { title: { display: true, text: "위험군 출결 추이 (TOP 5)" } },
-            scales: { y: { title: { display: true, text: "출석률 (%)" }, min: 0, max: 110 } },
-          },
+          data: { labels, datasets: riskStudents.map((d, i) => ({ label: d.name, data: d.weeklyAttendanceRates, borderColor: colors[i % colors.length], backgroundColor: "transparent", tension: 0.3, pointRadius: 3 })) },
+          options: { responsive: true, plugins: { title: { display: true, text: "위험군 출결 추이 (TOP 5)" } }, scales: { y: { title: { display: true, text: "출석률 (%)" }, min: 0, max: 110 } } },
         }),
       );
     } else {
       const parent = trendCtx.canvas.parentElement;
-      if (parent)
-        parent.innerHTML =
-          '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">경고 대상 훈련생이 없습니다</div>';
+      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">경고 대상 훈련생이 없습니다</div>';
     }
   }
 }
