@@ -61,17 +61,6 @@
           <button
             class="jibble-nav-item"
             type="button"
-            data-scroll-target="sectionDropout"
-            data-nav-key="dropout"
-            data-nav-icon="shield"
-            data-default-label="하차방어율"
-          >
-            <svg class="jibble-nav-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span class="jibble-nav-label">하차방어율</span>
-          </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
             data-scroll-target="sectionScheduleGenerate"
             data-nav-key="generator"
             data-nav-icon="wrench"
@@ -89,7 +78,18 @@
             data-default-label="자율성과지표"
           >
             <svg class="jibble-nav-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            <span class="jibble-nav-label">자율성과지표 (KPI)</span>
+            <span class="jibble-nav-label">자율성과지표</span>
+          </button>
+          <button
+            class="jibble-nav-item"
+            type="button"
+            data-scroll-target="sectionDropout"
+            data-nav-key="dropout"
+            data-nav-icon="shield"
+            data-default-label="하차방어율 (KPI)"
+          >
+            <svg class="jibble-nav-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="jibble-nav-label">하차방어율 (KPI)</span>
           </button>
 
           <div class="nav-section-label">훈련생 관리</div>
@@ -1198,7 +1198,7 @@
           <div class="card card-span-12 u-mt-14" id="sectionDropout" data-page-group="dropout">
               <div class="do-dashboard">
                 <div class="do-header">
-                  <h3>🛡️ 하차방어율 대시보드</h3>
+                  <h3>🛡️ 하차방어율 (KPI) 대시보드</h3>
                   <span id="doLoadStatus" class="att-load-status"></span>
                   <button id="doQueryBtn" class="btn-primary att-query-btn" type="button">전체 조회</button>
                 </div>
