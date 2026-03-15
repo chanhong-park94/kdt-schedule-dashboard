@@ -240,27 +240,44 @@ async function checkAndSend(): Promise<void> {
   emitStatus("⏳ 자동 알림 전송 중...", "info");
   console.warn(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
 
-  // 대상 과정 결정
-  const courses = config.courses.filter((c) => {
+  // 대상 과정 결정 — 운영중인 과정만 필터 + 최근 개강순 정렬
+  const allCourses = config.courses.filter((c) => {
     if (schedule.targetCourses.length === 0) return true;
     return schedule.targetCourses.includes(c.trainPrId);
   });
 
-  if (courses.length === 0) {
-    emitStatus("⚠️ 전송할 대상 과정이 없습니다", "error");
+  // 운영중 판별: startDate 기준으로 totalDays(영업일) 이내인 과정만
+  const activeCourses = allCourses
+    .filter((c) => {
+      if (!c.startDate || !c.totalDays) return true; // 날짜 정보 없으면 포함
+      const start = new Date(c.startDate);
+      const now = new Date();
+      if (start > now) return false; // 아직 개강 전
+      // 총 훈련일수 * 1.5를 달력일수로 환산 (주말 감안)
+      const calendarDays = Math.ceil(c.totalDays * 1.5);
+      const elapsed = Math.floor((now.getTime() - start.getTime()) / 86400000);
+      return elapsed <= calendarDays;
+    })
+    .sort((a, b) => {
+      // 최근 개강 순 (내림차순)
+      const dateA = a.startDate || "0000-00-00";
+      const dateB = b.startDate || "0000-00-00";
+      return dateB.localeCompare(dateA);
+    });
+
+  if (activeCourses.length === 0) {
+    emitStatus("⚠️ 현재 운영중인 과정이 없습니다", "error");
     return;
   }
 
   let sentCount = 0;
   let failCount = 0;
 
-  for (const course of courses) {
+  for (const course of activeCourses) {
     // 각 과정의 최신 기수만 전송
     const latestDegr = course.degrs[course.degrs.length - 1] || "1";
     try {
       // 과정 유형별 가장 최근 수업일 계산
-      // 실업자(기본): 월~금 → 월요일 아침에 금요일 데이터
-      // 재직자: 화~토 → 월요일 아침에 토요일 데이터
       const reportDate = await findLastClassDay(course.category);
       if (!reportDate) {
         console.warn(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
@@ -271,19 +288,23 @@ async function checkAndSend(): Promise<void> {
 
       // 하차방어율 계산 (명단 기반: 전체 인원 대비 재적 인원)
       const total = students.length;
-      const dropouts = students.filter((s) => s.dropout).length;
-      const active = total - dropouts;
-      const defenseRate = total > 0 ? (active / total) * 100 : 100;
+      const dropoutCount = students.filter((s) => s.dropout).length;
+      const activeCount = total - dropoutCount;
+      const defenseRate = total > 0 ? (activeCount / total) * 100 : 100;
 
-      // 관리대상(위험+경고+주의+퇴실미체크)만 있을 때 전송
-      const riskStudents = students.filter(
-        (s) =>
-          !s.dropout &&
-          (s.riskLevel === "danger" || s.riskLevel === "warning" || s.riskLevel === "caution" || s.missingCheckout),
+      // 주간 하차인원 — 직접 산출이 어려우므로 undefined (향후 확장)
+      const weeklyDropouts: number | undefined = undefined;
+
+      await sendSlackReportDirect(
+        webhookUrl,
+        course.name,
+        latestDegr,
+        reportDate,
+        students,
+        defenseRate,
+        weeklyDropouts,
+        course.trainPrId,
       );
-      if (riskStudents.length === 0 && students.length === 0) continue;
-
-      await sendSlackReportDirect(webhookUrl, course.name, latestDegr, reportDate, students, defenseRate);
       sentCount++;
       console.warn(
         `[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결, ${course.category || "실업자"})`,

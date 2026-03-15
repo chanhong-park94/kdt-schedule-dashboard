@@ -853,25 +853,52 @@ function renderSlackScheduleUI(config: HrdConfig): void {
   const weekdaySel = $("slackScheduleWeekdays") as HTMLSelectElement | null;
   if (weekdaySel) weekdaySel.value = schedule.weekdaysOnly ? "weekdays" : "daily";
 
-  // 대상 과정 체크박스
+  // 대상 과정 + 담당 매니저 — 운영중인 과정만 표시, 최근 개강순
   const coursesContainer = $("slackScheduleCourses");
   if (coursesContainer) {
-    coursesContainer.innerHTML = config.courses
+    const managers = schedule.courseManagers ?? {};
+    const now = new Date();
+
+    // 운영중 과정 필터 + 최근 개강순 정렬
+    const sortedCourses = [...config.courses]
+      .map((c) => {
+        let isActive = true;
+        if (c.startDate && c.totalDays) {
+          const start = new Date(c.startDate);
+          if (start > now) isActive = false;
+          const calendarDays = Math.ceil(c.totalDays * 1.5);
+          const elapsed = Math.floor((now.getTime() - start.getTime()) / 86400000);
+          if (elapsed > calendarDays) isActive = false;
+        }
+        return { ...c, isActive };
+      })
+      .filter((c) => c.isActive)
+      .sort((a, b) => (b.startDate || "0000").localeCompare(a.startDate || "0000"));
+
+    coursesContainer.innerHTML = sortedCourses
       .map((c) => {
         const checked = schedule.targetCourses.length === 0 || schedule.targetCourses.includes(c.trainPrId);
-        return `<label class="slack-course-check ${checked ? "checked" : ""}">
-        <input type="checkbox" value="${c.trainPrId}" ${checked ? "checked" : ""} />
-        ${c.name}
-      </label>`;
+        const latestDegr = c.degrs[c.degrs.length - 1] || "";
+        const managerVal = managers[c.trainPrId] || "";
+        return `<div class="slack-course-manager-row ${checked ? "checked" : ""}">
+          <input type="checkbox" value="${c.trainPrId}" ${checked ? "checked" : ""} />
+          <span class="slack-course-manager-name">${c.name}<span class="slack-course-degr">${latestDegr}기</span></span>
+          <input type="text" class="slack-course-manager-input" data-course-id="${c.trainPrId}"
+            value="${managerVal}" placeholder="매니저 Slack ID (예: U12345678)" />
+        </div>`;
       })
       .join("");
+
+    if (sortedCourses.length === 0) {
+      coursesContainer.innerHTML = `<div class="muted" style="padding: 12px; text-align: center">현재 운영중인 과정이 없습니다</div>`;
+    }
 
     // 체크 상태 변경 시 시각 피드백
     coursesContainer.querySelectorAll("input[type='checkbox']").forEach((cb) => {
       cb.addEventListener("change", () => {
-        const label = cb.closest(".slack-course-check");
-        if (label) {
-          label.classList.toggle("checked", (cb as HTMLInputElement).checked);
+        const row = cb.closest(".slack-course-manager-row");
+        if (row) {
+          row.classList.toggle("checked", (cb as HTMLInputElement).checked);
         }
       });
     });
@@ -1133,8 +1160,9 @@ function setupSettingsHandlers(): void {
     const footerInput = $("slackScheduleFooter") as HTMLInputElement | null;
     const coursesContainer = $("slackScheduleCourses");
 
-    // 대상 과정 수집
+    // 대상 과정 + 매니저 수집
     const targetCourses: string[] = [];
+    const courseManagers: Record<string, string> = {};
     if (coursesContainer) {
       const checkboxes = coursesContainer.querySelectorAll("input[type='checkbox']");
       const allChecked = Array.from(checkboxes).every((cb) => (cb as HTMLInputElement).checked);
@@ -1146,6 +1174,15 @@ function setupSettingsHandlers(): void {
         });
       }
       // allChecked → 빈 배열 = 전체 과정
+
+      // 매니저 입력 수집
+      coursesContainer.querySelectorAll<HTMLInputElement>(".slack-course-manager-input").forEach((input) => {
+        const courseId = input.dataset.courseId;
+        const val = input.value.trim();
+        if (courseId && val) {
+          courseManagers[courseId] = val;
+        }
+      });
     }
 
     const schedule: SlackScheduleConfig = {
@@ -1157,6 +1194,7 @@ function setupSettingsHandlers(): void {
       headerText: headerInput?.value?.trim() || DEFAULT_SLACK_SCHEDULE.headerText,
       footerText: footerInput?.value?.trim() || DEFAULT_SLACK_SCHEDULE.footerText,
       lastSentDate: config.slackSchedule?.lastSentDate,
+      courseManagers,
     };
 
     config.slackSchedule = schedule;

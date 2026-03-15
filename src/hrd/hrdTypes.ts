@@ -55,6 +55,7 @@ export interface SlackScheduleConfig {
   headerText: string; // 메시지 헤더
   footerText: string; // 메시지 푸터
   lastSentDate?: string; // YYYY-MM-DD (중복 방지)
+  courseManagers?: Record<string, string>; // trainPrId → Slack 멤버 ID (예: "U12345,U67890")
 }
 
 export const DEFAULT_SLACK_SCHEDULE: SlackScheduleConfig = {

@@ -1967,11 +1967,16 @@
                   </div>
                 </div>
 
-                <!-- 대상 과정 선택 -->
-                <div style="margin-bottom: 12px">
-                  <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px">대상 과정</label>
-                  <div id="slackScheduleCourses" style="display: flex; flex-wrap: wrap; gap: 6px"></div>
-                  <div class="muted" style="font-size: 11px; margin-top: 4px">체크하지 않으면 전체 과정 전송</div>
+                <!-- 대상 과정 선택 + 담당 매니저 -->
+                <div style="margin-bottom: 16px">
+                  <label class="slack-field-label">대상 과정 및 담당 매니저</label>
+                  <div class="muted" style="font-size: 11px; margin-bottom: 8px">
+                    운영중인 과정만 표시됩니다. 체크하지 않으면 전체 과정 전송
+                  </div>
+                  <div id="slackScheduleCourses" class="slack-course-manager-list"></div>
+                  <div class="muted" style="font-size: 11px; margin-top: 6px">
+                    💡 매니저 ID 확인: Slack에서 프로필 > ⋯ > 멤버 ID 복사. 여러 명은 콤마(,)로 구분
+                  </div>
                 </div>
 
                 <!-- 메시지 템플릿 -->
