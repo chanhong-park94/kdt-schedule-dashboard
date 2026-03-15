@@ -102,7 +102,8 @@ export function setNotificationFocus(focus: { cohort?: string; assignee?: string
 }
 
 export function setPageGroupVisibility(activePage: PrimarySidebarNavKey): void {
-  for (const element of domRefs.jibblePageGroupElements) {
+  const elements = document.querySelectorAll<HTMLElement>("[data-page-group]");
+  for (const element of elements) {
     const group = element.dataset.pageGroup?.trim() ?? "";
     if (!group) {
       continue;
@@ -159,18 +160,20 @@ export function setJibbleManagementSubmenuActive(tab: "course" | "subject" | "in
 }
 
 export function setJibbleSidebarActive(navKey: PrimarySidebarNavKey): void {
-  for (const button of domRefs.jibblePrimaryNavButtons) {
+  const buttons = document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]");
+  for (const button of buttons) {
     const currentKey = button.dataset.navKey?.trim() ?? "";
     button.classList.toggle("is-active", currentKey === navKey);
   }
 }
 
 export function setupJibbleSidebarNavigation(): void {
-  if (domRefs.jibblePrimaryNavButtons.length === 0) {
+  const primaryNavButtons = document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]");
+  if (primaryNavButtons.length === 0) {
     return;
   }
 
-  for (const button of domRefs.jibblePrimaryNavButtons) {
+  for (const button of primaryNavButtons) {
     button.addEventListener("click", () => {
       const navKeyRaw = button.dataset.navKey?.trim() ?? "";
       if (!isPrimarySidebarNavKey(navKeyRaw)) {
@@ -196,7 +199,7 @@ export function setupJibbleSidebarNavigation(): void {
   }
 
   const activeButton =
-    domRefs.jibblePrimaryNavButtons.find((button) => button.classList.contains("is-active")) || domRefs.jibblePrimaryNavButtons[0];
+    [...primaryNavButtons].find((button) => button.classList.contains("is-active")) || primaryNavButtons[0];
   const initialNavKeyRaw = activeButton?.dataset.navKey?.trim() ?? "dashboard";
   const initialNavKey = isPrimarySidebarNavKey(initialNavKeyRaw) ? initialNavKeyRaw : "dashboard";
 

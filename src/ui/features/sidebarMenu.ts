@@ -20,6 +20,7 @@ const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v3";
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "dashboard",
   "timeline",
+  "dropout",
   "generator",
   "kpi",
   "attendance",
@@ -31,6 +32,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
 export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string> = {
   dashboard: "대시보드",
   timeline: "학사일정",
+  dropout: "하차방어율",
   generator: "HRD시간표 생성",
   kpi: "자율성과지표 (KPI)",
   attendance: "출결현황",
@@ -42,6 +44,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
 export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
   dashboard: "dashboard",
   timeline: "calendar",
+  dropout: "shield",
   generator: "wrench",
   kpi: "chart",
   attendance: "clipboard",
@@ -54,13 +57,13 @@ export function isPrimarySidebarNavKey(value: string): value is PrimarySidebarNa
   return PRIMARY_SIDEBAR_NAV_KEYS.includes(value as PrimarySidebarNavKey);
 }
 
-export function normalizeSidebarMenuLabel(navKey: PrimarySidebarNavKey, value: string): string {
-  const trimmed = value.trim();
+export function normalizeSidebarMenuLabel(navKey: PrimarySidebarNavKey, value: string | undefined): string {
+  const trimmed = (value ?? "").trim();
   return trimmed.length > 0 ? trimmed : DEFAULT_PRIMARY_SIDEBAR_LABELS[navKey];
 }
 
-export function normalizeSidebarMenuIcon(navKey: PrimarySidebarNavKey, value: string): string {
-  const trimmed = value.trim();
+export function normalizeSidebarMenuIcon(navKey: PrimarySidebarNavKey, value: string | undefined): string {
+  const trimmed = (value ?? "").trim();
   return trimmed.length > 0 ? trimmed : DEFAULT_PRIMARY_SIDEBAR_ICONS[navKey];
 }
 
@@ -70,6 +73,7 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
     labels: {
       dashboard: config.labels.dashboard,
       timeline: config.labels.timeline,
+      dropout: config.labels.dropout,
       generator: config.labels.generator,
       kpi: config.labels.kpi,
       attendance: config.labels.attendance,
@@ -80,6 +84,7 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
     icons: {
       dashboard: config.icons.dashboard,
       timeline: config.icons.timeline,
+      dropout: config.icons.dropout,
       generator: config.icons.generator,
       kpi: config.icons.kpi,
       attendance: config.icons.attendance,
@@ -123,6 +128,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
     labels: {
       dashboard: normalizeSidebarMenuLabel("dashboard", config.labels.dashboard),
       timeline: normalizeSidebarMenuLabel("timeline", config.labels.timeline),
+      dropout: normalizeSidebarMenuLabel("dropout", config.labels.dropout),
       generator: normalizeSidebarMenuLabel("generator", config.labels.generator),
       kpi: normalizeSidebarMenuLabel("kpi", config.labels.kpi),
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
@@ -133,6 +139,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
     icons: {
       dashboard: normalizeSidebarMenuIcon("dashboard", config.icons.dashboard),
       timeline: normalizeSidebarMenuIcon("timeline", config.icons.timeline),
+      dropout: normalizeSidebarMenuIcon("dropout", config.icons.dropout),
       generator: normalizeSidebarMenuIcon("generator", config.icons.generator),
       kpi: normalizeSidebarMenuIcon("kpi", config.icons.kpi),
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
@@ -149,6 +156,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
     labels: {
       dashboard: DEFAULT_PRIMARY_SIDEBAR_LABELS.dashboard,
       timeline: DEFAULT_PRIMARY_SIDEBAR_LABELS.timeline,
+      dropout: DEFAULT_PRIMARY_SIDEBAR_LABELS.dropout,
       generator: DEFAULT_PRIMARY_SIDEBAR_LABELS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_LABELS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
@@ -159,6 +167,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
     icons: {
       dashboard: DEFAULT_PRIMARY_SIDEBAR_ICONS.dashboard,
       timeline: DEFAULT_PRIMARY_SIDEBAR_ICONS.timeline,
+      dropout: DEFAULT_PRIMARY_SIDEBAR_ICONS.dropout,
       generator: DEFAULT_PRIMARY_SIDEBAR_ICONS.generator,
       kpi: DEFAULT_PRIMARY_SIDEBAR_ICONS.kpi,
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
@@ -192,6 +201,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
       timeline: normalizeSidebarMenuLabel(
         "timeline",
         typeof parsed.labels?.timeline === "string" ? parsed.labels.timeline : fallback.labels.timeline,
+      ),
+      dropout: normalizeSidebarMenuLabel(
+        "dropout",
+        typeof parsed.labels?.dropout === "string" ? parsed.labels.dropout : fallback.labels.dropout,
       ),
       generator: normalizeSidebarMenuLabel(
         "generator",
@@ -227,6 +240,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
       timeline: normalizeSidebarMenuIcon(
         "timeline",
         typeof parsed.icons?.timeline === "string" ? parsed.icons.timeline : fallback.icons.timeline,
+      ),
+      dropout: normalizeSidebarMenuIcon(
+        "dropout",
+        typeof parsed.icons?.dropout === "string" ? parsed.icons.dropout : fallback.icons.dropout,
       ),
       generator: normalizeSidebarMenuIcon(
         "generator",
@@ -271,7 +288,7 @@ export function getPrimarySidebarButtonByKey(navKey: PrimarySidebarNavKey): HTML
 // Section group definitions for sidebar nav
 const NAV_SECTION_GROUPS: { label: string; keys: PrimarySidebarNavKey[] }[] = [
   { label: "메인", keys: ["dashboard", "timeline"] },
-  { label: "HRD 운영", keys: ["generator", "kpi"] },
+  { label: "HRD 운영", keys: ["dropout", "generator", "kpi"] },
   { label: "훈련생 관리", keys: ["attendance", "analytics", "traineeHistory"] },
 ];
 

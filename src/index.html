@@ -61,6 +61,17 @@
           <button
             class="jibble-nav-item"
             type="button"
+            data-scroll-target="sectionDropout"
+            data-nav-key="dropout"
+            data-nav-icon="shield"
+            data-default-label="하차방어율"
+          >
+            <svg class="jibble-nav-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="jibble-nav-label">하차방어율</span>
+          </button>
+          <button
+            class="jibble-nav-item"
+            type="button"
             data-scroll-target="sectionScheduleGenerate"
             data-nav-key="generator"
             data-nav-icon="wrench"
@@ -973,18 +984,8 @@
 
           <!-- ═══════ 출결현황 대시보드 ═══════ -->
           <div class="card card-span-12 u-mt-14" id="sectionAttendance" data-page-group="attendance">
-            <!-- 출결현황 / 하차방어율 탭 스위처 -->
-            <div class="att-page-tabs">
-              <button class="att-page-tab active" id="attTabAttendance" type="button" data-att-page="attendance">
-                📋 출결현황
-              </button>
-              <button class="att-page-tab" id="attTabDropout" type="button" data-att-page="dropout">
-                🛡️ 하차방어율
-              </button>
-            </div>
-
             <!-- ═══ 출결현황 패널 ═══ -->
-            <div id="attPageAttendance" data-att-page-panel="attendance">
+            <div id="attPageAttendance">
               <div class="att-dashboard">
                 <!-- Header -->
                 <div class="att-header">
@@ -1190,8 +1191,11 @@
             </div>
             <!-- /attPageAttendance -->
 
-            <!-- ═══ 하차방어율 패널 ═══ -->
-            <div id="attPageDropout" data-att-page-panel="dropout" style="display: none">
+          </div>
+          <!-- /sectionAttendance -->
+
+          <!-- ═══ 하차방어율 (독립 페이지) ═══ -->
+          <div class="card card-span-12 u-mt-14" id="sectionDropout" data-page-group="dropout">
               <div class="do-dashboard">
                 <div class="do-header">
                   <h3>🛡️ 하차방어율 대시보드</h3>
@@ -1442,10 +1446,8 @@
                   </div>
                 </div>
               </div>
-            </div>
-            <!-- /attPageDropout -->
           </div>
-          <!-- /sectionAttendance -->
+          <!-- /sectionDropout -->
 
           <!-- ═══ 훈련생 분석 ═══ -->
           <div class="card card-span-12 u-mt-14" id="sectionAnalytics" data-page-group="analytics">

@@ -443,10 +443,6 @@ function applyAssistantMode(courseName: string, degr: string): void {
   const attNavBtn = document.querySelector('[data-nav-key="attendance"]') as HTMLElement | null;
   attNavBtn?.click();
 
-  // 하차방어율 탭 숨김
-  const dropoutTab = document.getElementById("attTabDropout");
-  if (dropoutTab) dropoutTab.style.display = "none";
-
   // 과정/기수 드롭다운 고정
   const session = getAssistantSession();
   if (session) {
@@ -2613,20 +2609,6 @@ initDashboard();
 initTraineeHistory();
 
 // ─── 출결현황 / 하차방어율 상위 탭 전환 ───
-(() => {
-  const pageTabs = document.querySelectorAll<HTMLButtonElement>("[data-att-page]");
-  const pagePanels = document.querySelectorAll<HTMLElement>("[data-att-page-panel]");
-  for (const tab of pageTabs) {
-    tab.addEventListener("click", () => {
-      const target = tab.dataset.attPage ?? "";
-      for (const t of pageTabs) t.classList.toggle("active", t === tab);
-      for (const p of pagePanels) {
-        p.style.display = p.dataset.attPagePanel === target ? "block" : "none";
-      }
-    });
-  }
-})();
-
 // ─── KPI 자율성과지표 Google Sheets 연동 ───
 (() => {
   let kpiData: KpiAllData | null = null;
