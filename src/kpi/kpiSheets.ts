@@ -16,7 +16,6 @@ import type {
   AchievementSummary,
   FormativeSummary,
   FieldAppSummary,
-  KPI_CONFIG_KEY as _,
 } from "./kpiTypes";
 import { KPI_CONFIG_KEY } from "./kpiTypes";
 

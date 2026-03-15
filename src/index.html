@@ -116,7 +116,7 @@
             <span class="jibble-nav-label">훈련생 이력</span>
           </button>
 
-          <div style="flex:1"></div>
+          <div class="nav-spacer" aria-hidden="true"></div>
           <button
             class="jibble-nav-item"
             type="button"
@@ -218,9 +218,9 @@
       >
         <div class="jibble-management-title">🧾 정보 입력</div>
         <div class="jibble-management-tabs" role="tablist" aria-label="정보 입력 분류">
-          <button id="jibbleSubCourse" class="jibble-management-tab is-active" type="button">과정 관리</button>
-          <button id="jibbleSubSubject" class="jibble-management-tab" type="button">교과목 관리</button>
-          <button id="jibbleSubInstructor" class="jibble-management-tab" type="button">강사 관리</button>
+          <button id="jibbleSubCourse" class="jibble-management-tab is-active" type="button" role="tab" aria-selected="true">과정 관리</button>
+          <button id="jibbleSubSubject" class="jibble-management-tab" type="button" role="tab" aria-selected="false">교과목 관리</button>
+          <button id="jibbleSubInstructor" class="jibble-management-tab" type="button" role="tab" aria-selected="false">강사 관리</button>
         </div>
       </section>
 

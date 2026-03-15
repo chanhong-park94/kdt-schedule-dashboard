@@ -2822,6 +2822,7 @@ tbody tr:hover {
   opacity: 1;
 }
 
+.nav-spacer { flex: 1; }
 .app-shell--jibble .jibble-nav-item.is-active {
   background: var(--sidebar-active-bg);
   color: var(--sidebar-text-active);
@@ -5001,6 +5002,21 @@ tbody tr:hover {
 .do-diff-minus {
   color: #dc2626;
 }
+
+/* Dropout Table — subtotal / total rows */
+.do-subtotal-row { background: rgba(255,255,255,0.04); font-weight: 700; }
+.do-subtotal-row td:first-child { text-align: right; color: var(--text-muted); }
+.do-total-row { background: rgba(255,255,255,0.08); font-weight: 800; }
+.do-total-row td:first-child { text-align: right; color: var(--text-strong); }
+.do-empty-msg { text-align: center; color: var(--text-muted); }
+
+/* Trainee History — status & stat colors */
+.th-status-dropout { background: rgba(220,38,38,0.1); color: #f87171; }
+.th-status-complete { background: rgba(16,185,129,0.1); color: #34d399; }
+.th-status-active { background: rgba(59,130,246,0.1); color: #60a5fa; }
+.th-stat-good { color: #10b981; }
+.th-stat-warn { color: #f59e0b; }
+.th-stat-danger { color: #ef4444; }
 
 /* Dropout Detail Panel Header */
 .do-panel-header {

@@ -106,7 +106,7 @@ const COLORS = {
   phase2: "rgba(99, 102, 241, 0.8)",
 };
 
-function renderCharts(ach: AchievementRecord[], frm: FormativeRecord[], fa: FieldAppRecord[], data: KpiAllData): void {
+function renderCharts(ach: AchievementRecord[], frm: FormativeRecord[], fa: FieldAppRecord[], _data: KpiAllData): void {
   renderAchievementChart(ach);
   renderGradeDistribution(
     "kpiChartGradePre",
@@ -166,7 +166,7 @@ function renderAchievementChart(ach: AchievementRecord[]): void {
   });
 }
 
-function renderGradeDistribution(canvasId: string, grades: string[], title: string): void {
+function renderGradeDistribution(canvasId: string, grades: string[], _title: string): void {
   destroyChart(canvasId);
   const ctx = getCtx(canvasId);
   if (!ctx) return;
@@ -328,7 +328,7 @@ function gradeClass(grade: string): string {
   return `kpi-grade kpi-grade-${grade}`;
 }
 
-function renderSummaryTable(data: KpiAllData, course: string, cohort: string): void {
+function renderSummaryTable(data: KpiAllData, course: string, _cohort: string): void {
   const el = document.getElementById("kpiTableSummary");
   if (!el) return;
 

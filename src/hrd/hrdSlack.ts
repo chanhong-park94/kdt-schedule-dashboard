@@ -1,6 +1,6 @@
 /** HRD 출결 관리대상 Slack 리포트 전송 모듈 */
 import { loadHrdConfig } from "./hrdConfig";
-import type { AttendanceStudent, RiskLevel, SlackScheduleConfig, DEFAULT_SLACK_SCHEDULE as _ } from "./hrdTypes";
+import type { AttendanceStudent, RiskLevel } from "./hrdTypes";
 import { DEFAULT_SLACK_SCHEDULE } from "./hrdTypes";
 
 const CORS_PROXIES = [
@@ -11,7 +11,7 @@ const CORS_PROXIES = [
 
 // ─── Slack Message Builder ───────────────────────────────────
 
-function getRiskEmoji(level: RiskLevel): string {
+function _getRiskEmoji(level: RiskLevel): string {
   switch (level) {
     case "danger":
       return "🔴";

@@ -15,7 +15,6 @@ import type {
   RiskLevel,
   WeeklyTrend,
   DayPattern,
-  AttendanceViewMode,
   SlackScheduleConfig,
 } from "./hrdTypes";
 import {
@@ -712,8 +711,8 @@ async function renderHrdSettingsSection(): Promise<void> {
     let allAsstCodes: Awaited<ReturnType<typeof loadAssistantCodes>> = [];
     try {
       allAsstCodes = await loadAssistantCodes();
-    } catch {
-      // Supabase 미설정 시 빈 배열
+    } catch (err) {
+      console.warn("[Attendance] 보조강사 코드 로드 실패:", err);
     }
 
     courseList.innerHTML =
@@ -786,7 +785,7 @@ async function renderHrdSettingsSection(): Promise<void> {
         if (code) {
           try {
             await removeAssistantCode(code);
-          } catch { /* ignore */ }
+          } catch (err) { console.warn("[Attendance] 보조강사 코드 삭제 실패:", err); }
           void renderHrdSettingsSection();
         }
       });
@@ -1065,8 +1064,8 @@ function setupSettingsHandlers(): void {
           course.degrs = newDegrs;
           updated = true;
         }
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.warn(`[Attendance] ${course.name} 기수 탐색 실패:`, err);
       }
     }
 

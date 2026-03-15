@@ -4,7 +4,6 @@ import { fetchRoster } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import type {
   HrdConfig,
-  HrdCourse,
   HrdRawTrainee,
   DropoutRosterEntry,
   DropoutSummary,
@@ -111,8 +110,8 @@ async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => 
             defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
             startDate: course.startDate || "",
           });
-        } catch {
-          // skip failed
+        } catch (err) {
+          console.warn(`[Dropout] ${course.name} ${degr}기 조회 실패:`, err);
         }
         done++;
         onProgress?.(`${done}/${total} 조회 중... (${course.name} ${degr}기)`);
@@ -212,8 +211,8 @@ function renderSubtotalRow(label: string, entries: DropoutRosterEntry[], colSpan
   const target = getTargetRate(mainCat);
   const diff = summary.defenseRate - target;
   const diffLabel = diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
-  return `<tr style="background:#f1f5f9;font-weight:700;">
-    <td colspan="${colSpan}" style="text-align:right;color:#475569;">${label} 소계</td>
+  return `<tr class="do-subtotal-row">
+    <td colspan="${colSpan}">${label} 소계</td>
     <td>${summary.total}</td>
     <td>${summary.dropout}</td>
     <td>${summary.active}</td>
@@ -385,8 +384,8 @@ function renderCategoryDetailTable(category: CourseCategory): void {
   const rateClass = rateClassByTarget(overallSummary.defenseRate, category);
   const diff = overallSummary.defenseRate - target;
   const diffLabel = diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
-  html += `<tr style="background:#e2e8f0;font-weight:800;">
-    <td colspan="3" style="text-align:right;color:#1e293b;">${category} 전체</td>
+  html += `<tr class="do-total-row">
+    <td colspan="3">${category} 전체</td>
     <td>${overallSummary.total}</td>
     <td>${overallSummary.dropout}</td>
     <td>${overallSummary.active}</td>
@@ -474,7 +473,7 @@ function renderWeeklyTable(): void {
   // 주간 파싱
   const m = weekVal.match(/(\d{4})-W(\d{2})/);
   if (!m) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#6b7280;">주간을 선택해주세요.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="do-empty-msg">주간을 선택해주세요.</td></tr>';
     return;
   }
   const targetYear = parseInt(m[1]);
@@ -492,7 +491,7 @@ function renderWeeklyTable(): void {
   tbody.innerHTML =
     sorted.length > 0
       ? sorted.map((e) => renderDetailRow(e, true)).join("") + renderSubtotalRow("주간 소계", filtered, 4)
-      : `<tr><td colspan="10" style="text-align:center;color:#6b7280;">해당 주간에 개강한 과정이 없습니다.</td></tr>`;
+      : `<tr><td colspan="10" class="do-empty-msg">해당 주간에 개강한 과정이 없습니다.</td></tr>`;
 
   if (statusEl) {
     statusEl.textContent = `${filtered.length}개 기수 표시 (${targetYear}년 ${targetWeek}주차)`;

@@ -42,10 +42,10 @@ function riskBadgeHtml(level: string): string {
 }
 
 function statusBadgeHtml(status: string): string {
-  const color = status.includes("중도탈락") || status.includes("조기취업") || status.includes("수료포기")
-    ? "#dc2626"
-    : status.includes("수료") ? "#10b981" : "#3b82f6";
-  return `<span class="th-detail-badge" style="background:${color}15;color:${color}">${status}</span>`;
+  const cls = status.includes("중도탈락") || status.includes("조기취업") || status.includes("수료포기")
+    ? "th-status-dropout"
+    : status.includes("수료") ? "th-status-complete" : "th-status-active";
+  return `<span class="th-detail-badge ${cls}">${status}</span>`;
 }
 
 // ─── Filter Bar ─────────────────────────────────────────
@@ -201,8 +201,6 @@ async function showTraineeDetail(
       return n === name;
     });
     const stNm = trainee ? (trainee.trneeSttusNm || trainee.atendSttsNm || trainee.stttsCdNm || "").toString().trim() || "훈련중" : "훈련중";
-    const dropout = trainee ? isDropout(trainee) : false;
-
     // 출결 데이터 (최근 6개월)
     const now = new Date();
     const months: string[] = [];
@@ -295,7 +293,7 @@ async function showTraineeDetail(
 
       <div class="th-stat-cards">
         <div class="th-stat-card">
-          <div class="th-stat-value" style="color:${attendanceRate >= 80 ? "#10b981" : attendanceRate >= 70 ? "#f59e0b" : "#ef4444"}">
+          <div class="th-stat-value ${attendanceRate >= 80 ? "th-stat-good" : attendanceRate >= 70 ? "th-stat-warn" : "th-stat-danger"}">
             ${attendanceRate >= 0 ? attendanceRate.toFixed(1) + "%" : "-"}
           </div>
           <div class="th-stat-label">출석률</div>
@@ -305,7 +303,7 @@ async function showTraineeDetail(
           <div class="th-stat-label">결석 / 최대허용</div>
         </div>
         <div class="th-stat-card">
-          <div class="th-stat-value" style="color:${remainingAbsent <= 0 ? "#ef4444" : remainingAbsent <= 2 ? "#f59e0b" : "#10b981"}">
+          <div class="th-stat-value ${remainingAbsent <= 0 ? "th-stat-danger" : remainingAbsent <= 2 ? "th-stat-warn" : "th-stat-good"}">
             ${remainingAbsent}일
           </div>
           <div class="th-stat-label">잔여 허용 결석</div>

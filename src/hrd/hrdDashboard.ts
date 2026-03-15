@@ -4,7 +4,7 @@ import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import type { HrdConfig, HrdCourse, HrdRawTrainee, HrdRawAttendance, CourseCategory } from "./hrdTypes";
+import type { HrdConfig, HrdRawAttendance, CourseCategory } from "./hrdTypes";
 
 Chart.register(...registerables);
 
@@ -77,10 +77,6 @@ function resolveStatusStr(raw: HrdRawAttendance): string {
   return (raw.atendSttusNm || raw.atendSttusCd || "").toString().trim();
 }
 
-function isLateStatus(s: string): boolean {
-  return s.includes("지각");
-}
-
 // ─── Data Fetch ─────────────────────────────────────────
 async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) => void): Promise<{
   courseData: DashCourseData[];
@@ -127,7 +123,7 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
             try {
               const records = await fetchDailyAttendance(config, course.trainPrId, degr, month);
               allAttendance.push(...records);
-            } catch { /* skip */ }
+            } catch (err) { console.warn(`[Dashboard] ${month} 출결 조회 실패:`, err); }
           }
 
           for (const raw of roster) {
@@ -168,7 +164,7 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
               riskLevel: getRiskLevel(remainingAbsent, td),
             });
           }
-        } catch { /* skip failed */ }
+        } catch (err) { console.warn("[Dashboard] 과정 데이터 조회 실패:", err); }
 
         done++;
         onProgress?.(`${done}/${totalDegrs} 조회 중...`);
@@ -199,8 +195,6 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
   const unempDropout = unempEntries.reduce((s, c) => s + c.dropout, 0);
   const unempRate = unempTotal > 0 ? ((unempTotal - unempDropout) / unempTotal) * 100 : 0;
 
-  const defTone = defenseAll >= 80 ? "good" : defenseAll >= 70 ? "warn" : "bad";
-
   // === Card 2: 관리 인사이트 ===
   const activeTrainees = trainees.filter((t) => !t.isDropout);
   const dangerCount = activeTrainees.filter((t) => t.riskLevel === "danger").length;
@@ -210,8 +204,6 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
 
   // === Card 3: 관리대상 현황 ===
   const riskTotal = dangerCount + warningCount + cautionCount;
-  const riskTone = dangerCount > 0 ? "bad" : warningCount > 0 ? "warn" : "good";
-
   const activeCount = totalAll - totalDropout;
 
   container.innerHTML = `

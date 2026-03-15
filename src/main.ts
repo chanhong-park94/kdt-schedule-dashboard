@@ -1,4 +1,10 @@
 import "./style.css";
+
+declare global {
+  interface Window {
+    __kpiAllData: KpiAllData | null;
+  }
+}
 import { findAssistantCode, getAssistantSession, setAssistantSession, clearAssistantSession } from "./auth/assistantAuth";
 import { initAttendanceDashboard } from "./hrd/hrdAttendance";
 import { initAnalytics } from "./hrd/hrdAnalytics";
@@ -1448,13 +1454,8 @@ async function computeConflicts(): Promise<void> {
     console.warn(`[conflict-calc] 세션 수가 많습니다: ${appState.sessions.length}건`);
   }
 
-  console.time("conflict-calc");
-  try {
-    appState.allConflicts = detectConflicts(appState.sessions, { resourceTypes: ["INSTRUCTOR"] });
-    appState.hasComputedConflicts = true;
-  } finally {
-    console.timeEnd("conflict-calc");
-  }
+  appState.allConflicts = detectConflicts(appState.sessions, { resourceTypes: ["INSTRUCTOR"] });
+  appState.hasComputedConflicts = true;
 
   appState.isConflictComputing = false;
   computeConflictsButton.textContent = RECOMPUTE_LABEL;
@@ -2710,7 +2711,7 @@ initTraineeHistory();
   // 초기화
   document.getElementById("kpiClearBtn")?.addEventListener("click", () => {
     kpiData = null;
-    (window as any).__kpiAllData = null;
+    window.__kpiAllData = null;
     resetKpiDashboard();
     if (statusEl) statusEl.textContent = "";
   });
@@ -2729,7 +2730,7 @@ initTraineeHistory();
   async function loadKpiDataAndRender(config: KpiConfig) {
     try {
       kpiData = await fetchKpiData(config);
-      (window as any).__kpiAllData = kpiData;
+      window.__kpiAllData = kpiData;
       populateFilters(kpiData);
       renderKpiDashboard(kpiData);
       if (statusEl) statusEl.textContent = `✅ ${kpiData.achievement.length}명 학습자 데이터 로드 완료`;
@@ -2761,7 +2762,7 @@ import { printWeeklyOpsReport, checkDataAvailability, getWeekLabel } from "./rep
   function updateDataStatus(): void {
     if (!dataStatusEl) return;
     const avail = checkDataAvailability();
-    const kpiLoaded = (window as any).__kpiAllData != null;
+    const kpiLoaded = window.__kpiAllData != null;
     const indicator = (ok: boolean, label: string) =>
       `<div class="weekly-report-indicator ${ok ? "is-ok" : "is-missing"}">${ok ? "✅" : "⚠️"} ${label} ${ok ? "준비됨" : "없음"}</div>`;
     dataStatusEl.innerHTML = [
@@ -2789,7 +2790,7 @@ import { printWeeklyOpsReport, checkDataAvailability, getWeekLabel } from "./rep
       return;
     }
     if (statusEl) statusEl.textContent = "보고팩 생성 중...";
-    printWeeklyOpsReport(config, (window as any).__kpiAllData ?? null);
+    printWeeklyOpsReport(config, window.__kpiAllData ?? null);
     if (statusEl) statusEl.textContent = `✅ 보고팩 생성 완료 (${new Date().toLocaleTimeString()})`;
   });
 })();

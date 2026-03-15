@@ -15,7 +15,7 @@ const BUILTIN_PROXIES: ProxyEntry[] = [
   { prefix: "https://api.allorigins.win/raw?url=", encode: true },
 ];
 
-let activeProxyIndex = 0;
+let _activeProxyIndex = 0;
 
 // ─── 프록시 fetch 래퍼 ──────────────────────────────────────
 
@@ -45,7 +45,7 @@ async function proxyFetch(rawUrl: string, config: HrdConfig, label: string): Pro
   for (let i = 0; i < BUILTIN_PROXIES.length; i++) {
     try {
       const r = await tryOne(BUILTIN_PROXIES[i]);
-      activeProxyIndex = i;
+      _activeProxyIndex = i;
       return r.json();
     } catch (e) {
       lastErr = e instanceof Error ? e : new Error(String(e));

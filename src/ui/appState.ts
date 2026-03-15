@@ -1,11 +1,9 @@
 import { getTodayIsoDate } from "./utils/date";
 import {
-  AssigneeSummary,
   CohortSummary,
   Conflict,
   GenerateScheduleResult,
   ParseError,
-  Phase,
   ResourceType,
   Session,
   SkippedDay,

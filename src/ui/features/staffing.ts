@@ -10,7 +10,6 @@ import { exportWithMapping, type ExportFormatKey } from "../../core/exportMappin
 import { validateRecordsForFormat } from "../../core/exportValidation";
 import { type InternalV7ERecord } from "../../core/schema";
 import {
-  type AssigneeSummary,
   type Phase,
   type ResourceType,
   type StaffAssignment,

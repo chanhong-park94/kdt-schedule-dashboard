@@ -238,7 +238,7 @@ async function checkAndSend(): Promise<void> {
 
   // ─── 자동 전송 시작 ─────
   emitStatus("⏳ 자동 알림 전송 중...", "info");
-  console.log(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
+  console.warn(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
 
   // 대상 과정 결정
   const courses = config.courses.filter((c) => {
@@ -263,7 +263,7 @@ async function checkAndSend(): Promise<void> {
       // 재직자: 화~토 → 월요일 아침에 토요일 데이터
       const reportDate = await findLastClassDay(course.category);
       if (!reportDate) {
-        console.log(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
+        console.warn(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
         continue;
       }
 
@@ -285,7 +285,7 @@ async function checkAndSend(): Promise<void> {
 
       await sendSlackReportDirect(webhookUrl, course.name, latestDegr, reportDate, students, defenseRate);
       sentCount++;
-      console.log(
+      console.warn(
         `[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결, ${course.category || "실업자"})`,
       );
     } catch (e) {
@@ -356,7 +356,7 @@ export function startScheduler(onStatus?: (msg: string, type: "info" | "success"
     console.error("[Scheduler] Initial check error:", e);
   });
 
-  console.log("[Scheduler] Started — checking every 60s");
+  console.warn("[Scheduler] Started — checking every 60s");
 }
 
 /**
@@ -366,7 +366,7 @@ export function stopScheduler(): void {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
-    console.log("[Scheduler] Stopped");
+    console.warn("[Scheduler] Stopped");
   }
 }
 

@@ -1,6 +1,6 @@
 const CONTROL_CHAR_PATTERN = /[\u0000-\u001f\u007f]/g;
 const SPACE_PATTERN = /\s+/g;
-const BRACKET_PATTERN = /[()\[\]{}]/g;
+const BRACKET_PATTERN = /[()[\]{}]/g;
 const SEPARATOR_PATTERN = /[-_/\\|:;,.]+/g;
 
 function normalizeCode(raw: string): string {

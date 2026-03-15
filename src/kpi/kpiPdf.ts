@@ -6,7 +6,7 @@
  * window.print()를 사용하여 별도 의존성 없이 PDF 저장을 지원합니다.
  */
 import type { KpiAllData, AchievementRecord, FormativeRecord, FieldAppRecord } from "./kpiTypes";
-import { Chart, registerables } from "chart.js";
+import { Chart, registerables, type ChartConfiguration } from "chart.js";
 
 Chart.register(...registerables);
 
@@ -44,7 +44,7 @@ function createOffscreenCanvas(w: number, h: number): HTMLCanvasElement {
   return canvas;
 }
 
-function chartToBase64(canvas: HTMLCanvasElement, config: any): string {
+function chartToBase64(canvas: HTMLCanvasElement, config: ChartConfiguration): string {
   const ctx = canvas.getContext("2d")!;
   const chart = new Chart(ctx, { ...config, options: { ...config.options, animation: false, responsive: false } });
   const img = chart.toBase64Image("image/png", 1);

@@ -21,7 +21,7 @@ function fmtNum(n: number): string {
 }
 
 /** 리스크 수준별 CSS 색상 */
-function riskColor(level: string): string {
+function _riskColor(level: string): string {
   switch (level) {
     case "danger":
       return "#dc2626";
@@ -366,7 +366,7 @@ function buildHeader(config: WeeklyOpsReportConfig, diagnostics: DataDiagnostics
 </div>`;
 }
 
-function buildFooter(config: WeeklyOpsReportConfig): string {
+function buildFooter(_config: WeeklyOpsReportConfig): string {
   const now = new Date();
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
   return `
@@ -380,7 +380,7 @@ function buildFooter(config: WeeklyOpsReportConfig): string {
 
 // ─── Page 3: 출결·관리대상 현황 ──────────────────────────────
 
-function buildPage3Html(data: Page3AttendanceData, config: WeeklyOpsReportConfig): string {
+function buildPage3Html(data: Page3AttendanceData, _config: WeeklyOpsReportConfig): string {
   const m = data.metrics;
 
   // Metric cards
@@ -541,7 +541,7 @@ function buildPage3Html(data: Page3AttendanceData, config: WeeklyOpsReportConfig
 
 // ─── Page 4: 하차방어율·조기경보 ─────────────────────────────
 
-function buildPage4Html(data: Page4DropoutData, config: WeeklyOpsReportConfig): string {
+function buildPage4Html(data: Page4DropoutData, _config: WeeklyOpsReportConfig): string {
   // Build metric cards
   const overallClass = data.overallDefenseRate >= 90 ? "success" : data.overallDefenseRate >= 80 ? "warning" : "danger";
 
@@ -699,7 +699,7 @@ function buildPage4Html(data: Page4DropoutData, config: WeeklyOpsReportConfig): 
 
 // ─── Page 5: 학습 품질·성과 ──────────────────────────────────
 
-function buildPage5Html(data: Page5KpiData, config: WeeklyOpsReportConfig): string {
+function buildPage5Html(data: Page5KpiData, _config: WeeklyOpsReportConfig): string {
   const m = data.metrics;
 
   const cards = `

@@ -9,7 +9,7 @@ import { loadHrdConfig } from "./hrdConfig";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse } from "./hrdTypes";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import type { TraineeAnalysis, AnalyticsSummary, InsightCard, AgeGroup } from "./hrdAnalyticsTypes";
+import type { TraineeAnalysis, AnalyticsSummary, InsightCard } from "./hrdAnalyticsTypes";
 import { getAgeGroup } from "./hrdAnalyticsTypes";
 
 Chart.register(...registerables);
@@ -317,8 +317,8 @@ async function fetchAllMonthlyAttendance(
     try {
       const records = await fetchDailyAttendance(config, course.trainPrId, degr, monthStr);
       all.push(...records);
-    } catch {
-      // skip failed month
+    } catch (err) {
+      console.warn(`[Analytics] ${monthStr} 출결 조회 실패:`, err);
     }
   }
   return all;

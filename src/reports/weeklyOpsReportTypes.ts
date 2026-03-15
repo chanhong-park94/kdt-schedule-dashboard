@@ -1,7 +1,5 @@
 /** 주간 운영회의 보고팩 타입 정의 */
-import type { AttendanceStudent, CourseCategory, DropoutRosterEntry } from "../hrd/hrdTypes";
-import type { TraineeAnalysis } from "../hrd/hrdAnalyticsTypes";
-import type { KpiAllData, AchievementSummary, FormativeSummary, FieldAppSummary } from "../kpi/kpiTypes";
+import type { CourseCategory } from "../hrd/hrdTypes";
 
 // ─── Report Config ──────────────────────────────────────────
 export interface WeeklyOpsReportConfig {
