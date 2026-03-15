@@ -212,32 +212,41 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
   const riskTotal = dangerCount + warningCount + cautionCount;
   const riskTone = dangerCount > 0 ? "bad" : warningCount > 0 ? "warn" : "good";
 
+  const activeCount = totalAll - totalDropout;
+
   container.innerHTML = `
-    <div class="dash-kpi-card dash-kpi-${defTone}">
-      <div class="dash-kpi-label">하차방어율 (훈련중 과정)</div>
-      <div class="dash-kpi-value">${defenseAll.toFixed(1)}%</div>
-      <div class="dash-kpi-sub">
-        <span>재직자 ${empRate.toFixed(1)}% (목표 ${KPI_TARGET.employed}%)</span>
-        <span>실업자 ${unempRate.toFixed(1)}% (목표 ${KPI_TARGET.unemployed}%)</span>
+    <div class="dash-kpi-card dash-kpi-gradient-1">
+      <div class="dash-kpi-icon">📊</div>
+      <div class="dash-kpi-body">
+        <div class="dash-kpi-label">하차방어율</div>
+        <div class="dash-kpi-value">${defenseAll.toFixed(1)}%</div>
+      </div>
+      <div class="dash-kpi-footer">
+        <span>재직자 ${empRate.toFixed(1)}%</span>
+        <span>실업자 ${unempRate.toFixed(1)}%</span>
       </div>
     </div>
-    <div class="dash-kpi-card dash-kpi-info">
-      <div class="dash-kpi-label">관리 인사이트</div>
-      <div class="dash-kpi-value">${totalDropout}명 이탈</div>
-      <ul class="dash-insight-list">
-        ${dangerCount > 0 ? `<li class="dash-insight-item"><span class="dash-insight-dot dot-red"></span>제적 위험 ${dangerCount}명</li>` : ""}
-        ${warningCount > 0 ? `<li class="dash-insight-item"><span class="dash-insight-dot dot-amber"></span>경고 대상 ${warningCount}명</li>` : ""}
-        ${cautionCount > 0 ? `<li class="dash-insight-item"><span class="dash-insight-dot dot-blue"></span>주의 대상 ${cautionCount}명</li>` : ""}
-        <li class="dash-insight-item"><span class="dash-insight-dot dot-green"></span>전체 ${totalAll}명 중 재적 ${totalAll - totalDropout}명</li>
-      </ul>
+    <div class="dash-kpi-card dash-kpi-gradient-2">
+      <div class="dash-kpi-icon">👥</div>
+      <div class="dash-kpi-body">
+        <div class="dash-kpi-label">재적 현황</div>
+        <div class="dash-kpi-value">${activeCount}명 <small class="dash-kpi-total">/ ${totalAll}</small></div>
+      </div>
+      <div class="dash-kpi-footer">
+        <span>이탈 ${totalDropout}명</span>
+        <span>재적률 ${totalAll > 0 ? ((activeCount / totalAll) * 100).toFixed(0) : 0}%</span>
+      </div>
     </div>
-    <div class="dash-kpi-card dash-kpi-${riskTone}">
-      <div class="dash-kpi-label">관리대상 현황</div>
-      <div class="dash-kpi-value">${riskTotal}명</div>
-      <div class="dash-kpi-sub">
-        <span style="color:#dc2626">제적위험 ${dangerCount}</span>
-        <span style="color:#d97706">경고 ${warningCount}</span>
-        <span style="color:#ca8a04">주의 ${cautionCount}</span>
+    <div class="dash-kpi-card dash-kpi-gradient-3">
+      <div class="dash-kpi-icon">⚠️</div>
+      <div class="dash-kpi-body">
+        <div class="dash-kpi-label">관리대상</div>
+        <div class="dash-kpi-value">${riskTotal}명</div>
+      </div>
+      <div class="dash-kpi-footer">
+        <span class="dash-kpi-risk-tag risk-danger">제적위험 ${dangerCount}</span>
+        <span class="dash-kpi-risk-tag risk-warning">경고 ${warningCount}</span>
+        <span class="dash-kpi-risk-tag risk-caution">주의 ${cautionCount}</span>
       </div>
     </div>
   `;
@@ -263,28 +272,31 @@ function renderRiskStudentList(trainees: DashTrainee[]): void {
     level === "danger" ? "제적위험" : level === "warning" ? "경고" : "주의";
 
   container.innerHTML = `
-    <h3 class="dash-section-title">관리대상 학생 목록 (${riskStudents.length}명)</h3>
-    <table class="dash-risk-table">
-      <thead><tr>
-        <th>과정</th><th>기수</th><th>이름</th><th>출석률</th><th>결석/허용</th><th>잔여</th><th>위험등급</th>
-      </tr></thead>
-      <tbody>
+    <div class="dash-panel">
+      <div class="dash-panel-header">
+        <h3 class="dash-panel-title">관리대상 학생</h3>
+        <span class="dash-panel-count">${riskStudents.length}명</span>
+      </div>
+      <div class="dash-risk-list">
         ${riskStudents
           .map(
             (s) => `
-          <tr>
-            <td>${s.courseName}</td>
-            <td>${s.degr}기</td>
-            <td><span class="dash-risk-name" data-name="${s.name}" data-course="${s.courseName}" data-tpid="${s.trainPrId}" data-degr="${s.degr}">${s.name}</span></td>
-            <td>${s.attendanceRate >= 0 ? s.attendanceRate.toFixed(1) + "%" : "-"}</td>
-            <td>${s.absentDays} / ${s.maxAbsent}</td>
-            <td>${s.remainingAbsent}</td>
-            <td><span class="dash-risk-badge ${badgeClass(s.riskLevel)}">${badgeLabel(s.riskLevel)}</span></td>
-          </tr>`,
+          <div class="dash-risk-row">
+            <div class="dash-risk-indicator ${s.riskLevel}"></div>
+            <div class="dash-risk-info">
+              <span class="dash-risk-name" data-name="${s.name}" data-course="${s.courseName}" data-tpid="${s.trainPrId}" data-degr="${s.degr}">${s.name}</span>
+              <span class="dash-risk-course">${s.courseName} · ${s.degr}기</span>
+            </div>
+            <div class="dash-risk-stats">
+              <span class="dash-risk-stat">출석 ${s.attendanceRate >= 0 ? s.attendanceRate.toFixed(1) + "%" : "-"}</span>
+              <span class="dash-risk-stat">결석 ${s.absentDays}/${s.maxAbsent}</span>
+            </div>
+            <span class="dash-risk-badge ${badgeClass(s.riskLevel)}">${badgeLabel(s.riskLevel)}</span>
+          </div>`,
           )
           .join("")}
-      </tbody>
-    </table>
+      </div>
+    </div>
   `;
 
   // 이름 클릭 이벤트
@@ -335,15 +347,18 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
   });
 
   container.innerHTML = `
-    <h3 class="dash-section-title">과정별 비교 분석</h3>
     <div class="dash-chart-grid">
-      <div class="dash-chart-box">
-        <h4>과정별 하차방어율</h4>
-        <canvas id="dashChartDefense"></canvas>
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <h3 class="dash-panel-title">과정별 하차방어율</h3>
+        </div>
+        <div class="dash-chart-canvas-wrap"><canvas id="dashChartDefense"></canvas></div>
       </div>
-      <div class="dash-chart-box">
-        <h4>과정별 위험학생 비율</h4>
-        <canvas id="dashChartRisk"></canvas>
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <h3 class="dash-panel-title">과정별 위험학생 비율</h3>
+        </div>
+        <div class="dash-chart-canvas-wrap"><canvas id="dashChartRisk"></canvas></div>
       </div>
     </div>
   `;
@@ -378,8 +393,11 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
-        scales: { x: { min: 0, max: 100, title: { display: true, text: "%" } } },
-        plugins: { legend: { display: true, position: "bottom" } },
+        scales: {
+          x: { min: 0, max: 100, title: { display: true, text: "%", color: "#a1a1a9" }, ticks: { color: "#a1a1a9" }, grid: { color: "rgba(255,255,255,0.06)" } },
+          y: { ticks: { color: "#a1a1a9" }, grid: { display: false } },
+        },
+        plugins: { legend: { display: true, position: "bottom", labels: { color: "#a1a1a9", padding: 16, usePointStyle: true } } },
       },
     });
     chartInstances.push(chart1);
@@ -403,7 +421,10 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
-        scales: { x: { min: 0, title: { display: true, text: "%" } } },
+        scales: {
+          x: { min: 0, title: { display: true, text: "%", color: "#a1a1a9" }, ticks: { color: "#a1a1a9" }, grid: { color: "rgba(255,255,255,0.06)" } },
+          y: { ticks: { color: "#a1a1a9" }, grid: { display: false } },
+        },
         plugins: { legend: { display: false } },
       },
     });

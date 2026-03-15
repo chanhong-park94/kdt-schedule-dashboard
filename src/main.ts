@@ -2566,6 +2566,8 @@ appState.sidebarMenuConfig = normalizeSidebarMenuConfig(appState.sidebarMenuConf
 appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
 applySidebarMenuConfigToSidebar(appState.sidebarMenuConfig);
 renderSidebarMenuConfigEditor();
+
+// Dark mode is always on — set via data-theme="dark" in HTML
 menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();

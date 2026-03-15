@@ -268,28 +268,92 @@ export function getPrimarySidebarButtonByKey(navKey: PrimarySidebarNavKey): HTML
   return domRefs.jibblePrimaryNavButtons.find((button) => button.dataset.navKey?.trim() === navKey);
 }
 
+// Section group definitions for sidebar nav
+const NAV_SECTION_GROUPS: { label: string; keys: PrimarySidebarNavKey[] }[] = [
+  { label: "메인", keys: ["dashboard", "timeline"] },
+  { label: "HRD 운영", keys: ["generator", "kpi"] },
+  { label: "훈련생 관리", keys: ["attendance", "analytics", "traineeHistory"] },
+];
+
+// Cache original SVG innerHTML per nav-key so we can restore default icons
+const originalIconHTML = new Map<string, string>();
+
+function cacheOriginalIcons(): void {
+  if (originalIconHTML.size > 0) return;
+  for (const navKey of PRIMARY_SIDEBAR_NAV_KEYS) {
+    const button = getPrimarySidebarButtonByKey(navKey);
+    if (!button) continue;
+    const iconEl = button.querySelector<HTMLElement>(".jibble-nav-icon");
+    if (iconEl) {
+      originalIconHTML.set(navKey, iconEl.innerHTML);
+    }
+  }
+}
+
 export function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void {
   const jibbleMainNav = domRefs.jibbleMainNav;
+
+  // Cache original SVG icons on first run
+  cacheOriginalIcons();
+
   if (jibbleMainNav) {
-    for (const navKey of config.order) {
-      const button = getPrimarySidebarButtonByKey(navKey);
-      if (button) {
-        jibbleMainNav.appendChild(button);
+    // Remove all existing section labels and the flex spacer
+    jibbleMainNav.querySelectorAll(".nav-section-label, [style*='flex:1'], [style*='flex: 1']").forEach((el) => el.remove());
+
+    // Build a lookup: navKey → section label
+    const keyToSection = new Map<PrimarySidebarNavKey, string>();
+    for (const group of NAV_SECTION_GROUPS) {
+      for (const key of group.keys) {
+        keyToSection.set(key, group.label);
       }
+    }
+
+    // Re-append buttons in configured order, inserting section labels at group boundaries
+    let lastSection = "";
+    const settingsButton = getPrimarySidebarButtonByKey("settings");
+
+    for (const navKey of config.order) {
+      if (navKey === "settings") continue; // settings goes at the bottom
+      const button = getPrimarySidebarButtonByKey(navKey);
+      if (!button) continue;
+
+      const section = keyToSection.get(navKey) ?? "";
+      if (section && section !== lastSection) {
+        const label = document.createElement("div");
+        label.className = "nav-section-label";
+        label.textContent = section;
+        jibbleMainNav.appendChild(label);
+        lastSection = section;
+      }
+      jibbleMainNav.appendChild(button);
+    }
+
+    // Add flex spacer and settings button at bottom
+    const spacer = document.createElement("div");
+    spacer.style.flex = "1";
+    jibbleMainNav.appendChild(spacer);
+    if (settingsButton) {
+      jibbleMainNav.appendChild(settingsButton);
     }
   }
 
   for (const navKey of PRIMARY_SIDEBAR_NAV_KEYS) {
     const button = getPrimarySidebarButtonByKey(navKey);
-    if (!button) {
-      continue;
-    }
+    if (!button) continue;
 
+    // Update icon: restore original SVG if using default, otherwise set custom text
     const iconElement = button.querySelector<HTMLElement>(".jibble-nav-icon");
     const icon = normalizeSidebarMenuIcon(navKey, config.icons[navKey]);
     button.dataset.navIcon = icon;
     if (iconElement) {
-      iconElement.textContent = icon;
+      const defaultIcon = DEFAULT_PRIMARY_SIDEBAR_ICONS[navKey];
+      if (icon === defaultIcon && originalIconHTML.has(navKey)) {
+        // Restore original SVG icon
+        iconElement.innerHTML = originalIconHTML.get(navKey)!;
+      } else {
+        // Custom icon (emoji etc.)
+        iconElement.textContent = icon;
+      }
     }
 
     const labelElement = button.querySelector<HTMLElement>(".jibble-nav-label");
