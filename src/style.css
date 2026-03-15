@@ -2483,12 +2483,12 @@ body.management-inline-mode #instructorDrawer.drawer {
   width: 100%;
   height: auto;
   max-height: none;
-  margin: 0 0 16px;
-  border: 1px solid #c9d9eb;
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  padding: 16px;
-  overflow: visible;
+  margin: 0 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: none;
+  padding: 0;
+  overflow: hidden;
   z-index: 5;
 }
 
@@ -2776,19 +2776,32 @@ tbody tr:hover {
 .app-shell--jibble .jibble-nav-item {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: 8px;
   width: 100%;
-  min-height: 36px;
+  min-height: 40px;
   justify-content: flex-start;
   background: transparent;
   border: none;
   color: var(--sidebar-text);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  padding: 0 var(--s-3);
-  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 0 10px;
+  border-radius: 10px;
   position: relative;
-  transition: all var(--duration) var(--ease);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Emoji icon styling */
+.app-shell--jibble .jibble-nav-emoji {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .app-shell--jibble .jibble-nav-icon {
@@ -2814,6 +2827,10 @@ tbody tr:hover {
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-text-active);
   border-color: transparent;
+  transform: translateX(3px);
+}
+.app-shell--jibble .jibble-nav-item:hover .jibble-nav-emoji {
+  transform: scale(1.15);
 }
 .app-shell--jibble .jibble-nav-item:hover .jibble-nav-icon {
   opacity: 1;
@@ -2821,9 +2838,11 @@ tbody tr:hover {
 
 .nav-spacer { flex: 1; }
 .app-shell--jibble .jibble-nav-item.is-active {
-  background: var(--sidebar-active-bg);
-  color: var(--sidebar-text-active);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
+  color: #4f46e5;
   border-color: transparent;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.1);
 }
 .app-shell--jibble .jibble-nav-item.is-active::before {
   content: '';
@@ -2833,10 +2852,24 @@ tbody tr:hover {
   bottom: 6px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--sidebar-active-accent);
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
 }
 .app-shell--jibble .jibble-nav-item.is-active .jibble-nav-icon {
   opacity: 1;
+}
+.app-shell--jibble .jibble-nav-item.is-active .jibble-nav-emoji {
+  transform: scale(1.1);
+}
+
+/* Settings button — 맨 아래 눈에 띄게 */
+.app-shell--jibble .jibble-nav-settings {
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  border-radius: 10px;
+}
+.app-shell--jibble .jibble-nav-item:active {
+  transform: scale(0.97);
 }
 
 .app-shell--jibble .jibble-sidebar-divider {
@@ -2847,13 +2880,13 @@ tbody tr:hover {
 
 /* Nav section labels */
 .app-shell--jibble .nav-section-label {
-  font-size: var(--fs-2xs);
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--sidebar-text);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 8px 12px 4px;
-  opacity: 0.6;
+  letter-spacing: 0.08em;
+  padding: 14px 10px 4px;
+  opacity: 0.45;
 }
 
 .app-shell--jibble .jibble-right-rail {
