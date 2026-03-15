@@ -297,8 +297,8 @@ export function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void
   cacheOriginalIcons();
 
   if (jibbleMainNav) {
-    // Remove all existing section labels and the flex spacer
-    jibbleMainNav.querySelectorAll(".nav-section-label, [style*='flex:1'], [style*='flex: 1']").forEach((el) => el.remove());
+    // Remove all existing section labels and flex spacers
+    jibbleMainNav.querySelectorAll(".nav-section-label, .nav-spacer, [style*='flex:1'], [style*='flex: 1']").forEach((el) => el.remove());
 
     // Build a lookup: navKey → section label
     const keyToSection = new Map<PrimarySidebarNavKey, string>();
