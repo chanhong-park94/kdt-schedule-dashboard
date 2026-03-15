@@ -121,7 +121,7 @@ export function activatePrimarySidebarPage(navKey: PrimarySidebarNavKey, options
   // 설정 페이지에 과정 정보입력(management) 콘텐츠가 통합됨
   const showManagement = navKey === "settings";
   setJibbleManagementSubmenuVisible(showManagement);
-  if (showManagement && options.openManagementTab !== false) {
+  if (showManagement && options.openManagementTab === true) {
     setJibbleManagementSubmenuActive("course");
     openInstructorDrawerWithTab("course");
   }
@@ -182,7 +182,6 @@ export function setupJibbleSidebarNavigation(): void {
 
       activatePrimarySidebarPage(navKeyRaw, {
         scrollToTop: true,
-        openManagementTab: navKeyRaw === "settings",
       });
     });
   }

@@ -299,12 +299,17 @@
         <div id="conflictDetailContent" class="u-mt-10"></div>
       </dialog>
 
-      <aside id="instructorDrawer" class="drawer" aria-hidden="true" data-page-group="settings">
-        <div class="drawer-header">
-          <strong>🧾 정보 입력</strong>
-          <button class="drawer-close" data-close-drawer type="button">닫기</button>
+      <aside id="instructorDrawer" class="drawer settings-section" aria-hidden="true" data-page-group="settings">
+        <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
+          <span class="settings-icon">🧾</span>
+          <div class="settings-title">
+            <strong>정보 입력</strong>
+            <div class="muted">과정, 교과목, 강사 정보를 등록하고 관리합니다</div>
+          </div>
+          <span class="settings-chevron" aria-hidden="true">▼</span>
         </div>
-        <div class="drawer-tab-row u-mt-10">
+        <div class="settings-section-body is-collapsed">
+        <div class="drawer-tab-row u-mt-4">
           <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
           <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
           <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
@@ -471,6 +476,7 @@
             </table>
           </div>
         </div>
+        </div><!-- /settings-section-body -->
       </aside>
       <main class="page">
         <div class="grid">
@@ -1836,8 +1842,8 @@
 
           <!-- HRD API 설정 -->
           <!-- 설정 카드 A: 과정 등록 (가장 자주 사용 — 기본 펼침) -->
-          <div class="settings-section u-mt-14" id="settingsCourseRegistration" data-page-group="settings">
-            <div class="settings-section-header" role="button" aria-expanded="true" tabindex="0" data-settings-toggle>
+          <div class="settings-section" id="settingsCourseRegistration" data-page-group="settings">
+            <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
               <span class="settings-icon">📋</span>
               <div class="settings-title">
                 <strong>과정 등록</strong>
@@ -1845,29 +1851,16 @@
               </div>
               <span class="settings-chevron" aria-hidden="true">▼</span>
             </div>
-            <div class="settings-section-body">
-              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-bottom: 8px">
-                <button
-                  id="hrdResetDefaults"
-                  class="btn-sm"
-                  type="button"
-                  style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0"
-                >
+            <div class="settings-section-body is-collapsed">
+              <div class="settings-action-row">
+                <button id="hrdResetDefaults" class="btn-sm btn-subtle-green" type="button">
                   🔄 기본 과정 복원
                 </button>
-                <button
-                  id="hrdDiscoverAll"
-                  class="btn-sm"
-                  type="button"
-                  style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe"
-                >
+                <button id="hrdDiscoverAll" class="btn-sm btn-subtle-blue" type="button">
                   🔍 전체 기수 자동탐색
                 </button>
               </div>
-              <div
-                id="hrdDiscoverStatus"
-                style="font-size: 12px; color: #6b7280; margin-bottom: 6px; display: none"
-              ></div>
+              <div id="hrdDiscoverStatus" class="settings-status-msg" style="display: none"></div>
               <div id="hrdCourseList" class="hrd-course-list"></div>
               <div class="hrd-add-course">
                 <div class="hrd-add-grid">
@@ -2060,7 +2053,7 @@
                     placeholder="비밀번호 입력"
                     autocomplete="off"
                   />
-                  <button id="hrdKeyGateUnlock" class="btn-sm" type="button" style="background: #6366f1; color: #fff">
+                  <button id="hrdKeyGateUnlock" class="btn-sm btn-primary" type="button">
                     잠금 해제
                   </button>
                 </div>
@@ -2095,21 +2088,21 @@
                       id="hrdSlackTestBtn"
                       class="btn-sm"
                       type="button"
-                      style="background: #4f46e5; color: #fff; white-space: nowrap"
+                      class="btn-sm btn-primary"
                     >
                       Slack 테스트
                     </button>
                   </div>
-                  <div id="hrdSlackTestStatus" style="font-size: 12px; margin-top: 4px; color: #6b7280"></div>
+                  <div id="hrdSlackTestStatus" class="settings-status-msg u-mt-4"></div>
                 </div>
                 <div class="hrd-field-actions">
                   <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
-                  <button id="hrdTestBtn" class="btn-sm" type="button" style="background: #6366f1; color: #fff">
+                  <button id="hrdTestBtn" class="btn-sm btn-primary" type="button">
                     연결 테스트
                   </button>
                 </div>
               </div>
-              <div id="hrdTestStatus" class="att-api-status" style="margin-top: 8px"></div>
+              <div id="hrdTestStatus" class="att-api-status u-mt-8"></div>
             </div>
           </div>
 
@@ -2140,7 +2133,7 @@
                 </label>
               </div>
               <div class="row u-mt-10 u-row-center">
-                <button id="weeklyReportGenerateBtn" type="button" style="background:#6366f1;color:#fff;padding:8px 20px;border:none;border-radius:6px;font-weight:600;cursor:pointer">
+                <button id="weeklyReportGenerateBtn" class="btn-primary" type="button">
                   📄 보고팩 생성
                 </button>
               </div>
