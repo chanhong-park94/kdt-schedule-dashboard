@@ -593,7 +593,7 @@ function renderCategoryChart(): void {
             "rgba(16,185,129,0.25)",
           ],
           borderWidth: 2,
-          borderColor: "rgba(30,30,36,1)",
+          borderColor: "#ffffff",
         },
       ],
     },

@@ -1,4 +1,4 @@
-/** HRD 대시보드 홈 — 핵심 KPI 요약, 관리대상 목록, 과정별 비교 */
+/** HRD 대시보드 홈 — 핵심 KPI 요약, 관리대상 목록, 과정별 비교, 트렌드, 도넛 */
 import { Chart, registerables } from "chart.js";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
@@ -36,6 +36,28 @@ interface DashTrainee {
   riskLevel: "safe" | "caution" | "warning" | "danger";
 }
 
+interface HrdCourse {
+  name: string;
+  trainPrId: string;
+  degrs: string[];
+  category?: CourseCategory;
+  startDate?: string;
+  totalDays?: number;
+}
+
+// ─── Light Theme Chart Colors ───────────────────────────
+const CHART_COLORS = {
+  text: "#6b7280",
+  textStrong: "#1e1e2e",
+  grid: "rgba(0,0,0,0.06)",
+  primary: "#6366f1",
+  orange: "#f97316",
+  green: "#10b981",
+  amber: "#f59e0b",
+  red: "#ef4444",
+  donut: ["#a855f7", "#6366f1", "#f87171", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#14b8a6"],
+};
+
 // ─── KPI Targets ─────────────────────────────────────────
 const KPI_TARGET = { employed: 75, unemployed: 85 } as const;
 
@@ -51,7 +73,7 @@ const $ = (id: string) => document.getElementById(id);
 
 // ─── Helpers ────────────────────────────────────────────
 function isActiveCourse(course: HrdCourse): boolean {
-  if (!course.startDate || !course.totalDays) return true; // 설정 미완료면 진행중 취급
+  if (!course.startDate || !course.totalDays) return true;
   const end = new Date(course.startDate);
   end.setDate(end.getDate() + Math.ceil((course.totalDays / 5) * 7));
   return end >= new Date();
@@ -110,7 +132,6 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
             defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
           });
 
-          // 출결 데이터 수집 (최근 3개월)
           const now = new Date();
           const months: string[] = [];
           for (let m = 2; m >= 0; m--) {
@@ -131,7 +152,6 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
             const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
             const dropout = isDropout(raw);
 
-            // 이 훈련생의 출결 레코드
             const nameKey = name.replace(/\s+/g, "");
             const myRecords = allAttendance.filter((r) => {
               const rName = (r.cstmrNm || r.trneeCstmrNm || r.trneNm || "").toString().replace(/\s+/g, "");
@@ -181,7 +201,6 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
   const container = $("dashboardKpiCards");
   if (!container) return;
 
-  // === Card 1: 하차방어율 ===
   const totalAll = courseData.reduce((s, c) => s + c.total, 0);
   const dropoutAll = courseData.reduce((s, c) => s + c.dropout, 0);
   const defenseAll = totalAll > 0 ? ((totalAll - dropoutAll) / totalAll) * 100 : 0;
@@ -195,14 +214,11 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
   const unempDropout = unempEntries.reduce((s, c) => s + c.dropout, 0);
   const unempRate = unempTotal > 0 ? ((unempTotal - unempDropout) / unempTotal) * 100 : 0;
 
-  // === Card 2: 관리 인사이트 ===
   const activeTrainees = trainees.filter((t) => !t.isDropout);
   const dangerCount = activeTrainees.filter((t) => t.riskLevel === "danger").length;
   const warningCount = activeTrainees.filter((t) => t.riskLevel === "warning").length;
   const cautionCount = activeTrainees.filter((t) => t.riskLevel === "caution").length;
   const totalDropout = dropoutAll;
-
-  // === Card 3: 관리대상 현황 ===
   const riskTotal = dangerCount + warningCount + cautionCount;
   const activeCount = totalAll - totalDropout;
 
@@ -244,6 +260,144 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
   `;
 }
 
+// ─── Donut Chart (과정별 재적 비율) ─────────────────────
+function renderDonutChart(courseData: DashCourseData[]): void {
+  const container = $("dashboardDonutChart");
+  if (!container) return;
+
+  const courseMap = new Map<string, number>();
+  for (const c of courseData) {
+    courseMap.set(c.courseName, (courseMap.get(c.courseName) || 0) + c.active);
+  }
+
+  const labels = [...courseMap.keys()].map((n) => n.length > 8 ? n.slice(0, 8) + ".." : n);
+  const data = [...courseMap.values()];
+
+  container.innerHTML = `
+    <div class="dash-panel-header">
+      <h3 class="dash-panel-title">과정별 재적 비율</h3>
+    </div>
+    <div style="padding:16px 20px;display:flex;align-items:center;justify-content:center;">
+      <canvas id="dashChartDonut" style="max-height:200px;"></canvas>
+    </div>
+  `;
+
+  const ctx = (document.getElementById("dashChartDonut") as HTMLCanvasElement)?.getContext("2d");
+  if (ctx) {
+    const chart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: CHART_COLORS.donut.slice(0, data.length),
+          borderWidth: 2,
+          borderColor: "#ffffff",
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: "55%",
+        plugins: {
+          legend: { position: "bottom", labels: { color: CHART_COLORS.text, padding: 12, usePointStyle: true, font: { size: 11 } } },
+        },
+      },
+    });
+    chartInstances.push(chart);
+  }
+}
+
+// ─── Stats Panel (핵심 수치 요약) ───────────────────────
+function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[]): void {
+  const container = $("dashboardStats");
+  if (!container) return;
+
+  const totalAll = courseData.reduce((s, c) => s + c.total, 0);
+  const dropoutAll = courseData.reduce((s, c) => s + c.dropout, 0);
+  const activeAll = totalAll - dropoutAll;
+  const activeTrainees = trainees.filter((t) => !t.isDropout && t.attendanceRate >= 0);
+  const avgAttendance = activeTrainees.length > 0
+    ? activeTrainees.reduce((s, t) => s + t.attendanceRate, 0) / activeTrainees.length
+    : 0;
+  const courseCount = new Set(courseData.map((c) => c.courseName)).size;
+
+  container.innerHTML = `
+    <div class="dash-panel-header">
+      <h3 class="dash-panel-title">운영 현황 요약</h3>
+    </div>
+    <div style="padding:4px 20px 16px;">
+      <div class="dash-stat-big">${activeAll}<span style="font-size:14px;font-weight:500;color:var(--text-secondary);margin-left:4px;">명 재적</span></div>
+      <div class="dash-stat-bar"><div class="dash-stat-bar-fill" style="width:${totalAll > 0 ? (activeAll / totalAll * 100) : 0}%"></div></div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:0;">
+        <div class="dash-stat-row"><span class="dash-stat-label">운영 과정</span><span class="dash-stat-value">${courseCount}개</span></div>
+        <div class="dash-stat-row"><span class="dash-stat-label">전체 등록</span><span class="dash-stat-value">${totalAll}명</span></div>
+        <div class="dash-stat-row"><span class="dash-stat-label">이탈 인원</span><span class="dash-stat-value">${dropoutAll}명</span></div>
+        <div class="dash-stat-row"><span class="dash-stat-label">평균 출석률</span><span class="dash-stat-value">${avgAttendance.toFixed(1)}%</span></div>
+        <div class="dash-stat-row"><span class="dash-stat-label">하차방어율</span><span class="dash-stat-value">${totalAll > 0 ? ((activeAll / totalAll) * 100).toFixed(1) : 0}%</span></div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Trend Chart (주간 출석률 라인) ─────────────────────
+function renderTrendChart(trainees: DashTrainee[]): void {
+  const container = $("dashboardTrendChart");
+  if (!container) return;
+
+  // 과정별 출석률을 간단 집계 (데이터가 제한적이므로 과정별 바 형태로)
+  const activeTrainees = trainees.filter((t) => !t.isDropout && t.attendanceRate >= 0);
+  const courseMap = new Map<string, { sum: number; count: number }>();
+  for (const t of activeTrainees) {
+    const entry = courseMap.get(t.courseName) || { sum: 0, count: 0 };
+    entry.sum += t.attendanceRate;
+    entry.count++;
+    courseMap.set(t.courseName, entry);
+  }
+
+  const labels = [...courseMap.keys()].map((n) => n.length > 12 ? n.slice(0, 12) + ".." : n);
+  const rates = [...courseMap.values()].map((v) => v.count > 0 ? v.sum / v.count : 0);
+
+  container.innerHTML = `
+    <div class="dash-panel-header">
+      <h3 class="dash-panel-title">과정별 평균 출석률</h3>
+    </div>
+    <div class="dash-chart-canvas-wrap"><canvas id="dashChartTrend"></canvas></div>
+  `;
+
+  const ctx = (document.getElementById("dashChartTrend") as HTMLCanvasElement)?.getContext("2d");
+  if (ctx) {
+    const chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "출석률 (%)",
+          data: rates,
+          borderColor: CHART_COLORS.orange,
+          backgroundColor: "rgba(249, 115, 22, 0.08)",
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: CHART_COLORS.orange,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: CHART_COLORS.text }, grid: { color: CHART_COLORS.grid } },
+          y: { min: 0, max: 100, ticks: { color: CHART_COLORS.text, callback: (v) => v + "%" }, grid: { color: CHART_COLORS.grid } },
+        },
+        plugins: { legend: { display: false } },
+      },
+    });
+    chartInstances.push(chart);
+  }
+}
+
 // ─── Risk Student List ──────────────────────────────────
 function renderRiskStudentList(trainees: DashTrainee[]): void {
   const container = $("dashboardRiskList");
@@ -264,34 +418,31 @@ function renderRiskStudentList(trainees: DashTrainee[]): void {
     level === "danger" ? "제적위험" : level === "warning" ? "경고" : "주의";
 
   container.innerHTML = `
-    <div class="dash-panel">
-      <div class="dash-panel-header">
-        <h3 class="dash-panel-title">관리대상 학생</h3>
-        <span class="dash-panel-count">${riskStudents.length}명</span>
-      </div>
-      <div class="dash-risk-list">
-        ${riskStudents
-          .map(
-            (s) => `
-          <div class="dash-risk-row">
-            <div class="dash-risk-indicator ${s.riskLevel}"></div>
-            <div class="dash-risk-info">
-              <span class="dash-risk-name" data-name="${s.name}" data-course="${s.courseName}" data-tpid="${s.trainPrId}" data-degr="${s.degr}">${s.name}</span>
-              <span class="dash-risk-course">${s.courseName} · ${s.degr}기</span>
-            </div>
-            <div class="dash-risk-stats">
-              <span class="dash-risk-stat">출석 ${s.attendanceRate >= 0 ? s.attendanceRate.toFixed(1) + "%" : "-"}</span>
-              <span class="dash-risk-stat">결석 ${s.absentDays}/${s.maxAbsent}</span>
-            </div>
-            <span class="dash-risk-badge ${badgeClass(s.riskLevel)}">${badgeLabel(s.riskLevel)}</span>
-          </div>`,
-          )
-          .join("")}
-      </div>
+    <div class="dash-panel-header">
+      <h3 class="dash-panel-title">관리대상 학생</h3>
+      <span class="dash-panel-count">${riskStudents.length}명</span>
+    </div>
+    <div class="dash-risk-list">
+      ${riskStudents
+        .map(
+          (s) => `
+        <div class="dash-risk-row">
+          <div class="dash-risk-indicator ${s.riskLevel}"></div>
+          <div class="dash-risk-info">
+            <span class="dash-risk-name" data-name="${s.name}" data-course="${s.courseName}" data-tpid="${s.trainPrId}" data-degr="${s.degr}">${s.name}</span>
+            <span class="dash-risk-course">${s.courseName} · ${s.degr}기</span>
+          </div>
+          <div class="dash-risk-stats">
+            <span class="dash-risk-stat">출석 ${s.attendanceRate >= 0 ? s.attendanceRate.toFixed(1) + "%" : "-"}</span>
+            <span class="dash-risk-stat">결석 ${s.absentDays}/${s.maxAbsent}</span>
+          </div>
+          <span class="dash-risk-badge ${badgeClass(s.riskLevel)}">${badgeLabel(s.riskLevel)}</span>
+        </div>`,
+        )
+        .join("")}
     </div>
   `;
 
-  // 이름 클릭 이벤트
   container.querySelectorAll<HTMLElement>(".dash-risk-name").forEach((el) => {
     el.addEventListener("click", () => {
       const name = el.dataset.name || "";
@@ -303,14 +454,11 @@ function renderRiskStudentList(trainees: DashTrainee[]): void {
   });
 }
 
-// ─── Compare Charts ─────────────────────────────────────
+// ─── Compare Charts (하차방어율) ────────────────────────
 function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee[]): void {
   const container = $("dashboardCompareCharts");
   if (!container) return;
 
-  destroyCharts();
-
-  // 과정별 집계
   const courseMap = new Map<string, { total: number; dropout: number; category: CourseCategory; riskCount: number; activeCount: number }>();
   for (const c of courseData) {
     const key = c.courseName;
@@ -333,47 +481,34 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
     return d.total > 0 ? ((d.total - d.dropout) / d.total) * 100 : 0;
   });
   const targetRates = courseNames.map((n) => getTargetRate(courseMap.get(n)!.category));
-  const riskRates = courseNames.map((n) => {
-    const d = courseMap.get(n)!;
-    return d.activeCount > 0 ? (d.riskCount / d.activeCount) * 100 : 0;
-  });
 
   container.innerHTML = `
-    <div class="dash-chart-grid">
-      <div class="dash-panel">
-        <div class="dash-panel-header">
-          <h3 class="dash-panel-title">과정별 하차방어율</h3>
-        </div>
-        <div class="dash-chart-canvas-wrap"><canvas id="dashChartDefense"></canvas></div>
-      </div>
-      <div class="dash-panel">
-        <div class="dash-panel-header">
-          <h3 class="dash-panel-title">과정별 위험학생 비율</h3>
-        </div>
-        <div class="dash-chart-canvas-wrap"><canvas id="dashChartRisk"></canvas></div>
-      </div>
+    <div class="dash-panel-header">
+      <h3 class="dash-panel-title">하차방어율</h3>
     </div>
+    <div class="dash-chart-canvas-wrap" style="min-height:180px;"><canvas id="dashChartDefense"></canvas></div>
   `;
 
-  // 하차방어율 차트
   const ctx1 = (document.getElementById("dashChartDefense") as HTMLCanvasElement)?.getContext("2d");
   if (ctx1) {
     const chart1 = new Chart(ctx1, {
       type: "bar",
       data: {
-        labels: courseNames.map((n) => n.length > 10 ? n.slice(0, 10) + "..." : n),
+        labels: courseNames.map((n) => n.length > 8 ? n.slice(0, 8) + ".." : n),
         datasets: [
           {
             label: "방어율 (%)",
             data: defenseRates,
-            backgroundColor: defenseRates.map((r, i) => (r >= targetRates[i] ? "#10b981" : r >= targetRates[i] - 5 ? "#f59e0b" : "#ef4444")),
+            backgroundColor: defenseRates.map((r, i) =>
+              r >= targetRates[i] ? CHART_COLORS.green : r >= targetRates[i] - 5 ? CHART_COLORS.amber : CHART_COLORS.red
+            ),
             borderRadius: 6,
           },
           {
             label: "목표",
             data: targetRates,
             type: "line" as const,
-            borderColor: "#6366f1",
+            borderColor: CHART_COLORS.primary,
             borderDash: [5, 5],
             borderWidth: 2,
             pointRadius: 0,
@@ -386,51 +521,21 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { min: 0, max: 100, title: { display: true, text: "%", color: "#a1a1a9" }, ticks: { color: "#a1a1a9" }, grid: { color: "rgba(255,255,255,0.06)" } },
-          y: { ticks: { color: "#a1a1a9" }, grid: { display: false } },
+          x: { min: 0, max: 100, ticks: { color: CHART_COLORS.text }, grid: { color: CHART_COLORS.grid } },
+          y: { ticks: { color: CHART_COLORS.text, font: { size: 11 } }, grid: { display: false } },
         },
-        plugins: { legend: { display: true, position: "bottom", labels: { color: "#a1a1a9", padding: 16, usePointStyle: true } } },
+        plugins: { legend: { display: true, position: "bottom", labels: { color: CHART_COLORS.text, padding: 12, usePointStyle: true, font: { size: 11 } } } },
       },
     });
     chartInstances.push(chart1);
-  }
-
-  // 위험학생 비율 차트
-  const ctx2 = (document.getElementById("dashChartRisk") as HTMLCanvasElement)?.getContext("2d");
-  if (ctx2) {
-    const chart2 = new Chart(ctx2, {
-      type: "bar",
-      data: {
-        labels: courseNames.map((n) => n.length > 10 ? n.slice(0, 10) + "..." : n),
-        datasets: [{
-          label: "위험학생 비율 (%)",
-          data: riskRates,
-          backgroundColor: riskRates.map((r) => (r > 20 ? "#ef4444" : r > 10 ? "#f59e0b" : "#10b981")),
-          borderRadius: 6,
-        }],
-      },
-      options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { min: 0, title: { display: true, text: "%", color: "#a1a1a9" }, ticks: { color: "#a1a1a9" }, grid: { color: "rgba(255,255,255,0.06)" } },
-          y: { ticks: { color: "#a1a1a9" }, grid: { display: false } },
-        },
-        plugins: { legend: { display: false } },
-      },
-    });
-    chartInstances.push(chart2);
   }
 }
 
 // ─── Navigation to Trainee History ──────────────────────
 export function navigateToTraineeHistory(name: string, courseName: string, trainPrId: string, degr: string): void {
-  // 훈련생 이력 탭으로 이동
   const navButton = document.querySelector<HTMLButtonElement>('[data-nav-key="traineeHistory"]');
   if (navButton) navButton.click();
 
-  // 커스텀 이벤트로 훈련생 정보 전달
   setTimeout(() => {
     window.dispatchEvent(new CustomEvent("openTraineeDetail", {
       detail: { name, courseName, trainPrId, degr },
@@ -451,7 +556,11 @@ export async function initDashboard(): Promise<void> {
       if (loadingMsg) loadingMsg.textContent = msg;
     });
 
+    destroyCharts();
     renderKpiCards(courseData, trainees);
+    renderDonutChart(courseData);
+    renderStatsPanel(courseData, trainees);
+    renderTrendChart(trainees);
     renderRiskStudentList(trainees);
     renderCompareCharts(courseData, trainees);
   } catch (e) {
