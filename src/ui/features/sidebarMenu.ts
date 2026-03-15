@@ -32,7 +32,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   dashboard: "대시보드",
   timeline: "학사일정",
   generator: "HRD시간표 생성",
-  kpi: "재직자 자율성과지표",
+  kpi: "자율성과지표 (KPI)",
   attendance: "출결현황",
   analytics: "훈련생 분석",
   traineeHistory: "훈련생 이력",
@@ -40,14 +40,14 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
 };
 
 export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string> = {
-  dashboard: "🏠",
-  timeline: "📅",
-  generator: "🛠️",
-  kpi: "📊",
-  attendance: "📋",
-  analytics: "📈",
-  traineeHistory: "👤",
-  settings: "⚙️",
+  dashboard: "dashboard",
+  timeline: "calendar",
+  generator: "wrench",
+  kpi: "chart",
+  attendance: "clipboard",
+  analytics: "analytics",
+  traineeHistory: "user",
+  settings: "settings",
 };
 
 export function isPrimarySidebarNavKey(value: string): value is PrimarySidebarNavKey {
