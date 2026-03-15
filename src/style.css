@@ -2698,7 +2698,7 @@ tbody tr:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: rgba(9, 9, 11, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px) saturate(1.4);
   -webkit-backdrop-filter: blur(12px) saturate(1.4);
   border-bottom: 1px solid var(--border);
@@ -2706,9 +2706,9 @@ tbody tr:hover {
 
 .app-shell--jibble .app-header-title {
   font-size: var(--fs-sm);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--text-secondary);
+  color: var(--primary);
 }
 
 .app-shell--jibble .jibble-sidebar {
@@ -2727,7 +2727,7 @@ tbody tr:hover {
 }
 
 .app-shell--jibble .jibble-logo {
-  padding: 12px 20px 10px;
+  padding: 10px 16px 8px;
   font-size: var(--fs-base);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -2736,7 +2736,7 @@ tbody tr:hover {
   text-align: left;
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: var(--s-2);
 }
 .app-shell--jibble .jibble-logo .logo-icon {
   width: 32px;
@@ -2766,10 +2766,10 @@ tbody tr:hover {
 }
 
 .app-shell--jibble .jibble-nav {
-  padding: var(--s-1) var(--s-3);
+  padding: 4px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   flex: 1;
 }
 
@@ -2778,13 +2778,13 @@ tbody tr:hover {
   align-items: center;
   gap: var(--s-3);
   width: 100%;
-  min-height: 38px;
+  min-height: 36px;
   justify-content: flex-start;
   background: transparent;
   border: none;
   color: var(--sidebar-text);
   font-size: var(--fs-sm);
-  font-weight: 500;
+  font-weight: 600;
   padding: 0 var(--s-3);
   border-radius: var(--r-sm);
   position: relative;
@@ -2852,7 +2852,7 @@ tbody tr:hover {
   color: var(--sidebar-text);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: var(--s-4) var(--s-3) var(--s-2);
+  padding: 8px 12px 4px;
   opacity: 0.6;
 }
 
