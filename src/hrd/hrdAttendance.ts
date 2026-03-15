@@ -760,7 +760,7 @@ async function renderHrdSettingsSection(): Promise<void> {
                     <div class="asst-code-add">
                       <select class="asst-code-degr-select" data-course-idx="${i}">${degrOpts}</select>
                       <input class="asst-code-input" data-course-idx="${i}" placeholder="코드 입력 (예: kim-llm3)" />
-                      <button class="btn-sm asst-code-save" data-course-idx="${i}" style="background:#6366f1;color:#fff;border:none">저장</button>
+                      <button class="btn-sm asst-code-save" data-course-idx="${i}" style="background:var(--primary);color:#fff;border:none;border-radius:6px">저장</button>
                     </div>
                     <div class="asst-code-msg" data-course-idx="${i}"></div>
                   </div>

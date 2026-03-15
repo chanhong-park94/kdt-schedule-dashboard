@@ -7,10 +7,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
-    "chart.js": "^4.5.1",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "chart.js": "^4.5.1"
   },
   "scripts": {
     "dev": "vite --config vite.config.mts",
@@ -25,8 +22,6 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^20.17.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",

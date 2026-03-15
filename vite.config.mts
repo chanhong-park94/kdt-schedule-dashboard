@@ -6,7 +6,15 @@ export default defineConfig({
   base: '/kdt-schedule-dashboard/',
   build: {
     outDir: '../dist',
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'chart': ['chart.js'],
+          'supabase': ['@supabase/supabase-js'],
+        },
+      },
+    },
   },
   test: {
     include: ['../tests/**/*.test.ts'],

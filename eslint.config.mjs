@@ -15,6 +15,7 @@ export default tseslint.config(
       "no-control-regex": "off",
       "no-useless-escape": "warn",
       "no-useless-catch": "off",
+      "eqeqeq": ["error", "smart"],
       "prefer-error-cause": "off",
       "preserve-caught-error": "off",
     },

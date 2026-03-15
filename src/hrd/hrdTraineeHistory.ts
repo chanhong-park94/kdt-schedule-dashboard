@@ -403,7 +403,7 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
       const status = dayMap.get(iso) || "";
 
       let cls = "cal-empty";
-      let label = String(d);
+      const label = String(d);
       if (dow === 0 || dow === 6) {
         cls = "cal-weekend";
       } else if (status) {
