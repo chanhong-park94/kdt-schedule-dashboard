@@ -15,7 +15,7 @@ export function initSidebarMenuFeature(nextDeps: SidebarMenuDeps): void {
   deps = nextDeps;
 }
 
-const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v4";
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v5";
 
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "dashboard",
@@ -317,32 +317,49 @@ export function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void
     // Remove all existing section labels and flex spacers
     jibbleMainNav.querySelectorAll(".nav-section-label, .nav-spacer, [style*='flex:1'], [style*='flex: 1']").forEach((el) => el.remove());
 
-    // Build a lookup: navKey → section label
-    const keyToSection = new Map<PrimarySidebarNavKey, string>();
-    for (const group of NAV_SECTION_GROUPS) {
-      for (const key of group.keys) {
-        keyToSection.set(key, group.label);
+    // Build a lookup: navKey → section index + label
+    const keyToSectionIdx = new Map<PrimarySidebarNavKey, number>();
+    for (let i = 0; i < NAV_SECTION_GROUPS.length; i++) {
+      for (const key of NAV_SECTION_GROUPS[i].keys) {
+        keyToSectionIdx.set(key, i);
       }
     }
 
-    // Re-append buttons in configured order, inserting section labels at group boundaries
-    let lastSection = "";
+    // Group ordered keys by their section, preserving section order from NAV_SECTION_GROUPS
+    const sectionBuckets: PrimarySidebarNavKey[][] = NAV_SECTION_GROUPS.map(() => []);
+    const unsectioned: PrimarySidebarNavKey[] = [];
+    for (const navKey of config.order) {
+      if (navKey === "settings") continue;
+      const idx = keyToSectionIdx.get(navKey);
+      if (idx !== undefined) {
+        sectionBuckets[idx].push(navKey);
+      } else {
+        unsectioned.push(navKey);
+      }
+    }
+
+    // Re-append buttons grouped by section, inserting section labels
     const settingsButton = getPrimarySidebarButtonByKey("settings");
 
-    for (const navKey of config.order) {
-      if (navKey === "settings") continue; // settings goes at the bottom
-      const button = getPrimarySidebarButtonByKey(navKey);
-      if (!button) continue;
+    for (let i = 0; i < NAV_SECTION_GROUPS.length; i++) {
+      const bucket = sectionBuckets[i];
+      if (bucket.length === 0) continue;
 
-      const section = keyToSection.get(navKey) ?? "";
-      if (section && section !== lastSection) {
-        const label = document.createElement("div");
-        label.className = "nav-section-label";
-        label.textContent = section;
-        jibbleMainNav.appendChild(label);
-        lastSection = section;
+      const label = document.createElement("div");
+      label.className = "nav-section-label";
+      label.textContent = NAV_SECTION_GROUPS[i].label;
+      jibbleMainNav.appendChild(label);
+
+      for (const navKey of bucket) {
+        const button = getPrimarySidebarButtonByKey(navKey);
+        if (button) jibbleMainNav.appendChild(button);
       }
-      jibbleMainNav.appendChild(button);
+    }
+
+    // Append any unsectioned items
+    for (const navKey of unsectioned) {
+      const button = getPrimarySidebarButtonByKey(navKey);
+      if (button) jibbleMainNav.appendChild(button);
     }
 
     // Add flex spacer and settings button at bottom
