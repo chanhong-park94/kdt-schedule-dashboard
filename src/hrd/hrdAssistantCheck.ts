@@ -470,9 +470,10 @@ export function initAssistantCheck(): void {
   setupDateFilter();
   setupExcelModal();
 
-  // 보조강사 세션이 있으면 수기체크 탭 활성화
+  // 보조강사 세션 또는 운영매니저(v2) 로그인 시 수기체크 탭 활성화
   const session = getAssistantSession();
-  if (session) {
+  const isManagerAuth = sessionStorage.getItem("academic_schedule_manager_auth_v2") === "verified";
+  if (session || isManagerAuth) {
     enableManualTab();
   }
 
