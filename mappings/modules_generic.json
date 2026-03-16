@@ -1,0 +1,26 @@
+{
+  "formatKey": "modules_generic",
+  "header": [
+    "과정",
+    "모듈키",
+    "강사코드",
+    "강의실코드",
+    "시작일",
+    "종료일",
+    "세션수"
+  ],
+  "columns": [
+    { "key": "cohort", "label": "과정" },
+    { "key": "moduleKey", "label": "모듈키" },
+    { "key": "instructorCode", "label": "강사코드" },
+    { "key": "classroomCode", "label": "강의실코드" },
+    { "key": "start", "label": "시작일" },
+    { "key": "end", "label": "종료일" },
+    { "key": "sessionCount", "label": "세션수" }
+  ],
+  "headerAliases": {
+    "모듈": "모듈키",
+    "시작": "시작일",
+    "종료": "종료일"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "formatKey": "v7e_strict",
+  "header": [
+    "과정",
+    "개강",
+    "종강",
+    "P1담당자",
+    "P1기간",
+    "P2담당자",
+    "P2기간",
+    "365담당자",
+    "365기간"
+  ],
+  "columns": [
+    { "key": "cohort", "label": "과정" },
+    { "key": "startDate", "label": "개강" },
+    { "key": "endDate", "label": "종강" },
+    { "key": "p1Assignee", "label": "P1담당자" },
+    { "key": "p1Range", "label": "P1기간" },
+    { "key": "p2Assignee", "label": "P2담당자" },
+    { "key": "p2Range", "label": "P2기간" },
+    { "key": "p365Assignee", "label": "365담당자" },
+    { "key": "p365Range", "label": "365기간" }
+  ],
+  "headerAliases": {
+    "과정명": "과정",
+    "시작일": "개강",
+    "종료일": "종강",
+    "P365담당자": "365담당자",
+    "P365기간": "365기간"
+  }
+}

@@ -1,0 +1,49 @@
+name: Verify Supabase Table List
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list-tables:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "VITE_SUPABASE_URL is missing"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY is missing"
+            exit 1
+          fi
+
+      - name: Fetch table names from Supabase
+        id: fetch-tables
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+
+          BASE_URL="${SUPABASE_URL%/}"
+          OPENAPI_URL="${BASE_URL%/}/rest/v1/"
+
+          response=$(curl -fsS -A "curl/7.85.0" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            "$OPENAPI_URL")
+
+          echo "=== Supabase table list (public schema exposure) ==="
+          if command -v jq >/dev/null; then
+            echo "$response" \
+              | jq -r '.paths | keys[] | select(startswith("/") and . != "/") | ltrimstr("/")' \
+              | sed 's#/.*##' \
+              | sort -u \
+              | sed '/^$/d'
+          else
+            echo "$response"
+          fi
