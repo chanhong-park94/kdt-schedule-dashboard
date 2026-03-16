@@ -2737,6 +2737,11 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   gap: var(--s-2);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.app-shell--jibble .jibble-logo:hover {
+  opacity: 0.8;
 }
 .app-shell--jibble .jibble-logo .logo-icon {
   width: 32px;

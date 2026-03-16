@@ -391,11 +391,13 @@ async function bootstrapAppAfterAuthLogin(): Promise<void> {
 async function submitAuthCode(): Promise<void> {
   const code = authCodeInput.value.trim();
 
-  // 1) 관리자 코드
+  // 1) 관리자 코드 (운영매니저)
   if (code === AUTH_CODE_V2) {
     sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
     clearAssistantSession();
     applyAuthGate(true);
+    // 운영매니저도 수기체크 탭 접근 가능
+    window.dispatchEvent(new CustomEvent("assistantLogin"));
     void bootstrapAppAfterAuthLogin();
     return;
   }
@@ -2570,6 +2572,15 @@ renderSidebarMenuConfigEditor();
 menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 저장할 수 있습니다.";
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();
+
+// 로고 클릭 → 학사일정(홈) 이동
+const jibbleLogo = document.querySelector<HTMLElement>(".jibble-logo");
+if (jibbleLogo) {
+  jibbleLogo.style.cursor = "pointer";
+  jibbleLogo.addEventListener("click", () => {
+    activatePrimarySidebarPage("timeline");
+  });
+}
 
 // 점심시간 체크박스 토글 이벤트: input 활성화/비활성화 + 종료시간 표시 업데이트
 for (const row of Array.from(dayTemplateTable.querySelectorAll<HTMLTableRowElement>("tbody tr"))) {
