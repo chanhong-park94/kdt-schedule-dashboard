@@ -1,6 +1,8 @@
 /** HRD 출결현황 대시보드 */
 import { getAssistantSession, loadAssistantCodes, saveAssistantCode, removeAssistantCode, validateAssistantCode } from "../auth/assistantAuth";
 import { Chart, registerables } from "chart.js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { readClientEnv } from "../core/env";
 import { fetchRoster, fetchDailyAttendance, testConnection, discoverDegrs } from "./hrdApi";
 import { loadHrdConfig, saveHrdConfig, DEFAULT_COURSES } from "./hrdConfig";
 import type {
@@ -16,6 +18,7 @@ import type {
   WeeklyTrend,
   DayPattern,
   SlackScheduleConfig,
+  TraineeGender,
 } from "./hrdTypes";
 import {
   ATTENDANCE_STATUS_CODE,
@@ -28,6 +31,54 @@ import { sendSlackReport, testSlackWebhook, sendSlackReportDirect } from "./hrdS
 import { startScheduler, restartScheduler } from "./hrdScheduler";
 
 Chart.register(...registerables);
+
+// ─── Supabase Client (성별 저장용) ──────────────────────────
+const _sbUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
+const _sbKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+const _sbUrlStr = typeof _sbUrl === "string" ? _sbUrl.trim() : "";
+const _sbKeyStr = typeof _sbKey === "string" ? _sbKey.trim() : "";
+const sbClient: SupabaseClient | null =
+  _sbUrlStr.length > 0 && _sbKeyStr.length > 0
+    ? createClient(_sbUrlStr, _sbKeyStr, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
+    : null;
+
+const GENDER_TABLE = "trainee_gender";
+let genderCache: Map<string, TraineeGender> = new Map(); // "trainPrId|degr|name" → gender
+
+function genderKey(trainPrId: string, degr: string, name: string): string {
+  return `${trainPrId}|${degr}|${name}`;
+}
+
+async function loadGenderData(trainPrId: string, degr: string): Promise<void> {
+  if (!sbClient) return;
+  try {
+    const { data } = await sbClient
+      .from(GENDER_TABLE)
+      .select("trainee_name, gender")
+      .eq("train_pr_id", trainPrId)
+      .eq("degr", degr);
+    if (data) {
+      for (const row of data) {
+        genderCache.set(genderKey(trainPrId, degr, row.trainee_name), (row.gender || "") as TraineeGender);
+      }
+    }
+  } catch (e) {
+    console.warn("[Gender] 로드 실패:", e);
+  }
+}
+
+async function saveGender(trainPrId: string, degr: string, name: string, gender: TraineeGender): Promise<void> {
+  if (!sbClient) return;
+  genderCache.set(genderKey(trainPrId, degr, name), gender);
+  try {
+    await sbClient.from(GENDER_TABLE).upsert(
+      { train_pr_id: trainPrId, degr, trainee_name: name, gender },
+      { onConflict: "train_pr_id,degr,trainee_name" },
+    );
+  } catch (e) {
+    console.warn("[Gender] 저장 실패:", e);
+  }
+}
 
 // ─── State ──────────────────────────────────────────────────
 let currentStudents: AttendanceStudent[] = [];
@@ -56,7 +107,13 @@ function normalizeTrainee(raw: HrdRawTrainee): { name: string; birth: string; dr
   if (br.length >= 8) birth = `${br.slice(0, 4)}.${br.slice(4, 6)}.${br.slice(6, 8)}`;
   else if (br.length >= 6) birth = `${br.slice(0, 2)}.${br.slice(2, 4)}.${br.slice(4, 6)}`;
   const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
-  const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
+  const dropout =
+    stNm.includes("중도탈락") ||
+    stNm.includes("수료포기") ||
+    stNm.includes("조기취업") ||
+    stNm.includes("80%이상수료") ||
+    stNm.includes("정상수료") ||
+    stNm.includes("수료후취업");
   return { name: nm.trim(), birth, dropout };
 }
 
@@ -124,6 +181,8 @@ function buildStudents(
   dailyRecords: HrdRawAttendance[],
   selectedDate: string,
   course: HrdCourse | undefined,
+  trainPrId?: string,
+  degr?: string,
 ): AttendanceStudent[] {
   const dayStr = selectedDate.replace(/[^0-9]/g, "");
   const dayData = dayStr
@@ -174,6 +233,7 @@ function buildStudents(
       remainingAbsent,
       attendanceRate,
       missingCheckout: false,
+      gender: (trainPrId && degr ? genderCache.get(genderKey(trainPrId, degr, t.name)) : "") as TraineeGender || "",
     };
     student.missingCheckout = isMissingCheckout(student, course);
     return student;
@@ -264,7 +324,10 @@ function calculateWeeklyTrends(): WeeklyTrend[] {
 // ─── Day Pattern ────────────────────────────────────────────
 
 function calculateDayPatterns(): DayPattern[] {
-  const days = ["월", "화", "수", "목", "금"];
+  const course = getSelectedCourse();
+  const isResident = course?.category === "재직자";
+  // 재직자: 화~토, 실업자: 월~금
+  const days = isResident ? ["화", "수", "목", "금", "토"] : ["월", "화", "수", "목", "금"];
   const stats = new Map<string, { late: number; absent: number; total: number }>();
   for (const d of days) stats.set(d, { late: 0, absent: 0, total: 0 });
 
@@ -339,8 +402,9 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
     filtered = students.filter((s) => s.name.toLowerCase().includes(term));
   }
 
-  // Sort: danger first, then by name
+  // Sort: active first (by risk), dropout last
   filtered.sort((a, b) => {
+    if (a.dropout !== b.dropout) return a.dropout ? 1 : -1;
     const riskOrder: Record<RiskLevel, number> = { danger: 0, warning: 1, caution: 2, safe: 3 };
     const diff = riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
     if (diff !== 0) return diff;
@@ -355,25 +419,67 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
       ) => `<tr class="${s.dropout ? "att-row-dropout" : ""} ${s.riskLevel === "danger" ? "att-row-danger" : s.riskLevel === "warning" ? "att-row-warning" : ""}">
     <td>${i + 1}</td>
     <td><span class="att-name-link" data-student="${s.name}">${s.name}</span></td>
+    <td class="att-td-gender"><span class="att-gender-toggle" data-student="${s.name}" title="클릭하여 성별 변경">${s.gender ? (s.gender === "남" ? '<span class="att-gender-m">♂ 남</span>' : '<span class="att-gender-f">♀ 여</span>') : '<span class="att-gender-none">-</span>'}</span></td>
     <td class="att-td-birth">${s.birth}</td>
     <td><span class="att-chip ${getStatusChipClass(s.status)}">${s.status}</span>${s.missingCheckout ? ' <span class="att-chip att-chip-missing">⚠️ 퇴실미체크</span>' : ""}</td>
     <td class="att-td-time">${s.inTime || "-"}</td>
     <td class="att-td-time">${s.outTime || "-"}</td>
     <td>${s.totalDays > 0 ? `${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`}</td>
-    <td><span class="att-risk-badge att-risk-${s.riskLevel}">${getRiskEmoji(s.riskLevel)} ${getRiskLabel(s.riskLevel)}${s.totalDays > 0 && s.remainingAbsent > 0 ? ` (${s.remainingAbsent}일)` : ""}</span></td>
+    <td>${s.dropout ? `<span class="att-risk-badge att-risk-ended">종료</span>` : `<span class="att-risk-badge att-risk-${s.riskLevel}">${getRiskEmoji(s.riskLevel)} ${getRiskLabel(s.riskLevel)}${s.totalDays > 0 && s.remainingAbsent > 0 ? ` (${s.remainingAbsent}일)` : ""}</span>`}</td>
   </tr>`,
     )
     .join("");
 
-  // Table meta
+  // Table meta — 성별 통계 포함
+  const genderM = filtered.filter((s) => s.gender === "남").length;
+  const genderF = filtered.filter((s) => s.gender === "여").length;
+  const genderNone = filtered.length - genderM - genderF;
   const meta = $("attTableMeta");
-  if (meta) meta.textContent = `총 ${filtered.length}명${searchTerm ? ` (검색: "${searchTerm}")` : ""}`;
+  if (meta) {
+    let text = `총 ${filtered.length}명`;
+    if (genderM > 0 || genderF > 0) text += ` (남 ${genderM} / 여 ${genderF}${genderNone > 0 ? ` / 미지정 ${genderNone}` : ""})`;
+    if (searchTerm) text += ` — 검색: "${searchTerm}"`;
+    meta.textContent = text;
+  }
 
   // Attach name click events
   tbody.querySelectorAll(".att-name-link").forEach((el) => {
     el.addEventListener("click", () => {
       const name = (el as HTMLElement).dataset.student || "";
       openStudentDetail(name);
+    });
+  });
+
+  // Attach gender toggle events
+  tbody.querySelectorAll(".att-gender-toggle").forEach((el) => {
+    el.addEventListener("click", async () => {
+      const name = (el as HTMLElement).dataset.student || "";
+      const student = currentStudents.find((s) => s.name === name);
+      if (!student) return;
+      const courseSelect = $("attFilterCourse") as HTMLSelectElement | null;
+      const degrSelect = $("attFilterDegr") as HTMLSelectElement | null;
+      const tid = courseSelect?.value || "";
+      const deg = degrSelect?.value || "";
+      if (!tid || !deg) return;
+
+      // Cycle: "" → "남" → "여" → ""
+      const next: TraineeGender = student.gender === "" ? "남" : student.gender === "남" ? "여" : "";
+      student.gender = next;
+      await saveGender(tid, deg, name, next);
+
+      // Update display inline
+      const inner = next === "남" ? '<span class="att-gender-m">♂ 남</span>' : next === "여" ? '<span class="att-gender-f">♀ 여</span>' : '<span class="att-gender-none">-</span>';
+      (el as HTMLElement).innerHTML = inner;
+
+      // Update meta
+      const mCount = currentStudents.filter((s) => !s.dropout && s.gender === "남").length;
+      const fCount = currentStudents.filter((s) => !s.dropout && s.gender === "여").length;
+      const noneCount = currentStudents.filter((s) => !s.dropout).length - mCount - fCount;
+      if (meta) {
+        let text = `총 ${filtered.length}명`;
+        if (mCount > 0 || fCount > 0) text += ` (남 ${mCount} / 여 ${fCount}${noneCount > 0 ? ` / 미지정 ${noneCount}` : ""})`;
+        meta.textContent = text;
+      }
     });
   });
 }
@@ -496,8 +602,13 @@ function openStudentDetail(name: string): void {
   if (birthEl) birthEl.textContent = student?.birth || "-";
   if (rateEl) rateEl.textContent = student ? `${student.attendanceRate.toFixed(1)}%` : "-";
   if (riskEl && student) {
-    riskEl.textContent = `${getRiskEmoji(student.riskLevel)} ${getRiskLabel(student.riskLevel)}`;
-    riskEl.className = `att-detail-risk att-risk-${student.riskLevel}`;
+    if (student.dropout) {
+      riskEl.textContent = "종료";
+      riskEl.className = "att-detail-risk att-risk-ended";
+    } else {
+      riskEl.textContent = `${getRiskEmoji(student.riskLevel)} ${getRiskLabel(student.riskLevel)}`;
+      riskEl.className = `att-detail-risk att-risk-${student.riskLevel}`;
+    }
   }
 
   // Summary cards
@@ -529,6 +640,14 @@ function openStudentDetail(name: string): void {
   }
 
   modal.classList.add("active");
+
+  // 모달 박스를 뷰포트 중앙으로 스크롤
+  requestAnimationFrame(() => {
+    const box = modal.querySelector(".att-modal-box");
+    if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+    // 모달 내부 스크롤도 최상단으로 리셋
+    if (box) (box as HTMLElement).scrollTop = 0;
+  });
 }
 
 // ─── Risk Management Panel ──────────────────────────────────
@@ -1345,17 +1464,18 @@ async function fetchAndRender(): Promise<void> {
   try {
     currentConfig = loadHrdConfig();
 
-    // Fetch roster + daily data in parallel
+    // Fetch roster + daily data + gender in parallel
     const [roster, daily] = await Promise.all([
       fetchRoster(currentConfig, tid, deg),
       fetchDailyAttendance(currentConfig, tid, deg, month),
     ]);
+    await loadGenderData(tid, deg);
 
     // Build cumulative records
     allDailyRecords = buildAllDailyRecords(daily);
 
     // Build students
-    currentStudents = buildStudents(roster, daily, date, course);
+    currentStudents = buildStudents(roster, daily, date, course, tid, deg);
 
     // Calculate metrics
     const metrics = calculateMetrics(currentStudents);

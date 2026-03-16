@@ -15,7 +15,7 @@ export function initSidebarMenuFeature(nextDeps: SidebarMenuDeps): void {
   deps = nextDeps;
 }
 
-const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v3";
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v4";
 
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "dashboard",

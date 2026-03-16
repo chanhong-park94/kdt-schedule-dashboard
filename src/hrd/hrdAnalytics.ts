@@ -5,12 +5,40 @@
  * 인구통계, 출결 패턴, 탈락 요인을 분석합니다.
  */
 import { Chart, registerables } from "chart.js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { readClientEnv } from "../core/env";
 import { loadHrdConfig } from "./hrdConfig";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
-import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse } from "./hrdTypes";
+import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse, TraineeGender } from "./hrdTypes";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
 import type { TraineeAnalysis, AnalyticsSummary, InsightCard } from "./hrdAnalyticsTypes";
 import { getAgeGroup } from "./hrdAnalyticsTypes";
+
+// ─── Supabase Client (성별 조회용) ──────────────────────────
+const _anaUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
+const _anaKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+const _anaUrlStr = typeof _anaUrl === "string" ? _anaUrl.trim() : "";
+const _anaKeyStr = typeof _anaKey === "string" ? _anaKey.trim() : "";
+const anaClient: SupabaseClient | null =
+  _anaUrlStr.length > 0 && _anaKeyStr.length > 0
+    ? createClient(_anaUrlStr, _anaKeyStr, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
+    : null;
+
+async function loadAllGenderData(): Promise<Map<string, TraineeGender>> {
+  const map = new Map<string, TraineeGender>();
+  if (!anaClient) return map;
+  try {
+    const { data } = await anaClient.from("trainee_gender").select("train_pr_id, degr, trainee_name, gender");
+    if (data) {
+      for (const row of data) {
+        map.set(`${row.train_pr_id}|${row.degr}|${row.trainee_name}`, (row.gender || "") as TraineeGender);
+      }
+    }
+  } catch (e) {
+    console.warn("[Analytics] 성별 로드 실패:", e);
+  }
+  return map;
+}
 
 Chart.register(...registerables);
 
@@ -78,6 +106,9 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
     throw new Error("등록된 과정이 없습니다. 설정에서 과정을 먼저 등록해주세요.");
   }
 
+  // 성별 데이터 미리 로드
+  const genderMap = await loadAllGenderData();
+
   const results: TraineeAnalysis[] = [];
   const totalJobs = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
   let done = 0;
@@ -91,14 +122,15 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
       const estimatedEnd = new Date(course.startDate);
       estimatedEnd.setDate(estimatedEnd.getDate() + Math.ceil((course.totalDays / 5) * 7));
       courseStatus = estimatedEnd < new Date() ? "종강" : "진행중";
-      // 훈련 진행률 계산: 경과 평일수 / totalDays
+      // 훈련 진행률 계산: 경과 수업일수 / totalDays (재직자: 화~토, 실업자: 월~금)
       const start = new Date(course.startDate);
       const now = new Date();
       let weekdaysPassed = 0;
       const cursor = new Date(start);
       while (cursor <= now && weekdaysPassed < course.totalDays) {
         const day = cursor.getDay();
-        if (day !== 0 && day !== 6) weekdaysPassed++;
+        const isClassDay = category === "재직자" ? (day >= 2 && day <= 6) : (day >= 1 && day <= 5);
+        if (isClassDay) weekdaysPassed++;
         cursor.setDate(cursor.getDate() + 1);
       }
       courseProgressRate = courseStatus === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
@@ -261,6 +293,7 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
             completionStatus,
             courseProgressRate,
             courseStartDate: course.startDate || "",
+            gender: (genderMap.get(`${course.trainPrId}|${degr}|${name}`) || "") as TraineeGender,
           });
         }
       } catch (e) {
@@ -1013,11 +1046,13 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
     }
     const dropTimingHtml = Object.entries(dropoutsByWeek).map(([k, v]) => `${k}: ${v}명`).join(", ") || "-";
 
-    // 요일별 결석 top
-    const weekdayTotals = [0, 0, 0, 0, 0];
-    const dayNames = ["월", "화", "수", "목", "금"];
+    // 요일별 결석 top — 재직자 과정은 토요일 포함
+    const isResident = g.category === "재직자";
+    const dayNames = isResident ? ["화", "수", "목", "금", "토"] : ["월", "화", "수", "목", "금"];
+    const dayIndices = isResident ? [2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
+    const weekdayTotals = new Array(dayNames.length).fill(0);
     for (const d of g.list) {
-      for (let i = 0; i < 5; i++) weekdayTotals[i] += d.absentByWeekday[i + 1];
+      for (let i = 0; i < dayNames.length; i++) weekdayTotals[i] += d.absentByWeekday[dayIndices[i]];
     }
     const topDay = weekdayTotals.indexOf(Math.max(...weekdayTotals));
     const topDayHtml = weekdayTotals[topDay] > 0 ? `${dayNames[topDay]}요일 (${weekdayTotals[topDay]}건)` : "-";
@@ -1121,13 +1156,15 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
 
 // ── 공통 차트 렌더링 ──
 function renderRiskCharts(data: TraineeAnalysis[]): void {
-  // 요일별 결석률
+  // 요일별 결석률 — 재직자 과정은 토요일 포함
   const wdCtx = ($("chartWeekdayAbsent") as HTMLCanvasElement)?.getContext("2d");
   if (wdCtx) {
-    const weekdays = ["월", "화", "수", "목", "금"];
-    const totals = [0, 0, 0, 0, 0];
+    const hasResident = data.some((d) => d.category === "재직자");
+    const weekdays = hasResident ? ["월", "화", "수", "목", "금", "토"] : ["월", "화", "수", "목", "금"];
+    const dayCount = weekdays.length;
+    const totals = new Array(dayCount).fill(0);
     for (const d of data) {
-      for (let i = 0; i < 5; i++) totals[i] += d.absentByWeekday[i + 1];
+      for (let i = 0; i < dayCount; i++) totals[i] += d.absentByWeekday[i + 1];
     }
     charts.push(
       new Chart(wdCtx, {
@@ -1209,7 +1246,7 @@ function renderDetailTab(data: TraineeAnalysis[]): void {
   applyFiltersAndRender(data);
 
   // 필터 이벤트
-  for (const id of ["anaFilterCourse", "anaFilterDegr", "anaFilterAge", "anaFilterStatus"]) {
+  for (const id of ["anaFilterCourse", "anaFilterDegr", "anaFilterAge", "anaFilterStatus", "anaFilterGender"]) {
     $(id)?.addEventListener("change", () => applyFiltersAndRender(data));
   }
 }
@@ -1237,6 +1274,7 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
   const degr = ($("anaFilterDegr") as HTMLSelectElement)?.value || "";
   const age = ($("anaFilterAge") as HTMLSelectElement)?.value || "";
   const status = ($("anaFilterStatus") as HTMLSelectElement)?.value || "";
+  const gender = ($("anaFilterGender") as HTMLSelectElement)?.value || "";
 
   let filtered = data;
   if (course) filtered = filtered.filter((d) => d.courseName === course);
@@ -1244,6 +1282,7 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
   if (age) filtered = filtered.filter((d) => d.age > 0 && getAgeGroup(d.age) === age);
   if (status === "dropout") filtered = filtered.filter((d) => d.dropout);
   if (status === "active") filtered = filtered.filter((d) => !d.dropout);
+  if (gender) filtered = filtered.filter((d) => d.gender === gender);
 
   // 정렬
   filtered.sort((a, b) => {

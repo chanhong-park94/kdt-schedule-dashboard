@@ -131,6 +131,8 @@ export function isExcusedStatus(status: string): boolean {
 
 // ─── 내부 데이터 모델 ────────────────────────────────────────
 
+export type TraineeGender = "" | "남" | "여";
+
 export interface AttendanceStudent {
   name: string;
   birth: string;
@@ -147,6 +149,7 @@ export interface AttendanceStudent {
   remainingAbsent: number; // 잔여 허용 결석일수
   attendanceRate: number;
   missingCheckout: boolean;
+  gender: TraineeGender;
 }
 
 export interface AttendanceDayRecord {

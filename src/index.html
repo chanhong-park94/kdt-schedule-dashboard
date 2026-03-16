@@ -990,6 +990,14 @@
 
           <!-- ═══════ 출결현황 대시보드 ═══════ -->
           <div class="card card-span-12 u-mt-14" id="sectionAttendance" data-page-group="attendance">
+            <!-- 출결현황 탭 바 -->
+            <div class="att-tab-bar">
+              <button class="att-tab active" data-att-tab="hrd" type="button">📋 HRD 출결현황</button>
+              <button class="att-tab" data-att-tab="manual" type="button" id="attManualTab" disabled>
+                ✏️ 수기체크 (보조강사) <span class="att-tab-lock">🔒</span>
+              </button>
+            </div>
+
             <!-- ═══ 출결현황 패널 ═══ -->
             <div id="attPageAttendance">
               <div class="att-dashboard">
@@ -1104,6 +1112,7 @@
                         <tr>
                           <th>#</th>
                           <th>이름</th>
+                          <th>성별</th>
                           <th>생년월일</th>
                           <th>출결</th>
                           <th>입실</th>
@@ -1196,6 +1205,78 @@
               </div>
             </div>
             <!-- /attPageAttendance -->
+
+            <!-- ═══ 수기체크 패널 (보조강사 전용) ═══ -->
+            <div id="attPageManual" style="display:none">
+              <div class="amc-dashboard">
+                <div class="amc-header">
+                  <h3>✏️ Zoom/Zep 참여 수기체크</h3>
+                  <span id="amcSaveStatus" class="amc-save-status"></span>
+                </div>
+                <div class="amc-filters">
+                  <label class="amc-filter-label">날짜
+                    <input type="date" id="amcFilterDate" class="att-input-date" />
+                  </label>
+                  <label class="amc-filter-label">과정
+                    <input type="text" id="amcCourseName" class="att-input-date" readonly />
+                  </label>
+                  <label class="amc-filter-label">회차
+                    <input type="text" id="amcDegr" class="att-input-date amc-degr-input" readonly />
+                  </label>
+                </div>
+
+                <!-- Empty State -->
+                <div id="amcEmptyState" class="att-empty-state">
+                  <div class="att-empty-icon">✏️</div>
+                  <div class="att-empty-title">수기체크</div>
+                  <div class="att-empty-desc">보조강사 로그인 후 날짜를 선택하면 훈련생 명단이 표시됩니다.</div>
+                </div>
+
+                <!-- Content -->
+                <div id="amcContent" style="display:none">
+                  <div class="amc-table-wrap">
+                    <table class="amc-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>이름</th>
+                          <th>HRD 상태</th>
+                          <th class="amc-check-col">Zoom</th>
+                          <th class="amc-check-col">Zep</th>
+                          <th class="amc-memo-col">메모</th>
+                        </tr>
+                      </thead>
+                      <tbody id="amcTbody"></tbody>
+                    </table>
+                  </div>
+
+                  <!-- 엑셀 다운로드 -->
+                  <div class="amc-actions">
+                    <button id="amcExcelBtn" class="btn-primary amc-excel-btn" type="button">
+                      📥 엑셀 다운로드
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 엑셀 다운로드 모달 -->
+                <div id="amcExcelModal" class="att-modal-backdrop">
+                  <div class="att-modal-box amc-excel-modal">
+                    <div class="att-modal-top">
+                      <h3>📥 수기체크 엑셀 다운로드</h3>
+                      <button id="amcExcelClose" class="att-modal-close" type="button">&times;</button>
+                    </div>
+                    <div class="att-modal-body">
+                      <div class="amc-date-range">
+                        <label>시작일 <input type="date" id="amcExcelStart" class="att-input-date" /></label>
+                        <label>종료일 <input type="date" id="amcExcelEnd" class="att-input-date" /></label>
+                      </div>
+                      <button id="amcExcelDownload" class="btn-primary" type="button" style="margin-top:12px;width:100%">다운로드</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /attPageManual -->
 
           </div>
           <!-- /sectionAttendance -->
@@ -1558,6 +1639,11 @@
                     <option value="">전체 상태</option>
                     <option value="active">재학</option>
                     <option value="dropout">탈락</option>
+                  </select>
+                  <select id="anaFilterGender" class="hrd-input">
+                    <option value="">전체 성별</option>
+                    <option value="남">남</option>
+                    <option value="여">여</option>
                   </select>
                   <span id="anaDetailCount" class="muted" style="font-size: 13px"></span>
                 </div>

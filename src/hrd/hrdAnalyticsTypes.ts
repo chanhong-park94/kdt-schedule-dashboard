@@ -41,6 +41,8 @@ export interface TraineeAnalysis {
   courseProgressRate: number;
   /** 과정 개강일 */
   courseStartDate: string;
+  /** 성별 (남/여/미지정) */
+  gender: "" | "남" | "여";
 }
 
 export interface AnalyticsSummary {
