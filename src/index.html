@@ -817,6 +817,9 @@
               <button class="att-tab" data-att-tab="manual" type="button" id="attManualTab" disabled>
                 ✏️ 수기체크 (보조강사) <span class="att-tab-lock">🔒</span>
               </button>
+              <button class="att-tab" data-att-tab="contacts" type="button" id="attContactsTab">
+                📱 연락처 관리
+              </button>
             </div>
 
             <!-- ═══ 출결현황 패널 ═══ -->
@@ -1007,6 +1010,9 @@
                       <button id="attSlackSendBtn" class="att-slack-btn" type="button" title="Slack으로 리포트 전송">
                         <span class="att-slack-icon">📤</span> Slack 전송
                       </button>
+                      <button id="attNotifySendBtn" class="att-notify-btn" type="button" title="관리대상에게 문자/이메일 발송">
+                        📱 문자/이메일
+                      </button>
                       <button id="attRiskPanelClose" class="att-modal-close" type="button">&times;</button>
                     </div>
                   </div>
@@ -1098,6 +1104,77 @@
               </div>
             </div>
             <!-- /attPageManual -->
+
+            <!-- ═══ 연락처 관리 패널 ═══ -->
+            <div id="attPageContacts" style="display:none">
+              <div class="contacts-dashboard">
+                <div class="contacts-header">
+                  <h3>📱 훈련생 연락처 관리</h3>
+                  <span id="contactsSaveStatus" class="amc-save-status"></span>
+                </div>
+                <p class="muted">과정/기수를 선택하고 조회하면 HRD 명단과 등록된 연락처가 함께 표시됩니다.</p>
+
+                <div class="contacts-actions u-mt-8">
+                  <button id="contactsLoadBtn" class="btn-primary btn-sm" type="button">📋 명단 불러오기</button>
+                  <button id="contactsBulkBtn" class="btn-sm" type="button">📝 일괄 등록</button>
+                </div>
+
+                <div id="contactsEmptyState" class="att-empty-state">
+                  <div class="att-empty-icon">📱</div>
+                  <div class="att-empty-title">연락처 관리</div>
+                  <div class="att-empty-desc">출결현황에서 과정/기수를 선택한 후 '명단 불러오기'를 클릭하세요.</div>
+                </div>
+
+                <div id="contactsContent" style="display:none">
+                  <div class="contacts-meta u-mt-8" id="contactsMeta"></div>
+                  <div class="contacts-table-wrap u-mt-8">
+                    <table class="contacts-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>이름</th>
+                          <th>전화번호</th>
+                          <th>이메일</th>
+                          <th>상태</th>
+                        </tr>
+                      </thead>
+                      <tbody id="contactsTbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- 일괄 등록 모달 -->
+                <div id="contactsBulkModal" class="att-modal-backdrop">
+                  <div class="att-modal-box" style="max-width:500px">
+                    <div class="att-modal-top">
+                      <h3>📝 연락처 일괄 등록</h3>
+                      <button id="contactsBulkClose" class="att-modal-close" type="button">&times;</button>
+                    </div>
+                    <div class="att-modal-body">
+                      <p class="muted">한 줄에 하나씩 <code>이름,전화번호,이메일</code> 형식으로 입력하세요.</p>
+                      <textarea id="contactsBulkInput" class="contacts-bulk-textarea" rows="10" placeholder="홍길동,010-1234-5678,hong@email.com
+김철수,010-9876-5432,kim@email.com"></textarea>
+                      <button id="contactsBulkSubmit" class="btn-primary" type="button" style="margin-top:12px;width:100%">일괄 등록</button>
+                      <div id="contactsBulkStatus" class="notify-send-status u-mt-4"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /attPageContacts -->
+
+            <!-- ═══ 문자/이메일 발송 모달 ═══ -->
+            <div id="attNotifyModal" class="att-modal-backdrop">
+              <div class="att-modal-box" style="max-width:600px">
+                <div class="att-modal-top">
+                  <h3>📱 출결 안내 발송</h3>
+                  <button id="attNotifyModalClose" class="att-modal-close" type="button">&times;</button>
+                </div>
+                <div class="att-modal-body" id="attNotifyModalBody">
+                  <!-- 동적 렌더링 (hrdNotify.ts) -->
+                </div>
+              </div>
+            </div>
 
           </div>
           <!-- /sectionAttendance -->

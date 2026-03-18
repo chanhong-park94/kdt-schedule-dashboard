@@ -1562,6 +1562,13 @@ export function initAttendanceDashboard(): void {
   // Slack 스케줄러 시작
   startScheduler();
 
+  // 발송 모달 이벤트: 관리대상 패널에서 현재 학생 데이터 전달
+  window.addEventListener("requestNotifyModal", () => {
+    import("./hrdNotify").then(({ openNotifyModal }) => {
+      openNotifyModal(currentStudents);
+    });
+  });
+
   // 보조강사 모드: 페이지 로드 시 자동 조회
   if (getAssistantSession()) {
     void fetchAndRender();

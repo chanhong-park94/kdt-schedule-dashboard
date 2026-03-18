@@ -6414,3 +6414,37 @@ dialog { background: var(--card-bg) !important; color: var(--text) !important; b
 .amc-memo-input { background: var(--surface-hover) !important; border-color: var(--border) !important; color: var(--text) !important; }
 .att-tab-bar { border-bottom-color: var(--border) !important; }
 .att-tab.active { color: var(--primary) !important; border-bottom-color: var(--primary) !important; }
+
+/* -- Contacts Management ------------------------------------------------ */
+.contacts-dashboard { padding: 16px 0; }
+.contacts-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.contacts-header h3 { margin: 0; font-size: 16px; }
+.contacts-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.contacts-meta { font-size: 13px; color: var(--text-secondary); }
+.contacts-table-wrap { overflow-x: auto; }
+.contacts-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.contacts-table th { padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: var(--text-secondary); }
+.contacts-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.contacts-table tr:hover { background: var(--surface-hover); }
+.contacts-table .contact-input { width: 100%; padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--text); font-size: 13px; }
+.contacts-table .contact-input:focus { border-color: var(--primary); background: var(--card-bg); outline: none; }
+.contacts-table .contact-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
+.contacts-bulk-textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); font-size: 13px; font-family: inherit; resize: vertical; }
+
+/* -- Notify Button & Modal ---------------------------------------------- */
+.att-notify-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.att-notify-btn:hover { background: var(--surface-hover); border-color: var(--primary); }
+.notify-method-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.notify-method-label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.notify-target-info { font-size: 13px; margin-bottom: 12px; color: var(--text-secondary); }
+.notify-warn { color: #f59e0b; margin-left: 8px; }
+.notify-target-list { max-height: 400px; overflow-y: auto; }
+.notify-target-item { padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.notify-target-check { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.notify-target-meta { font-size: 12px; color: var(--text-secondary); margin-left: auto; }
+.notify-target-preview { font-size: 12px; color: var(--text-secondary); margin-top: 6px; padding: 6px 8px; background: var(--surface-hover); border-radius: 4px; white-space: pre-wrap; }
+.notify-actions { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+.notify-send-status { font-size: 13px; }
+.notify-status-success { color: #10b981; }
+.notify-status-warn { color: #f59e0b; }
+.notify-status-error { color: #ef4444; }
