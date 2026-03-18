@@ -21,6 +21,7 @@ export type AppSidebarNavKey =
   | "attendance"
   | "analytics"
   | "traineeHistory"
+  | "achievement"
   | "settings";
 
 export type AppSidebarMenuConfig = {
@@ -170,6 +171,7 @@ function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
     value === "attendance" ||
     value === "analytics" ||
     value === "traineeHistory" ||
+    value === "achievement" ||
     value === "settings"
   );
 }
@@ -204,6 +206,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "attendance",
     "analytics",
     "traineeHistory",
+    "achievement",
     "settings",
   ];
 
@@ -237,6 +240,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
       analytics: toSidebarLabel(labelsSource.analytics, "훈련생 분석"),
       traineeHistory: toSidebarLabel(labelsSource.traineeHistory, "훈련생 이력"),
+      achievement: toSidebarLabel(labelsSource.achievement, "학업성취도"),
       settings: toSidebarLabel(labelsSource.settings, "설정"),
     },
     icons: {
@@ -248,6 +252,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       attendance: toSidebarIcon(iconsSource.attendance, "📋"),
       analytics: toSidebarIcon(iconsSource.analytics, "📈"),
       traineeHistory: toSidebarIcon(iconsSource.traineeHistory, "👤"),
+      achievement: toSidebarIcon(iconsSource.achievement, "🎓"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️"),
     },
   };

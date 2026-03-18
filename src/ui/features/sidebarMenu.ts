@@ -26,6 +26,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "attendance",
   "analytics",
   "traineeHistory",
+  "achievement",
   "settings",
 ];
 
@@ -38,6 +39,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   attendance: "출결현황",
   analytics: "훈련생 분석",
   traineeHistory: "훈련생 이력",
+  achievement: "학업성취도",
   settings: "설정",
 };
 
@@ -50,6 +52,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   attendance: "clipboard",
   analytics: "analytics",
   traineeHistory: "user",
+  achievement: "star",
   settings: "settings",
 };
 
@@ -134,6 +137,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       attendance: normalizeSidebarMenuLabel("attendance", config.labels.attendance),
       analytics: normalizeSidebarMenuLabel("analytics", config.labels.analytics),
       traineeHistory: normalizeSidebarMenuLabel("traineeHistory", config.labels.traineeHistory),
+      achievement: normalizeSidebarMenuLabel("achievement", config.labels.achievement),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
@@ -145,6 +149,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       attendance: normalizeSidebarMenuIcon("attendance", config.icons.attendance),
       analytics: normalizeSidebarMenuIcon("analytics", config.icons.analytics),
       traineeHistory: normalizeSidebarMenuIcon("traineeHistory", config.icons.traineeHistory),
+      achievement: normalizeSidebarMenuIcon("achievement", config.icons.achievement),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };
@@ -162,6 +167,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       attendance: DEFAULT_PRIMARY_SIDEBAR_LABELS.attendance,
       analytics: DEFAULT_PRIMARY_SIDEBAR_LABELS.analytics,
       traineeHistory: DEFAULT_PRIMARY_SIDEBAR_LABELS.traineeHistory,
+      achievement: DEFAULT_PRIMARY_SIDEBAR_LABELS.achievement,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
@@ -173,6 +179,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       attendance: DEFAULT_PRIMARY_SIDEBAR_ICONS.attendance,
       analytics: DEFAULT_PRIMARY_SIDEBAR_ICONS.analytics,
       traineeHistory: DEFAULT_PRIMARY_SIDEBAR_ICONS.traineeHistory,
+      achievement: DEFAULT_PRIMARY_SIDEBAR_ICONS.achievement,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
     },
   };
