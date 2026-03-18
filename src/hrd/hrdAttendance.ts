@@ -871,6 +871,10 @@ async function renderHrdSettingsSection(): Promise<void> {
                       ${c.startDate ? `<span class="course-tag"><span class="course-tag-label">개강</span>${c.startDate}</span>` : ""}
                       ${c.totalDays ? `<span class="course-tag"><span class="course-tag-label">훈련일수</span>${c.totalDays}일</span>` : ""}
                     </div>
+                    <div class="hrd-course-sms-from u-mt-4">
+                      <span class="course-tag-label">📱 발신번호</span>
+                      <input class="hrd-sms-from-input" data-course-idx="${i}" type="tel" value="${c.smsFrom || ""}" placeholder="010-0000-0000" />
+                    </div>
                   </div>
                   <div class="asst-code-section">
                     <div class="asst-code-header">🔑 보조강사 접근코드</div>
@@ -939,6 +943,20 @@ async function renderHrdSettingsSection(): Promise<void> {
         } catch (e) {
           if (msgEl) { msgEl.textContent = `저장 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`; (msgEl as HTMLElement).style.color = "#dc2626"; }
         }
+      });
+    });
+
+    // 발신번호 인라인 편집
+    courseList.querySelectorAll<HTMLInputElement>(".hrd-sms-from-input").forEach((input) => {
+      input.addEventListener("blur", () => {
+        const idx = parseInt(input.dataset.courseIdx || "0", 10);
+        if (currentConfig.courses[idx]) {
+          currentConfig.courses[idx].smsFrom = input.value.trim() || undefined;
+          saveHrdConfig(currentConfig);
+        }
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") input.blur();
       });
     });
   }
@@ -1145,6 +1163,7 @@ function setupSettingsHandlers(): void {
     const start = ($("hrdNewCourseStart") as HTMLInputElement)?.value?.trim();
     const totalDays = parseInt(($("hrdNewCourseDays") as HTMLInputElement)?.value || "0");
     const endTime = ($("hrdNewCourseEndTime") as HTMLInputElement)?.value?.trim() || "18:00";
+    const smsFrom = ($("hrdNewCourseSmsFrom") as HTMLInputElement)?.value?.trim() || "";
 
     if (!name || !id || !degrs) {
       alert("과정명, 훈련과정ID, 기수는 필수입니다.");
@@ -1158,6 +1177,7 @@ function setupSettingsHandlers(): void {
       startDate: start || "",
       totalDays: totalDays || 0,
       endTime,
+      smsFrom: smsFrom || undefined,
     });
     saveHrdConfig(currentConfig);
     void renderHrdSettingsSection();

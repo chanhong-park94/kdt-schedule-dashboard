@@ -1,6 +1,7 @@
 /** 출결 관리대상 문자/이메일 발송 모듈 */
 import { readClientEnv } from "../core/env";
 import { getContact } from "./hrdContacts";
+import { loadHrdConfig } from "./hrdConfig";
 import type { AttendanceStudent } from "./hrdTypes";
 
 // ─── Edge Function URL ──────────────────────────────────────
@@ -115,6 +116,7 @@ async function callEdgeFunction(body: object): Promise<{ ok: boolean; error?: st
 export async function sendNotification(
   target: NotifyTarget,
   method: NotifyMethod,
+  smsFrom?: string,
 ): Promise<SendResult[]> {
   const results: SendResult[] = [];
 
@@ -122,6 +124,7 @@ export async function sendNotification(
     const res = await callEdgeFunction({
       type: "sms",
       to: target.phone,
+      from: smsFrom || "",
       message: target.message,
     });
     results.push({ name: target.student.name, method: "sms", success: res.ok, error: res.error });
@@ -154,6 +157,7 @@ export async function sendNotification(
 export async function sendBulkNotifications(
   targets: NotifyTarget[],
   method: NotifyMethod,
+  smsFrom?: string,
   onProgress?: (current: number, total: number) => void,
 ): Promise<SendResult[]> {
   const selected = targets.filter((t) => t.selected);
@@ -161,7 +165,7 @@ export async function sendBulkNotifications(
 
   for (let i = 0; i < selected.length; i++) {
     onProgress?.(i + 1, selected.length);
-    const results = await sendNotification(selected[i], method);
+    const results = await sendNotification(selected[i], method, smsFrom);
     allResults.push(...results);
   }
 
@@ -272,7 +276,14 @@ async function handleSend(): Promise<void> {
   btn.disabled = true;
   btn.textContent = "⏳ 발송 중...";
 
-  const results = await sendBulkNotifications(currentTargets, currentMethod, (cur, total) => {
+  // 현재 과정의 발신번호 조회
+  const courseSelect = document.getElementById("attFilterCourse") as HTMLSelectElement | null;
+  const config = loadHrdConfig();
+  const trainPrId = courseSelect?.value || "";
+  const course = config.courses.find((c) => c.trainPrId === trainPrId);
+  const smsFrom = course?.smsFrom || "";
+
+  const results = await sendBulkNotifications(currentTargets, currentMethod, smsFrom, (cur, total) => {
     if (status) status.textContent = `${cur}/${total} 처리 중...`;
   });
 

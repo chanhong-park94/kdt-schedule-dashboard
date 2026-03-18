@@ -6448,3 +6448,9 @@ dialog { background: var(--card-bg) !important; color: var(--text) !important; b
 .notify-status-success { color: #10b981; }
 .notify-status-warn { color: #f59e0b; }
 .notify-status-error { color: #ef4444; }
+
+/* -- SMS From (과정별 발신번호) ----------------------------------------- */
+.hrd-course-sms-from { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.hrd-sms-from-input { width: 160px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); font-size: 13px; }
+.hrd-sms-from-input:focus { border-color: var(--primary); outline: none; }
+.hrd-sms-from-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
