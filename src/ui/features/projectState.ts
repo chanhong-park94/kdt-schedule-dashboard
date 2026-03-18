@@ -52,7 +52,13 @@ import {
   cloneSidebarMenuConfig,
   applySidebarMenuConfigToSidebar,
 } from "./sidebarMenu";
-import { setConflictTab, resetConflictsBeforeCompute, applyConflictFilters, applyInstructorDayFilters, applyFoDayFilters } from "./conflicts";
+import {
+  setConflictTab,
+  resetConflictsBeforeCompute,
+  applyConflictFilters,
+  applyInstructorDayFilters,
+  applyFoDayFilters,
+} from "./conflicts";
 import { setTimelineViewType } from "./timeline";
 import { loadManagementDataFromCloudFallback } from "./registry";
 

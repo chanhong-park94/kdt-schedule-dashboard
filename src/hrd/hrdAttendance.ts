@@ -1,5 +1,11 @@
 /** HRD 출결현황 대시보드 */
-import { getAssistantSession, loadAssistantCodes, saveAssistantCode, removeAssistantCode, validateAssistantCode } from "../auth/assistantAuth";
+import {
+  getAssistantSession,
+  loadAssistantCodes,
+  saveAssistantCode,
+  removeAssistantCode,
+  validateAssistantCode,
+} from "../auth/assistantAuth";
 import { Chart, registerables } from "chart.js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readClientEnv } from "../core/env";
@@ -39,11 +45,13 @@ const _sbUrlStr = typeof _sbUrl === "string" ? _sbUrl.trim() : "";
 const _sbKeyStr = typeof _sbKey === "string" ? _sbKey.trim() : "";
 const sbClient: SupabaseClient | null =
   _sbUrlStr.length > 0 && _sbKeyStr.length > 0
-    ? createClient(_sbUrlStr, _sbKeyStr, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
+    ? createClient(_sbUrlStr, _sbKeyStr, {
+        auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+      })
     : null;
 
 const GENDER_TABLE = "trainee_gender";
-let genderCache: Map<string, TraineeGender> = new Map(); // "trainPrId|degr|name" → gender
+const genderCache: Map<string, TraineeGender> = new Map(); // "trainPrId|degr|name" → gender
 
 function genderKey(trainPrId: string, degr: string, name: string): string {
   return `${trainPrId}|${degr}|${name}`;
@@ -71,10 +79,12 @@ async function saveGender(trainPrId: string, degr: string, name: string, gender:
   if (!sbClient) return;
   genderCache.set(genderKey(trainPrId, degr, name), gender);
   try {
-    await sbClient.from(GENDER_TABLE).upsert(
-      { train_pr_id: trainPrId, degr, trainee_name: name, gender },
-      { onConflict: "train_pr_id,degr,trainee_name" },
-    );
+    await sbClient
+      .from(GENDER_TABLE)
+      .upsert(
+        { train_pr_id: trainPrId, degr, trainee_name: name, gender },
+        { onConflict: "train_pr_id,degr,trainee_name" },
+      );
   } catch (e) {
     console.warn("[Gender] 저장 실패:", e);
   }
@@ -233,7 +243,7 @@ function buildStudents(
       remainingAbsent,
       attendanceRate,
       missingCheckout: false,
-      gender: (trainPrId && degr ? genderCache.get(genderKey(trainPrId, degr, t.name)) : "") as TraineeGender || "",
+      gender: ((trainPrId && degr ? genderCache.get(genderKey(trainPrId, degr, t.name)) : "") as TraineeGender) || "",
     };
     student.missingCheckout = isMissingCheckout(student, course);
     return student;
@@ -437,7 +447,8 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
   const meta = $("attTableMeta");
   if (meta) {
     let text = `총 ${filtered.length}명`;
-    if (genderM > 0 || genderF > 0) text += ` (남 ${genderM} / 여 ${genderF}${genderNone > 0 ? ` / 미지정 ${genderNone}` : ""})`;
+    if (genderM > 0 || genderF > 0)
+      text += ` (남 ${genderM} / 여 ${genderF}${genderNone > 0 ? ` / 미지정 ${genderNone}` : ""})`;
     if (searchTerm) text += ` — 검색: "${searchTerm}"`;
     meta.textContent = text;
   }
@@ -468,7 +479,12 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
       await saveGender(tid, deg, name, next);
 
       // Update display inline
-      const inner = next === "남" ? '<span class="att-gender-m">♂ 남</span>' : next === "여" ? '<span class="att-gender-f">♀ 여</span>' : '<span class="att-gender-none">-</span>';
+      const inner =
+        next === "남"
+          ? '<span class="att-gender-m">♂ 남</span>'
+          : next === "여"
+            ? '<span class="att-gender-f">♀ 여</span>'
+            : '<span class="att-gender-none">-</span>';
       (el as HTMLElement).innerHTML = inner;
 
       // Update meta
@@ -477,7 +493,8 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
       const noneCount = currentStudents.filter((s) => !s.dropout).length - mCount - fCount;
       if (meta) {
         let text = `총 ${filtered.length}명`;
-        if (mCount > 0 || fCount > 0) text += ` (남 ${mCount} / 여 ${fCount}${noneCount > 0 ? ` / 미지정 ${noneCount}` : ""})`;
+        if (mCount > 0 || fCount > 0)
+          text += ` (남 ${mCount} / 여 ${fCount}${noneCount > 0 ? ` / 미지정 ${noneCount}` : ""})`;
         meta.textContent = text;
       }
     });
@@ -838,18 +855,21 @@ async function renderHrdSettingsSection(): Promise<void> {
       currentConfig.courses.length === 0
         ? '<div class="att-empty-mini">등록된 과정이 없습니다. "기본 과정 복원" 버튼을 눌러주세요.</div>'
         : currentConfig.courses
-            .map(
-              (c, i) => {
-                const asstCodes = allAsstCodes.filter((ac) => ac.trainPrId === c.trainPrId);
-                const codeRows = asstCodes.map((ac) =>
-                  `<div class="asst-code-row" data-asst-code="${ac.code}">
+            .map((c, i) => {
+              const asstCodes = allAsstCodes.filter((ac) => ac.trainPrId === c.trainPrId);
+              const codeRows = asstCodes
+                .map(
+                  (ac) =>
+                    `<div class="asst-code-row" data-asst-code="${ac.code}">
                     <span class="asst-code-degr">${ac.degr}기</span>
                     <code class="asst-code-value">${ac.code}</code>
                     <button class="btn-sm btn-danger asst-code-del" data-asst-del="${ac.code}" title="삭제">✕</button>
-                  </div>`
-                ).join("");
-                const degrOpts = c.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
-                const statusBadge = c.startDate && c.totalDays
+                  </div>`,
+                )
+                .join("");
+              const degrOpts = c.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
+              const statusBadge =
+                c.startDate && c.totalDays
                   ? (() => {
                       const end = new Date(c.startDate);
                       end.setDate(end.getDate() + Math.ceil((c.totalDays / 5) * 7));
@@ -857,8 +877,8 @@ async function renderHrdSettingsSection(): Promise<void> {
                         ? '<span class="course-badge course-badge-done">종강</span>'
                         : '<span class="course-badge course-badge-active">진행중</span>';
                     })()
-                  : '';
-                return `<div class="hrd-course-item">
+                  : "";
+              return `<div class="hrd-course-item">
                   <div class="hrd-course-header">
                     <div class="hrd-course-title-row">
                       ${statusBadge}
@@ -887,8 +907,7 @@ async function renderHrdSettingsSection(): Promise<void> {
                     <div class="asst-code-msg" data-course-idx="${i}"></div>
                   </div>
                 </div>`;
-              },
-            )
+            })
             .join("");
 
     courseList.querySelectorAll(".hrd-course-remove").forEach((btn) => {
@@ -908,7 +927,9 @@ async function renderHrdSettingsSection(): Promise<void> {
         if (code) {
           try {
             await removeAssistantCode(code);
-          } catch (err) { console.warn("[Attendance] 보조강사 코드 삭제 실패:", err); }
+          } catch (err) {
+            console.warn("[Attendance] 보조강사 코드 삭제 실패:", err);
+          }
           void renderHrdSettingsSection();
         }
       });
@@ -932,16 +953,25 @@ async function renderHrdSettingsSection(): Promise<void> {
         try {
           const error = await validateAssistantCode(code);
           if (error) {
-            if (msgEl) { msgEl.textContent = error; (msgEl as HTMLElement).style.color = "#dc2626"; }
+            if (msgEl) {
+              msgEl.textContent = error;
+              (msgEl as HTMLElement).style.color = "#dc2626";
+            }
             return;
           }
 
           await saveAssistantCode({ code, trainPrId: course.trainPrId, degr, courseName: course.name });
           if (codeInput) codeInput.value = "";
-          if (msgEl) { msgEl.textContent = ""; (msgEl as HTMLElement).style.color = ""; }
+          if (msgEl) {
+            msgEl.textContent = "";
+            (msgEl as HTMLElement).style.color = "";
+          }
           void renderHrdSettingsSection();
         } catch (e) {
-          if (msgEl) { msgEl.textContent = `저장 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`; (msgEl as HTMLElement).style.color = "#dc2626"; }
+          if (msgEl) {
+            msgEl.textContent = `저장 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`;
+            (msgEl as HTMLElement).style.color = "#dc2626";
+          }
         }
       });
     });
@@ -1528,9 +1558,15 @@ async function fetchAndRender(): Promise<void> {
 }
 
 // ─── Data Getters (for reports) ──────────────────────────────
-export function getCachedAttendanceStudents(): AttendanceStudent[] { return currentStudents; }
-export function getCachedDailyRecords(): Map<string, AttendanceDayRecord[]> { return allDailyRecords; }
-export function getCachedHrdConfig(): HrdConfig { return currentConfig; }
+export function getCachedAttendanceStudents(): AttendanceStudent[] {
+  return currentStudents;
+}
+export function getCachedDailyRecords(): Map<string, AttendanceDayRecord[]> {
+  return allDailyRecords;
+}
+export function getCachedHrdConfig(): HrdConfig {
+  return currentConfig;
+}
 
 // ─── Init ───────────────────────────────────────────────────
 

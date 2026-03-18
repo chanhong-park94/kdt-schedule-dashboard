@@ -12,7 +12,13 @@ Chart.register(...registerables);
 let chartInstances: Chart[] = [];
 
 function destroyCharts(): void {
-  chartInstances.forEach((c) => { try { c.destroy(); } catch { /* */ } });
+  chartInstances.forEach((c) => {
+    try {
+      c.destroy();
+    } catch {
+      /* */
+    }
+  });
   chartInstances = [];
 }
 
@@ -36,7 +42,14 @@ function getRiskLevel(remaining: number, total: number): "safe" | "caution" | "w
 }
 
 function riskBadgeHtml(level: string): string {
-  const cls = level === "danger" ? "badge-danger" : level === "warning" ? "badge-warning" : level === "caution" ? "badge-caution" : "badge-safe";
+  const cls =
+    level === "danger"
+      ? "badge-danger"
+      : level === "warning"
+        ? "badge-warning"
+        : level === "caution"
+          ? "badge-caution"
+          : "badge-safe";
   const label = level === "danger" ? "제적위험" : level === "warning" ? "경고" : level === "caution" ? "주의" : "정상";
   return `<span class="dash-risk-badge ${cls}">${label}</span>`;
 }
@@ -46,7 +59,8 @@ function statusBadgeHtml(status: string): string {
   if (status.includes("중도탈락") || status.includes("수료포기")) cls = "th-status-dropout";
   else if (status.includes("조기취업")) cls = "th-status-early-employ";
   else if (status.includes("80%이상수료")) cls = "th-status-partial";
-  else if (status.includes("수료") || status.includes("정상수료") || status.includes("수료후취업")) cls = "th-status-complete";
+  else if (status.includes("수료") || status.includes("정상수료") || status.includes("수료후취업"))
+    cls = "th-status-complete";
   return `<span class="th-detail-badge ${cls}">${status}</span>`;
 }
 
@@ -76,9 +90,10 @@ export function initTraineeHistory(): void {
 
   courseSelect?.addEventListener("change", () => {
     const opt = courseSelect.selectedOptions[0];
-    const degrs = opt?.dataset.degrs ? JSON.parse(opt.dataset.degrs) as string[] : [];
+    const degrs = opt?.dataset.degrs ? (JSON.parse(opt.dataset.degrs) as string[]) : [];
     if (degrSelect) {
-      degrSelect.innerHTML = `<option value="">기수 선택</option>` + degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
+      degrSelect.innerHTML =
+        `<option value="">기수 선택</option>` + degrs.map((d) => `<option value="${d}">${d}기</option>`).join("");
       degrSelect.disabled = degrs.length === 0;
     }
   });
@@ -146,14 +161,16 @@ async function loadAndRenderList(
       <table class="th-roster-table">
         <thead><tr><th>이름</th><th>상태</th></tr></thead>
         <tbody>
-          ${filtered.map((raw) => {
-            const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
-            const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString().trim() || "훈련중";
-            return `<tr>
+          ${filtered
+            .map((raw) => {
+              const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
+              const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString().trim() || "훈련중";
+              return `<tr>
               <td><span class="th-name-link" data-name="${name}">${name}</span></td>
               <td>${statusBadgeHtml(stNm)}</td>
             </tr>`;
-          }).join("")}
+            })
+            .join("")}
         </tbody>
       </table>
     `;
@@ -200,7 +217,9 @@ async function showTraineeDetail(
       const n = (r.trneeCstmrNm || r.trneNm || r.trneNm1 || r.cstmrNm || "").toString().trim();
       return n === name;
     });
-    const stNm = trainee ? (trainee.trneeSttusNm || trainee.atendSttsNm || trainee.stttsCdNm || "").toString().trim() || "훈련중" : "훈련중";
+    const stNm = trainee
+      ? (trainee.trneeSttusNm || trainee.atendSttsNm || trainee.stttsCdNm || "").toString().trim() || "훈련중"
+      : "훈련중";
     // 출결 데이터 (최근 6개월)
     const now = new Date();
     const months: string[] = [];
@@ -214,7 +233,9 @@ async function showTraineeDetail(
       try {
         const records = await fetchDailyAttendance(config, trainPrId, degr, month);
         allRecords.push(...records);
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
     const nameKey = name.replace(/\s+/g, "");
@@ -237,17 +258,23 @@ async function showTraineeDetail(
 
     // 경보 사유
     const alerts: { text: string; level: string }[] = [];
-    if (riskLevel === "danger") alerts.push({ text: `잔여 결석 허용일 ${remainingAbsent}일 — 제적 위험`, level: "high" });
+    if (riskLevel === "danger")
+      alerts.push({ text: `잔여 결석 허용일 ${remainingAbsent}일 — 제적 위험`, level: "high" });
     if (riskLevel === "warning") alerts.push({ text: `잔여 결석 허용일 ${remainingAbsent}일 — 경고`, level: "medium" });
     if (lateDays >= 5) alerts.push({ text: `상습 지각 ${lateDays}회`, level: "medium" });
 
     // 연속결석 체크
-    let maxConsec = 0, curConsec = 0;
+    let maxConsec = 0,
+      curConsec = 0;
     const sortedRecords = [...myRecords].sort((a, b) => (a.atendDe || "").localeCompare(b.atendDe || ""));
     for (const r of sortedRecords) {
       const s = resolveStatusStr(r);
-      if (isAbsentStatus(s)) { curConsec++; if (curConsec > maxConsec) maxConsec = curConsec; }
-      else { curConsec = 0; }
+      if (isAbsentStatus(s)) {
+        curConsec++;
+        if (curConsec > maxConsec) maxConsec = curConsec;
+      } else {
+        curConsec = 0;
+      }
     }
     if (maxConsec >= 3) alerts.push({ text: `최대 연속결석 ${maxConsec}일`, level: "high" });
 
@@ -270,7 +297,8 @@ async function showTraineeDetail(
       wStart.setDate(wStart.getDate() + w * 7);
       const wEnd = new Date(wStart);
       wEnd.setDate(wEnd.getDate() + 6);
-      let total = 0, attended = 0;
+      let total = 0,
+        attended = 0;
       for (const [dateStr, status] of dayMap) {
         const d = new Date(dateStr);
         if (d >= wStart && d <= wEnd) {
@@ -310,11 +338,15 @@ async function showTraineeDetail(
         </div>
       </div>
 
-      ${alerts.length > 0 ? `
+      ${
+        alerts.length > 0
+          ? `
         <ul class="th-alert-list">
           ${alerts.map((a) => `<li class="th-alert-item alert-${a.level}">${a.text}</li>`).join("")}
         </ul>
-      ` : ""}
+      `
+          : ""
+      }
 
       <div class="th-calendar" id="thCalendar"></div>
 
@@ -341,16 +373,20 @@ async function showTraineeDetail(
         type: "line",
         data: {
           labels: validWeeks.map((w) => w.label),
-          datasets: [{
-            label: "출석률 (%)",
-            data: validWeeks.map((w) => w.rate),
-            borderColor: "#6366f1",
-            backgroundColor: "rgba(99,102,241,.1)",
-            fill: true,
-            tension: 0.3,
-            pointRadius: 4,
-            pointBackgroundColor: validWeeks.map((w) => w.rate < 70 ? "#ef4444" : w.rate < 80 ? "#f59e0b" : "#10b981"),
-          }],
+          datasets: [
+            {
+              label: "출석률 (%)",
+              data: validWeeks.map((w) => w.rate),
+              borderColor: "#6366f1",
+              backgroundColor: "rgba(99,102,241,.1)",
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: validWeeks.map((w) =>
+                w.rate < 70 ? "#ef4444" : w.rate < 80 ? "#f59e0b" : "#10b981",
+              ),
+            },
+          ],
         },
         options: {
           responsive: true,

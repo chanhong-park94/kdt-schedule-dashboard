@@ -32,7 +32,9 @@ export function refreshNotificationItems(): NotificationItem[] {
   return appState.notificationItems;
 }
 
-export function getCohortNotificationCountMap(items: NotificationItem[]): Map<string, { warning: number; error: number }> {
+export function getCohortNotificationCountMap(
+  items: NotificationItem[],
+): Map<string, { warning: number; error: number }> {
   const map = new Map<string, { warning: number; error: number }>();
   void items;
   return map;
@@ -81,7 +83,11 @@ export function renderNotificationCenter(): void {
   notificationStatusList.appendChild(wrap);
 }
 
-export function pushRecentActionLog(severity: "INFO" | "WARNING" | "ERROR", message: string, focusSectionId?: string): void {
+export function pushRecentActionLog(
+  severity: "INFO" | "WARNING" | "ERROR",
+  message: string,
+  focusSectionId?: string,
+): void {
   appState.recentActionLogs = [
     {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

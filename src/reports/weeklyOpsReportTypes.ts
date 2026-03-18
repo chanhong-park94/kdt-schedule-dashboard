@@ -6,8 +6,8 @@ export interface WeeklyOpsReportConfig {
   includePage3: boolean;
   includePage4: boolean;
   includePage5: boolean;
-  reportDate: string;       // YYYY-MM-DD
-  reportWeekLabel: string;  // e.g. "2026년 제11주차 (3/9~3/13)"
+  reportDate: string; // YYYY-MM-DD
+  reportWeekLabel: string; // e.g. "2026년 제11주차 (3/9~3/13)"
 }
 
 // ─── Diagnostics ────────────────────────────────────────────
@@ -33,7 +33,7 @@ export interface Page3AttendanceData {
 export interface Page3Metrics {
   totalStudents: number;
   avgAttendanceRate: number;
-  riskCount: number;        // danger + warning
+  riskCount: number; // danger + warning
   missingCheckoutCount: number;
   lateCount: number;
   absentCount: number;

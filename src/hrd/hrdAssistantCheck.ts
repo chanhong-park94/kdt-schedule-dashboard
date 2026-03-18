@@ -57,7 +57,7 @@ interface MergedRow {
 const $ = (id: string) => document.getElementById(id);
 
 // ─── State ──────────────────────────────────────────────────
-let debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 let currentSession: AssistantSession | null = null;
 
 // ─── Supabase CRUD ──────────────────────────────────────────
@@ -83,7 +83,12 @@ async function upsertCheck(row: Omit<CheckRow, "id" | "created_at" | "updated_at
   if (error) throw new Error(error.message);
 }
 
-async function fetchChecksRange(trainPrId: string, degr: string, startDate: string, endDate: string): Promise<CheckRow[]> {
+async function fetchChecksRange(
+  trainPrId: string,
+  degr: string,
+  startDate: string,
+  endDate: string,
+): Promise<CheckRow[]> {
   const supabase = getClient();
   const { data, error } = await supabase
     .from(TABLE)

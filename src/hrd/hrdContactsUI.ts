@@ -225,14 +225,16 @@ async function handleBulkSubmit(): Promise<void> {
     return;
   }
 
-  const rows = lines.map((line) => {
-    const parts = line.split(",").map((p) => p.trim());
-    return {
-      name: parts[0] || "",
-      phone: parts[1] || "",
-      email: parts[2] || "",
-    };
-  }).filter((r) => r.name);
+  const rows = lines
+    .map((line) => {
+      const parts = line.split(",").map((p) => p.trim());
+      return {
+        name: parts[0] || "",
+        phone: parts[1] || "",
+        email: parts[2] || "",
+      };
+    })
+    .filter((r) => r.name);
 
   if (status) status.textContent = `⏳ ${rows.length}건 등록 중...`;
 

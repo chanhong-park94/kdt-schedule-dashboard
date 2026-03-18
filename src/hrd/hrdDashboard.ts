@@ -65,7 +65,13 @@ const KPI_TARGET = { employed: 75, unemployed: 85 } as const;
 let chartInstances: Chart[] = [];
 
 function destroyCharts(): void {
-  chartInstances.forEach((c) => { try { c.destroy(); } catch { /* */ } });
+  chartInstances.forEach((c) => {
+    try {
+      c.destroy();
+    } catch {
+      /* */
+    }
+  });
   chartInstances = [];
 }
 
@@ -100,7 +106,10 @@ function resolveStatusStr(raw: HrdRawAttendance): string {
 }
 
 // ─── Data Fetch ─────────────────────────────────────────
-async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) => void): Promise<{
+async function fetchDashboardData(
+  config: HrdConfig,
+  onProgress?: (msg: string) => void,
+): Promise<{
   courseData: DashCourseData[];
   trainees: DashTrainee[];
 }> {
@@ -144,7 +153,9 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
             try {
               const records = await fetchDailyAttendance(config, course.trainPrId, degr, month);
               allAttendance.push(...records);
-            } catch (err) { console.warn(`[Dashboard] ${month} 출결 조회 실패:`, err); }
+            } catch (err) {
+              console.warn(`[Dashboard] ${month} 출결 조회 실패:`, err);
+            }
           }
 
           for (const raw of roster) {
@@ -164,7 +175,8 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
             const excusedDays = statuses.filter(isExcusedStatus).length;
             const td = course.totalDays || 0;
             const effectiveDays = td > 0 ? td - excusedDays : myRecords.length || 1;
-            const attendanceRate = myRecords.length === 0 ? -1 : effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : 100;
+            const attendanceRate =
+              myRecords.length === 0 ? -1 : effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : 100;
             const maxAbsent = Math.floor(td * 0.2);
             const remainingAbsent = maxAbsent - absentDays;
 
@@ -184,7 +196,9 @@ async function fetchDashboardData(config: HrdConfig, onProgress?: (msg: string) 
               riskLevel: getRiskLevel(remainingAbsent, td),
             });
           }
-        } catch (err) { console.warn("[Dashboard] 과정 데이터 조회 실패:", err); }
+        } catch (err) {
+          console.warn("[Dashboard] 과정 데이터 조회 실패:", err);
+        }
 
         done++;
         onProgress?.(`${done}/${totalDegrs} 조회 중...`);
@@ -270,7 +284,7 @@ function renderDonutChart(courseData: DashCourseData[]): void {
     courseMap.set(c.courseName, (courseMap.get(c.courseName) || 0) + c.active);
   }
 
-  const labels = [...courseMap.keys()].map((n) => n.length > 8 ? n.slice(0, 8) + ".." : n);
+  const labels = [...courseMap.keys()].map((n) => (n.length > 8 ? n.slice(0, 8) + ".." : n));
   const data = [...courseMap.values()];
 
   container.innerHTML = `
@@ -288,19 +302,24 @@ function renderDonutChart(courseData: DashCourseData[]): void {
       type: "doughnut",
       data: {
         labels,
-        datasets: [{
-          data,
-          backgroundColor: CHART_COLORS.donut.slice(0, data.length),
-          borderWidth: 2,
-          borderColor: "#ffffff",
-        }],
+        datasets: [
+          {
+            data,
+            backgroundColor: CHART_COLORS.donut.slice(0, data.length),
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
         cutout: "55%",
         plugins: {
-          legend: { position: "bottom", labels: { color: CHART_COLORS.text, padding: 12, usePointStyle: true, font: { size: 11 } } },
+          legend: {
+            position: "bottom",
+            labels: { color: CHART_COLORS.text, padding: 12, usePointStyle: true, font: { size: 11 } },
+          },
         },
       },
     });
@@ -317,9 +336,8 @@ function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[])
   const dropoutAll = courseData.reduce((s, c) => s + c.dropout, 0);
   const activeAll = totalAll - dropoutAll;
   const activeTrainees = trainees.filter((t) => !t.isDropout && t.attendanceRate >= 0);
-  const avgAttendance = activeTrainees.length > 0
-    ? activeTrainees.reduce((s, t) => s + t.attendanceRate, 0) / activeTrainees.length
-    : 0;
+  const avgAttendance =
+    activeTrainees.length > 0 ? activeTrainees.reduce((s, t) => s + t.attendanceRate, 0) / activeTrainees.length : 0;
   const courseCount = new Set(courseData.map((c) => c.courseName)).size;
 
   container.innerHTML = `
@@ -328,7 +346,7 @@ function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[])
     </div>
     <div style="padding:4px 20px 16px;">
       <div class="dash-stat-big">${activeAll}<span style="font-size:14px;font-weight:500;color:var(--text-secondary);margin-left:4px;">명 재적</span></div>
-      <div class="dash-stat-bar"><div class="dash-stat-bar-fill" style="width:${totalAll > 0 ? (activeAll / totalAll * 100) : 0}%"></div></div>
+      <div class="dash-stat-bar"><div class="dash-stat-bar-fill" style="width:${totalAll > 0 ? (activeAll / totalAll) * 100 : 0}%"></div></div>
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:0;">
         <div class="dash-stat-row"><span class="dash-stat-label">운영 과정</span><span class="dash-stat-value">${courseCount}개</span></div>
         <div class="dash-stat-row"><span class="dash-stat-label">전체 등록</span><span class="dash-stat-value">${totalAll}명</span></div>
@@ -372,7 +390,7 @@ function renderTrendChart(courses: HrdCourse[], trainees: DashTrainee[]): void {
 
   // 진행률이 있는 과정만 표시
   const courseNames = [...progressMap.keys()];
-  const labels = courseNames.map((n) => n.length > 10 ? n.slice(0, 10) + ".." : n);
+  const labels = courseNames.map((n) => (n.length > 10 ? n.slice(0, 10) + ".." : n));
   const progressData = courseNames.map((n) => progressMap.get(n) || 0);
   const attendanceData = courseNames.map((n) => {
     const att = attMap.get(n);
@@ -416,7 +434,12 @@ function renderTrendChart(courses: HrdCourse[], trainees: DashTrainee[]): void {
         maintainAspectRatio: false,
         scales: {
           x: { ticks: { color: CHART_COLORS.text, font: { size: 11 } }, grid: { display: false } },
-          y: { min: 0, max: 100, ticks: { color: CHART_COLORS.text, callback: (v) => v + "%" }, grid: { color: CHART_COLORS.grid } },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: CHART_COLORS.text, callback: (v) => v + "%" },
+            grid: { color: CHART_COLORS.grid },
+          },
         },
         plugins: {
           legend: { labels: { color: CHART_COLORS.text, usePointStyle: true, pointStyle: "rectRounded", padding: 16 } },
@@ -460,8 +483,7 @@ function renderRiskStudentList(trainees: DashTrainee[]): void {
 
   const badgeClass = (level: string) =>
     level === "danger" ? "badge-danger" : level === "warning" ? "badge-warning" : "badge-caution";
-  const badgeLabel = (level: string) =>
-    level === "danger" ? "제적위험" : level === "warning" ? "경고" : "주의";
+  const badgeLabel = (level: string) => (level === "danger" ? "제적위험" : level === "warning" ? "경고" : "주의");
 
   container.innerHTML = `
     <div class="dash-panel-header">
@@ -505,7 +527,10 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
   const container = $("dashboardCompareCharts");
   if (!container) return;
 
-  const courseMap = new Map<string, { total: number; dropout: number; category: CourseCategory; riskCount: number; activeCount: number }>();
+  const courseMap = new Map<
+    string,
+    { total: number; dropout: number; category: CourseCategory; riskCount: number; activeCount: number }
+  >();
   for (const c of courseData) {
     const key = c.courseName;
     const existing = courseMap.get(key) || { total: 0, dropout: 0, category: c.category, riskCount: 0, activeCount: 0 };
@@ -540,13 +565,17 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
     const chart1 = new Chart(ctx1, {
       type: "bar",
       data: {
-        labels: courseNames.map((n) => n.length > 8 ? n.slice(0, 8) + ".." : n),
+        labels: courseNames.map((n) => (n.length > 8 ? n.slice(0, 8) + ".." : n)),
         datasets: [
           {
             label: "방어율 (%)",
             data: defenseRates,
             backgroundColor: defenseRates.map((r, i) =>
-              r >= targetRates[i] ? CHART_COLORS.green : r >= targetRates[i] - 5 ? CHART_COLORS.amber : CHART_COLORS.red
+              r >= targetRates[i]
+                ? CHART_COLORS.green
+                : r >= targetRates[i] - 5
+                  ? CHART_COLORS.amber
+                  : CHART_COLORS.red,
             ),
             borderRadius: 6,
           },
@@ -570,7 +599,13 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
           x: { min: 0, max: 100, ticks: { color: CHART_COLORS.text }, grid: { color: CHART_COLORS.grid } },
           y: { ticks: { color: CHART_COLORS.text, font: { size: 11 } }, grid: { display: false } },
         },
-        plugins: { legend: { display: true, position: "bottom", labels: { color: CHART_COLORS.text, padding: 12, usePointStyle: true, font: { size: 11 } } } },
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: { color: CHART_COLORS.text, padding: 12, usePointStyle: true, font: { size: 11 } },
+          },
+        },
       },
     });
     chartInstances.push(chart1);
@@ -583,9 +618,11 @@ export function navigateToTraineeHistory(name: string, courseName: string, train
   if (navButton) navButton.click();
 
   setTimeout(() => {
-    window.dispatchEvent(new CustomEvent("openTraineeDetail", {
-      detail: { name, courseName, trainPrId, degr },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("openTraineeDetail", {
+        detail: { name, courseName, trainPrId, degr },
+      }),
+    );
   }, 300);
 }
 
@@ -611,7 +648,8 @@ export async function initDashboard(): Promise<void> {
     renderCompareCharts(courseData, trainees);
   } catch (e) {
     const container = $("dashboardKpiCards");
-    if (container) container.innerHTML = `<div class="dash-empty">데이터를 불러올 수 없습니다. 설정을 확인해주세요.</div>`;
+    if (container)
+      container.innerHTML = `<div class="dash-empty">데이터를 불러올 수 없습니다. 설정을 확인해주세요.</div>`;
     console.warn("[Dashboard] Error:", e);
   } finally {
     if (loading) loading.style.display = "none";

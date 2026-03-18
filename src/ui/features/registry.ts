@@ -385,9 +385,9 @@ export function renderSubjectMappingTable(): void {
     return;
   }
 
-  const summaries = deps.buildModuleAssignSummaries().filter(
-    (summary) => normalizeCourseId(parseCourseGroupFromCohortName(summary.cohort).course) === selectedCourseId,
-  );
+  const summaries = deps
+    .buildModuleAssignSummaries()
+    .filter((summary) => normalizeCourseId(parseCourseGroupFromCohortName(summary.cohort).course) === selectedCourseId);
   if (summaries.length === 0) {
     const empty = document.createElement("div");
     empty.className = "muted";

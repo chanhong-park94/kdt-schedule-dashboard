@@ -224,7 +224,9 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
       ),
       traineeHistory: normalizeSidebarMenuLabel(
         "traineeHistory",
-        typeof parsed.labels?.traineeHistory === "string" ? parsed.labels.traineeHistory : fallback.labels.traineeHistory,
+        typeof parsed.labels?.traineeHistory === "string"
+          ? parsed.labels.traineeHistory
+          : fallback.labels.traineeHistory,
       ),
       settings: normalizeSidebarMenuLabel(
         "settings",
@@ -315,7 +317,9 @@ export function applySidebarMenuConfigToSidebar(config: SidebarMenuConfig): void
 
   if (jibbleMainNav) {
     // Remove all existing section labels and flex spacers
-    jibbleMainNav.querySelectorAll(".nav-section-label, .nav-spacer, [style*='flex:1'], [style*='flex: 1']").forEach((el) => el.remove());
+    jibbleMainNav
+      .querySelectorAll(".nav-section-label, .nav-spacer, [style*='flex:1'], [style*='flex: 1']")
+      .forEach((el) => el.remove());
 
     // Build a lookup: navKey → section index + label
     const keyToSectionIdx = new Map<PrimarySidebarNavKey, number>();

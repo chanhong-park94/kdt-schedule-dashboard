@@ -2,13 +2,7 @@
 import { Chart, registerables } from "chart.js";
 import { fetchRoster } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
-import type {
-  HrdConfig,
-  HrdRawTrainee,
-  DropoutRosterEntry,
-  DropoutSummary,
-  CourseCategory,
-} from "./hrdTypes";
+import type { HrdConfig, HrdRawTrainee, DropoutRosterEntry, DropoutSummary, CourseCategory } from "./hrdTypes";
 
 Chart.register(...registerables);
 
@@ -751,7 +745,9 @@ async function fetchAndRenderDropout(): Promise<void> {
 }
 
 // ─── Data Getter (for reports) ───────────────────────────────
-export function getCachedDropoutData(): DropoutRosterEntry[] { return dropoutData; }
+export function getCachedDropoutData(): DropoutRosterEntry[] {
+  return dropoutData;
+}
 
 export function initDropoutDashboard(): void {
   // Query button

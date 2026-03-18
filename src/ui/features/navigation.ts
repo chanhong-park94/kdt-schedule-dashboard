@@ -113,7 +113,10 @@ export function setPageGroupVisibility(activePage: PrimarySidebarNavKey): void {
   }
 }
 
-export function activatePrimarySidebarPage(navKey: PrimarySidebarNavKey, options: ActivatePrimaryPageOptions = {}): void {
+export function activatePrimarySidebarPage(
+  navKey: PrimarySidebarNavKey,
+  options: ActivatePrimaryPageOptions = {},
+): void {
   appState.activePrimarySidebarPage = navKey;
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
@@ -168,7 +171,9 @@ export function setJibbleSidebarActive(navKey: PrimarySidebarNavKey): void {
 }
 
 export function setupJibbleSidebarNavigation(): void {
-  const primaryNavButtons = document.querySelectorAll<HTMLButtonElement>("#jibbleMainNav .jibble-nav-item[data-nav-key]");
+  const primaryNavButtons = document.querySelectorAll<HTMLButtonElement>(
+    "#jibbleMainNav .jibble-nav-item[data-nav-key]",
+  );
   if (primaryNavButtons.length === 0) {
     return;
   }

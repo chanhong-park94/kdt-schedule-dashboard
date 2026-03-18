@@ -53,11 +53,7 @@ function chartToBase64(canvas: HTMLCanvasElement, config: ChartConfiguration): s
   return img;
 }
 
-function generateChartImages(
-  ach: AchievementRecord[],
-  frm: FormativeRecord[],
-  fa: FieldAppRecord[],
-): ChartImages {
+function generateChartImages(ach: AchievementRecord[], frm: FormativeRecord[], fa: FieldAppRecord[]): ChartImages {
   // 1) 성취평가 사전/사후 비교 (bar)
   const courseMap = new Map<string, { pre: number[]; post: number[] }>();
   for (const r of ach) {
@@ -87,7 +83,10 @@ function generateChartImages(
     },
     options: {
       scales: { y: { beginAtZero: true, max: 30 } },
-      plugins: { legend: { position: "top" }, title: { display: true, text: "과정별 사전/사후 성취평가 비교", font: { size: 13 } } },
+      plugins: {
+        legend: { position: "top" },
+        title: { display: true, text: "과정별 사전/사후 성취평가 비교", font: { size: 13 } },
+      },
     },
   });
 
@@ -128,7 +127,12 @@ function generateChartImages(
     frmCourseMap.get(r.course)!.push([...r.phase1Scores, ...r.phase2Scores]);
   }
   const weekLabels = ["1주차", "2주차", "3주차", "4주차", "5주차", "6주차", "7주차", "8주차"];
-  const lineColors = ["rgba(99, 102, 241, 0.8)", "rgba(16, 185, 129, 0.8)", "rgba(245, 158, 11, 0.8)", "rgba(239, 68, 68, 0.8)"];
+  const lineColors = [
+    "rgba(99, 102, 241, 0.8)",
+    "rgba(16, 185, 129, 0.8)",
+    "rgba(245, 158, 11, 0.8)",
+    "rgba(239, 68, 68, 0.8)",
+  ];
   const frmDatasets = [...frmCourseMap.entries()].map(([course, allScores], idx) => {
     const weekAvgs = weekLabels.map((_, wi) => {
       const vals = allScores.map((s) => s[wi]).filter((v) => v > 0);
@@ -149,7 +153,10 @@ function generateChartImages(
     data: { labels: weekLabels, datasets: frmDatasets },
     options: {
       scales: { y: { beginAtZero: false, min: 1, max: 5 } },
-      plugins: { legend: { position: "top" }, title: { display: true, text: "형성평가 주차별 추이", font: { size: 13 } } },
+      plugins: {
+        legend: { position: "top" },
+        title: { display: true, text: "형성평가 주차별 추이", font: { size: 13 } },
+      },
     },
   });
 
@@ -164,13 +171,15 @@ function generateChartImages(
     type: "radar",
     data: {
       labels: radarLabels,
-      datasets: [{
-        label: "현업적용 평균",
-        data: avgScores,
-        backgroundColor: COLORS.radar,
-        borderColor: COLORS.radarBorder,
-        pointBackgroundColor: COLORS.radarBorder,
-      }],
+      datasets: [
+        {
+          label: "현업적용 평균",
+          data: avgScores,
+          backgroundColor: COLORS.radar,
+          borderColor: COLORS.radarBorder,
+          pointBackgroundColor: COLORS.radarBorder,
+        },
+      ],
     },
     options: {
       scales: { r: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } },
@@ -191,17 +200,22 @@ function generateChartImages(
     type: "bar",
     data: {
       labels: ["성취평가", "형성평가", "현업적용"],
-      datasets: [{
-        label: "응답/완료율 (%)",
-        data: [achRate, frmRate, faRate],
-        backgroundColor: [COLORS.post, COLORS.accent, "rgba(245, 158, 11, 0.8)"],
-        borderRadius: 4,
-      }],
+      datasets: [
+        {
+          label: "응답/완료율 (%)",
+          data: [achRate, frmRate, faRate],
+          backgroundColor: [COLORS.post, COLORS.accent, "rgba(245, 158, 11, 0.8)"],
+          borderRadius: 4,
+        },
+      ],
     },
     options: {
       indexAxis: "y" as const,
       scales: { x: { beginAtZero: true, max: 100 } },
-      plugins: { legend: { display: false }, title: { display: true, text: "평가 유형별 응답/완료율", font: { size: 13 } } },
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: "평가 유형별 응답/완료율", font: { size: 13 } },
+      },
     },
   });
 
@@ -605,13 +619,17 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
           <th>A등급(사전)</th><th>A등급(사후)</th><th>응답률</th>
         </tr></thead>
         <tbody>
-          ${achSummary.map((r) => `<tr>
+          ${achSummary
+            .map(
+              (r) => `<tr>
             <td>${r.course}</td><td>${r.cohort}</td><td>${r.studentCount}</td>
             <td>${r.preAvg.toFixed(1)}</td><td><strong>${r.postAvg.toFixed(1)}</strong></td>
             <td class="improve">+${r.improvement.toFixed(1)}</td>
             <td>${r.preGradeA}</td><td><strong>${r.postGradeA}</strong></td>
             <td>${(r.responseRate * 100).toFixed(0)}%</td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -624,11 +642,15 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
           <th>1차 평균</th><th>2차 평균</th><th>종합 평균</th>
         </tr></thead>
         <tbody>
-          ${frmSummary.map((r) => `<tr>
+          ${frmSummary
+            .map(
+              (r) => `<tr>
             <td>${r.course}</td><td>${r.cohort}</td><td>${r.studentCount}</td>
             <td>${r.phase1Avg.toFixed(2)}</td><td>${r.phase2Avg.toFixed(2)}</td>
             <td><strong>${r.overallAvg.toFixed(2)}</strong></td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -641,12 +663,16 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
           <th>평균점수</th><th>응답완료</th><th>응답률</th>
         </tr></thead>
         <tbody>
-          ${faSummary.map((r) => `<tr>
+          ${faSummary
+            .map(
+              (r) => `<tr>
             <td>${r.course}</td><td>${r.cohort}</td><td>${r.studentCount}</td>
             <td><strong>${r.avgScore.toFixed(2)}</strong></td>
             <td>${r.completed}</td>
             <td>${(r.responseRate * 100).toFixed(0)}%</td>
-          </tr>`).join("")}
+          </tr>`,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -664,12 +690,16 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
         <th>향상도</th><th>등급변화</th>
       </tr></thead>
       <tbody>
-        ${ach.map((r) => `<tr>
+        ${ach
+          .map(
+            (r) => `<tr>
           <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
           <td>${r.preTotal}</td><td class="grade-${r.preGrade}">${r.preGrade}</td>
           <td><strong>${r.postTotal}</strong></td><td class="grade-${r.postGrade}">${r.postGrade}</td>
           <td class="improve">+${r.improvement}</td><td>${r.gradeChange}</td>
-        </tr>`).join("")}
+        </tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -687,7 +717,9 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
         <th>종합</th><th>상태</th>
       </tr></thead>
       <tbody>
-        ${frm.map((r) => `<tr>
+        ${frm
+          .map(
+            (r) => `<tr>
           <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
           ${r.phase1Scores.map((s) => `<td>${s}</td>`).join("")}
           <td><strong>${r.phase1Avg.toFixed(1)}</strong></td>
@@ -695,7 +727,9 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
           <td><strong>${r.phase2Avg.toFixed(1)}</strong></td>
           <td><strong>${r.overallAvg.toFixed(2)}</strong></td>
           <td>${r.status}</td>
-        </tr>`).join("")}
+        </tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -709,12 +743,16 @@ export function printKpiReport(data: KpiAllData, course = "all", cohort = "all")
         <th>평균</th><th>등급</th>
       </tr></thead>
       <tbody>
-        ${fa.map((r) => `<tr>
+        ${fa
+          .map(
+            (r) => `<tr>
           <td>${r.no}</td><td>${r.name}</td><td>${r.course}</td><td>${r.cohort}</td>
           ${r.scores.map((s) => `<td>${s}</td>`).join("")}
           <td><strong>${r.avgScore.toFixed(2)}</strong></td>
           <td class="grade-${r.grade}">${r.grade}</td>
-        </tr>`).join("")}
+        </tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>

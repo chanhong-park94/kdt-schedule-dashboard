@@ -12,7 +12,16 @@ export type AppTimelineViewType =
   | "WEEK_GRID"
   | "MONTH_CALENDAR";
 
-export type AppSidebarNavKey = "dashboard" | "timeline" | "dropout" | "generator" | "kpi" | "attendance" | "analytics" | "traineeHistory" | "settings";
+export type AppSidebarNavKey =
+  | "dashboard"
+  | "timeline"
+  | "dropout"
+  | "generator"
+  | "kpi"
+  | "attendance"
+  | "analytics"
+  | "traineeHistory"
+  | "settings";
 
 export type AppSidebarMenuConfig = {
   order: AppSidebarNavKey[];
@@ -186,7 +195,17 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     icons?: Record<string, unknown>;
   };
 
-  const defaultOrder: AppSidebarNavKey[] = ["dashboard", "timeline", "dropout", "generator", "kpi", "attendance", "analytics", "traineeHistory", "settings"];
+  const defaultOrder: AppSidebarNavKey[] = [
+    "dashboard",
+    "timeline",
+    "dropout",
+    "generator",
+    "kpi",
+    "attendance",
+    "analytics",
+    "traineeHistory",
+    "settings",
+  ];
 
   const order: AppSidebarNavKey[] = [];
   if (Array.isArray(row.order)) {

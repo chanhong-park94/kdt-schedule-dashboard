@@ -59,11 +59,7 @@ export async function loadContacts(trainPrId: string, degr: string): Promise<Map
   if (!sbClient) return contactCache;
 
   try {
-    const { data, error } = await sbClient
-      .from(TABLE)
-      .select("*")
-      .eq("train_pr_id", trainPrId)
-      .eq("degr", degr);
+    const { data, error } = await sbClient.from(TABLE).select("*").eq("train_pr_id", trainPrId).eq("degr", degr);
 
     if (error) {
       console.warn("[Contacts] Load error:", error.message);
@@ -138,9 +134,7 @@ export async function bulkUpsertContacts(
   }));
 
   try {
-    const { error } = await sbClient
-      .from(TABLE)
-      .upsert(upsertRows, { onConflict: "train_pr_id,degr,trainee_name" });
+    const { error } = await sbClient.from(TABLE).upsert(upsertRows, { onConflict: "train_pr_id,degr,trainee_name" });
 
     if (error) {
       console.warn("[Contacts] Bulk upsert error:", error.message);
@@ -161,10 +155,7 @@ export async function bulkUpsertContacts(
 }
 
 /** HRD 명단 + DB 연락처 병합 */
-export async function loadContactsWithRoster(
-  trainPrId: string,
-  degr: string,
-): Promise<ContactDisplay[]> {
+export async function loadContactsWithRoster(trainPrId: string, degr: string): Promise<ContactDisplay[]> {
   const config = loadHrdConfig();
 
   // 병렬: HRD 명단 + DB 연락처

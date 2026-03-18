@@ -35,10 +35,7 @@ export function getWeekLabel(date: Date): string {
  * @param config 페이지 선택 + 날짜 설정
  * @param kpiData KPI 데이터 (null이면 Page 5 비활성)
  */
-export function printWeeklyOpsReport(
-  config: WeeklyOpsReportConfig,
-  kpiData: KpiAllData | null,
-): void {
+export function printWeeklyOpsReport(config: WeeklyOpsReportConfig, kpiData: KpiAllData | null): void {
   const data = collectWeeklyOpsReportData(config, kpiData);
   const html = buildWeeklyOpsReportHtml(data);
 

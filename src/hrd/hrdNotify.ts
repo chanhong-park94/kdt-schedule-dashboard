@@ -30,7 +30,9 @@ export function loadTemplates(): NotifyTemplate {
   try {
     const stored = localStorage.getItem(TEMPLATE_STORAGE_KEY);
     if (stored) return { ...DEFAULT_TEMPLATES, ...JSON.parse(stored) };
-  } catch { /* fallback */ }
+  } catch {
+    /* fallback */
+  }
   return { ...DEFAULT_TEMPLATES };
 }
 
@@ -53,7 +55,9 @@ function loadSendHistory(): SendHistoryEntry[] {
   try {
     const stored = localStorage.getItem(SEND_HISTORY_KEY);
     return stored ? JSON.parse(stored) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function saveSendEntry(entry: SendHistoryEntry): void {
@@ -257,7 +261,10 @@ function renderModalContent(): void {
       </label>
     </div>
 
-    ${!hasTargets ? `<div class="dash-empty">관리대상 훈련생이 없습니다.</div>` : `
+    ${
+      !hasTargets
+        ? `<div class="dash-empty">관리대상 훈련생이 없습니다.</div>`
+        : `
       <div class="notify-target-info">
         발송 대상: <strong>${selectedCount}명</strong>
         ${!hasPhone && (currentMethod === "sms" || currentMethod === "both") ? `<span class="notify-warn">⚠️ 전화번호 미등록</span>` : ""}
@@ -265,10 +272,11 @@ function renderModalContent(): void {
       </div>
 
       <div class="notify-target-list">
-        ${currentTargets.map((t, i) => {
-          const riskEmoji = t.student.riskLevel === "danger" ? "🔴" : t.student.riskLevel === "warning" ? "🟠" : "🟡";
-          const contactInfo = [t.phone, t.email].filter(Boolean).join(" / ") || "연락처 미등록";
-          return `
+        ${currentTargets
+          .map((t, i) => {
+            const riskEmoji = t.student.riskLevel === "danger" ? "🔴" : t.student.riskLevel === "warning" ? "🟠" : "🟡";
+            const contactInfo = [t.phone, t.email].filter(Boolean).join(" / ") || "연락처 미등록";
+            return `
             <div class="notify-target-item">
               <label class="notify-target-check">
                 <input type="checkbox" data-idx="${i}" ${t.selected ? "checked" : ""} />
@@ -278,7 +286,8 @@ function renderModalContent(): void {
               <div class="notify-target-preview">${t.message}</div>
             </div>
           `;
-        }).join("")}
+          })
+          .join("")}
       </div>
 
       <div class="notify-actions">
@@ -287,7 +296,8 @@ function renderModalContent(): void {
         </button>
         <div id="notifySendStatus" class="notify-send-status"></div>
       </div>
-    `}
+    `
+    }
   `;
 
   // 이벤트 바인딩

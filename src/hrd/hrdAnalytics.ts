@@ -21,7 +21,9 @@ const _anaUrlStr = typeof _anaUrl === "string" ? _anaUrl.trim() : "";
 const _anaKeyStr = typeof _anaKey === "string" ? _anaKey.trim() : "";
 const anaClient: SupabaseClient | null =
   _anaUrlStr.length > 0 && _anaKeyStr.length > 0
-    ? createClient(_anaUrlStr, _anaKeyStr, { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
+    ? createClient(_anaUrlStr, _anaKeyStr, {
+        auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+      })
     : null;
 
 async function loadAllGenderData(): Promise<Map<string, TraineeGender>> {
@@ -129,7 +131,7 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
       const cursor = new Date(start);
       while (cursor <= now && weekdaysPassed < course.totalDays) {
         const day = cursor.getDay();
-        const isClassDay = category === "재직자" ? (day >= 2 && day <= 6) : (day >= 1 && day <= 5);
+        const isClassDay = category === "재직자" ? day >= 2 && day <= 6 : day >= 1 && day <= 5;
         if (isClassDay) weekdaysPassed++;
         cursor.setDate(cursor.getDate() + 1);
       }
@@ -371,12 +373,25 @@ function computeSummary(data: TraineeAnalysis[]): AnalyticsSummary {
     withData.length > 0 ? withData.reduce((sum, d) => sum + d.attendanceRate, 0) / withData.length : 0;
   const consecutiveAbsentCount = data.filter((d) => !d.dropout && d.currentConsecutiveAbsent >= 3).length;
   // 수료율 (HRD-Net 상태 기반): "수료" 상태인 훈련생 / 전체
-  const completionCount = data.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
+  const completionCount = data.filter(
+    (d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기"),
+  ).length;
   const completionRate = total > 0 ? (completionCount / total) * 100 : 0;
   // 전체 훈련 진행률 (가중평균)
   const progressData = data.filter((d) => d.courseProgressRate > 0);
-  const avgProgressRate = progressData.length > 0 ? progressData.reduce((s, d) => s + d.courseProgressRate, 0) / progressData.length : 0;
-  return { totalTrainees: total, avgAge, dropoutCount, dropoutRate, avgAttendanceRate, consecutiveAbsentCount, completionRate, completionCount, avgProgressRate };
+  const avgProgressRate =
+    progressData.length > 0 ? progressData.reduce((s, d) => s + d.courseProgressRate, 0) / progressData.length : 0;
+  return {
+    totalTrainees: total,
+    avgAge,
+    dropoutCount,
+    dropoutRate,
+    avgAttendanceRate,
+    consecutiveAbsentCount,
+    completionRate,
+    completionCount,
+    avgProgressRate,
+  };
 }
 
 // ─── 인사이트 자동 생성 ──────────────────────────────────────
@@ -491,7 +506,12 @@ function generateInsights(data: TraineeAnalysis[]): InsightCard[] {
 
 // ─── 종강 기수 상세 패널 ─────────────────────────────────────
 
-function renderCourseDetailPanel(g: { course: string; degr: string; category: string; list: TraineeAnalysis[] }): string {
+function renderCourseDetailPanel(g: {
+  course: string;
+  degr: string;
+  category: string;
+  list: TraineeAnalysis[];
+}): string {
   const list = g.list;
   const cnt = list.length;
   const ages = list.filter((d) => d.age > 0).map((d) => d.age);
@@ -540,11 +560,16 @@ function renderCourseDetailPanel(g: { course: string; degr: string; category: st
     </div>
     <table class="hrd-table" style="margin-top:8px;font-size:12px;">
       <thead><tr><th>이름</th><th>상태</th><th>출석률</th><th>결석</th><th>지각</th><th>공가</th><th>연속결석(최대)</th></tr></thead>
-      <tbody>${sorted.map((d) => {
-        const statusLabel = d.completionStatus || (d.dropout ? "중도탈락" : "훈련중");
-        const isCompleted = statusLabel.includes("수료") && !statusLabel.includes("포기");
-        const chipClass = d.dropout ? "ana-status-dropout" : isCompleted ? "ana-status-completed" : "ana-status-active";
-        return `<tr>
+      <tbody>${sorted
+        .map((d) => {
+          const statusLabel = d.completionStatus || (d.dropout ? "중도탈락" : "훈련중");
+          const isCompleted = statusLabel.includes("수료") && !statusLabel.includes("포기");
+          const chipClass = d.dropout
+            ? "ana-status-dropout"
+            : isCompleted
+              ? "ana-status-completed"
+              : "ana-status-active";
+          return `<tr>
           <td>${d.name}</td>
           <td><span class="ana-status-chip ${chipClass}">${statusLabel}</span></td>
           <td>${fmtRate(d.attendanceRate)}</td>
@@ -553,7 +578,8 @@ function renderCourseDetailPanel(g: { course: string; degr: string; category: st
           <td>${d.excusedDays}일</td>
           <td>${d.maxConsecutiveAbsent}일</td>
         </tr>`;
-      }).join("")}</tbody>
+        })
+        .join("")}</tbody>
     </table>
   </div>`;
 }
@@ -580,7 +606,12 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
 
     if (filter === "종강") {
       // 종강: 전체 훈련생 / 수료율 / 중도탈락률 / 평균 출석률
-      const compClass = summary.completionRate >= 80 ? "ana-cell-good" : summary.completionRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
+      const compClass =
+        summary.completionRate >= 80
+          ? "ana-cell-good"
+          : summary.completionRate >= 60
+            ? "ana-cell-warn"
+            : "ana-cell-bad";
       cardEl.innerHTML = `
         <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
         <div class="ana-card"><div class="ana-card-value ${compClass}">${summary.completionRate.toFixed(1)}%</div><div class="ana-card-label">수료율</div><div class="ana-card-sub">${summary.completionCount}명 수료</div></div>
@@ -589,7 +620,12 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
       `;
     } else if (filter === "진행중") {
       // 진행중: 전체 훈련생 / 전체 훈련 진행률 / 중도탈락률 / 위험군 / 연속결석
-      const progClass = summary.avgProgressRate >= 70 ? "ana-cell-good" : summary.avgProgressRate >= 40 ? "ana-cell-warn" : "ana-cell-bad";
+      const progClass =
+        summary.avgProgressRate >= 70
+          ? "ana-cell-good"
+          : summary.avgProgressRate >= 40
+            ? "ana-cell-warn"
+            : "ana-cell-bad";
       cardEl.innerHTML = `
         <div class="ana-card"><div class="ana-card-value">${summary.totalTrainees}명</div><div class="ana-card-label">전체 훈련생</div></div>
         <div class="ana-card"><div class="ana-card-value ${progClass}">${summary.avgProgressRate.toFixed(1)}%</div><div class="ana-card-label">전체 훈련 진행률</div></div>
@@ -615,12 +651,26 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
   const statusHead = $("anaCourseStatusHead");
   if (statusBody) {
     // 과정+기수 조합별 그룹
-    interface CourseGroup { course: string; degr: string; category: string; list: TraineeAnalysis[]; progressRate: number; startDate: string; }
+    interface CourseGroup {
+      course: string;
+      degr: string;
+      category: string;
+      list: TraineeAnalysis[];
+      progressRate: number;
+      startDate: string;
+    }
     const groups: CourseGroup[] = [];
     for (const d of data) {
       let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
       if (!g) {
-        g = { course: d.courseName, degr: d.degr, category: d.category, list: [], progressRate: d.courseProgressRate, startDate: d.courseStartDate };
+        g = {
+          course: d.courseName,
+          degr: d.degr,
+          category: d.category,
+          list: [],
+          progressRate: d.courseProgressRate,
+          startDate: d.courseStartDate,
+        };
         groups.push(g);
       }
       g.list.push(d);
@@ -647,14 +697,22 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
         const dropRate = (dropouts / cnt) * 100;
         const atRisk = g.list.filter((d) => !d.dropout && d.hasAttendanceData && d.attendanceRate < 80).length;
         const noData = avgRate < 0;
-        const rateClass = noData ? "" : avgRate >= 90 ? "ana-cell-good" : avgRate >= 80 ? "ana-cell-warn" : "ana-cell-bad";
+        const rateClass = noData
+          ? ""
+          : avgRate >= 90
+            ? "ana-cell-good"
+            : avgRate >= 80
+              ? "ana-cell-warn"
+              : "ana-cell-bad";
         const dropClass = dropRate <= 5 ? "ana-cell-good" : dropRate <= 15 ? "ana-cell-warn" : "ana-cell-bad";
         const riskClass = noData ? "" : atRisk === 0 ? "ana-cell-good" : atRisk <= 2 ? "ana-cell-warn" : "ana-cell-bad";
         const courseTd = `<td>${g.course.length > 18 ? g.course.slice(0, 18) + "…" : g.course}</td>`;
 
         if (filter === "종강") {
           // 수료율 계산
-          const completed = g.list.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
+          const completed = g.list.filter(
+            (d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기"),
+          ).length;
           const compRate = (completed / cnt) * 100;
           const compClass = compRate >= 80 ? "ana-cell-good" : compRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
           // 이전기수 대비 탈락률
@@ -683,7 +741,8 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
             <td colspan="8">${renderCourseDetailPanel(g)}</td>
           </tr>`;
         } else if (filter === "진행중") {
-          const progClass = g.progressRate >= 70 ? "ana-cell-good" : g.progressRate >= 40 ? "ana-cell-warn" : "ana-cell-bad";
+          const progClass =
+            g.progressRate >= 70 ? "ana-cell-good" : g.progressRate >= 40 ? "ana-cell-warn" : "ana-cell-bad";
           return `<tr>
             ${courseTd}
             <td>${g.degr}기</td>
@@ -728,9 +787,12 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
     // 합계 행
     if (statusFoot) {
       if (filter === "종강") {
-        const totalComp = data.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
+        const totalComp = data.filter(
+          (d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기"),
+        ).length;
         const totalCompRate = data.length > 0 ? (totalComp / data.length) * 100 : 0;
-        const compClass = totalCompRate >= 80 ? "ana-cell-good" : totalCompRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
+        const compClass =
+          totalCompRate >= 80 ? "ana-cell-good" : totalCompRate >= 60 ? "ana-cell-warn" : "ana-cell-bad";
         statusFoot.innerHTML = `<tr>
           <td colspan="3"><strong>전체 합계</strong></td>
           <td><strong>${data.length}명</strong></td>
@@ -907,13 +969,25 @@ function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
 // ── 전체 / 진행중: 과정·기수별 카드 ──
 function renderRiskTabActive(container: HTMLElement, data: TraineeAnalysis[]): void {
   // 과정·기수별 그룹
-  interface RiskGroup { course: string; degr: string; list: TraineeAnalysis[]; atRisk: TraineeAnalysis[]; }
+  interface RiskGroup {
+    course: string;
+    degr: string;
+    list: TraineeAnalysis[];
+    atRisk: TraineeAnalysis[];
+  }
   const groups: RiskGroup[] = [];
   for (const d of data) {
     let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
-    if (!g) { g = { course: d.courseName, degr: d.degr, list: [], atRisk: [] }; groups.push(g); }
+    if (!g) {
+      g = { course: d.courseName, degr: d.degr, list: [], atRisk: [] };
+      groups.push(g);
+    }
     g.list.push(d);
-    if (!d.dropout && d.hasAttendanceData && (d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0)) {
+    if (
+      !d.dropout &&
+      d.hasAttendanceData &&
+      (d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0)
+    ) {
       g.atRisk.push(d);
     }
   }
@@ -925,7 +999,8 @@ function renderRiskTabActive(container: HTMLElement, data: TraineeAnalysis[]): v
     <div class="risk-summary-bar">위험군 총 <strong>${totalAtRisk}명</strong> / 전체 ${data.length}명</div>`;
 
   if (totalAtRisk === 0) {
-    html += '<div style="text-align:center;padding:24px;color:#10b981;font-weight:600;">✅ 현재 위험군 훈련생이 없습니다</div>';
+    html +=
+      '<div style="text-align:center;padding:24px;color:#10b981;font-weight:600;">✅ 현재 위험군 훈련생이 없습니다</div>';
   } else {
     html += '<div class="risk-group-list">';
     for (const g of groups) {
@@ -960,14 +1035,22 @@ function renderRiskTabActive(container: HTMLElement, data: TraineeAnalysis[]): v
         html += `<div class="risk-detail-panel" id="${cardId}" style="display:none;">
           <table class="hrd-table" style="margin:0;font-size:12px;">
             <thead><tr><th>이름</th><th>출석률</th><th>결석</th><th>지각</th><th>연속결석</th><th>위험도</th><th>경고사유</th></tr></thead>
-            <tbody>${sorted.map((d) => {
-              const riskLevel = d.attendanceRate < 60 ? "high" : d.attendanceRate < 70 ? "mid" : "low";
-              const riskLabel = d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰";
-              const alertTags = d.alertReasons.map((r) => {
-                const cls = r === "연속결석" ? "alert-tag--consecutive" : r === "출석률 급락" ? "alert-tag--drop" : "alert-tag--late";
-                return `<span class="alert-tag ${cls}">${r}</span>`;
-              }).join("");
-              return `<tr>
+            <tbody>${sorted
+              .map((d) => {
+                const riskLevel = d.attendanceRate < 60 ? "high" : d.attendanceRate < 70 ? "mid" : "low";
+                const riskLabel = d.attendanceRate < 60 ? "긴급" : d.attendanceRate < 70 ? "주의" : "관찰";
+                const alertTags = d.alertReasons
+                  .map((r) => {
+                    const cls =
+                      r === "연속결석"
+                        ? "alert-tag--consecutive"
+                        : r === "출석률 급락"
+                          ? "alert-tag--drop"
+                          : "alert-tag--late";
+                    return `<span class="alert-tag ${cls}">${r}</span>`;
+                  })
+                  .join("");
+                return `<tr>
                 <td><strong>${d.name}</strong></td>
                 <td style="color:${d.attendanceRate < 60 ? "#dc2626" : "#d97706"};font-weight:700;">${d.attendanceRate.toFixed(1)}%</td>
                 <td>${d.absentDays}일</td><td>${d.lateDays}일</td>
@@ -975,12 +1058,13 @@ function renderRiskTabActive(container: HTMLElement, data: TraineeAnalysis[]): v
                 <td><span class="ana-risk-${riskLevel}">${riskLabel}</span></td>
                 <td>${alertTags || "-"}</td>
               </tr>`;
-            }).join("")}</tbody>
+              })
+              .join("")}</tbody>
           </table>
         </div>`;
       }
     }
-    html += '</div>';
+    html += "</div>";
   }
 
   // 차트 영역
@@ -1016,11 +1100,18 @@ function renderRiskTabActive(container: HTMLElement, data: TraineeAnalysis[]): v
 
 // ── 종강: 과정별 인사이트 리포트 ──
 function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[]): void {
-  interface CompGroup { course: string; degr: string; list: TraineeAnalysis[]; }
+  interface CompGroup {
+    course: string;
+    degr: string;
+    list: TraineeAnalysis[];
+  }
   const groups: CompGroup[] = [];
   for (const d of data) {
     let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
-    if (!g) { g = { course: d.courseName, degr: d.degr, list: [] }; groups.push(g); }
+    if (!g) {
+      g = { course: d.courseName, degr: d.degr, list: [] };
+      groups.push(g);
+    }
     g.list.push(d);
   }
   groups.sort((a, b) => a.course.localeCompare(b.course) || parseInt(a.degr) - parseInt(b.degr));
@@ -1029,7 +1120,9 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
 
   for (const g of groups) {
     const cnt = g.list.length;
-    const completed = g.list.filter((d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기")).length;
+    const completed = g.list.filter(
+      (d) => (d.completionStatus || "").includes("수료") && !(d.completionStatus || "").includes("포기"),
+    ).length;
     const compRate = cnt > 0 ? (completed / cnt) * 100 : 0;
     const dropouts = g.list.filter((d) => d.dropout);
     const dropRate = cnt > 0 ? (dropouts.length / cnt) * 100 : 0;
@@ -1044,7 +1137,10 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
         dropoutsByWeek[period] = (dropoutsByWeek[period] || 0) + 1;
       }
     }
-    const dropTimingHtml = Object.entries(dropoutsByWeek).map(([k, v]) => `${k}: ${v}명`).join(", ") || "-";
+    const dropTimingHtml =
+      Object.entries(dropoutsByWeek)
+        .map(([k, v]) => `${k}: ${v}명`)
+        .join(", ") || "-";
 
     // 요일별 결석 top — 재직자 과정은 토요일 포함
     const isResident = g.category === "재직자";
@@ -1116,13 +1212,18 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
         <strong>훈련생 상태 분포:</strong>
         ${(() => {
           const statusMap: Record<string, number> = {};
-          for (const d of g.list) { const s = d.completionStatus || (d.dropout ? "중도탈락" : "훈련중"); statusMap[s] = (statusMap[s] || 0) + 1; }
-          return Object.entries(statusMap).map(([k, v]) => `<span class="insight-status-chip">${k} ${v}명</span>`).join(" ");
+          for (const d of g.list) {
+            const s = d.completionStatus || (d.dropout ? "중도탈락" : "훈련중");
+            statusMap[s] = (statusMap[s] || 0) + 1;
+          }
+          return Object.entries(statusMap)
+            .map(([k, v]) => `<span class="insight-status-chip">${k} ${v}명</span>`)
+            .join(" ");
         })()}
       </div>
     </div>`;
   }
-  html += '</div>';
+  html += "</div>";
 
   // 차트 영역 (종강도 출결 패턴 차트는 유용)
   html += `<h4 style="margin:24px 0 8px">출결 패턴 종합</h4>
@@ -1170,7 +1271,10 @@ function renderRiskCharts(data: TraineeAnalysis[]): void {
       new Chart(wdCtx, {
         type: "bar",
         data: { labels: weekdays, datasets: [{ label: "결석 횟수", data: totals, backgroundColor: "#f56c6c" }] },
-        options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "요일별 결석 분포" } } },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false }, title: { display: true, text: "요일별 결석 분포" } },
+        },
       }),
     );
   }
@@ -1188,7 +1292,18 @@ function renderRiskCharts(data: TraineeAnalysis[]): void {
       charts.push(
         new Chart(monthCtx, {
           type: "line",
-          data: { labels, datasets: [{ label: "결석", data: totals, borderColor: "#f56c6c", backgroundColor: "rgba(245,108,108,0.1)", fill: true }] },
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "결석",
+                data: totals,
+                borderColor: "#f56c6c",
+                backgroundColor: "rgba(245,108,108,0.1)",
+                fill: true,
+              },
+            ],
+          },
           options: { responsive: true, plugins: { title: { display: true, text: "월차별 결석 추이" } } },
         }),
       );
@@ -1207,13 +1322,22 @@ function renderRiskCharts(data: TraineeAnalysis[]): void {
       charts.push(
         new Chart(dropTimingCtx, {
           type: "bar",
-          data: { labels: weekLabels, datasets: [{ label: "탈락 인원", data: weekCounts, backgroundColor: "#f56c6c" }] },
-          options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: "탈락 시점 분석 (훈련 주차별)" } }, scales: { y: { title: { display: true, text: "인원" }, beginAtZero: true } } },
+          data: {
+            labels: weekLabels,
+            datasets: [{ label: "탈락 인원", data: weekCounts, backgroundColor: "#f56c6c" }],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false }, title: { display: true, text: "탈락 시점 분석 (훈련 주차별)" } },
+            scales: { y: { title: { display: true, text: "인원" }, beginAtZero: true } },
+          },
         }),
       );
     } else {
       const parent = dropTimingCtx.canvas.parentElement;
-      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">탈락 데이터가 없습니다</div>';
+      if (parent)
+        parent.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">탈락 데이터가 없습니다</div>';
     }
   }
 
@@ -1231,13 +1355,29 @@ function renderRiskCharts(data: TraineeAnalysis[]): void {
       charts.push(
         new Chart(trendCtx, {
           type: "line",
-          data: { labels, datasets: riskStudents.map((d, i) => ({ label: d.name, data: d.weeklyAttendanceRates, borderColor: colors[i % colors.length], backgroundColor: "transparent", tension: 0.3, pointRadius: 3 })) },
-          options: { responsive: true, plugins: { title: { display: true, text: "위험군 출결 추이 (TOP 5)" } }, scales: { y: { title: { display: true, text: "출석률 (%)" }, min: 0, max: 110 } } },
+          data: {
+            labels,
+            datasets: riskStudents.map((d, i) => ({
+              label: d.name,
+              data: d.weeklyAttendanceRates,
+              borderColor: colors[i % colors.length],
+              backgroundColor: "transparent",
+              tension: 0.3,
+              pointRadius: 3,
+            })),
+          },
+          options: {
+            responsive: true,
+            plugins: { title: { display: true, text: "위험군 출결 추이 (TOP 5)" } },
+            scales: { y: { title: { display: true, text: "출석률 (%)" }, min: 0, max: 110 } },
+          },
         }),
       );
     } else {
       const parent = trendCtx.canvas.parentElement;
-      if (parent) parent.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">경고 대상 훈련생이 없습니다</div>';
+      if (parent)
+        parent.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">경고 대상 훈련생이 없습니다</div>';
     }
   }
 }
@@ -1436,7 +1576,9 @@ function setupCourseStatusFilter(): void {
 }
 
 // ─── Data Getter (for reports) ───────────────────────────────
-export function getCachedAnalysisData(): TraineeAnalysis[] { return analysisData; }
+export function getCachedAnalysisData(): TraineeAnalysis[] {
+  return analysisData;
+}
 
 // ─── 공개 초기화 함수 ───────────────────────────────────────
 

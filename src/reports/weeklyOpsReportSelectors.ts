@@ -81,7 +81,14 @@ export function buildPage3Data(
   if (students.length === 0) {
     return {
       dataScope: "출결 데이터 없음 — 출결현황 탭에서 먼저 조회하세요",
-      metrics: { totalStudents: 0, avgAttendanceRate: 0, riskCount: 0, missingCheckoutCount: 0, lateCount: 0, absentCount: 0 },
+      metrics: {
+        totalStudents: 0,
+        avgAttendanceRate: 0,
+        riskCount: 0,
+        missingCheckoutCount: 0,
+        lateCount: 0,
+        absentCount: 0,
+      },
       courseSummaries: [],
       riskCourseTop5: [],
       atRiskTop10: [],
@@ -118,7 +125,15 @@ export function buildPage3Data(
 
 function buildPage3Metrics(students: AttendanceStudent[]): Page3Metrics {
   const total = students.length;
-  if (total === 0) return { totalStudents: 0, avgAttendanceRate: 0, riskCount: 0, missingCheckoutCount: 0, lateCount: 0, absentCount: 0 };
+  if (total === 0)
+    return {
+      totalStudents: 0,
+      avgAttendanceRate: 0,
+      riskCount: 0,
+      missingCheckoutCount: 0,
+      lateCount: 0,
+      absentCount: 0,
+    };
 
   const withRate = students.filter((s) => s.attendanceRate >= 0);
   const avgRate = withRate.length > 0 ? withRate.reduce((sum, s) => sum + s.attendanceRate, 0) / withRate.length : 0;
@@ -143,17 +158,19 @@ function buildCourseSummaries(students: AttendanceStudent[], config: HrdConfig):
     const course = config.courses[0];
     const withRate = students.filter((s) => s.attendanceRate >= 0);
     const avgRate = withRate.length > 0 ? withRate.reduce((sum, s) => sum + s.attendanceRate, 0) / withRate.length : 0;
-    return [{
-      courseName: course?.name ?? "전체",
-      degr: course?.degrs?.join(",") ?? "-",
-      category: course?.category ?? "실업자",
-      totalStudents: students.length,
-      avgAttendanceRate: avgRate,
-      absentCount: students.filter((s) => s.status === "결석").length,
-      lateCount: students.filter((s) => (s.status || "").includes("지각")).length,
-      riskCount: students.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length,
-      missingCheckoutCount: students.filter((s) => s.missingCheckout).length,
-    }];
+    return [
+      {
+        courseName: course?.name ?? "전체",
+        degr: course?.degrs?.join(",") ?? "-",
+        category: course?.category ?? "실업자",
+        totalStudents: students.length,
+        avgAttendanceRate: avgRate,
+        absentCount: students.filter((s) => s.status === "결석").length,
+        lateCount: students.filter((s) => (s.status || "").includes("지각")).length,
+        riskCount: students.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length,
+        missingCheckoutCount: students.filter((s) => s.missingCheckout).length,
+      },
+    ];
   }
 
   // Multiple courses — create a summary per course
@@ -181,7 +198,12 @@ function rankRiskCourses(summaries: CourseAttendanceSummary[], limit: number): C
     .filter((s) => s.riskCount > 0)
     .sort((a, b) => b.riskCount - a.riskCount || a.avgAttendanceRate - b.avgAttendanceRate)
     .slice(0, limit)
-    .map((s) => ({ courseName: s.courseName, degr: s.degr, riskCount: s.riskCount, avgAttendanceRate: s.avgAttendanceRate }));
+    .map((s) => ({
+      courseName: s.courseName,
+      degr: s.degr,
+      riskCount: s.riskCount,
+      avgAttendanceRate: s.avgAttendanceRate,
+    }));
 }
 
 export function rankAtRiskStudents(students: AttendanceStudent[], config: HrdConfig, limit: number): AtRiskStudent[] {
@@ -368,24 +390,26 @@ export function buildPage4Data(
 
 function buildCategorySummaries(entries: DropoutRosterEntry[]): CategoryDefenseSummary[] {
   const categories = ["재직자", "실업자"] as const;
-  return categories.map((cat) => {
-    const filtered = entries.filter((e) => e.category === cat);
-    const total = filtered.reduce((s, e) => s + e.total, 0);
-    const dropout = filtered.reduce((s, e) => s + e.dropout, 0);
-    const active = total - dropout;
-    const defenseRate = total > 0 ? ((total - dropout) / total) * 100 : 0;
-    const targetRate = getTargetForCategory(cat);
-    return {
-      category: cat,
-      total,
-      dropout,
-      active,
-      defenseRate,
-      targetRate,
-      gap: defenseRate - targetRate,
-      met: defenseRate >= targetRate,
-    };
-  }).filter((s) => s.total > 0);
+  return categories
+    .map((cat) => {
+      const filtered = entries.filter((e) => e.category === cat);
+      const total = filtered.reduce((s, e) => s + e.total, 0);
+      const dropout = filtered.reduce((s, e) => s + e.dropout, 0);
+      const active = total - dropout;
+      const defenseRate = total > 0 ? ((total - dropout) / total) * 100 : 0;
+      const targetRate = getTargetForCategory(cat);
+      return {
+        category: cat,
+        total,
+        dropout,
+        active,
+        defenseRate,
+        targetRate,
+        gap: defenseRate - targetRate,
+        met: defenseRate >= targetRate,
+      };
+    })
+    .filter((s) => s.total > 0);
 }
 
 export function rankUnderperformingCohorts(entries: DropoutRosterEntry[]): UnderperformingCohort[] {
@@ -431,7 +455,7 @@ export function rankEarlyWarningStudents(analysisData: TraineeAnalysis[]): Early
       consecutiveAbsent: t.currentConsecutiveAbsent,
       absentDays: t.absentDays,
       alertReasons: t.alertReasons.length > 0 ? t.alertReasons : buildDefaultAlertReasons(t),
-      status: t.dropout ? "탈락" as const : "재학" as const,
+      status: t.dropout ? ("탈락" as const) : ("재학" as const),
     }));
 }
 
@@ -453,7 +477,7 @@ export function generatePage4Comments(data: Page4DropoutData): string[] {
   for (const cat of data.categorySummaries) {
     if (!cat.met) {
       comments.push(
-        `${cat.category} 과정 방어율 ${cat.defenseRate.toFixed(1)}% — 목표 ${cat.targetRate}% 대비 ${Math.abs(cat.gap).toFixed(1)}%p 미달`
+        `${cat.category} 과정 방어율 ${cat.defenseRate.toFixed(1)}% — 목표 ${cat.targetRate}% 대비 ${Math.abs(cat.gap).toFixed(1)}%p 미달`,
       );
     }
   }
@@ -483,7 +507,15 @@ export function buildPage5Data(kpiData: KpiAllData | null): Page5KpiData {
   if (!kpiData || kpiData.achievement.length === 0) {
     return {
       hasData: false,
-      metrics: { totalStudents: 0, preAvg: 0, postAvg: 0, improvementAvg: 0, formativeAvg: 0, fieldAppAvg: 0, responseRate: 0 },
+      metrics: {
+        totalStudents: 0,
+        preAvg: 0,
+        postAvg: 0,
+        improvementAvg: 0,
+        formativeAvg: 0,
+        fieldAppAvg: 0,
+        responseRate: 0,
+      },
       courseComparison: [],
       formativeDeclineTop5: [],
       lowResponseTop5: [],
@@ -505,11 +537,18 @@ export function buildPage5Data(kpiData: KpiAllData | null): Page5KpiData {
 
   // Response rate from achievement summary
   const achSummary = kpiData.achievementSummary;
-  const responseRate = achSummary.length > 0
-    ? achSummary.reduce((s, r) => s + r.responseRate, 0) / achSummary.length
-    : 0;
+  const responseRate =
+    achSummary.length > 0 ? achSummary.reduce((s, r) => s + r.responseRate, 0) / achSummary.length : 0;
 
-  const metrics: Page5Metrics = { totalStudents, preAvg, postAvg, improvementAvg, formativeAvg, fieldAppAvg, responseRate };
+  const metrics: Page5Metrics = {
+    totalStudents,
+    preAvg,
+    postAvg,
+    improvementAvg,
+    formativeAvg,
+    fieldAppAvg,
+    responseRate,
+  };
 
   const courseComparison = buildCourseComparison(kpiData);
   const formativeDeclineTop5 = rankFormativeDeclineCourses(kpiData.formativeSummary);
@@ -543,7 +582,7 @@ function buildCourseComparison(kpiData: KpiAllData): CourseAchievementComparison
 export function rankFormativeDeclineCourses(summaries: FormativeSummary[]): CourseStatItem[] {
   return [...summaries]
     .filter((s) => s.phase2Avg < s.phase1Avg)
-    .sort((a, b) => (a.phase2Avg - a.phase1Avg) - (b.phase2Avg - b.phase1Avg))
+    .sort((a, b) => a.phase2Avg - a.phase1Avg - (b.phase2Avg - b.phase1Avg))
     .slice(0, 5)
     .map((s) => ({
       course: s.course,

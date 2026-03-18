@@ -43,11 +43,7 @@ function gapBadge(gap: number): string {
 
 /** HTML 이스케이프 */
 function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 // ─── Styles ──────────────────────────────────────────────────
@@ -336,18 +332,26 @@ function buildHeader(config: WeeklyOpsReportConfig, diagnostics: DataDiagnostics
   const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   const diagItems: string[] = [];
-  diagItems.push(diagnostics.hasAttendance
-    ? '<span class="diag-badge diag-ok">&#9679; 출결 데이터</span>'
-    : '<span class="diag-badge diag-warn">&#9675; 출결 데이터 없음</span>');
-  diagItems.push(diagnostics.hasDropout
-    ? '<span class="diag-badge diag-ok">&#9679; 하차 데이터</span>'
-    : '<span class="diag-badge diag-warn">&#9675; 하차 데이터 없음</span>');
-  diagItems.push(diagnostics.hasAnalytics
-    ? '<span class="diag-badge diag-ok">&#9679; 분석 데이터</span>'
-    : '<span class="diag-badge diag-warn">&#9675; 분석 데이터 없음</span>');
-  diagItems.push(diagnostics.hasKpi
-    ? '<span class="diag-badge diag-ok">&#9679; KPI 데이터</span>'
-    : '<span class="diag-badge diag-warn">&#9675; KPI 데이터 없음</span>');
+  diagItems.push(
+    diagnostics.hasAttendance
+      ? '<span class="diag-badge diag-ok">&#9679; 출결 데이터</span>'
+      : '<span class="diag-badge diag-warn">&#9675; 출결 데이터 없음</span>',
+  );
+  diagItems.push(
+    diagnostics.hasDropout
+      ? '<span class="diag-badge diag-ok">&#9679; 하차 데이터</span>'
+      : '<span class="diag-badge diag-warn">&#9675; 하차 데이터 없음</span>',
+  );
+  diagItems.push(
+    diagnostics.hasAnalytics
+      ? '<span class="diag-badge diag-ok">&#9679; 분석 데이터</span>'
+      : '<span class="diag-badge diag-warn">&#9675; 분석 데이터 없음</span>',
+  );
+  diagItems.push(
+    diagnostics.hasKpi
+      ? '<span class="diag-badge diag-ok">&#9679; KPI 데이터</span>'
+      : '<span class="diag-badge diag-warn">&#9675; KPI 데이터 없음</span>',
+  );
 
   return `
 <div class="report-header">
@@ -393,27 +397,27 @@ function buildPage3Html(data: Page3AttendanceData, _config: WeeklyOpsReportConfi
   </div>
   <div class="metric-card">
     <div class="card-label">평균 출석률</div>
-    <div class="card-value${m.avgAttendanceRate < 80 ? ' danger' : m.avgAttendanceRate < 90 ? ' warning' : ' success'}">${fmtRate(m.avgAttendanceRate)}</div>
+    <div class="card-value${m.avgAttendanceRate < 80 ? " danger" : m.avgAttendanceRate < 90 ? " warning" : " success"}">${fmtRate(m.avgAttendanceRate)}</div>
     <div class="card-unit">&nbsp;</div>
   </div>
   <div class="metric-card">
     <div class="card-label">위험군</div>
-    <div class="card-value${m.riskCount > 0 ? ' danger' : ''}">${m.riskCount}</div>
+    <div class="card-value${m.riskCount > 0 ? " danger" : ""}">${m.riskCount}</div>
     <div class="card-unit">명</div>
   </div>
   <div class="metric-card">
     <div class="card-label">퇴실 미체크</div>
-    <div class="card-value${m.missingCheckoutCount > 0 ? ' warning' : ''}">${m.missingCheckoutCount}</div>
+    <div class="card-value${m.missingCheckoutCount > 0 ? " warning" : ""}">${m.missingCheckoutCount}</div>
     <div class="card-unit">명</div>
   </div>
   <div class="metric-card">
     <div class="card-label">지각</div>
-    <div class="card-value${m.lateCount > 0 ? ' warning' : ''}">${m.lateCount}</div>
+    <div class="card-value${m.lateCount > 0 ? " warning" : ""}">${m.lateCount}</div>
     <div class="card-unit">명</div>
   </div>
   <div class="metric-card">
     <div class="card-label">결석</div>
-    <div class="card-value${m.absentCount > 0 ? ' danger' : ''}">${m.absentCount}</div>
+    <div class="card-value${m.absentCount > 0 ? " danger" : ""}">${m.absentCount}</div>
     <div class="card-unit">명</div>
   </div>
 </div>`;
@@ -453,12 +457,14 @@ function buildPage3Html(data: Page3AttendanceData, _config: WeeklyOpsReportConfi
   let dayPatternHtml = "";
   if (data.dayPattern.length > 0) {
     const dayRows = data.dayPattern
-      .map((d) => `<tr>
+      .map(
+        (d) => `<tr>
         <td>${esc(d.day)}</td>
-        <td class="${d.absentRate > 5 ? 'danger-text' : ''}">${fmtRate(d.absentRate)}</td>
-        <td class="${d.lateRate > 5 ? 'warning-text' : ''}">${fmtRate(d.lateRate)}</td>
+        <td class="${d.absentRate > 5 ? "danger-text" : ""}">${fmtRate(d.absentRate)}</td>
+        <td class="${d.lateRate > 5 ? "warning-text" : ""}">${fmtRate(d.lateRate)}</td>
         <td>${d.totalRecords}</td>
-      </tr>`)
+      </tr>`,
+      )
       .join("");
     dayPatternHtml = `
 <div class="section-title">요일별 출결 패턴</div>
@@ -473,7 +479,8 @@ function buildPage3Html(data: Page3AttendanceData, _config: WeeklyOpsReportConfi
   if (data.riskCourseTop5.length > 0) {
     const courseRows = data.riskCourseTop5
       .map((c, i) => {
-        const rateClass = c.avgAttendanceRate < 80 ? "danger-text" : c.avgAttendanceRate < 90 ? "warning-text" : "safe-text";
+        const rateClass =
+          c.avgAttendanceRate < 80 ? "danger-text" : c.avgAttendanceRate < 90 ? "warning-text" : "safe-text";
         return `<tr>
         <td>${i + 1}</td>
         <td class="left">${esc(c.courseName)}</td>
@@ -503,9 +510,9 @@ function buildPage3Html(data: Page3AttendanceData, _config: WeeklyOpsReportConfi
         <td class="left">${esc(s.courseName)}</td>
         <td>${esc(s.degr)}</td>
         <td class="${rateClass}">${fmtRate(s.attendanceRate)}</td>
-        <td class="${s.absentDays >= 3 ? 'danger-text' : ''}">${s.absentDays}</td>
+        <td class="${s.absentDays >= 3 ? "danger-text" : ""}">${s.absentDays}</td>
         <td class="left">${esc(s.riskReason)}</td>
-        <td>${s.missingCheckout ? '<span class="badge badge-warning">Y</span>' : '-'}</td>
+        <td>${s.missingCheckout ? '<span class="badge badge-warning">Y</span>' : "-"}</td>
       </tr>`;
       })
       .join("");
@@ -568,18 +575,22 @@ function buildPage4Html(data: Page4DropoutData, _config: WeeklyOpsReportConfig):
   ${catCards}
   <div class="metric-card">
     <div class="card-label">미달 과정 수</div>
-    <div class="card-value${data.underperformingCount > 0 ? ' danger' : ''}">${data.underperformingCount}</div>
+    <div class="card-value${data.underperformingCount > 0 ? " danger" : ""}">${data.underperformingCount}</div>
     <div class="card-unit">개</div>
   </div>
   <div class="metric-card">
     <div class="card-label">조기경보 수</div>
-    <div class="card-value${data.earlyWarningCount > 0 ? ' warning' : ''}">${data.earlyWarningCount}</div>
+    <div class="card-value${data.earlyWarningCount > 0 ? " warning" : ""}">${data.earlyWarningCount}</div>
     <div class="card-unit">명</div>
   </div>
 </div>`;
 
   // No data check
-  if (data.categorySummaries.length === 0 && data.underperformingTop5.length === 0 && data.earlyWarningTop10.length === 0) {
+  if (
+    data.categorySummaries.length === 0 &&
+    data.underperformingTop5.length === 0 &&
+    data.earlyWarningTop10.length === 0
+  ) {
     return `
 <div>
   <div class="page-header">
@@ -624,7 +635,8 @@ function buildPage4Html(data: Page4DropoutData, _config: WeeklyOpsReportConfig):
   let underHtml = "";
   if (data.underperformingTop5.length > 0) {
     const underRows = data.underperformingTop5
-      .map((c, i) => `<tr>
+      .map(
+        (c, i) => `<tr>
         <td>${i + 1}</td>
         <td>${esc(c.category)}</td>
         <td class="left">${esc(c.courseName)}</td>
@@ -635,7 +647,8 @@ function buildPage4Html(data: Page4DropoutData, _config: WeeklyOpsReportConfig):
         <td class="danger-text">${fmtRate(c.defenseRate)}</td>
         <td>${fmtRate(c.targetRate)}</td>
         <td>${gapBadge(c.gap)}</td>
-      </tr>`)
+      </tr>`,
+      )
       .join("");
     underHtml = `
 <div class="section-title">목표 미달 과정 Top 5</div>
@@ -654,18 +667,19 @@ function buildPage4Html(data: Page4DropoutData, _config: WeeklyOpsReportConfig):
     const earlyRows = data.earlyWarningTop10
       .map((s, i) => {
         const rateClass = s.attendanceRate < 80 ? "danger-text" : s.attendanceRate < 90 ? "warning-text" : "safe-text";
-        const statusBadge = s.status === "탈락"
-          ? '<span class="badge badge-danger">탈락</span>'
-          : '<span class="badge badge-info">재학</span>';
+        const statusBadge =
+          s.status === "탈락"
+            ? '<span class="badge badge-danger">탈락</span>'
+            : '<span class="badge badge-info">재학</span>';
         return `<tr>
         <td>${i + 1}</td>
         <td>${esc(s.name)}</td>
         <td class="left">${esc(s.courseName)}</td>
         <td>${esc(s.degr)}</td>
         <td class="${rateClass}">${fmtRate(s.attendanceRate)}</td>
-        <td class="${s.consecutiveAbsent >= 3 ? 'danger-text' : ''}">${s.consecutiveAbsent}</td>
+        <td class="${s.consecutiveAbsent >= 3 ? "danger-text" : ""}">${s.consecutiveAbsent}</td>
         <td>${s.absentDays}</td>
-        <td class="left">${s.alertReasons.map(r => esc(r)).join(", ")}</td>
+        <td class="left">${s.alertReasons.map((r) => esc(r)).join(", ")}</td>
         <td>${statusBadge}</td>
       </tr>`;
       })
@@ -736,7 +750,7 @@ function buildPage5Html(data: Page5KpiData, _config: WeeklyOpsReportConfig): str
   </div>
   <div class="metric-card">
     <div class="card-label">응답률</div>
-    <div class="card-value${m.responseRate < 50 ? ' danger' : m.responseRate < 70 ? ' warning' : ''}">${fmtRate(m.responseRate)}</div>
+    <div class="card-value${m.responseRate < 50 ? " danger" : m.responseRate < 70 ? " warning" : ""}">${fmtRate(m.responseRate)}</div>
     <div class="card-unit">&nbsp;</div>
   </div>
 </div>`;
@@ -786,13 +800,15 @@ function buildPage5Html(data: Page5KpiData, _config: WeeklyOpsReportConfig): str
   let formDeclineHtml = "";
   if (data.formativeDeclineTop5.length > 0) {
     const fdRows = data.formativeDeclineTop5
-      .map((c, i) => `<tr>
+      .map(
+        (c, i) => `<tr>
         <td>${i + 1}</td>
         <td class="left">${esc(c.course)}</td>
         <td>${esc(c.cohort)}</td>
         <td class="danger-text">${fmtNum(c.value)}</td>
         <td class="left">${esc(c.label)}</td>
-      </tr>`)
+      </tr>`,
+      )
       .join("");
     formDeclineHtml = `
 <div class="section-title">형성평가 하위 Top 5</div>
@@ -806,13 +822,15 @@ function buildPage5Html(data: Page5KpiData, _config: WeeklyOpsReportConfig): str
   let lowRespHtml = "";
   if (data.lowResponseTop5.length > 0) {
     const lrRows = data.lowResponseTop5
-      .map((c, i) => `<tr>
+      .map(
+        (c, i) => `<tr>
         <td>${i + 1}</td>
         <td class="left">${esc(c.course)}</td>
         <td>${esc(c.cohort)}</td>
         <td class="warning-text">${fmtRate(c.value)}</td>
         <td class="left">${esc(c.label)}</td>
-      </tr>`)
+      </tr>`,
+      )
       .join("");
     lowRespHtml = `
 <div class="section-title">응답률 하위 Top 5</div>
@@ -826,13 +844,15 @@ function buildPage5Html(data: Page5KpiData, _config: WeeklyOpsReportConfig): str
   let lowFieldHtml = "";
   if (data.lowFieldAppTop5.length > 0) {
     const lfRows = data.lowFieldAppTop5
-      .map((c, i) => `<tr>
+      .map(
+        (c, i) => `<tr>
         <td>${i + 1}</td>
         <td class="left">${esc(c.course)}</td>
         <td>${esc(c.cohort)}</td>
         <td class="danger-text">${fmtNum(c.value)}</td>
         <td class="left">${esc(c.label)}</td>
-      </tr>`)
+      </tr>`,
+      )
       .join("");
     lowFieldHtml = `
 <div class="section-title">현업적용평가 하위 Top 5</div>

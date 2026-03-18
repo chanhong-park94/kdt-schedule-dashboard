@@ -130,10 +130,14 @@ async function loadAndRender(): Promise<void> {
         <td>${formatDate(r.submitted_at)}</td>
         <td>${statusBadge(r.status)}</td>
         <td>
-          ${r.status === "pending" ? `
+          ${
+            r.status === "pending"
+              ? `
             <button class="ea-action-btn ea-approve-btn" data-id="${r.id}" title="승인">✅</button>
             <button class="ea-action-btn ea-reject-btn" data-id="${r.id}" title="거절">❌</button>
-          ` : ""}
+          `
+              : ""
+          }
         </td>
       </tr>`;
     })
