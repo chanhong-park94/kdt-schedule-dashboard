@@ -6457,3 +6457,23 @@ dialog { background: var(--card-bg) !important; color: var(--text) !important; b
 
 /* -- Notify last send timestamp ----------------------------------------- */
 .notify-last-send { font-size: 12px; color: var(--text-secondary); padding: 6px 10px; background: var(--surface-hover); border-radius: 6px; margin-bottom: 12px; }
+
+/* -- Excused Absence (공결 조회) ----------------------------------------- */
+.ea-dashboard { padding: 16px 0; }
+.ea-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.ea-header h3 { margin: 0; font-size: 16px; }
+.ea-meta { font-size: 13px; color: var(--text-secondary); }
+.ea-table-wrap { overflow-x: auto; }
+.ea-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ea-table th { padding: 8px 6px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
+.ea-table td { padding: 6px; border-bottom: 1px solid var(--border); }
+.ea-table tr:hover { background: var(--surface-hover); }
+.ea-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ea-pending { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.ea-approved { background: rgba(16,185,129,0.15); color: #34d399; }
+.ea-rejected { background: rgba(220,38,38,0.15); color: #f87171; }
+.ea-source-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.ea-source-app { background: rgba(99,102,241,0.15); color: #818cf8; }
+.ea-source-evidence { background: rgba(16,185,129,0.15); color: #34d399; }
+.ea-action-btn { padding: 2px 6px; border: none; background: transparent; cursor: pointer; font-size: 14px; border-radius: 4px; }
+.ea-action-btn:hover { background: var(--surface-hover); }

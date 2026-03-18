@@ -820,6 +820,9 @@
               <button class="att-tab" data-att-tab="contacts" type="button" id="attContactsTab">
                 📱 연락처 관리
               </button>
+              <button class="att-tab" data-att-tab="excused" type="button" id="attExcusedTab">
+                📋 공결 조회
+              </button>
             </div>
 
             <!-- ═══ 출결현황 패널 ═══ -->
@@ -1162,6 +1165,47 @@
               </div>
             </div>
             <!-- /attPageContacts -->
+
+            <!-- ═══ 공결 조회 패널 ═══ -->
+            <div id="attPageExcused" style="display:none">
+              <div class="ea-dashboard">
+                <div class="ea-header">
+                  <h3>📋 공결 신청 조회</h3>
+                  <button id="eaLoadBtn" class="btn-primary btn-sm" type="button">🔄 새로고침</button>
+                </div>
+                <p class="muted">Google Form 공가 신청서/증빙자료 제출 내역을 조회하고 승인/거절합니다.</p>
+
+                <div id="eaEmptyState" class="att-empty-state">
+                  <div class="att-empty-icon">📋</div>
+                  <div class="att-empty-title">공결 신청 내역</div>
+                  <div class="att-empty-desc">공가 신청서 폼이 제출되면 자동으로 표시됩니다.</div>
+                </div>
+
+                <div id="eaContent" style="display:none">
+                  <div class="ea-meta u-mt-8" id="eaMeta"></div>
+                  <div class="ea-table-wrap u-mt-8">
+                    <table class="ea-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>구분</th>
+                          <th>이름</th>
+                          <th>과정</th>
+                          <th>사유</th>
+                          <th>신청일</th>
+                          <th>증빙</th>
+                          <th>접수</th>
+                          <th>상태</th>
+                          <th>처리</th>
+                        </tr>
+                      </thead>
+                      <tbody id="eaTbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /attPageExcused -->
 
             <!-- ═══ 문자/이메일 발송 모달 ═══ -->
             <div id="attNotifyModal" class="att-modal-backdrop">

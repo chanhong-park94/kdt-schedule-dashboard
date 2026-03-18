@@ -13,6 +13,7 @@ import { initDashboard } from "./hrd/hrdDashboard";
 import { initTraineeHistory } from "./hrd/hrdTraineeHistory";
 import { initAssistantCheck } from "./hrd/hrdAssistantCheck";
 import { initContacts } from "./hrd/hrdContactsUI";
+import { initExcusedAbsence } from "./hrd/hrdExcusedAbsence";
 import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from "./kpi/kpiSheets";
 import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
 import { printKpiReport } from "./kpi/kpiPdf";
@@ -2623,6 +2624,7 @@ initDashboard();
 initTraineeHistory();
 initAssistantCheck();
 initContacts();
+initExcusedAbsence();
 
 // ─── 출결현황 / 하차방어율 상위 탭 전환 ───
 // ─── KPI 자율성과지표 Google Sheets 연동 ───
