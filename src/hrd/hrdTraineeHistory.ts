@@ -42,9 +42,11 @@ function riskBadgeHtml(level: string): string {
 }
 
 function statusBadgeHtml(status: string): string {
-  const cls = status.includes("중도탈락") || status.includes("조기취업") || status.includes("수료포기")
-    ? "th-status-dropout"
-    : status.includes("수료") ? "th-status-complete" : "th-status-active";
+  let cls = "th-status-active";
+  if (status.includes("중도탈락") || status.includes("수료포기")) cls = "th-status-dropout";
+  else if (status.includes("조기취업")) cls = "th-status-early-employ";
+  else if (status.includes("80%이상수료")) cls = "th-status-partial";
+  else if (status.includes("수료") || status.includes("정상수료") || status.includes("수료후취업")) cls = "th-status-complete";
   return `<span class="th-detail-badge ${cls}">${status}</span>`;
 }
 
@@ -142,16 +144,14 @@ async function loadAndRenderList(
 
     listContainer.innerHTML = `
       <table class="th-roster-table">
-        <thead><tr><th>이름</th><th>상태</th><th>구분</th></tr></thead>
+        <thead><tr><th>이름</th><th>상태</th></tr></thead>
         <tbody>
           ${filtered.map((raw) => {
             const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
             const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString().trim() || "훈련중";
-            const dropout = isDropout(raw);
             return `<tr>
               <td><span class="th-name-link" data-name="${name}">${name}</span></td>
-              <td>${stNm}</td>
-              <td>${dropout ? "이탈" : "재적"}</td>
+              <td>${statusBadgeHtml(stNm)}</td>
             </tr>`;
           }).join("")}
         </tbody>
@@ -374,10 +374,32 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
   const calContainer = $("thCalendar");
   if (!calContainer) return;
 
-  const dayHeaders = ["일", "월", "화", "수", "목", "금", "토"];
-  let html = "";
+  // 데이터가 있는 월만 필터링
+  const monthsWithData = monthStrings.filter((ms) => {
+    const prefix = `${ms.slice(0, 4)}-${ms.slice(4, 6)}`;
+    for (const key of dayMap.keys()) {
+      if (key.startsWith(prefix)) return true;
+    }
+    return false;
+  });
 
-  for (const ms of monthStrings) {
+  if (monthsWithData.length === 0) {
+    calContainer.innerHTML = `<div class="dash-empty">출결 데이터가 없습니다.</div>`;
+    return;
+  }
+
+  const dayHeaders = ["일", "월", "화", "수", "목", "금", "토"];
+
+  // 범례
+  let html = `<div class="th-calendar-legend">
+    <span class="th-legend-item cal-present">출석</span>
+    <span class="th-legend-item cal-late">지각</span>
+    <span class="th-legend-item cal-absent">결석</span>
+    <span class="th-legend-item cal-excused">공결</span>
+    <span class="th-legend-item cal-weekend">주말</span>
+  </div>`;
+
+  for (const ms of monthsWithData) {
     const year = parseInt(ms.slice(0, 4), 10);
     const month = parseInt(ms.slice(4, 6), 10) - 1;
     const firstDay = new Date(year, month, 1);
@@ -389,7 +411,6 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
     html += `<div class="th-calendar-grid">`;
     html += dayHeaders.map((d) => `<div class="th-calendar-day-header">${d}</div>`).join("");
 
-    // 빈 칸
     for (let i = 0; i < startDow; i++) {
       html += `<div class="th-calendar-cell cal-empty"></div>`;
     }
@@ -401,7 +422,6 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
       const status = dayMap.get(iso) || "";
 
       let cls = "cal-empty";
-      const label = String(d);
       if (dow === 0 || dow === 6) {
         cls = "cal-weekend";
       } else if (status) {
@@ -412,7 +432,7 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
         else cls = "cal-present";
       }
 
-      html += `<div class="th-calendar-cell ${cls}" title="${iso}: ${status || "기록없음"}">${label}</div>`;
+      html += `<div class="th-calendar-cell ${cls}" title="${iso}: ${status || "기록없음"}">${String(d)}</div>`;
     }
 
     html += `</div></div>`;
