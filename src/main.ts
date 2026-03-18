@@ -5,7 +5,12 @@ declare global {
     __kpiAllData: KpiAllData | null;
   }
 }
-import { findAssistantCode, getAssistantSession, setAssistantSession, clearAssistantSession } from "./auth/assistantAuth";
+import {
+  findAssistantCode,
+  getAssistantSession,
+  setAssistantSession,
+  clearAssistantSession,
+} from "./auth/assistantAuth";
 import { initAttendanceDashboard } from "./hrd/hrdAttendance";
 import { initAnalytics } from "./hrd/hrdAnalytics";
 import { initDropoutDashboard } from "./hrd/hrdDropout";
@@ -14,6 +19,7 @@ import { initTraineeHistory } from "./hrd/hrdTraineeHistory";
 import { initAssistantCheck } from "./hrd/hrdAssistantCheck";
 import { initContacts } from "./hrd/hrdContactsUI";
 import { initExcusedAbsence } from "./hrd/hrdExcusedAbsence";
+import { initAchievement } from "./hrd/hrdAchievement";
 import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from "./kpi/kpiSheets";
 import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
 import { printKpiReport } from "./kpi/kpiPdf";
@@ -23,19 +29,14 @@ import { domRefs } from "./ui/domRefs";
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
 import { removeBasicModeSections } from "./core/basicModeSections";
-import {
-  createCsvBlob,
-  toDayConflictRow,
-} from "./ui/utils/csv";
+import { createCsvBlob, toDayConflictRow } from "./ui/utils/csv";
 import { detectConflicts } from "./core/conflicts";
 import { assignInstructorToModule } from "./core/autoAssignInstructor";
 import { exportHrdCsvForCohort } from "./core/export";
 import { fromScheduleDaysToSessions } from "./core/fromSchedule";
 import { findScheduleTemplate } from "./core/scheduleTemplates";
 import { buildSessions } from "./core/sessions";
-import {
-  type TemplateRowState,
-} from "./core/state";
+import { type TemplateRowState } from "./core/state";
 import { resolveShowAdvancedPolicy } from "./core/showAdvancedPolicy";
 import { deriveModuleRangesFromSessions } from "./core/staffing";
 import { normalizeInstructorCode, normalizeSubjectCode } from "./core/standardize";
@@ -52,16 +53,8 @@ import {
   ResourceType,
   TrackType,
 } from "./core/types";
-import {
-  isInstructorCloudEnabled,
-} from "./core/instructorSync";
-import {
-  addDaysToIso,
-  formatDate,
-  getTodayIsoDate,
-  parseCompactDate,
-  parseIsoDate,
-} from "./ui/utils/date";
+import { isInstructorCloudEnabled } from "./core/instructorSync";
+import { addDaysToIso, formatDate, getTodayIsoDate, parseCompactDate, parseIsoDate } from "./ui/utils/date";
 import {
   formatHours,
   getConflictTabLabel,
@@ -257,13 +250,11 @@ const headerCurrentTime = domRefs.headerCurrentTime;
 const headerSyncState = domRefs.headerSyncState;
 const menuConfigStatus = domRefs.menuConfigStatus;
 
-
 const cohortSelect = domRefs.cohortSelect;
 const cohortInfo = domRefs.cohortInfo;
 const downloadButton = domRefs.downloadButton;
 const hrdValidationPanel = domRefs.hrdValidationPanel;
 const hrdValidationList = domRefs.hrdValidationList;
-
 
 const scheduleCohortInput = domRefs.scheduleCohortInput;
 const scheduleStartDateInput = domRefs.scheduleStartDateInput;
@@ -275,7 +266,6 @@ const loadScheduleTemplateButton = domRefs.loadScheduleTemplateButton;
 const saveScheduleTemplateButton = domRefs.saveScheduleTemplateButton;
 const deleteScheduleTemplateButton = domRefs.deleteScheduleTemplateButton;
 const scheduleTemplateStatus = domRefs.scheduleTemplateStatus;
-
 
 const scheduleInstructorCodeInput = domRefs.scheduleInstructorCodeInput;
 const scheduleClassroomCodeInput = domRefs.scheduleClassroomCodeInput;
@@ -320,7 +310,6 @@ const computeConflictsButton = domRefs.computeConflictsButton;
 const keySearchInput = domRefs.keySearchInput;
 const downloadTimeConflictsButton = domRefs.downloadTimeConflictsButton;
 
-
 const saveProjectButton = domRefs.saveProjectButton;
 const loadProjectButton = domRefs.loadProjectButton;
 const resetProjectButton = domRefs.resetProjectButton;
@@ -344,7 +333,6 @@ const printAssigneeGantt = domRefs.printAssigneeGantt;
 const printKpiContainer = domRefs.printKpiContainer;
 const printConflictTitle = domRefs.printConflictTitle;
 const printConflictContainer = domRefs.printConflictContainer;
-
 
 function isCloudAccessAllowed(): boolean {
   return appState.isAuthVerified;
@@ -737,28 +725,6 @@ function renderStaffModuleManagerTable(isBusy = false): void {
   staffModuleManagerContainerAdmin.innerHTML = "운영 화면의 빠른 수정 테이블과 동일한 데이터가 표시됩니다.";
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function applyViewMode(mode: ViewMode): void {
   appState.viewMode = mode;
   document.body.classList.toggle("simple-mode", mode === "simple");
@@ -852,11 +818,6 @@ function markQuickNavUpdated(target: "course" | "subject" | "instructor" | "mapp
   domRefs.quickNavMappingMeta.textContent = text;
 }
 
-
-
-
-
-
 function applyStaffingMode(mode: StaffingMode): void {
   appState.staffingMode = mode;
   staffingModeSelect.value = mode;
@@ -867,26 +828,6 @@ function applyStaffingMode(mode: StaffingMode): void {
     ? "운영매니저 모드: 교과목별 강사코드를 입력하면 즉시 수업시간표에 자동 배정하고 시간 충돌을 다시 계산합니다."
     : "고급 모드: 코호트별 P1/P2/365, resourceType, 기간 정책까지 상세 편집합니다.";
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function getTrackTypeMissingCohorts(): string[] {
   return appState.summaries
@@ -952,12 +893,6 @@ function isHrdChecklistPassed(): boolean {
   );
 }
 
-
-
-
-
-
-
 function collectTemplateRowsState(): TemplateRowState[] {
   return scheduleTemplatesCollectTemplateRowsState();
 }
@@ -985,22 +920,6 @@ function saveCurrentScheduleTemplate(): void {
 function deleteSelectedScheduleTemplate(): void {
   scheduleTemplatesDeleteSelectedScheduleTemplate();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function renderInitialUiState(): void {
   applyViewMode("full");
@@ -1507,9 +1426,6 @@ function downloadCohortCSV(): void {
   pushRecentActionLog("INFO", `HRD CSV 다운로드 완료: ${cohort}`, "hrdDownloadCard");
   updateActionStates();
 }
-
-
-
 
 function buildPrintReport(): void {
   printReportMeta.textContent = `생성시각: ${new Date().toLocaleString()} / 선택 탭: ${getConflictTabLabel(appState.activeConflictTab)}`;
@@ -2625,6 +2541,7 @@ initTraineeHistory();
 initAssistantCheck();
 initContacts();
 initExcusedAbsence();
+initAchievement();
 
 // ─── 출결현황 / 하차방어율 상위 탭 전환 ───
 // ─── KPI 자율성과지표 Google Sheets 연동 ───

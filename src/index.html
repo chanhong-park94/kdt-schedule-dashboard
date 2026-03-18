@@ -7,7 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
   </head>
   <body>
     <section id="authGate" class="auth-gate" aria-hidden="true" aria-label="인증 로그인">
@@ -28,7 +33,19 @@
       <aside class="jibble-sidebar" aria-label="주요 메뉴">
         <div class="jibble-logo">
           <span class="logo-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1 4 3 6 3s6-2 6-3v-5"/></svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+              <path d="M6 12v5c0 1 4 3 6 3s6-2 6-3v-5" />
+            </svg>
           </span>
           <span>KDT 교육운영 유틸리티<span class="logo-text-sub">교육운영 대시보드</span></span>
         </div>
@@ -126,6 +143,17 @@
             <span class="jibble-nav-emoji" aria-hidden="true">👤</span>
             <span class="jibble-nav-label">훈련생 이력</span>
           </button>
+          <button
+            class="jibble-nav-item"
+            type="button"
+            data-scroll-target="sectionAchievement"
+            data-nav-key="achievement"
+            data-nav-icon="star"
+            data-default-label="학업성취도"
+          >
+            <span class="jibble-nav-emoji" aria-hidden="true">🎓</span>
+            <span class="jibble-nav-label">학업성취도</span>
+          </button>
 
           <div class="nav-spacer" aria-hidden="true"></div>
           <button
@@ -144,36 +172,148 @@
 
       <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="모바일 메뉴">
         <button class="mobile-bottom-nav-item is-active" type="button" data-mobile-nav="dashboard">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
           <span class="mobile-bottom-nav-label">대시보드</span>
         </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="timeline">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
           <span class="mobile-bottom-nav-label">학사일정</span>
         </button>
         <!-- 정보입력: 설정 페이지로 통합됨 -->
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="generator">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+            />
+          </svg>
           <span class="mobile-bottom-nav-label">HRD시간표</span>
         </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="kpi">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
           <span class="mobile-bottom-nav-label">자율성과지표</span>
         </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="attendance">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
           <span class="mobile-bottom-nav-label">출결현황</span>
         </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="analytics">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
           <span class="mobile-bottom-nav-label">훈련생분석</span>
         </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="traineeHistory">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
           <span class="mobile-bottom-nav-label">훈련생이력</span>
         </button>
+        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="achievement">
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c0 1 4 3 6 3s6-2 6-3v-5" />
+          </svg>
+          <span class="mobile-bottom-nav-label">학업성취도</span>
+        </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="settings">
-          <svg class="mobile-nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <svg
+            class="mobile-nav-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
+          </svg>
           <span class="mobile-bottom-nav-label">설정</span>
         </button>
       </nav>
@@ -229,9 +369,21 @@
       >
         <div class="jibble-management-title">🧾 정보 입력</div>
         <div class="jibble-management-tabs" role="tablist" aria-label="정보 입력 분류">
-          <button id="jibbleSubCourse" class="jibble-management-tab is-active" type="button" role="tab" aria-selected="true">과정 관리</button>
-          <button id="jibbleSubSubject" class="jibble-management-tab" type="button" role="tab" aria-selected="false">교과목 관리</button>
-          <button id="jibbleSubInstructor" class="jibble-management-tab" type="button" role="tab" aria-selected="false">강사 관리</button>
+          <button
+            id="jibbleSubCourse"
+            class="jibble-management-tab is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+          >
+            과정 관리
+          </button>
+          <button id="jibbleSubSubject" class="jibble-management-tab" type="button" role="tab" aria-selected="false">
+            교과목 관리
+          </button>
+          <button id="jibbleSubInstructor" class="jibble-management-tab" type="button" role="tab" aria-selected="false">
+            강사 관리
+          </button>
         </div>
       </section>
 
@@ -327,7 +479,7 @@
                 <div id="dashboardCompareCharts" class="dash-panel"></div>
               </div>
             </div>
-            <div id="dashboardLoading" class="dash-loading" style="display:none">
+            <div id="dashboardLoading" class="dash-loading" style="display: none">
               <div class="dash-spinner"></div>
               <p id="dashboardLoadingMsg">데이터 조회 중...</p>
             </div>
@@ -817,12 +969,8 @@
               <button class="att-tab" data-att-tab="manual" type="button" id="attManualTab" disabled>
                 ✏️ 수기체크 (보조강사) <span class="att-tab-lock">🔒</span>
               </button>
-              <button class="att-tab" data-att-tab="contacts" type="button" id="attContactsTab">
-                📱 연락처 관리
-              </button>
-              <button class="att-tab" data-att-tab="excused" type="button" id="attExcusedTab">
-                📋 공결 조회
-              </button>
+              <button class="att-tab" data-att-tab="contacts" type="button" id="attContactsTab">📱 연락처 관리</button>
+              <button class="att-tab" data-att-tab="excused" type="button" id="attExcusedTab">📋 공결 조회</button>
             </div>
 
             <!-- ═══ 출결현황 패널 ═══ -->
@@ -1013,7 +1161,12 @@
                       <button id="attSlackSendBtn" class="att-slack-btn" type="button" title="Slack으로 리포트 전송">
                         <span class="att-slack-icon">📤</span> Slack 전송
                       </button>
-                      <button id="attNotifySendBtn" class="att-notify-btn" type="button" title="관리대상에게 문자/이메일 발송">
+                      <button
+                        id="attNotifySendBtn"
+                        class="att-notify-btn"
+                        type="button"
+                        title="관리대상에게 문자/이메일 발송"
+                      >
                         📱 문자/이메일
                       </button>
                       <button id="attRiskPanelClose" class="att-modal-close" type="button">&times;</button>
@@ -1037,20 +1190,23 @@
             <!-- /attPageAttendance -->
 
             <!-- ═══ 수기체크 패널 (보조강사 전용) ═══ -->
-            <div id="attPageManual" style="display:none">
+            <div id="attPageManual" style="display: none">
               <div class="amc-dashboard">
                 <div class="amc-header">
                   <h3>✏️ Zoom/Zep 참여 수기체크</h3>
                   <span id="amcSaveStatus" class="amc-save-status"></span>
                 </div>
                 <div class="amc-filters">
-                  <label class="amc-filter-label">날짜
+                  <label class="amc-filter-label"
+                    >날짜
                     <input type="date" id="amcFilterDate" class="att-input-date" />
                   </label>
-                  <label class="amc-filter-label">과정
+                  <label class="amc-filter-label"
+                    >과정
                     <input type="text" id="amcCourseName" class="att-input-date" readonly />
                   </label>
-                  <label class="amc-filter-label">회차
+                  <label class="amc-filter-label"
+                    >회차
                     <input type="text" id="amcDegr" class="att-input-date amc-degr-input" readonly />
                   </label>
                 </div>
@@ -1063,7 +1219,7 @@
                 </div>
 
                 <!-- Content -->
-                <div id="amcContent" style="display:none">
+                <div id="amcContent" style="display: none">
                   <div class="amc-table-wrap">
                     <table class="amc-table">
                       <thead>
@@ -1082,9 +1238,7 @@
 
                   <!-- 엑셀 다운로드 -->
                   <div class="amc-actions">
-                    <button id="amcExcelBtn" class="btn-primary amc-excel-btn" type="button">
-                      📥 엑셀 다운로드
-                    </button>
+                    <button id="amcExcelBtn" class="btn-primary amc-excel-btn" type="button">📥 엑셀 다운로드</button>
                   </div>
                 </div>
 
@@ -1100,7 +1254,14 @@
                         <label>시작일 <input type="date" id="amcExcelStart" class="att-input-date" /></label>
                         <label>종료일 <input type="date" id="amcExcelEnd" class="att-input-date" /></label>
                       </div>
-                      <button id="amcExcelDownload" class="btn-primary" type="button" style="margin-top:12px;width:100%">다운로드</button>
+                      <button
+                        id="amcExcelDownload"
+                        class="btn-primary"
+                        type="button"
+                        style="margin-top: 12px; width: 100%"
+                      >
+                        다운로드
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1109,7 +1270,7 @@
             <!-- /attPageManual -->
 
             <!-- ═══ 연락처 관리 패널 ═══ -->
-            <div id="attPageContacts" style="display:none">
+            <div id="attPageContacts" style="display: none">
               <div class="contacts-dashboard">
                 <div class="contacts-header">
                   <h3>📱 훈련생 연락처 관리</h3>
@@ -1128,7 +1289,7 @@
                   <div class="att-empty-desc">출결현황에서 과정/기수를 선택한 후 '명단 불러오기'를 클릭하세요.</div>
                 </div>
 
-                <div id="contactsContent" style="display:none">
+                <div id="contactsContent" style="display: none">
                   <div class="contacts-meta u-mt-8" id="contactsMeta"></div>
                   <div class="contacts-table-wrap u-mt-8">
                     <table class="contacts-table">
@@ -1148,16 +1309,28 @@
 
                 <!-- 일괄 등록 모달 -->
                 <div id="contactsBulkModal" class="att-modal-backdrop">
-                  <div class="att-modal-box" style="max-width:500px">
+                  <div class="att-modal-box" style="max-width: 500px">
                     <div class="att-modal-top">
                       <h3>📝 연락처 일괄 등록</h3>
                       <button id="contactsBulkClose" class="att-modal-close" type="button">&times;</button>
                     </div>
                     <div class="att-modal-body">
                       <p class="muted">한 줄에 하나씩 <code>이름,전화번호,이메일</code> 형식으로 입력하세요.</p>
-                      <textarea id="contactsBulkInput" class="contacts-bulk-textarea" rows="10" placeholder="홍길동,010-1234-5678,hong@email.com
-김철수,010-9876-5432,kim@email.com"></textarea>
-                      <button id="contactsBulkSubmit" class="btn-primary" type="button" style="margin-top:12px;width:100%">일괄 등록</button>
+                      <textarea
+                        id="contactsBulkInput"
+                        class="contacts-bulk-textarea"
+                        rows="10"
+                        placeholder="홍길동,010-1234-5678,hong@email.com
+김철수,010-9876-5432,kim@email.com"
+                      ></textarea>
+                      <button
+                        id="contactsBulkSubmit"
+                        class="btn-primary"
+                        type="button"
+                        style="margin-top: 12px; width: 100%"
+                      >
+                        일괄 등록
+                      </button>
                       <div id="contactsBulkStatus" class="notify-send-status u-mt-4"></div>
                     </div>
                   </div>
@@ -1167,7 +1340,7 @@
             <!-- /attPageContacts -->
 
             <!-- ═══ 공결 조회 패널 ═══ -->
-            <div id="attPageExcused" style="display:none">
+            <div id="attPageExcused" style="display: none">
               <div class="ea-dashboard">
                 <div class="ea-header">
                   <h3>📋 공결 신청 조회</h3>
@@ -1181,7 +1354,7 @@
                   <div class="att-empty-desc">공가 신청서 폼이 제출되면 자동으로 표시됩니다.</div>
                 </div>
 
-                <div id="eaContent" style="display:none">
+                <div id="eaContent" style="display: none">
                   <div class="ea-meta u-mt-8" id="eaMeta"></div>
                   <div class="ea-table-wrap u-mt-8">
                     <table class="ea-table">
@@ -1209,7 +1382,7 @@
 
             <!-- ═══ 문자/이메일 발송 모달 ═══ -->
             <div id="attNotifyModal" class="att-modal-backdrop">
-              <div class="att-modal-box" style="max-width:600px">
+              <div class="att-modal-box" style="max-width: 600px">
                 <div class="att-modal-top">
                   <h3>📱 출결 안내 발송</h3>
                   <button id="attNotifyModalClose" class="att-modal-close" type="button">&times;</button>
@@ -1219,262 +1392,261 @@
                 </div>
               </div>
             </div>
-
           </div>
           <!-- /sectionAttendance -->
 
           <!-- ═══ 하차방어율 (독립 페이지) ═══ -->
           <div class="card card-span-12 u-mt-14" id="sectionDropout" data-page-group="dropout">
-              <div class="do-dashboard">
-                <div class="do-header">
-                  <h3>🛡️ 하차방어율 (KPI) 대시보드</h3>
-                  <span id="doLoadStatus" class="att-load-status"></span>
-                  <button id="doQueryBtn" class="btn-primary att-query-btn" type="button">전체 조회</button>
+            <div class="do-dashboard">
+              <div class="do-header">
+                <h3>🛡️ 하차방어율 (KPI) 대시보드</h3>
+                <span id="doLoadStatus" class="att-load-status"></span>
+                <button id="doQueryBtn" class="btn-primary att-query-btn" type="button">전체 조회</button>
+              </div>
+
+              <!-- Empty -->
+              <div id="doEmptyState" class="att-empty-state">
+                <div class="att-empty-icon">🛡️</div>
+                <div class="att-empty-title">하차방어율 조회</div>
+                <div class="att-empty-desc">전체 조회 버튼을 클릭하면 모든 과정·기수의 하차방어율을 분석합니다.</div>
+              </div>
+
+              <!-- Content -->
+              <div id="doContent" style="display: none">
+                <!-- Summary Cards -->
+                <div class="do-summary-cards">
+                  <div class="do-card do-card-all">
+                    <div class="do-card-label">전체 하차방어율</div>
+                    <div class="do-card-rate" id="doAllRate">-</div>
+                    <div class="do-card-sub">
+                      총 <span id="doAllTotal">0</span> / 이탈 <span id="doAllDrop">0</span>
+                    </div>
+                  </div>
+                  <div class="do-card do-card-emp">
+                    <div class="do-card-label">재직자 과정 <span class="do-card-target-badge">목표 75%</span></div>
+                    <div class="do-card-rate" id="doEmpRate">-</div>
+                    <div class="do-card-sub">
+                      총 <span id="doEmpTotal">0</span> / 이탈 <span id="doEmpDrop">0</span>
+                    </div>
+                    <div class="do-card-target" id="doEmpTarget"></div>
+                  </div>
+                  <div class="do-card do-card-unemp">
+                    <div class="do-card-label">실업자 과정 <span class="do-card-target-badge">목표 85%</span></div>
+                    <div class="do-card-rate" id="doUnempRate">-</div>
+                    <div class="do-card-sub">
+                      총 <span id="doUnempTotal">0</span> / 이탈 <span id="doUnempDrop">0</span>
+                    </div>
+                    <div class="do-card-target" id="doUnempTarget"></div>
+                  </div>
                 </div>
 
-                <!-- Empty -->
-                <div id="doEmptyState" class="att-empty-state">
-                  <div class="att-empty-icon">🛡️</div>
-                  <div class="att-empty-title">하차방어율 조회</div>
-                  <div class="att-empty-desc">전체 조회 버튼을 클릭하면 모든 과정·기수의 하차방어율을 분석합니다.</div>
+                <!-- Charts -->
+                <div class="do-charts-grid">
+                  <div class="do-chart-box do-chart-wide">
+                    <h4>과정별 하차방어율</h4>
+                    <div class="do-chart-wrap"><canvas id="doChartCourse"></canvas></div>
+                  </div>
+                  <div class="do-chart-box">
+                    <h4>재직자/실업자 비교</h4>
+                    <div class="do-chart-wrap do-chart-sq"><canvas id="doChartCategory"></canvas></div>
+                  </div>
+                  <div class="do-chart-box do-chart-wide">
+                    <h4>기수별 하차방어율 추이</h4>
+                    <div class="do-chart-wrap"><canvas id="doChartDegr"></canvas></div>
+                  </div>
                 </div>
 
-                <!-- Content -->
-                <div id="doContent" style="display: none">
-                  <!-- Summary Cards -->
-                  <div class="do-summary-cards">
-                    <div class="do-card do-card-all">
-                      <div class="do-card-label">전체 하차방어율</div>
-                      <div class="do-card-rate" id="doAllRate">-</div>
-                      <div class="do-card-sub">
-                        총 <span id="doAllTotal">0</span> / 이탈 <span id="doAllDrop">0</span>
-                      </div>
-                    </div>
-                    <div class="do-card do-card-emp">
-                      <div class="do-card-label">재직자 과정 <span class="do-card-target-badge">목표 75%</span></div>
-                      <div class="do-card-rate" id="doEmpRate">-</div>
-                      <div class="do-card-sub">
-                        총 <span id="doEmpTotal">0</span> / 이탈 <span id="doEmpDrop">0</span>
-                      </div>
-                      <div class="do-card-target" id="doEmpTarget"></div>
-                    </div>
-                    <div class="do-card do-card-unemp">
-                      <div class="do-card-label">실업자 과정 <span class="do-card-target-badge">목표 85%</span></div>
-                      <div class="do-card-rate" id="doUnempRate">-</div>
-                      <div class="do-card-sub">
-                        총 <span id="doUnempTotal">0</span> / 이탈 <span id="doUnempDrop">0</span>
-                      </div>
-                      <div class="do-card-target" id="doUnempTarget"></div>
-                    </div>
-                  </div>
+                <!-- Detail Tabs -->
+                <div class="do-detail-tabs">
+                  <button class="do-tab active" data-do-tab="course" type="button">과정별 집계</button>
+                  <button class="do-tab" data-do-tab="degr" type="button">기수별 상세</button>
+                  <button class="do-tab" data-do-tab="yearly" type="button">연도별 상세</button>
+                  <button class="do-tab" data-do-tab="employed" type="button">재직자 상세</button>
+                  <button class="do-tab" data-do-tab="unemployed" type="button">실업자 상세</button>
+                  <button class="do-tab" data-do-tab="monthly" type="button">월별 상세</button>
+                  <button class="do-tab" data-do-tab="weekly" type="button">주간 상세</button>
+                </div>
 
-                  <!-- Charts -->
-                  <div class="do-charts-grid">
-                    <div class="do-chart-box do-chart-wide">
-                      <h4>과정별 하차방어율</h4>
-                      <div class="do-chart-wrap"><canvas id="doChartCourse"></canvas></div>
-                    </div>
-                    <div class="do-chart-box">
-                      <h4>재직자/실업자 비교</h4>
-                      <div class="do-chart-wrap do-chart-sq"><canvas id="doChartCategory"></canvas></div>
-                    </div>
-                    <div class="do-chart-box do-chart-wide">
-                      <h4>기수별 하차방어율 추이</h4>
-                      <div class="do-chart-wrap"><canvas id="doChartDegr"></canvas></div>
-                    </div>
-                  </div>
+                <!-- Course Table -->
+                <div data-do-panel="course">
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>구분</th>
+                        <th>과정명</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doCourseTbody"></tbody>
+                  </table>
+                </div>
 
-                  <!-- Detail Tabs -->
-                  <div class="do-detail-tabs">
-                    <button class="do-tab active" data-do-tab="course" type="button">과정별 집계</button>
-                    <button class="do-tab" data-do-tab="degr" type="button">기수별 상세</button>
-                    <button class="do-tab" data-do-tab="yearly" type="button">연도별 상세</button>
-                    <button class="do-tab" data-do-tab="employed" type="button">재직자 상세</button>
-                    <button class="do-tab" data-do-tab="unemployed" type="button">실업자 상세</button>
-                    <button class="do-tab" data-do-tab="monthly" type="button">월별 상세</button>
-                    <button class="do-tab" data-do-tab="weekly" type="button">주간 상세</button>
-                  </div>
+                <!-- Degr Table -->
+                <div data-do-panel="degr" style="display: none">
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>구분</th>
+                        <th>과정명</th>
+                        <th>기수</th>
+                        <th>개강일</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doDegrTbody"></tbody>
+                  </table>
+                </div>
 
-                  <!-- Course Table -->
-                  <div data-do-panel="course">
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>구분</th>
-                          <th>과정명</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doCourseTbody"></tbody>
-                    </table>
-                  </div>
+                <!-- Yearly Table -->
+                <div data-do-panel="yearly" style="display: none">
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>연도</th>
+                        <th>구분</th>
+                        <th>과정명</th>
+                        <th>기수</th>
+                        <th>개강일</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doYearlyTbody"></tbody>
+                  </table>
+                </div>
 
-                  <!-- Degr Table -->
-                  <div data-do-panel="degr" style="display: none">
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>구분</th>
-                          <th>과정명</th>
-                          <th>기수</th>
-                          <th>개강일</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doDegrTbody"></tbody>
-                    </table>
+                <!-- Employed (재직자) Table -->
+                <div data-do-panel="employed" style="display: none">
+                  <div class="do-panel-header">
+                    <span class="do-cat-chip do-cat-emp">재직자</span>
+                    <span class="do-panel-subtitle">목표 방어율: 75%</span>
                   </div>
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>과정명</th>
+                        <th>기수</th>
+                        <th>개강일</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doEmployedTbody"></tbody>
+                  </table>
+                </div>
 
-                  <!-- Yearly Table -->
-                  <div data-do-panel="yearly" style="display: none">
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>연도</th>
-                          <th>구분</th>
-                          <th>과정명</th>
-                          <th>기수</th>
-                          <th>개강일</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doYearlyTbody"></tbody>
-                    </table>
+                <!-- Unemployed (실업자) Table -->
+                <div data-do-panel="unemployed" style="display: none">
+                  <div class="do-panel-header">
+                    <span class="do-cat-chip do-cat-unemp">실업자</span>
+                    <span class="do-panel-subtitle">목표 방어율: 85%</span>
                   </div>
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>과정명</th>
+                        <th>기수</th>
+                        <th>개강일</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doUnemployedTbody"></tbody>
+                  </table>
+                </div>
 
-                  <!-- Employed (재직자) Table -->
-                  <div data-do-panel="employed" style="display: none">
-                    <div class="do-panel-header">
-                      <span class="do-cat-chip do-cat-emp">재직자</span>
-                      <span class="do-panel-subtitle">목표 방어율: 75%</span>
-                    </div>
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>과정명</th>
-                          <th>기수</th>
-                          <th>개강일</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doEmployedTbody"></tbody>
-                    </table>
+                <!-- Monthly Table -->
+                <div data-do-panel="monthly" style="display: none">
+                  <div class="do-filter-bar">
+                    <label class="do-filter-label">조회 기간:</label>
+                    <select id="doMonthlyYear" class="do-filter-select"></select>
+                    <select id="doMonthlyMonth" class="do-filter-select">
+                      <option value="0">전체</option>
+                      <option value="1">1월</option>
+                      <option value="2">2월</option>
+                      <option value="3">3월</option>
+                      <option value="4">4월</option>
+                      <option value="5">5월</option>
+                      <option value="6">6월</option>
+                      <option value="7">7월</option>
+                      <option value="8">8월</option>
+                      <option value="9">9월</option>
+                      <option value="10">10월</option>
+                      <option value="11">11월</option>
+                      <option value="12">12월</option>
+                    </select>
+                    <button id="doMonthlyQuery" class="btn-sm btn-primary" type="button">조회</button>
+                    <span id="doMonthlyStatus" class="do-filter-status"></span>
                   </div>
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>구분</th>
+                        <th>과정명</th>
+                        <th>기수</th>
+                        <th>개강일</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doMonthlyTbody"></tbody>
+                  </table>
+                </div>
 
-                  <!-- Unemployed (실업자) Table -->
-                  <div data-do-panel="unemployed" style="display: none">
-                    <div class="do-panel-header">
-                      <span class="do-cat-chip do-cat-unemp">실업자</span>
-                      <span class="do-panel-subtitle">목표 방어율: 85%</span>
-                    </div>
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>과정명</th>
-                          <th>기수</th>
-                          <th>개강일</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doUnemployedTbody"></tbody>
-                    </table>
+                <!-- Weekly Table -->
+                <div data-do-panel="weekly" style="display: none">
+                  <div class="do-filter-bar">
+                    <label class="do-filter-label">조회 주간:</label>
+                    <input type="week" id="doWeeklyPicker" class="do-filter-input" />
+                    <button id="doWeeklyQuery" class="btn-sm btn-primary" type="button">조회</button>
+                    <span id="doWeeklyStatus" class="do-filter-status"></span>
                   </div>
-
-                  <!-- Monthly Table -->
-                  <div data-do-panel="monthly" style="display: none">
-                    <div class="do-filter-bar">
-                      <label class="do-filter-label">조회 기간:</label>
-                      <select id="doMonthlyYear" class="do-filter-select"></select>
-                      <select id="doMonthlyMonth" class="do-filter-select">
-                        <option value="0">전체</option>
-                        <option value="1">1월</option>
-                        <option value="2">2월</option>
-                        <option value="3">3월</option>
-                        <option value="4">4월</option>
-                        <option value="5">5월</option>
-                        <option value="6">6월</option>
-                        <option value="7">7월</option>
-                        <option value="8">8월</option>
-                        <option value="9">9월</option>
-                        <option value="10">10월</option>
-                        <option value="11">11월</option>
-                        <option value="12">12월</option>
-                      </select>
-                      <button id="doMonthlyQuery" class="btn-sm btn-primary" type="button">조회</button>
-                      <span id="doMonthlyStatus" class="do-filter-status"></span>
-                    </div>
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>구분</th>
-                          <th>과정명</th>
-                          <th>기수</th>
-                          <th>개강일</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doMonthlyTbody"></tbody>
-                    </table>
-                  </div>
-
-                  <!-- Weekly Table -->
-                  <div data-do-panel="weekly" style="display: none">
-                    <div class="do-filter-bar">
-                      <label class="do-filter-label">조회 주간:</label>
-                      <input type="week" id="doWeeklyPicker" class="do-filter-input" />
-                      <button id="doWeeklyQuery" class="btn-sm btn-primary" type="button">조회</button>
-                      <span id="doWeeklyStatus" class="do-filter-status"></span>
-                    </div>
-                    <table class="do-table">
-                      <thead>
-                        <tr>
-                          <th>구분</th>
-                          <th>과정명</th>
-                          <th>기수</th>
-                          <th>개강일</th>
-                          <th>전체</th>
-                          <th>이탈</th>
-                          <th>재적</th>
-                          <th>방어율</th>
-                          <th>목표대비</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="doWeeklyTbody"></tbody>
-                    </table>
-                  </div>
+                  <table class="do-table">
+                    <thead>
+                      <tr>
+                        <th>구분</th>
+                        <th>과정명</th>
+                        <th>기수</th>
+                        <th>개강일</th>
+                        <th>전체</th>
+                        <th>이탈</th>
+                        <th>재적</th>
+                        <th>방어율</th>
+                        <th>목표대비</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="doWeeklyTbody"></tbody>
+                  </table>
                 </div>
               </div>
+            </div>
           </div>
           <!-- /sectionDropout -->
 
@@ -1617,8 +1789,83 @@
             <p class="section-desc">과정/기수를 선택하고 훈련생을 검색하여 개인 출결 이력을 조회합니다.</p>
             <div id="traineeHistoryFilter" class="th-filter-bar"></div>
             <div id="traineeHistoryList" class="th-list"></div>
-            <div id="traineeHistoryDetail" class="th-detail" style="display:none"></div>
+            <div id="traineeHistoryDetail" class="th-detail" style="display: none"></div>
           </section>
+
+          <!-- ═══ 학업성취도 ═══ -->
+          <div class="card card-span-12 u-mt-14" id="sectionAchievement" data-page-group="achievement">
+            <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
+              <h3>🎓 학업성취도</h3>
+              <div style="display: flex; gap: 8px">
+                <button id="achievementFetchBtn" class="btn btn--primary btn--sm">조회</button>
+              </div>
+            </div>
+
+            <!-- 설정 영역 -->
+            <div id="achievementConfigArea" style="margin-bottom: 16px">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                <input
+                  id="achievementWebAppUrl"
+                  type="text"
+                  class="hrd-input"
+                  placeholder="Apps Script Web App URL"
+                  style="flex: 1; min-width: 200px"
+                />
+                <button id="achievementConnectTestBtn" class="btn btn--sm">연결 테스트</button>
+                <button id="achievementConnectSaveBtn" class="btn btn--sm btn--primary">저장</button>
+              </div>
+              <div id="achievementConnectStatus" class="kpi-connect-status" style="margin-top: 4px"></div>
+            </div>
+
+            <!-- 필터 -->
+            <div id="achievementFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+              <select id="achvFilterCourse" class="hrd-input">
+                <option value="">전체 과정</option>
+              </select>
+              <select id="achvFilterCohort" class="hrd-input">
+                <option value="">전체 기수</option>
+              </select>
+              <span id="achvTraineeCount" class="muted" style="font-size: 13px"></span>
+            </div>
+
+            <div id="achievementStatus" class="ana-status"></div>
+
+            <!-- 빈 상태 -->
+            <div id="achievementEmpty" class="att-empty-state">
+              <div class="att-empty-title">학업성취도</div>
+              <div class="att-empty-desc">
+                Apps Script URL을 설정하고 조회 버튼을 클릭하면 학업성취도 데이터를 표시합니다.
+              </div>
+            </div>
+
+            <!-- 데이터 테이블 -->
+            <div id="achievementContent" style="display: none">
+              <div style="overflow-x: auto">
+                <table class="hrd-table" style="margin-top: 0">
+                  <thead>
+                    <tr>
+                      <th data-achv-sort="name">이름</th>
+                      <th data-achv-sort="guild">길드</th>
+                      <th data-achv-sort="status">훈련상태</th>
+                      <th data-achv-sort="nodeRate">노드 제출</th>
+                      <th data-achv-sort="nodeAvg">노드 평균별점</th>
+                      <th data-achv-sort="questRate">퀘스트 패스</th>
+                      <th data-achv-sort="signal">신호등</th>
+                    </tr>
+                  </thead>
+                  <tbody id="achvTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 상세 펼침 (행 클릭 시) -->
+            <div id="achievementDetail" style="display: none; margin-top: 16px">
+              <h4 id="achvDetailTitle" style="margin-bottom: 8px"></h4>
+              <div id="achvDetailNode" style="margin-bottom: 12px"></div>
+              <div id="achvDetailQuest"></div>
+            </div>
+          </div>
+          <!-- /sectionAchievement -->
 
           <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign" data-page-group="reports">
             <div class="row u-row-between u-row-center">
@@ -1879,175 +2126,177 @@
               <span class="settings-chevron" aria-hidden="true">▼</span>
             </div>
             <div class="settings-section-body is-collapsed">
-            <div class="drawer-tab-row u-mt-4">
-              <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
-              <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
-              <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
-              <button id="instructorTabMapping" class="tab-btn u-hidden" type="button">강사 매핑</button>
-            </div>
-
-            <div id="instructorCoursePanel" class="u-mt-10">
-              <div class="row u-row-center">
-                <div>
-                  <label>과정 ID(필수)</label>
-                  <input id="courseIdInput" type="text" placeholder="예: EDATA" />
-                </div>
-                <div>
-                  <label>과정명(필수)</label>
-                  <input id="courseNameInput" type="text" placeholder="예: 데이터 분석 과정" />
-                </div>
-                <div>
-                  <label>메모(선택)</label>
-                  <input id="courseMemoInput" type="text" placeholder="예: 야간 운영" />
-                </div>
-                <button id="upsertCourseButton" type="button">과정 저장</button>
+              <div class="drawer-tab-row u-mt-4">
+                <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
+                <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
+                <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
+                <button id="instructorTabMapping" class="tab-btn u-hidden" type="button">강사 매핑</button>
               </div>
 
-              <div class="u-mt-12">
-                <strong>과정 목록</strong>
-                <table id="courseRegistryTable">
-                  <thead>
-                    <tr>
-                      <th>과정 ID</th>
-                      <th>과정명</th>
-                      <th>메모</th>
-                      <th>작업</th>
-                    </tr>
-                  </thead>
-                  <tbody id="courseRegistryBody"></tbody>
-                </table>
+              <div id="instructorCoursePanel" class="u-mt-10">
+                <div class="row u-row-center">
+                  <div>
+                    <label>과정 ID(필수)</label>
+                    <input id="courseIdInput" type="text" placeholder="예: EDATA" />
+                  </div>
+                  <div>
+                    <label>과정명(필수)</label>
+                    <input id="courseNameInput" type="text" placeholder="예: 데이터 분석 과정" />
+                  </div>
+                  <div>
+                    <label>메모(선택)</label>
+                    <input id="courseMemoInput" type="text" placeholder="예: 야간 운영" />
+                  </div>
+                  <button id="upsertCourseButton" type="button">과정 저장</button>
+                </div>
+
+                <div class="u-mt-12">
+                  <strong>과정 목록</strong>
+                  <table id="courseRegistryTable">
+                    <thead>
+                      <tr>
+                        <th>과정 ID</th>
+                        <th>과정명</th>
+                        <th>메모</th>
+                        <th>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody id="courseRegistryBody"></tbody>
+                  </table>
+                </div>
+
+                <div class="u-mt-12">
+                  <strong>과정 템플릿</strong>
+                  <div class="muted">과정별 시간 템플릿/휴강일/교과목/강사매핑을 저장/적용합니다.</div>
+                  <div class="row u-mt-8 u-row-center">
+                    <div>
+                      <label>과정 선택</label>
+                      <select id="courseTemplateCourseSelect"></select>
+                    </div>
+                    <div>
+                      <label>템플릿명</label>
+                      <input id="courseTemplateNameInput" type="text" placeholder="예: EDATA 운영 표준 v1" />
+                    </div>
+                    <button id="saveCourseTemplateButton" type="button">템플릿 저장</button>
+                  </div>
+                  <div class="row u-mt-8 u-row-center">
+                    <div>
+                      <label>저장 템플릿</label>
+                      <select id="courseTemplateSelect"></select>
+                    </div>
+                    <button id="loadCourseTemplateButton" type="button">템플릿 불러오기</button>
+                    <button id="deleteCourseTemplateButton" type="button">삭제</button>
+                  </div>
+                  <div id="courseTemplateStatus" class="muted template-status"></div>
+                </div>
+
+                <div class="u-mt-12">
+                  <strong>고급 기능</strong>
+                  <div class="muted">기존에 확정된 시간표를 가져와 타임라인/충돌/HRD 다운로드에 활용</div>
+                  <label class="u-mt-8">수업시간표 CSV 업로드 (예: KDT_master_sessions.csv)</label>
+                  <input id="file" type="file" accept=".csv" />
+                  <div class="muted u-mt-6" id="uploadStatus">대기중</div>
+                  <div id="standardizeStatus" class="muted u-hidden u-mt-6">
+                    <span class="pill">표준화 적용됨</span>
+                    <a href="#standardizeHelp" class="muted-link">규칙 보기</a>
+                  </div>
+                </div>
               </div>
 
-              <div class="u-mt-12">
-                <strong>과정 템플릿</strong>
-                <div class="muted">과정별 시간 템플릿/휴강일/교과목/강사매핑을 저장/적용합니다.</div>
-                <div class="row u-mt-8 u-row-center">
+              <div id="instructorRegisterPanel" class="u-hidden u-mt-10">
+                <div class="row u-row-center">
+                  <div>
+                    <label>강사코드(필수)</label>
+                    <input id="instructorCodeInput" type="text" placeholder="예: TCH-1001" />
+                  </div>
+                  <div>
+                    <label>이름(선택)</label>
+                    <input id="instructorNameInput" type="text" placeholder="예: 홍길동" />
+                  </div>
+                  <div>
+                    <label>메모(선택)</label>
+                    <input id="instructorMemoInput" type="text" placeholder="예: 야간 가능" />
+                  </div>
+                  <button id="upsertInstructorButton" type="button">강사 저장</button>
+                </div>
+              </div>
+
+              <div id="instructorMappingPanel" class="u-hidden u-mt-10">
+                <div>
+                  <strong>강사 목록</strong>
+                  <table id="instructorDirectoryTable">
+                    <thead>
+                      <tr>
+                        <th>강사코드</th>
+                        <th>이름</th>
+                        <th>메모</th>
+                        <th>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody id="instructorDirectoryBody"></tbody>
+                  </table>
+                </div>
+
+                <div class="u-mt-12">
+                  <strong>교과목 강사 매핑</strong>
+                  <div class="muted">과정 선택 후 교과목별 강사를 지정하고, 선택된 기수에 일괄 적용합니다.</div>
+                  <div class="row u-mt-8 u-row-center">
+                    <div>
+                      <label>과정 선택</label>
+                      <select id="mappingCourseSelect"></select>
+                    </div>
+                    <button id="applySubjectMappingsButton" type="button">매핑 일괄 적용</button>
+                  </div>
+                  <div id="subjectMappingContainer" class="u-mt-8"></div>
+                </div>
+
+                <div class="u-mt-12">
+                  <strong>빠른 수정</strong>
+                  <div class="muted">교과목 강사를 즉시 바꾸고 시간 충돌을 다시 계산합니다.</div>
+                  <div id="staffModuleManagerContainer" class="u-mt-10"></div>
+                </div>
+              </div>
+
+              <div id="instructorSubjectPanel" class="u-hidden u-mt-10">
+                <div class="row u-row-center">
                   <div>
                     <label>과정 선택</label>
-                    <select id="courseTemplateCourseSelect"></select>
+                    <select id="subjectCourseSelect"></select>
                   </div>
                   <div>
-                    <label>템플릿명</label>
-                    <input id="courseTemplateNameInput" type="text" placeholder="예: EDATA 운영 표준 v1" />
+                    <label>교과목코드(필수)</label>
+                    <input id="subjectCodeInput" type="text" placeholder="예: NCS_SUBJ_01" />
                   </div>
-                  <button id="saveCourseTemplateButton" type="button">템플릿 저장</button>
-                </div>
-                <div class="row u-mt-8 u-row-center">
                   <div>
-                    <label>저장 템플릿</label>
-                    <select id="courseTemplateSelect"></select>
+                    <label>교과목명(선택)</label>
+                    <input id="subjectNameInput" type="text" placeholder="예: 데이터 분석 기초" />
                   </div>
-                  <button id="loadCourseTemplateButton" type="button">템플릿 불러오기</button>
-                  <button id="deleteCourseTemplateButton" type="button">삭제</button>
-                </div>
-                <div id="courseTemplateStatus" class="muted template-status"></div>
-              </div>
-
-              <div class="u-mt-12">
-                <strong>고급 기능</strong>
-                <div class="muted">기존에 확정된 시간표를 가져와 타임라인/충돌/HRD 다운로드에 활용</div>
-                <label class="u-mt-8">수업시간표 CSV 업로드 (예: KDT_master_sessions.csv)</label>
-                <input id="file" type="file" accept=".csv" />
-                <div class="muted u-mt-6" id="uploadStatus">대기중</div>
-                <div id="standardizeStatus" class="muted u-hidden u-mt-6">
-                  <span class="pill">표준화 적용됨</span>
-                  <a href="#standardizeHelp" class="muted-link">규칙 보기</a>
-                </div>
-              </div>
-            </div>
-
-            <div id="instructorRegisterPanel" class="u-hidden u-mt-10">
-              <div class="row u-row-center">
-                <div>
-                  <label>강사코드(필수)</label>
-                  <input id="instructorCodeInput" type="text" placeholder="예: TCH-1001" />
-                </div>
-                <div>
-                  <label>이름(선택)</label>
-                  <input id="instructorNameInput" type="text" placeholder="예: 홍길동" />
-                </div>
-                <div>
-                  <label>메모(선택)</label>
-                  <input id="instructorMemoInput" type="text" placeholder="예: 야간 가능" />
-                </div>
-                <button id="upsertInstructorButton" type="button">강사 저장</button>
-              </div>
-            </div>
-
-            <div id="instructorMappingPanel" class="u-hidden u-mt-10">
-              <div>
-                <strong>강사 목록</strong>
-                <table id="instructorDirectoryTable">
-                  <thead>
-                    <tr>
-                      <th>강사코드</th>
-                      <th>이름</th>
-                      <th>메모</th>
-                      <th>작업</th>
-                    </tr>
-                  </thead>
-                  <tbody id="instructorDirectoryBody"></tbody>
-                </table>
-              </div>
-
-              <div class="u-mt-12">
-                <strong>교과목 강사 매핑</strong>
-                <div class="muted">과정 선택 후 교과목별 강사를 지정하고, 선택된 기수에 일괄 적용합니다.</div>
-                <div class="row u-mt-8 u-row-center">
                   <div>
-                    <label>과정 선택</label>
-                    <select id="mappingCourseSelect"></select>
+                    <label>메모(선택)</label>
+                    <input id="subjectMemoInput" type="text" placeholder="예: 운영매니저 지정 과목" />
                   </div>
-                  <button id="applySubjectMappingsButton" type="button">매핑 일괄 적용</button>
+                  <button id="upsertSubjectButton" type="button">교과목 저장</button>
                 </div>
-                <div id="subjectMappingContainer" class="u-mt-8"></div>
-              </div>
 
-              <div class="u-mt-12">
-                <strong>빠른 수정</strong>
-                <div class="muted">교과목 강사를 즉시 바꾸고 시간 충돌을 다시 계산합니다.</div>
-                <div id="staffModuleManagerContainer" class="u-mt-10"></div>
+                <div class="u-mt-12">
+                  <strong>교과목 목록</strong>
+                  <table id="subjectDirectoryTable">
+                    <thead>
+                      <tr>
+                        <th>교과목코드</th>
+                        <th>교과목명</th>
+                        <th>메모</th>
+                        <th>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody id="subjectDirectoryBody"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
-
-            <div id="instructorSubjectPanel" class="u-hidden u-mt-10">
-              <div class="row u-row-center">
-                <div>
-                  <label>과정 선택</label>
-                  <select id="subjectCourseSelect"></select>
-                </div>
-                <div>
-                  <label>교과목코드(필수)</label>
-                  <input id="subjectCodeInput" type="text" placeholder="예: NCS_SUBJ_01" />
-                </div>
-                <div>
-                  <label>교과목명(선택)</label>
-                  <input id="subjectNameInput" type="text" placeholder="예: 데이터 분석 기초" />
-                </div>
-                <div>
-                  <label>메모(선택)</label>
-                  <input id="subjectMemoInput" type="text" placeholder="예: 운영매니저 지정 과목" />
-                </div>
-                <button id="upsertSubjectButton" type="button">교과목 저장</button>
-              </div>
-
-              <div class="u-mt-12">
-                <strong>교과목 목록</strong>
-                <table id="subjectDirectoryTable">
-                  <thead>
-                    <tr>
-                      <th>교과목코드</th>
-                      <th>교과목명</th>
-                      <th>메모</th>
-                      <th>작업</th>
-                    </tr>
-                  </thead>
-                  <tbody id="subjectDirectoryBody"></tbody>
-                </table>
-              </div>
-            </div>
-            </div><!-- /settings-section-body -->
-          </div><!-- /instructorDrawer -->
+            <!-- /settings-section-body -->
+          </div>
+          <!-- /instructorDrawer -->
 
           <!-- HRD API 설정 -->
           <!-- 설정 카드 A: 과정 등록 (가장 자주 사용 — 기본 펼침) -->
@@ -2062,12 +2311,8 @@
             </div>
             <div class="settings-section-body is-collapsed">
               <div class="settings-action-row">
-                <button id="hrdResetDefaults" class="btn-sm btn-subtle-green" type="button">
-                  🔄 기본 과정 복원
-                </button>
-                <button id="hrdDiscoverAll" class="btn-sm btn-subtle-blue" type="button">
-                  🔍 전체 기수 자동탐색
-                </button>
+                <button id="hrdResetDefaults" class="btn-sm btn-subtle-green" type="button">🔄 기본 과정 복원</button>
+                <button id="hrdDiscoverAll" class="btn-sm btn-subtle-blue" type="button">🔍 전체 기수 자동탐색</button>
               </div>
               <div id="hrdDiscoverStatus" class="settings-status-msg" style="display: none"></div>
               <div id="hrdCourseList" class="hrd-course-list"></div>
@@ -2267,9 +2512,7 @@
                     placeholder="비밀번호 입력"
                     autocomplete="off"
                   />
-                  <button id="hrdKeyGateUnlock" class="btn-sm btn-primary" type="button">
-                    잠금 해제
-                  </button>
+                  <button id="hrdKeyGateUnlock" class="btn-sm btn-primary" type="button">잠금 해제</button>
                 </div>
                 <div id="hrdKeyGateError" class="hrd-key-gate-error" style="display: none">
                   비밀번호가 올바르지 않습니다
@@ -2298,12 +2541,7 @@
                       placeholder="https://hooks.slack.com/services/..."
                       style="flex: 1"
                     />
-                    <button
-                      id="hrdSlackTestBtn"
-                      class="btn-sm"
-                      type="button"
-                      class="btn-sm btn-primary"
-                    >
+                    <button id="hrdSlackTestBtn" class="btn-sm" type="button" class="btn-sm btn-primary">
                       Slack 테스트
                     </button>
                   </div>
@@ -2311,9 +2549,7 @@
                 </div>
                 <div class="hrd-field-actions">
                   <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
-                  <button id="hrdTestBtn" class="btn-sm btn-primary" type="button">
-                    연결 테스트
-                  </button>
+                  <button id="hrdTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
                 </div>
               </div>
               <div id="hrdTestStatus" class="att-api-status u-mt-8"></div>
@@ -2347,9 +2583,7 @@
                 </label>
               </div>
               <div class="row u-mt-10 u-row-center">
-                <button id="weeklyReportGenerateBtn" class="btn-primary" type="button">
-                  📄 보고팩 생성
-                </button>
+                <button id="weeklyReportGenerateBtn" class="btn-primary" type="button">📄 보고팩 생성</button>
               </div>
               <div id="weeklyReportStatus" class="muted u-mt-6"></div>
             </div>
