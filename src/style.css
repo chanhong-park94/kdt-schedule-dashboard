@@ -6462,8 +6462,7 @@ dialog { background: var(--card-bg) !important; color: var(--text) !important; b
 .ea-dashboard { padding: 16px 0; }
 .ea-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .ea-header h3 { margin: 0; font-size: 16px; }
-.ea-refresh-btn { padding: 4px 12px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text); cursor: pointer; white-space: nowrap; }
-.ea-refresh-btn:hover { background: var(--surface-hover); border-color: var(--primary); }
+.ea-refresh-btn.btn-primary { padding: 4px 12px !important; font-size: 12px !important; width: auto !important; flex-shrink: 0; }
 .ea-meta { font-size: 13px; color: var(--text-secondary); }
 .ea-table-wrap { overflow-x: auto; }
 .ea-table { width: 100%; border-collapse: collapse; font-size: 12px; }
