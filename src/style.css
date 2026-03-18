@@ -6454,3 +6454,6 @@ dialog { background: var(--card-bg) !important; color: var(--text) !important; b
 .hrd-sms-from-input { width: 160px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); color: var(--text); font-size: 13px; }
 .hrd-sms-from-input:focus { border-color: var(--primary); outline: none; }
 .hrd-sms-from-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
+
+/* -- Notify last send timestamp ----------------------------------------- */
+.notify-last-send { font-size: 12px; color: var(--text-secondary); padding: 6px 10px; background: var(--surface-hover); border-radius: 6px; margin-bottom: 12px; }

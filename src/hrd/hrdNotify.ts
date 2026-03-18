@@ -38,6 +38,46 @@ export function saveTemplates(templates: NotifyTemplate): void {
   localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
 }
 
+// ─── 발송 이력 (최근 발송 타임스탬프) ───────────────────────
+const SEND_HISTORY_KEY = "kdt_notify_history_v1";
+
+interface SendHistoryEntry {
+  timestamp: string; // ISO
+  method: NotifyMethod;
+  successCount: number;
+  failCount: number;
+  courseName: string;
+}
+
+function loadSendHistory(): SendHistoryEntry[] {
+  try {
+    const stored = localStorage.getItem(SEND_HISTORY_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+}
+
+function saveSendEntry(entry: SendHistoryEntry): void {
+  const history = loadSendHistory();
+  history.unshift(entry);
+  // 최근 20건만 유지
+  if (history.length > 20) history.length = 20;
+  localStorage.setItem(SEND_HISTORY_KEY, JSON.stringify(history));
+}
+
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function getLastSendSummary(): string {
+  const history = loadSendHistory();
+  if (history.length === 0) return "";
+  const last = history[0];
+  const methodLabel = last.method === "sms" ? "SMS" : last.method === "email" ? "이메일" : "SMS+이메일";
+  return `최근 발송: ${formatTimestamp(last.timestamp)} | ${methodLabel} ${last.successCount}건 (${last.courseName})`;
+}
+
 export function resetTemplates(): NotifyTemplate {
   localStorage.removeItem(TEMPLATE_STORAGE_KEY);
   return { ...DEFAULT_TEMPLATES };
@@ -201,7 +241,10 @@ function renderModalContent(): void {
   const hasPhone = currentTargets.some((t) => t.selected && t.phone);
   const hasEmail = currentTargets.some((t) => t.selected && t.email);
 
+  const lastSend = getLastSendSummary();
+
   body.innerHTML = `
+    ${lastSend ? `<div class="notify-last-send">🕐 ${lastSend}</div>` : ""}
     <div class="notify-method-row">
       <label class="notify-method-label">
         <input type="radio" name="notifyMethod" value="sms" ${currentMethod === "sms" ? "checked" : ""} /> 문자 (SMS)
@@ -289,13 +332,26 @@ async function handleSend(): Promise<void> {
 
   const successCount = results.filter((r) => r.success).length;
   const failCount = results.filter((r) => !r.success).length;
+  const now = new Date().toISOString();
+
+  // 발송 이력 저장
+  if (successCount > 0) {
+    saveSendEntry({
+      timestamp: now,
+      method: currentMethod,
+      successCount,
+      failCount,
+      courseName: course?.name || "",
+    });
+  }
 
   if (status) {
+    const timeStr = formatTimestamp(now);
     if (failCount === 0 && successCount > 0) {
-      status.textContent = `✅ ${successCount}건 발송 완료`;
+      status.textContent = `✅ ${successCount}건 발송 완료 (${timeStr})`;
       status.className = "notify-send-status notify-status-success";
     } else if (successCount > 0) {
-      status.textContent = `⚠️ 성공 ${successCount}건, 실패 ${failCount}건`;
+      status.textContent = `⚠️ 성공 ${successCount}건, 실패 ${failCount}건 (${timeStr})`;
       status.className = "notify-send-status notify-status-warn";
     } else {
       const firstErr = results.find((r) => r.error)?.error || "발송 실패";
