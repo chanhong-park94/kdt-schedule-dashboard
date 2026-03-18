@@ -202,7 +202,10 @@ export function summarizeByTrainee(
   cohortFilter: string,
 ): TraineeAchievementSummary[] {
   const filtered = records.filter(
-    (r) => (!courseFilter || r.과정 === courseFilter) && (!cohortFilter || r.기수 === cohortFilter),
+    (r) =>
+      r.이름.trim() !== "" &&
+      (!courseFilter || r.과정 === courseFilter) &&
+      (!cohortFilter || r.기수 === cohortFilter),
   );
 
   // 이름+과정+기수 그룹핑
