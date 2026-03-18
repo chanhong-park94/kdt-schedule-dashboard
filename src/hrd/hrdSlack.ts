@@ -1,13 +1,15 @@
 /** HRD 출결 관리대상 Slack 리포트 전송 모듈 */
 import { loadHrdConfig } from "./hrdConfig";
+import { readClientEnv } from "../core/env";
 import type { AttendanceStudent, RiskLevel } from "./hrdTypes";
 import { DEFAULT_SLACK_SCHEDULE } from "./hrdTypes";
 
-const CORS_PROXIES = [
-  "https://corsproxy.io/?url=",
-  "https://api.allorigins.win/raw?url=",
-  "https://proxy.corsfix.com/?url=",
-];
+// Supabase Edge Function 기반 Slack 프록시
+const _sbUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
+const _sbKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+const EDGE_FUNCTION_URL =
+  typeof _sbUrl === "string" && _sbUrl.trim() ? `${_sbUrl.trim()}/functions/v1/slack-proxy` : "";
+const SUPABASE_ANON_KEY = typeof _sbKey === "string" ? _sbKey.trim() : "";
 
 // ─── Slack Message Builder ───────────────────────────────────
 
@@ -179,26 +181,25 @@ export function buildSlackMessage(
 
 // ─── Slack Webhook Sender ────────────────────────────────────
 
-async function postToSlackViaProxy(webhookUrl: string, payload: object): Promise<void> {
-  for (let i = 0; i < CORS_PROXIES.length; i++) {
-    try {
-      const proxyUrl = CORS_PROXIES[i] + encodeURIComponent(webhookUrl);
-      const res = await fetch(proxyUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok || res.status === 200) return;
-      // Slack returns "ok" as text, not JSON
-      const text = await res.text();
-      if (text === "ok") return;
-      throw new Error(`Slack responded: ${res.status} ${text}`);
-    } catch (e) {
-      console.warn(`[Slack] Proxy #${i} failed:`, e instanceof Error ? e.message : e);
-      if (i === CORS_PROXIES.length - 1) {
-        throw new Error(`Slack 전송 실패: 모든 프록시 실패`);
-      }
-    }
+async function postToSlack(webhookUrl: string, payload: object): Promise<void> {
+  if (!EDGE_FUNCTION_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("Supabase 환경변수가 설정되지 않았습니다. Edge Function을 사용할 수 없습니다.");
+  }
+
+  const res = await fetch(EDGE_FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      apikey: SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ webhookUrl, payload }),
+  });
+
+  const data = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` }));
+
+  if (!res.ok || !data.ok) {
+    throw new Error(`Slack 전송 실패: ${data.error || `HTTP ${res.status}`}`);
   }
 }
 
@@ -217,7 +218,7 @@ export async function sendSlackReport(
   }
 
   const text = buildSlackMessage(courseName, degr, date, students, undefined, undefined, defenseRate);
-  await postToSlackViaProxy(webhookUrl, { text });
+  await postToSlack(webhookUrl, { text });
 }
 
 /**
@@ -228,7 +229,7 @@ export async function testSlackWebhook(webhookUrl: string): Promise<{ ok: boolea
     const now = new Date();
     const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const text = `✅ *[KDT 대시보드 Slack 연결 테스트]*\n테스트 시간: ${timeStr}\n이 메시지가 보이면 Webhook이 정상적으로 연결되었습니다.`;
-    await postToSlackViaProxy(webhookUrl, { text });
+    await postToSlack(webhookUrl, { text });
     return { ok: true, message: "Slack 전송 성공! 채널을 확인하세요." };
   } catch (e) {
     return { ok: false, message: `Slack 전송 실패: ${e instanceof Error ? e.message : String(e)}` };
@@ -260,5 +261,5 @@ export async function sendSlackReportDirect(
     undefined,
     trainPrId,
   );
-  await postToSlackViaProxy(webhookUrl, { text });
+  await postToSlack(webhookUrl, { text });
 }
