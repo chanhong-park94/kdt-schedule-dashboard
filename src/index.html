@@ -299,185 +299,6 @@
         <div id="conflictDetailContent" class="u-mt-10"></div>
       </dialog>
 
-      <aside id="instructorDrawer" class="drawer settings-section" aria-hidden="true" data-page-group="settings">
-        <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
-          <span class="settings-icon">🧾</span>
-          <div class="settings-title">
-            <strong>정보 입력</strong>
-            <div class="muted">과정, 교과목, 강사 정보를 등록하고 관리합니다</div>
-          </div>
-          <span class="settings-chevron" aria-hidden="true">▼</span>
-        </div>
-        <div class="settings-section-body is-collapsed">
-        <div class="drawer-tab-row u-mt-4">
-          <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
-          <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
-          <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
-          <button id="instructorTabMapping" class="tab-btn u-hidden" type="button">강사 매핑</button>
-        </div>
-
-        <div id="instructorCoursePanel" class="u-mt-10">
-          <div class="row u-row-center">
-            <div>
-              <label>과정 ID(필수)</label>
-              <input id="courseIdInput" type="text" placeholder="예: EDATA" />
-            </div>
-            <div>
-              <label>과정명(필수)</label>
-              <input id="courseNameInput" type="text" placeholder="예: 데이터 분석 과정" />
-            </div>
-            <div>
-              <label>메모(선택)</label>
-              <input id="courseMemoInput" type="text" placeholder="예: 야간 운영" />
-            </div>
-            <button id="upsertCourseButton" type="button">과정 저장</button>
-          </div>
-
-          <div class="u-mt-12">
-            <strong>과정 목록</strong>
-            <table id="courseRegistryTable">
-              <thead>
-                <tr>
-                  <th>과정 ID</th>
-                  <th>과정명</th>
-                  <th>메모</th>
-                  <th>작업</th>
-                </tr>
-              </thead>
-              <tbody id="courseRegistryBody"></tbody>
-            </table>
-          </div>
-
-          <div class="u-mt-12">
-            <strong>과정 템플릿</strong>
-            <div class="muted">과정별 시간 템플릿/휴강일/교과목/강사매핑을 저장/적용합니다.</div>
-            <div class="row u-mt-8 u-row-center">
-              <div>
-                <label>과정 선택</label>
-                <select id="courseTemplateCourseSelect"></select>
-              </div>
-              <div>
-                <label>템플릿명</label>
-                <input id="courseTemplateNameInput" type="text" placeholder="예: EDATA 운영 표준 v1" />
-              </div>
-              <button id="saveCourseTemplateButton" type="button">템플릿 저장</button>
-            </div>
-            <div class="row u-mt-8 u-row-center">
-              <div>
-                <label>저장 템플릿</label>
-                <select id="courseTemplateSelect"></select>
-              </div>
-              <button id="loadCourseTemplateButton" type="button">템플릿 불러오기</button>
-              <button id="deleteCourseTemplateButton" type="button">삭제</button>
-            </div>
-            <div id="courseTemplateStatus" class="muted template-status"></div>
-          </div>
-
-          <div class="u-mt-12">
-            <strong>고급 기능</strong>
-            <div class="muted">기존에 확정된 시간표를 가져와 타임라인/충돌/HRD 다운로드에 활용</div>
-            <label class="u-mt-8">수업시간표 CSV 업로드 (예: KDT_master_sessions.csv)</label>
-            <input id="file" type="file" accept=".csv" />
-            <div class="muted u-mt-6" id="uploadStatus">대기중</div>
-            <div id="standardizeStatus" class="muted u-hidden u-mt-6">
-              <span class="pill">표준화 적용됨</span>
-              <a href="#standardizeHelp" class="muted-link">규칙 보기</a>
-            </div>
-          </div>
-        </div>
-
-        <div id="instructorRegisterPanel" class="u-hidden u-mt-10">
-          <div class="row u-row-center">
-            <div>
-              <label>강사코드(필수)</label>
-              <input id="instructorCodeInput" type="text" placeholder="예: TCH-1001" />
-            </div>
-            <div>
-              <label>이름(선택)</label>
-              <input id="instructorNameInput" type="text" placeholder="예: 홍길동" />
-            </div>
-            <div>
-              <label>메모(선택)</label>
-              <input id="instructorMemoInput" type="text" placeholder="예: 야간 가능" />
-            </div>
-            <button id="upsertInstructorButton" type="button">강사 저장</button>
-          </div>
-        </div>
-
-        <div id="instructorMappingPanel" class="u-hidden u-mt-10">
-          <div>
-            <strong>강사 목록</strong>
-            <table id="instructorDirectoryTable">
-              <thead>
-                <tr>
-                  <th>강사코드</th>
-                  <th>이름</th>
-                  <th>메모</th>
-                  <th>작업</th>
-                </tr>
-              </thead>
-              <tbody id="instructorDirectoryBody"></tbody>
-            </table>
-          </div>
-
-          <div class="u-mt-12">
-            <strong>교과목 강사 매핑</strong>
-            <div class="muted">과정 선택 후 교과목별 강사를 지정하고, 선택된 기수에 일괄 적용합니다.</div>
-            <div class="row u-mt-8 u-row-center">
-              <div>
-                <label>과정 선택</label>
-                <select id="mappingCourseSelect"></select>
-              </div>
-              <button id="applySubjectMappingsButton" type="button">매핑 일괄 적용</button>
-            </div>
-            <div id="subjectMappingContainer" class="u-mt-8"></div>
-          </div>
-
-          <div class="u-mt-12">
-            <strong>빠른 수정</strong>
-            <div class="muted">교과목 강사를 즉시 바꾸고 시간 충돌을 다시 계산합니다.</div>
-            <div id="staffModuleManagerContainer" class="u-mt-10"></div>
-          </div>
-        </div>
-
-        <div id="instructorSubjectPanel" class="u-hidden u-mt-10">
-          <div class="row u-row-center">
-            <div>
-              <label>과정 선택</label>
-              <select id="subjectCourseSelect"></select>
-            </div>
-            <div>
-              <label>교과목코드(필수)</label>
-              <input id="subjectCodeInput" type="text" placeholder="예: NCS_SUBJ_01" />
-            </div>
-            <div>
-              <label>교과목명(선택)</label>
-              <input id="subjectNameInput" type="text" placeholder="예: 데이터 분석 기초" />
-            </div>
-            <div>
-              <label>메모(선택)</label>
-              <input id="subjectMemoInput" type="text" placeholder="예: 운영매니저 지정 과목" />
-            </div>
-            <button id="upsertSubjectButton" type="button">교과목 저장</button>
-          </div>
-
-          <div class="u-mt-12">
-            <strong>교과목 목록</strong>
-            <table id="subjectDirectoryTable">
-              <thead>
-                <tr>
-                  <th>교과목코드</th>
-                  <th>교과목명</th>
-                  <th>메모</th>
-                  <th>작업</th>
-                </tr>
-              </thead>
-              <tbody id="subjectDirectoryBody"></tbody>
-            </table>
-          </div>
-        </div>
-        </div><!-- /settings-section-body -->
-      </aside>
       <main class="page">
         <div class="grid">
           <div id="stateMigrationBanner" class="warning-box u-hidden u-mt-8">
@@ -1925,6 +1746,187 @@
               <div class="muted u-mt-6" id="foDayRenderNotice"></div>
             </div>
           </div>
+
+          <!-- 설정 카드: 정보 입력 (과정/교과목/강사) -->
+          <div id="instructorDrawer" class="settings-section" data-page-group="settings">
+            <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
+              <span class="settings-icon">🧾</span>
+              <div class="settings-title">
+                <strong>정보 입력</strong>
+                <div class="muted">과정, 교과목, 강사 정보를 등록하고 관리합니다</div>
+              </div>
+              <span class="settings-chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="settings-section-body is-collapsed">
+            <div class="drawer-tab-row u-mt-4">
+              <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
+              <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
+              <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
+              <button id="instructorTabMapping" class="tab-btn u-hidden" type="button">강사 매핑</button>
+            </div>
+
+            <div id="instructorCoursePanel" class="u-mt-10">
+              <div class="row u-row-center">
+                <div>
+                  <label>과정 ID(필수)</label>
+                  <input id="courseIdInput" type="text" placeholder="예: EDATA" />
+                </div>
+                <div>
+                  <label>과정명(필수)</label>
+                  <input id="courseNameInput" type="text" placeholder="예: 데이터 분석 과정" />
+                </div>
+                <div>
+                  <label>메모(선택)</label>
+                  <input id="courseMemoInput" type="text" placeholder="예: 야간 운영" />
+                </div>
+                <button id="upsertCourseButton" type="button">과정 저장</button>
+              </div>
+
+              <div class="u-mt-12">
+                <strong>과정 목록</strong>
+                <table id="courseRegistryTable">
+                  <thead>
+                    <tr>
+                      <th>과정 ID</th>
+                      <th>과정명</th>
+                      <th>메모</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody id="courseRegistryBody"></tbody>
+                </table>
+              </div>
+
+              <div class="u-mt-12">
+                <strong>과정 템플릿</strong>
+                <div class="muted">과정별 시간 템플릿/휴강일/교과목/강사매핑을 저장/적용합니다.</div>
+                <div class="row u-mt-8 u-row-center">
+                  <div>
+                    <label>과정 선택</label>
+                    <select id="courseTemplateCourseSelect"></select>
+                  </div>
+                  <div>
+                    <label>템플릿명</label>
+                    <input id="courseTemplateNameInput" type="text" placeholder="예: EDATA 운영 표준 v1" />
+                  </div>
+                  <button id="saveCourseTemplateButton" type="button">템플릿 저장</button>
+                </div>
+                <div class="row u-mt-8 u-row-center">
+                  <div>
+                    <label>저장 템플릿</label>
+                    <select id="courseTemplateSelect"></select>
+                  </div>
+                  <button id="loadCourseTemplateButton" type="button">템플릿 불러오기</button>
+                  <button id="deleteCourseTemplateButton" type="button">삭제</button>
+                </div>
+                <div id="courseTemplateStatus" class="muted template-status"></div>
+              </div>
+
+              <div class="u-mt-12">
+                <strong>고급 기능</strong>
+                <div class="muted">기존에 확정된 시간표를 가져와 타임라인/충돌/HRD 다운로드에 활용</div>
+                <label class="u-mt-8">수업시간표 CSV 업로드 (예: KDT_master_sessions.csv)</label>
+                <input id="file" type="file" accept=".csv" />
+                <div class="muted u-mt-6" id="uploadStatus">대기중</div>
+                <div id="standardizeStatus" class="muted u-hidden u-mt-6">
+                  <span class="pill">표준화 적용됨</span>
+                  <a href="#standardizeHelp" class="muted-link">규칙 보기</a>
+                </div>
+              </div>
+            </div>
+
+            <div id="instructorRegisterPanel" class="u-hidden u-mt-10">
+              <div class="row u-row-center">
+                <div>
+                  <label>강사코드(필수)</label>
+                  <input id="instructorCodeInput" type="text" placeholder="예: TCH-1001" />
+                </div>
+                <div>
+                  <label>이름(선택)</label>
+                  <input id="instructorNameInput" type="text" placeholder="예: 홍길동" />
+                </div>
+                <div>
+                  <label>메모(선택)</label>
+                  <input id="instructorMemoInput" type="text" placeholder="예: 야간 가능" />
+                </div>
+                <button id="upsertInstructorButton" type="button">강사 저장</button>
+              </div>
+            </div>
+
+            <div id="instructorMappingPanel" class="u-hidden u-mt-10">
+              <div>
+                <strong>강사 목록</strong>
+                <table id="instructorDirectoryTable">
+                  <thead>
+                    <tr>
+                      <th>강사코드</th>
+                      <th>이름</th>
+                      <th>메모</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody id="instructorDirectoryBody"></tbody>
+                </table>
+              </div>
+
+              <div class="u-mt-12">
+                <strong>교과목 강사 매핑</strong>
+                <div class="muted">과정 선택 후 교과목별 강사를 지정하고, 선택된 기수에 일괄 적용합니다.</div>
+                <div class="row u-mt-8 u-row-center">
+                  <div>
+                    <label>과정 선택</label>
+                    <select id="mappingCourseSelect"></select>
+                  </div>
+                  <button id="applySubjectMappingsButton" type="button">매핑 일괄 적용</button>
+                </div>
+                <div id="subjectMappingContainer" class="u-mt-8"></div>
+              </div>
+
+              <div class="u-mt-12">
+                <strong>빠른 수정</strong>
+                <div class="muted">교과목 강사를 즉시 바꾸고 시간 충돌을 다시 계산합니다.</div>
+                <div id="staffModuleManagerContainer" class="u-mt-10"></div>
+              </div>
+            </div>
+
+            <div id="instructorSubjectPanel" class="u-hidden u-mt-10">
+              <div class="row u-row-center">
+                <div>
+                  <label>과정 선택</label>
+                  <select id="subjectCourseSelect"></select>
+                </div>
+                <div>
+                  <label>교과목코드(필수)</label>
+                  <input id="subjectCodeInput" type="text" placeholder="예: NCS_SUBJ_01" />
+                </div>
+                <div>
+                  <label>교과목명(선택)</label>
+                  <input id="subjectNameInput" type="text" placeholder="예: 데이터 분석 기초" />
+                </div>
+                <div>
+                  <label>메모(선택)</label>
+                  <input id="subjectMemoInput" type="text" placeholder="예: 운영매니저 지정 과목" />
+                </div>
+                <button id="upsertSubjectButton" type="button">교과목 저장</button>
+              </div>
+
+              <div class="u-mt-12">
+                <strong>교과목 목록</strong>
+                <table id="subjectDirectoryTable">
+                  <thead>
+                    <tr>
+                      <th>교과목코드</th>
+                      <th>교과목명</th>
+                      <th>메모</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody id="subjectDirectoryBody"></tbody>
+                </table>
+              </div>
+            </div>
+            </div><!-- /settings-section-body -->
+          </div><!-- /instructorDrawer -->
 
           <!-- HRD API 설정 -->
           <!-- 설정 카드 A: 과정 등록 (가장 자주 사용 — 기본 펼침) -->
