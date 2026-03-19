@@ -95,12 +95,18 @@ src/
 - 기수 코드 매핑: 0-x=LLM, 1-x=데이터, 2-x=기획/개발 (parseCohortCode)
 - UI: 셀 색상 강화, 라이트 모드 호환, API 설정 통합, 캐시 자동 복원
 - 스키마 시트 포맷팅 (헤더 남색, 줄무늬, 자동 열 너비)
+- cmux 터미널 셋업: `scripts/cmux.sh` — macOS tmux 기반 Claude Code + Codex CLI 병렬 실행
+
+### 🔧 개발 환경
+- **소스 관리**: GitHub 단일 관리 (Windows + Mac 양쪽에서 git pull/push)
+- **Google Drive**: 비코드 자료(회의록, 기획서, CSV 원본)만 보관
+- **작업 전**: `git pull origin main` → 작업 → `npm run test` → commit → push
+- **환경 통일**: Node.js 22+, `npm ci`로 정확한 의존성 설치
 
 ### 🔜 다음 작업
 1. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중 → 직접 API 호출로 전환
 2. **Apps Script 재배포** — schema_employed action 추가 필요
 3. **스키마 시트 데이터 입력** — 학업성취도(재직자) CSV 붙여넣기, 만족도 수기 입력
-4. **cmux 터미널 셋업** — macOS에서 Claude + GPT 병렬 실행
 
 ### 📌 주요 URL
 - 배포: https://chanhong-park94.github.io/kdt-schedule-dashboard/
