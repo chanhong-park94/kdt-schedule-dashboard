@@ -1812,59 +1812,79 @@
               </div>
             </div>
 
-            <!-- 설정 미완료 안내 -->
+            <!-- 실업자/재직자 서브탭 -->
+            <div style="display: flex; gap: 4px; margin-bottom: 12px">
+              <button id="achvTabUnemployed" class="btn btn--sm btn--primary" style="font-size: 13px">실업자 (퀘스트/노드)</button>
+              <button id="achvTabEmployed" class="btn btn--sm" style="font-size: 13px; opacity: 0.6">재직자 (유닛리포트)</button>
+            </div>
+
             <div id="achievementConfigNotice" class="kpi-connect-status" style="display: none; margin-bottom: 12px">
               ⚙️ 설정 → API 연동에서 Apps Script URL을 입력해주세요.
             </div>
 
-            <!-- 필터 -->
-            <div id="achievementFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
-              <select id="achvFilterCourse" class="hrd-input">
-                <option value="">전체 과정</option>
-              </select>
-              <select id="achvFilterCohort" class="hrd-input">
-                <option value="">전체 기수</option>
-              </select>
-              <input type="text" id="achvFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 180px" />
-              <span id="achvTraineeCount" class="muted" style="font-size: 13px"></span>
-            </div>
-
-            <div id="achievementStatus" class="ana-status"></div>
-
-            <!-- 빈 상태 -->
-            <div id="achievementEmpty" class="att-empty-state">
-              <div class="att-empty-title">학업성취도</div>
-              <div class="att-empty-desc">
-                조회 버튼을 클릭하면 학업성취도 데이터를 표시합니다.<br />
-                <small class="muted">연결 설정: 설정 → API 연동 → 학업성취도 (Apps Script)</small>
+            <!-- ══ 실업자 패널 ══ -->
+            <div id="achvPanelUnemployed">
+              <div id="achievementFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+                <select id="achvFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
+                <select id="achvFilterCohort" class="hrd-input"><option value="">전체 기수</option></select>
+                <input type="text" id="achvFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 180px" />
+                <span id="achvTraineeCount" class="muted" style="font-size: 13px"></span>
+              </div>
+              <div id="achievementStatus" class="ana-status"></div>
+              <div id="achievementEmpty" class="att-empty-state">
+                <div class="att-empty-title">학업성취도 (실업자)</div>
+                <div class="att-empty-desc">조회 버튼을 클릭하면 실업자 학업성취도 데이터를 표시합니다.</div>
+              </div>
+              <div id="achievementContent" style="display: none">
+                <div style="overflow-x: auto">
+                  <table class="hrd-table" style="margin-top: 0">
+                    <thead>
+                      <tr>
+                        <th>이름</th><th>길드</th><th>훈련상태</th>
+                        <th>노드 제출</th><th>노드 평균별점</th><th>퀘스트 패스</th><th>신호등</th>
+                      </tr>
+                    </thead>
+                    <tbody id="achvTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div id="achievementDetail" style="display: none; margin-top: 16px">
+                <h4 id="achvDetailTitle" style="margin-bottom: 8px"></h4>
+                <div id="achvDetailNode" style="margin-bottom: 12px"></div>
+                <div id="achvDetailQuest"></div>
               </div>
             </div>
 
-            <!-- 데이터 테이블 -->
-            <div id="achievementContent" style="display: none">
-              <div style="overflow-x: auto">
-                <table class="hrd-table" style="margin-top: 0">
-                  <thead>
-                    <tr>
-                      <th data-achv-sort="name">이름</th>
-                      <th data-achv-sort="guild">길드</th>
-                      <th data-achv-sort="status">훈련상태</th>
-                      <th data-achv-sort="nodeRate">노드 제출</th>
-                      <th data-achv-sort="nodeAvg">노드 평균별점</th>
-                      <th data-achv-sort="questRate">퀘스트 패스</th>
-                      <th data-achv-sort="signal">신호등</th>
-                    </tr>
-                  </thead>
-                  <tbody id="achvTableBody"></tbody>
-                </table>
+            <!-- ══ 재직자 패널 ══ -->
+            <div id="achvPanelEmployed" style="display: none">
+              <div id="empFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+                <select id="empFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
+                <select id="empFilterCohort" class="hrd-input"><option value="">전체 기수</option></select>
+                <input type="text" id="empFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 180px" />
+                <span id="empTraineeCount" class="muted" style="font-size: 13px"></span>
               </div>
-            </div>
-
-            <!-- 상세 펼침 (행 클릭 시) -->
-            <div id="achievementDetail" style="display: none; margin-top: 16px">
-              <h4 id="achvDetailTitle" style="margin-bottom: 8px"></h4>
-              <div id="achvDetailNode" style="margin-bottom: 12px"></div>
-              <div id="achvDetailQuest"></div>
+              <div id="empStatus" class="ana-status"></div>
+              <div id="empEmpty" class="att-empty-state">
+                <div class="att-empty-title">학업성취도 (재직자)</div>
+                <div class="att-empty-desc">조회 버튼을 클릭하면 재직자 유닛리포트 데이터를 표시합니다.</div>
+              </div>
+              <div id="empContent" style="display: none">
+                <div style="overflow-x: auto">
+                  <table class="hrd-table" style="margin-top: 0; font-size: 13px">
+                    <thead>
+                      <tr>
+                        <th>성명</th><th>기수</th><th>등급</th>
+                        <th>강사진단</th><th>운영진단</th><th>프로젝트</th><th>경험치</th>
+                      </tr>
+                    </thead>
+                    <tbody id="empTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div id="empDetail" style="display: none; margin-top: 16px">
+                <h4 id="empDetailTitle" style="margin-bottom: 8px"></h4>
+                <div id="empDetailBody"></div>
+              </div>
             </div>
           </div>
           <!-- /sectionAchievement -->

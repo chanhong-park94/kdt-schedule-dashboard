@@ -17,6 +17,8 @@ import {
   loadAchievementCache,
 } from "./hrdAchievementApi";
 import type { UnifiedRecord } from "./hrdAchievementTypes";
+import type { EmployedRecord, EmployedSummary } from "./hrdEmployedTypes";
+import { fetchEmployedRecords, summarizeEmployed, extractEmployedFilters, loadEmployedCache } from "./hrdEmployedApi";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
@@ -226,39 +228,169 @@ function updateAchievementNotice(): void {
   noticeEl.style.display = currentConfig.webAppUrl ? "none" : "";
 }
 
+// ─── 서브탭 전환 ─────────────────────────────────────────────
+let activeSubTab: "unemployed" | "employed" = "unemployed";
+
+function switchSubTab(tab: "unemployed" | "employed"): void {
+  activeSubTab = tab;
+  const uBtn = $("achvTabUnemployed");
+  const eBtn = $("achvTabEmployed");
+  const uPanel = $("achvPanelUnemployed");
+  const ePanel = $("achvPanelEmployed");
+  if (uBtn) { uBtn.className = tab === "unemployed" ? "btn btn--sm btn--primary" : "btn btn--sm"; uBtn.style.opacity = tab === "unemployed" ? "1" : "0.6"; }
+  if (eBtn) { eBtn.className = tab === "employed" ? "btn btn--sm btn--primary" : "btn btn--sm"; eBtn.style.opacity = tab === "employed" ? "1" : "0.6"; }
+  if (uPanel) uPanel.style.display = tab === "unemployed" ? "" : "none";
+  if (ePanel) ePanel.style.display = tab === "employed" ? "" : "none";
+}
+
+// ─── 재직자 로직 ─────────────────────────────────────────────
+let empRecords: EmployedRecord[] = [];
+
+function setEmpStatus(msg: string, type: "success" | "error" | "loading" = "loading"): void {
+  const el = $("empStatus");
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `ana-status ${type}`;
+}
+
+function gradeColor(grade: string): string {
+  if (grade === "A") return "background:#ecfdf5;color:#065f46";
+  if (grade === "B") return "background:#dbeafe;color:#1e40af";
+  if (grade === "C") return "background:#fefce8;color:#854d0e";
+  return "background:#fef2f2;color:#991b1b";
+}
+
+function renderEmpTable(summaries: EmployedSummary[]): void {
+  const tbody = $("empTableBody");
+  const content = $("empContent");
+  const empty = $("empEmpty");
+  const count = $("empTraineeCount");
+  if (!tbody || !content || !empty) return;
+  if (summaries.length === 0) { content.style.display = "none"; empty.style.display = ""; return; }
+  empty.style.display = "none";
+  content.style.display = "";
+  if (count) count.textContent = `${summaries.length}명`;
+  tbody.innerHTML = summaries.map((s, i) => `
+    <tr data-emp-idx="${i}" style="cursor:pointer">
+      <td style="font-weight:600">${esc(s.성명)}</td>
+      <td>${esc(s.기수)}</td>
+      <td><span class="achv-badge" style="${gradeColor(s.종합등급)}">${s.종합등급}</span></td>
+      <td>${s.강사진단평균}</td>
+      <td>${s.운영진단평균}</td>
+      <td>${s.프로젝트평균 || "-"}</td>
+      <td>${s.경험치}</td>
+    </tr>`).join("");
+
+  tbody.querySelectorAll<HTMLTableRowElement>("tr[data-emp-idx]").forEach((tr) => {
+    tr.addEventListener("click", () => {
+      const idx = Number(tr.getAttribute("data-emp-idx"));
+      if (summaries[idx]) showEmpDetail(empRecords.find((r) => r.성명 === summaries[idx].성명 && r.기수 === summaries[idx].기수));
+    });
+  });
+}
+
+function showEmpDetail(record: EmployedRecord | undefined): void {
+  const el = $("empDetail");
+  const title = $("empDetailTitle");
+  const body = $("empDetailBody");
+  if (!el || !title || !body || !record) return;
+  title.textContent = `${record.성명} (${record.과정명} ${record.기수}) 유닛리포트 상세`;
+  el.style.display = "";
+  const unitHeaders = record.강사진단.map((_, i) => `유닛${i + 1}`).filter((_, i) => record.강사진단[i] != null || record.운영진단[i] != null);
+  body.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="hrd-table" style="font-size:13px">
+        <thead><tr><th></th>${unitHeaders.map((h) => `<th>${h}</th>`).join("")}${record.프로젝트.some((v) => v != null) ? record.프로젝트.map((_, i) => `<th>P${i + 1}</th>`).join("") : ""}</tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600">강사진단</td>${record.강사진단.filter((_, i) => unitHeaders.includes(`유닛${i + 1}`)).map((v) => `<td>${v ?? "-"}</td>`).join("")}${record.프로젝트.some((v) => v != null) ? record.프로젝트.map(() => "<td>-</td>").join("") : ""}</tr>
+          <tr><td style="font-weight:600">운영진단</td>${record.운영진단.filter((_, i) => unitHeaders.includes(`유닛${i + 1}`)).map((v) => `<td>${v ?? "-"}</td>`).join("")}${record.프로젝트.some((v) => v != null) ? record.프로젝트.map((v) => `<td>${v ?? "-"}</td>`).join("") : ""}</tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function populateEmpFilters(records: EmployedRecord[]): void {
+  const { courses, cohorts } = extractEmployedFilters(records);
+  const cSel = $("empFilterCourse") as HTMLSelectElement | null;
+  const chSel = $("empFilterCohort") as HTMLSelectElement | null;
+  if (cSel) cSel.innerHTML = '<option value="">전체 과정</option>' + courses.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  if (chSel) chSel.innerHTML = '<option value="">전체 기수</option>' + cohorts.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  const f = $("empFilters");
+  if (f) f.style.display = "";
+}
+
+function applyEmpFilterAndRender(): void {
+  const course = ($("empFilterCourse") as HTMLSelectElement)?.value ?? "";
+  const cohort = ($("empFilterCohort") as HTMLSelectElement)?.value ?? "";
+  const search = ($("empFilterSearch") as HTMLInputElement)?.value?.toLowerCase() ?? "";
+  const summaries = summarizeEmployed(empRecords, course, cohort, search);
+  renderEmpTable(summaries);
+  const d = $("empDetail");
+  if (d) d.style.display = "none";
+}
+
+function restoreEmpCache(): void {
+  const cached = loadEmployedCache();
+  if (!cached || cached.length === 0) return;
+  empRecords = cached;
+  populateEmpFilters(empRecords);
+  applyEmpFilterAndRender();
+  setEmpStatus(`${empRecords.length}명 (캐시)`, "success");
+}
+
 // ─── 초기화 ─────────────────────────────────────────────────
 export function initAchievement(): void {
   currentConfig = loadAchievementConfig();
-
-  // 설정 탭 UI 초기화
   initSettingsAchievement();
   updateAchievementNotice();
 
-  // 필터 변경 이벤트
+  // 서브탭 전환
+  $("achvTabUnemployed")?.addEventListener("click", () => switchSubTab("unemployed"));
+  $("achvTabEmployed")?.addEventListener("click", () => switchSubTab("employed"));
+
+  // 실업자 필터
   $("achvFilterCourse")?.addEventListener("change", applyFilterAndRender);
   $("achvFilterCohort")?.addEventListener("change", applyFilterAndRender);
   $("achvFilterSearch")?.addEventListener("input", applyFilterAndRender);
 
-  // 캐시에서 자동 복원
-  restoreFromCache();
+  // 재직자 필터
+  $("empFilterCourse")?.addEventListener("change", applyEmpFilterAndRender);
+  $("empFilterCohort")?.addEventListener("change", applyEmpFilterAndRender);
+  $("empFilterSearch")?.addEventListener("input", applyEmpFilterAndRender);
 
-  // 조회
+  // 캐시 복원
+  restoreFromCache();
+  restoreEmpCache();
+
+  // 조회 (현재 활성 탭에 따라 분기)
   $("achievementFetchBtn")?.addEventListener("click", async () => {
-    // 매번 최신 설정 읽기
     currentConfig = loadAchievementConfig();
     if (!currentConfig.webAppUrl) {
       setStatus("설정 → API 연동에서 Apps Script URL을 입력해주세요.", "error");
       return;
     }
-    setStatus("데이터 로딩 중...", "loading");
-    try {
-      allRecords = await fetchUnified(currentConfig);
-      const { courses, cohorts } = extractFilters(allRecords);
-      populateFilters(courses, cohorts);
-      applyFilterAndRender();
-      setStatus(`${allRecords.length.toLocaleString()}건 로드 완료`, "success");
-    } catch (e) {
-      setStatus(`로드 실패: ${(e as Error).message}`, "error");
+
+    if (activeSubTab === "unemployed") {
+      setStatus("실업자 데이터 로딩 중...", "loading");
+      try {
+        allRecords = await fetchUnified(currentConfig);
+        const { courses, cohorts } = extractFilters(allRecords);
+        populateFilters(courses, cohorts);
+        applyFilterAndRender();
+        setStatus(`${allRecords.length.toLocaleString()}건 로드 완료`, "success");
+      } catch (e) {
+        setStatus(`로드 실패: ${(e as Error).message}`, "error");
+      }
+    } else {
+      setEmpStatus("재직자 데이터 로딩 중...", "loading");
+      try {
+        empRecords = await fetchEmployedRecords();
+        populateEmpFilters(empRecords);
+        applyEmpFilterAndRender();
+        setEmpStatus(`${empRecords.length}명 로드 완료`, "success");
+      } catch (e) {
+        setEmpStatus(`로드 실패: ${(e as Error).message}`, "error");
+      }
     }
   });
 }
