@@ -7419,8 +7419,8 @@ dialog {
   margin-bottom: 16px;
 }
 .inq-stat-card {
-  background: var(--card-bg, #111113);
-  border: 1px solid var(--border-color, #27272a);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border, rgba(0, 0, 0, 0.06));
   border-radius: 10px;
   padding: 14px 16px;
 }
@@ -7437,7 +7437,7 @@ dialog {
 .inq-stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: var(--text-primary, #fafafa);
+  color: var(--text-strong, var(--text, #1e1e2e));
 }
 .inq-stat-chips {
   display: flex;
@@ -7451,22 +7451,22 @@ dialog {
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 12px;
-  background: var(--surface-hover, #1c1c1e);
-  color: var(--text-secondary, #a1a1aa);
+  background: var(--surface-hover);
+  color: var(--text-secondary, #6b7280);
 }
 .inq-chip strong {
-  color: var(--text-primary, #fafafa);
+  color: var(--text-strong, var(--text, #1e1e2e));
 }
 .inq-detail-section {
-  background: var(--card-bg, #111113);
-  border: 1px solid var(--border-color, #27272a);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border, rgba(0, 0, 0, 0.06));
   border-radius: 8px;
   padding: 14px 16px;
   margin-bottom: 10px;
 }
 .inq-detail-section h5 {
   font-size: 13px;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted, #9ca3af);
   margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -7474,7 +7474,7 @@ dialog {
 .inq-detail-section p {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-primary, #fafafa);
+  color: var(--text, #1e1e2e);
   margin: 0;
   white-space: pre-wrap;
 }
@@ -7482,6 +7482,6 @@ dialog {
   display: flex;
   gap: 16px;
   font-size: 12px;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted, #9ca3af);
   margin-top: 8px;
 }
