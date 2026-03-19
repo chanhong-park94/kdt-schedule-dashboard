@@ -1887,27 +1887,9 @@
               </div>
             </div>
 
-            <!-- 설정 영역 -->
-            <div id="inquiryConfigArea" style="margin-bottom: 16px">
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
-                <input
-                  id="inquiryBaseId"
-                  type="text"
-                  class="hrd-input"
-                  placeholder="Airtable Base ID (app...)"
-                  style="flex: 1; min-width: 160px"
-                />
-                <input
-                  id="inquiryPat"
-                  type="password"
-                  class="hrd-input"
-                  placeholder="Personal Access Token (pat...)"
-                  style="flex: 1; min-width: 200px"
-                />
-                <button id="inquiryConnectTestBtn" class="btn btn--sm">연결 테스트</button>
-                <button id="inquiryConnectSaveBtn" class="btn btn--sm btn--primary">저장</button>
-              </div>
-              <div id="inquiryConnectStatus" class="kpi-connect-status" style="margin-top: 4px"></div>
+            <!-- 설정 미완료 안내 (설정 탭에서 API 연동 설정) -->
+            <div id="inquiryConfigNotice" class="kpi-connect-status" style="display: none; margin-bottom: 12px">
+              ⚙️ 설정 → API 연동에서 Airtable 연결 정보를 입력해주세요.
             </div>
 
             <!-- 통계 카드 -->
@@ -1958,7 +1940,8 @@
             <div id="inquiryEmpty" class="att-empty-state">
               <div class="att-empty-title">문의응대</div>
               <div class="att-empty-desc">
-                Airtable 연결 정보를 설정하고 조회 버튼을 클릭하면 문의응대 데이터를 표시합니다.
+                조회 버튼을 클릭하면 문의응대 데이터를 표시합니다.<br />
+                <small class="muted">연결 설정: 설정 → API 연동 → 문의응대 (Airtable)</small>
               </div>
             </div>
 
@@ -2675,6 +2658,26 @@
                 </div>
               </div>
               <div id="hrdTestStatus" class="att-api-status u-mt-8"></div>
+
+              <!-- Airtable 문의응대 연동 -->
+              <div id="inquiryApiSection" class="hrd-settings-row" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-color, #27272a); padding-top: 16px">
+                <div style="flex-basis: 100%; margin-bottom: 8px">
+                  <strong style="font-size: 14px">💬 문의응대 (Airtable)</strong>
+                </div>
+                <div class="hrd-field">
+                  <label>Airtable Base ID</label>
+                  <input type="text" id="settingsInquiryBaseId" class="hrd-input" placeholder="apppPJRGktnS2yjkp" />
+                </div>
+                <div class="hrd-field">
+                  <label>Personal Access Token</label>
+                  <input type="password" id="settingsInquiryPat" class="hrd-input" placeholder="pat..." />
+                </div>
+                <div class="hrd-field-actions">
+                  <button id="settingsInquirySave" class="btn-primary btn-sm" type="button">저장</button>
+                  <button id="settingsInquiryTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
+                </div>
+                <div id="settingsInquiryTestStatus" class="settings-status-msg u-mt-4"></div>
+              </div>
             </div>
           </div>
 

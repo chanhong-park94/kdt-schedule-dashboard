@@ -180,57 +180,80 @@ function populateFilters(records: InquiryRecord[]): void {
   if (filtersEl) filtersEl.style.display = "";
 }
 
-// ─── 초기화 ─────────────────────────────────────────────────
-export function initInquiry(): void {
-  currentConfig = loadInquiryConfig();
+// ─── 설정 탭 초기화 (API 연동 섹션) ────────────────────────
+function initSettingsInquiry(): void {
+  const baseIdInput = $("settingsInquiryBaseId") as HTMLInputElement | null;
+  const patInput = $("settingsInquiryPat") as HTMLInputElement | null;
 
-  const baseIdInput = $("inquiryBaseId") as HTMLInputElement | null;
-  const patInput = $("inquiryPat") as HTMLInputElement | null;
   if (baseIdInput && currentConfig.baseId) baseIdInput.value = currentConfig.baseId;
   if (patInput && currentConfig.pat) patInput.value = currentConfig.pat;
 
   // 연결 테스트
-  $("inquiryConnectTestBtn")?.addEventListener("click", async () => {
+  $("settingsInquiryTestBtn")?.addEventListener("click", async () => {
     const baseId = (baseIdInput?.value ?? "").trim();
     const pat = (patInput?.value ?? "").trim();
-    const statusEl = $("inquiryConnectStatus");
+    const statusEl = $("settingsInquiryTestStatus");
     if (!baseId || !pat) {
       if (statusEl) {
         statusEl.textContent = "Base ID와 PAT를 입력하세요.";
-        statusEl.className = "kpi-connect-status error";
+        statusEl.className = "settings-status-msg error";
       }
       return;
     }
     if (statusEl) {
       statusEl.textContent = "테스트 중...";
-      statusEl.className = "kpi-connect-status loading";
+      statusEl.className = "settings-status-msg loading";
     }
     try {
       const msg = await testInquiryConnection({ baseId, pat });
       if (statusEl) {
         statusEl.textContent = msg;
-        statusEl.className = "kpi-connect-status success";
+        statusEl.className = "settings-status-msg success";
       }
     } catch (e) {
       if (statusEl) {
         statusEl.textContent = (e as Error).message;
-        statusEl.className = "kpi-connect-status error";
+        statusEl.className = "settings-status-msg error";
       }
     }
   });
 
   // 저장
-  $("inquiryConnectSaveBtn")?.addEventListener("click", () => {
+  $("settingsInquirySave")?.addEventListener("click", () => {
     const baseId = (baseIdInput?.value ?? "").trim();
     const pat = (patInput?.value ?? "").trim();
     currentConfig = { baseId, pat };
     saveInquiryConfig(currentConfig);
-    const statusEl = $("inquiryConnectStatus");
+    const statusEl = $("settingsInquiryTestStatus");
     if (statusEl) {
-      statusEl.textContent = "저장됨";
-      statusEl.className = "kpi-connect-status success";
+      statusEl.textContent = "저장됨 ✓";
+      statusEl.className = "settings-status-msg success";
     }
+    // 문의응대 탭 안내 숨김
+    updateConfigNotice();
   });
+}
+
+// ─── 설정 미완료 안내 표시/숨김 ─────────────────────────────
+function updateConfigNotice(): void {
+  const noticeEl = $("inquiryConfigNotice");
+  if (!noticeEl) return;
+  if (!currentConfig.baseId || !currentConfig.pat) {
+    noticeEl.style.display = "";
+  } else {
+    noticeEl.style.display = "none";
+  }
+}
+
+// ─── 초기화 ─────────────────────────────────────────────────
+export function initInquiry(): void {
+  currentConfig = loadInquiryConfig();
+
+  // 설정 탭 UI 초기화
+  initSettingsInquiry();
+
+  // 설정 미완료 시 안내
+  updateConfigNotice();
 
   // 필터 이벤트
   $("inqFilterChannel")?.addEventListener("change", applyFilterAndRender);
@@ -239,8 +262,10 @@ export function initInquiry(): void {
 
   // 조회
   $("inquiryFetchBtn")?.addEventListener("click", async () => {
+    // 매번 최신 설정 읽기
+    currentConfig = loadInquiryConfig();
     if (!currentConfig.baseId || !currentConfig.pat) {
-      setStatus("Airtable 연결 정보를 먼저 설정하세요.", "error");
+      setStatus("설정 → API 연동에서 Airtable 연결 정보를 입력해주세요.", "error");
       return;
     }
     setStatus("데이터 로딩 중...", "loading");

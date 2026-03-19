@@ -1120,6 +1120,9 @@ function setupSettingsHandlers(): void {
       if (gate) gate.style.display = "none";
       if (section) section.style.display = "flex";
       if (gateError) gateError.style.display = "none";
+      // 문의응대 Airtable 섹션도 표시
+      const inquirySection = $("inquiryApiSection");
+      if (inquirySection) inquirySection.style.display = "flex";
       // Auth key 표시
       const keyInput = $("hrdAuthKey") as HTMLInputElement | null;
       if (keyInput) {
