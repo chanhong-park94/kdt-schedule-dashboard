@@ -11,6 +11,7 @@ import {
   testInquiryConnection,
   fetchInquiryRecords,
   calcInquiryStats,
+  loadInquiryCache,
 } from "./hrdInquiryApi";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
@@ -90,15 +91,22 @@ function renderTable(records: InquiryRecord[]): void {
   content.style.display = "";
   if (count) count.textContent = `${records.length}건`;
 
+  const channelColor: Record<string, string> = {
+    디스코드: "#5865F2",
+    채널톡: "#3CB371",
+    유선: "#F59E0B",
+    zep: "#8B5CF6",
+  };
+
   tbody.innerHTML = records
     .map(
       (r, i) => `
     <tr data-inq-idx="${i}" style="cursor:pointer">
       <td>${esc(r.상담일)}</td>
-      <td>${esc(r.학생이름)}</td>
+      <td style="font-weight:600">${esc(r.학생이름)}</td>
       <td>${esc(r.과정명)}</td>
       <td>${esc(r.질문요약)}</td>
-      <td>${esc(r.응대채널)}</td>
+      <td><span class="inq-badge" style="background:${channelColor[r.응대채널] ?? "#6b7280"};color:#fff">${esc(r.응대채널)}</span></td>
       <td>${esc(r.작성자)}</td>
     </tr>`,
     )
@@ -260,6 +268,9 @@ export function initInquiry(): void {
   $("inqFilterWriter")?.addEventListener("change", applyFilterAndRender);
   $("inqFilterSearch")?.addEventListener("input", applyFilterAndRender);
 
+  // 캐시에서 자동 복원
+  restoreFromCache();
+
   // 조회
   $("inquiryFetchBtn")?.addEventListener("click", async () => {
     // 매번 최신 설정 읽기
@@ -280,4 +291,16 @@ export function initInquiry(): void {
       setStatus(`로드 실패: ${(e as Error).message}`, "error");
     }
   });
+}
+
+// ─── 캐시 자동 복원 ───────────────────────────────────────
+function restoreFromCache(): void {
+  const cached = loadInquiryCache();
+  if (!cached || cached.length === 0) return;
+  allRecords = cached;
+  populateFilters(allRecords);
+  const stats = calcInquiryStats(allRecords);
+  renderStats(stats);
+  applyFilterAndRender();
+  setStatus(`${allRecords.length}건 (캐시)`, "success");
 }

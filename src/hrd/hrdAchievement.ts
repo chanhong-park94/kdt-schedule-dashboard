@@ -14,6 +14,7 @@ import {
   fetchQuestSheet,
   summarizeByTrainee,
   extractFilters,
+  loadAchievementCache,
 } from "./hrdAchievementApi";
 import type { UnifiedRecord } from "./hrdAchievementTypes";
 
@@ -49,17 +50,29 @@ function renderTable(summaries: TraineeAchievementSummary[]): void {
   if (count) count.textContent = `${summaries.length}명`;
 
   const signalEmoji: Record<string, string> = { green: "🟢", yellow: "🟡", red: "🔴" };
+  const signalBg: Record<string, string> = {
+    green: "background:#ecfdf5;color:#065f46",
+    yellow: "background:#fefce8;color:#854d0e",
+    red: "background:#fef2f2;color:#991b1b",
+  };
+  const statusColor: Record<string, string> = {
+    훈련중: "background:#dbeafe;color:#1e40af",
+    정상수료: "background:#ecfdf5;color:#065f46",
+    중도탈락: "background:#fef2f2;color:#991b1b",
+    확인필요: "background:#fefce8;color:#854d0e",
+  };
+
   tbody.innerHTML = summaries
     .map(
       (s, i) => `
     <tr data-achv-idx="${i}" style="cursor: pointer">
-      <td>${esc(s.이름)}</td>
+      <td style="font-weight:600">${esc(s.이름)}</td>
       <td>${esc(s.길드)}</td>
-      <td>${esc(s.훈련상태)}</td>
+      <td><span class="achv-badge" style="${statusColor[s.훈련상태] ?? ""}">${esc(s.훈련상태)}</span></td>
       <td>${s.제출노드수}/${s.총노드수}</td>
       <td>${s.노드평균별점}</td>
       <td>${s.패스퀘스트수}/${s.총퀘스트수}</td>
-      <td>${signalEmoji[s.신호등] ?? ""}</td>
+      <td><span class="achv-badge" style="${signalBg[s.신호등] ?? ""}">${signalEmoji[s.신호등] ?? ""}</span></td>
     </tr>`,
     )
     .join("");
@@ -155,7 +168,11 @@ function populateFilters(courses: string[], cohorts: string[]): void {
 function applyFilterAndRender(): void {
   const courseVal = ($("achvFilterCourse") as HTMLSelectElement)?.value ?? "";
   const cohortVal = ($("achvFilterCohort") as HTMLSelectElement)?.value ?? "";
-  const summaries = summarizeByTrainee(allRecords, courseVal, cohortVal);
+  const searchVal = ($("achvFilterSearch") as HTMLInputElement)?.value?.toLowerCase() ?? "";
+  let summaries = summarizeByTrainee(allRecords, courseVal, cohortVal);
+  if (searchVal) {
+    summaries = summaries.filter((s) => s.이름.toLowerCase().includes(searchVal));
+  }
   renderTable(summaries);
   const detailEl = $("achievementDetail");
   if (detailEl) detailEl.style.display = "none";
@@ -220,6 +237,10 @@ export function initAchievement(): void {
   // 필터 변경 이벤트
   $("achvFilterCourse")?.addEventListener("change", applyFilterAndRender);
   $("achvFilterCohort")?.addEventListener("change", applyFilterAndRender);
+  $("achvFilterSearch")?.addEventListener("input", applyFilterAndRender);
+
+  // 캐시에서 자동 복원
+  restoreFromCache();
 
   // 조회
   $("achievementFetchBtn")?.addEventListener("click", async () => {
@@ -240,4 +261,15 @@ export function initAchievement(): void {
       setStatus(`로드 실패: ${(e as Error).message}`, "error");
     }
   });
+}
+
+// ─── 캐시 자동 복원 ───────────────────────────────────────
+function restoreFromCache(): void {
+  const cached = loadAchievementCache();
+  if (!cached || cached.length === 0) return;
+  allRecords = cached;
+  const { courses, cohorts } = extractFilters(allRecords);
+  populateFilters(courses, cohorts);
+  applyFilterAndRender();
+  setStatus(`${allRecords.length.toLocaleString()}건 (캐시)`, "success");
 }

@@ -35,9 +35,14 @@ interface AchievementCache {
   sheetList: string[];
 }
 
-const CACHE_TTL = 60 * 60 * 1000; // 1시간
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
-export function loadCache(): AchievementCache | null {
+export function loadAchievementCache(): UnifiedRecord[] | null {
+  const c = _loadCache();
+  return c ? c.unified : null;
+}
+
+function _loadCache(): AchievementCache | null {
   try {
     const raw = localStorage.getItem(ACHIEVEMENT_CACHE_KEY);
     if (!raw) return null;
@@ -70,7 +75,7 @@ async function fetchAction(baseUrl: string, params: Record<string, string>): Pro
 
 /** 통합시트 전체 로드 */
 export async function fetchUnified(config: AchievementConfig): Promise<UnifiedRecord[]> {
-  const cached = loadCache();
+  const cached = _loadCache();
   if (cached) return cached.unified;
 
   const json = (await fetchAction(config.webAppUrl, { action: "unified" })) as {
@@ -109,7 +114,7 @@ export async function fetchUnified(config: AchievementConfig): Promise<UnifiedRe
 
 /** 사용 가능한 시트 목록 */
 export async function fetchSheetList(config: AchievementConfig): Promise<string[]> {
-  const cached = loadCache();
+  const cached = _loadCache();
   if (cached) return cached.sheetList;
   const json = (await fetchAction(config.webAppUrl, { action: "sheets" })) as { sheets: string[] };
   return json.sheets;

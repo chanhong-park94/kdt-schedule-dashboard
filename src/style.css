@@ -7485,3 +7485,21 @@ dialog {
   color: var(--text-muted, #9ca3af);
   margin-top: 8px;
 }
+/* 문의응대 채널 배지 */
+.inq-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* 학업성취도 상태/신호등 배지 */
+.achv-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}

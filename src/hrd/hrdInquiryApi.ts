@@ -35,9 +35,14 @@ interface InquiryCache {
   records: InquiryRecord[];
 }
 
-const CACHE_TTL = 60 * 60 * 1000; // 1시간
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
-function loadCache(): InquiryCache | null {
+export function loadInquiryCache(): InquiryRecord[] | null {
+  const c = _loadCache();
+  return c ? c.records : null;
+}
+
+function _loadCache(): InquiryCache | null {
   try {
     const raw = localStorage.getItem(INQUIRY_CACHE_KEY);
     if (!raw) return null;
@@ -113,7 +118,7 @@ export async function fetchInquiryRecords(
 ): Promise<InquiryRecord[]> {
   // 캐시 확인
   if (useCache) {
-    const cached = loadCache();
+    const cached = _loadCache();
     if (cached) return cached.records;
   }
 
