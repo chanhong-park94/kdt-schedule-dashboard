@@ -82,3 +82,28 @@ src/
 - CSS fallback 값에 다크 모드 색상(#fafafa 등) 사용 금지 → :root 변수명 참조
 - 커밋/푸시는 사용자 요청 시에만 수행
 - 파괴적 git 명령 사용 전 반드시 확인
+
+---
+
+## 🔄 작업 현황 (마지막 업데이트: 2026-03-19)
+
+### ✅ 완료
+- 학업성취도(실업자): Apps Script → 689명/45,574건, 신호등 정렬, 캐시 복원
+- 학업성취도(재직자): 서브탭 분리, 유닛1~12 강사/운영진단 + 프로젝트1~4, 등급 A~D
+- 문의응대: Airtable API (응대+수강생+과정 3테이블 매핑), 82건, 통계카드+필터+검색
+- 만족도: 스키마 시트 기반 (NPS/강사/중간/최종, 과정·기수·모듈 단위)
+- 기수 코드 매핑: 0-x=LLM, 1-x=데이터, 2-x=기획/개발 (parseCohortCode)
+- UI: 셀 색상 강화, 라이트 모드 호환, API 설정 통합, 캐시 자동 복원
+- 스키마 시트 포맷팅 (헤더 남색, 줄무늬, 자동 열 너비)
+
+### 🔜 다음 작업
+1. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중 → 직접 API 호출로 전환
+2. **Apps Script 재배포** — schema_employed action 추가 필요
+3. **스키마 시트 데이터 입력** — 학업성취도(재직자) CSV 붙여넣기, 만족도 수기 입력
+4. **cmux 터미널 셋업** — macOS에서 Claude + GPT 병렬 실행
+
+### 📌 주요 URL
+- 배포: https://chanhong-park94.github.io/kdt-schedule-dashboard/
+- 대시보드용 DB 시트: https://docs.google.com/spreadsheets/d/1jwFQ6M-ZHCBoYkGSoT7u8GhNM2ssBZwjfYXvt_FvGGw/edit
+- 스키마 시트: https://docs.google.com/spreadsheets/d/1FO_U99xts2OEaFOniPDaS0Qfz9Stx3iO66zdQRnK0IE/edit
+- 재직자 CSV: trainee_reports (4).csv (543명, UUID+기수+유닛1~12 강사/운영진단)
