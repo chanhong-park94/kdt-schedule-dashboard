@@ -104,13 +104,12 @@ export async function fetchSatisfactionRecords(config: SatisfactionConfig): Prom
 
   const records: SatisfactionRecord[] = json.rows
     .filter((row) => {
-      const name = String(row[idx("이름")] ?? "").trim();
-      return name !== "";
+      const course = String(row[idx("과정명")] ?? "").trim();
+      return course !== "";
     })
     .map((row) => ({
       과정명: String(row[idx("과정명")] ?? "").trim(),
       기수: String(row[idx("기수")] ?? "").trim(),
-      이름: String(row[idx("이름")] ?? "").trim(),
       모듈명: String(row[idx("모듈/프로젝트명")] ?? "").trim(),
       NPS: Number(row[idx("NPS점수(-100~100)")]) || 0,
       강사만족도: Number(row[idx("강사만족도(5점)")]) || 0,

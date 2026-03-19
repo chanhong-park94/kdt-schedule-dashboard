@@ -19,7 +19,6 @@ export interface SatisfactionConfig {
 export interface SatisfactionRecord {
   과정명: string;
   기수: string;
-  이름: string;
   모듈명: string;
   NPS: number;
   강사만족도: number;
