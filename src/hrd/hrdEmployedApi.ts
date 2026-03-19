@@ -10,6 +10,23 @@ import { loadAchievementConfig } from "./hrdAchievementApi";
 
 const CACHE_TTL = 24 * 60 * 60 * 1000;
 
+// ── 기수 코드 → 과정명/기수 매핑 ────────────────────────────
+// CSV 기수: 1~9 → 재직자LLM, 11~19 → 재직자데이터, 21~29 → 재직자기획/개발
+const COURSE_PREFIX_MAP: Record<number, string> = {
+  0: "재직자LLM",
+  1: "재직자데이터",
+  2: "재직자기획/개발",
+};
+
+export function parseCohortCode(raw: string | number): { 과정명: string; 기수: string } {
+  const num = typeof raw === "string" ? parseInt(raw, 10) : raw;
+  if (isNaN(num) || num === 99) return { 과정명: "테스트", 기수: "99" };
+  const prefix = Math.floor(num / 10); // 0, 1, 2
+  const cohort = num % 10; // 1~9
+  const courseName = COURSE_PREFIX_MAP[prefix] ?? `재직자${prefix}`;
+  return { 과정명: courseName, 기수: `${cohort}기` };
+}
+
 // ── 캐시 ────────────────────────────────────────────────────
 export function loadEmployedCache(): EmployedRecord[] | null {
   try {
@@ -63,7 +80,8 @@ export async function fetchEmployedRecords(): Promise<EmployedRecord[]> {
   const records: EmployedRecord[] = json.rows
     .filter((row) => {
       const name = String(row[idx("성명")] ?? row[idx("이름")] ?? "").trim();
-      return name !== "";
+      const cohort = String(row[idx("기수")] ?? "");
+      return name !== "" && cohort !== "99"; // 빈 이름 + 테스트(99) 제외
     })
     .map((row) => {
       const 강사진단: (number | null)[] = [];
@@ -81,9 +99,14 @@ export async function fetchEmployedRecords(): Promise<EmployedRecord[]> {
         프로젝트.push(pIdx >= 0 && row[pIdx] != null && row[pIdx] !== "" ? Number(row[pIdx]) : null);
       }
 
+      // 기수 코드 → 과정명/기수 자동 매핑 (과정명 열이 비어있으면 코드에서 변환)
+      const rawCohort = row[idx("기수")] ?? "";
+      const explicitCourse = String(row[idx("과정명")] ?? "").trim();
+      const parsed = parseCohortCode(rawCohort);
+
       return {
-        과정명: String(row[idx("과정명")] ?? "").trim(),
-        기수: String(row[idx("기수")] ?? "").trim(),
+        과정명: explicitCourse || parsed.과정명,
+        기수: parsed.기수 !== "99" ? parsed.기수 : String(rawCohort).trim(),
         성명: String(row[idx("성명")] ?? row[idx("이름")] ?? "").trim(),
         레벨: Number(row[idx("레벨")]) || 0,
         경험치: Number(row[idx("경험치")]) || 0,
