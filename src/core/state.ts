@@ -22,6 +22,7 @@ export type AppSidebarNavKey =
   | "analytics"
   | "traineeHistory"
   | "achievement"
+  | "inquiry"
   | "settings";
 
 export type AppSidebarMenuConfig = {

@@ -154,6 +154,17 @@
             <span class="jibble-nav-emoji" aria-hidden="true">🎓</span>
             <span class="jibble-nav-label">학업성취도</span>
           </button>
+          <button
+            class="jibble-nav-item"
+            type="button"
+            data-scroll-target="sectionInquiry"
+            data-nav-key="inquiry"
+            data-nav-icon="chat"
+            data-default-label="문의응대"
+          >
+            <span class="jibble-nav-emoji" aria-hidden="true">💬</span>
+            <span class="jibble-nav-label">문의응대</span>
+          </button>
 
           <div class="nav-spacer" aria-hidden="true"></div>
           <button
@@ -1866,6 +1877,117 @@
             </div>
           </div>
           <!-- /sectionAchievement -->
+
+          <!-- ═══ 문의응대 ═══ -->
+          <div class="card card-span-12 u-mt-14" id="sectionInquiry" data-page-group="inquiry">
+            <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
+              <h3>💬 문의응대</h3>
+              <div style="display: flex; gap: 8px">
+                <button id="inquiryFetchBtn" class="btn btn--primary btn--sm">조회</button>
+              </div>
+            </div>
+
+            <!-- 설정 영역 -->
+            <div id="inquiryConfigArea" style="margin-bottom: 16px">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                <input
+                  id="inquiryBaseId"
+                  type="text"
+                  class="hrd-input"
+                  placeholder="Airtable Base ID (app...)"
+                  style="flex: 1; min-width: 160px"
+                />
+                <input
+                  id="inquiryPat"
+                  type="password"
+                  class="hrd-input"
+                  placeholder="Personal Access Token (pat...)"
+                  style="flex: 1; min-width: 200px"
+                />
+                <button id="inquiryConnectTestBtn" class="btn btn--sm">연결 테스트</button>
+                <button id="inquiryConnectSaveBtn" class="btn btn--sm btn--primary">저장</button>
+              </div>
+              <div id="inquiryConnectStatus" class="kpi-connect-status" style="margin-top: 4px"></div>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div id="inquiryStats" class="inq-stats-grid" style="display: none">
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">총 문의</div>
+                <div class="inq-stat-value" id="inqStatTotal">-</div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">최근 7일</div>
+                <div class="inq-stat-value" id="inqStatRecent">-</div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">채널별</div>
+                <div class="inq-stat-chips" id="inqStatChannel"></div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">작성자별</div>
+                <div class="inq-stat-chips" id="inqStatWriter"></div>
+              </div>
+              <div class="inq-stat-card inq-stat-card--wide">
+                <div class="inq-stat-label">질문 유형 분포</div>
+                <div class="inq-stat-chips" id="inqStatCategory"></div>
+              </div>
+            </div>
+
+            <!-- 필터 -->
+            <div id="inquiryFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+              <select id="inqFilterChannel" class="hrd-input">
+                <option value="">전체 채널</option>
+              </select>
+              <select id="inqFilterWriter" class="hrd-input">
+                <option value="">전체 작성자</option>
+              </select>
+              <input
+                id="inqFilterSearch"
+                type="text"
+                class="hrd-input"
+                placeholder="검색 (이름, 질문, 과정...)"
+                style="min-width: 180px"
+              />
+              <span id="inqRecordCount" class="muted" style="font-size: 13px"></span>
+            </div>
+
+            <div id="inquiryStatus" class="ana-status"></div>
+
+            <!-- 빈 상태 -->
+            <div id="inquiryEmpty" class="att-empty-state">
+              <div class="att-empty-title">문의응대</div>
+              <div class="att-empty-desc">
+                Airtable 연결 정보를 설정하고 조회 버튼을 클릭하면 문의응대 데이터를 표시합니다.
+              </div>
+            </div>
+
+            <!-- 데이터 테이블 -->
+            <div id="inquiryContent" style="display: none">
+              <div style="overflow-x: auto">
+                <table class="hrd-table" style="margin-top: 0">
+                  <thead>
+                    <tr>
+                      <th>날짜</th>
+                      <th>학생</th>
+                      <th>과정</th>
+                      <th>질문요약</th>
+                      <th>채널</th>
+                      <th>작성자</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inqTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 상세 펼침 (행 클릭 시) -->
+            <div id="inquiryDetail" style="display: none; margin-top: 16px">
+              <h4 id="inqDetailTitle" style="margin-bottom: 8px"></h4>
+              <div id="inqDetailBody"></div>
+            </div>
+          </div>
+          <!-- /sectionInquiry -->
 
           <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign" data-page-group="reports">
             <div class="row u-row-between u-row-center">

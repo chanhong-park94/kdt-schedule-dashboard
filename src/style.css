@@ -7410,3 +7410,78 @@ dialog {
 .ea-action-btn:hover {
   background: var(--surface-hover);
 }
+
+/* ═══ 문의응대 ═══ */
+.inq-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.inq-stat-card {
+  background: var(--card-bg, #111113);
+  border: 1px solid var(--border-color, #27272a);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.inq-stat-card--wide {
+  grid-column: 1 / -1;
+}
+.inq-stat-label {
+  font-size: 12px;
+  color: var(--text-muted, #71717a);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.inq-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #fafafa);
+}
+.inq-stat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.inq-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--surface-hover, #1c1c1e);
+  color: var(--text-secondary, #a1a1aa);
+}
+.inq-chip strong {
+  color: var(--text-primary, #fafafa);
+}
+.inq-detail-section {
+  background: var(--card-bg, #111113);
+  border: 1px solid var(--border-color, #27272a);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.inq-detail-section h5 {
+  font-size: 13px;
+  color: var(--text-muted, #71717a);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.inq-detail-section p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary, #fafafa);
+  margin: 0;
+  white-space: pre-wrap;
+}
+.inq-detail-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted, #71717a);
+  margin-top: 8px;
+}

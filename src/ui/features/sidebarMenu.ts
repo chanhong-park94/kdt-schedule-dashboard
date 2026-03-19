@@ -27,6 +27,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "analytics",
   "traineeHistory",
   "achievement",
+  "inquiry",
   "settings",
 ];
 
@@ -40,6 +41,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   analytics: "훈련생 분석",
   traineeHistory: "훈련생 이력",
   achievement: "학업성취도",
+  inquiry: "문의응대",
   settings: "설정",
 };
 
@@ -53,6 +55,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   analytics: "analytics",
   traineeHistory: "user",
   achievement: "star",
+  inquiry: "chat",
   settings: "settings",
 };
 
@@ -82,6 +85,8 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       attendance: config.labels.attendance,
       analytics: config.labels.analytics,
       traineeHistory: config.labels.traineeHistory,
+      achievement: config.labels.achievement,
+      inquiry: config.labels.inquiry,
       settings: config.labels.settings,
     },
     icons: {
@@ -93,6 +98,8 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       attendance: config.icons.attendance,
       analytics: config.icons.analytics,
       traineeHistory: config.icons.traineeHistory,
+      achievement: config.icons.achievement,
+      inquiry: config.icons.inquiry,
       settings: config.icons.settings,
     },
   };
@@ -138,6 +145,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       analytics: normalizeSidebarMenuLabel("analytics", config.labels.analytics),
       traineeHistory: normalizeSidebarMenuLabel("traineeHistory", config.labels.traineeHistory),
       achievement: normalizeSidebarMenuLabel("achievement", config.labels.achievement),
+      inquiry: normalizeSidebarMenuLabel("inquiry", config.labels.inquiry),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
@@ -150,6 +158,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       analytics: normalizeSidebarMenuIcon("analytics", config.icons.analytics),
       traineeHistory: normalizeSidebarMenuIcon("traineeHistory", config.icons.traineeHistory),
       achievement: normalizeSidebarMenuIcon("achievement", config.icons.achievement),
+      inquiry: normalizeSidebarMenuIcon("inquiry", config.icons.inquiry),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };
@@ -168,6 +177,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       analytics: DEFAULT_PRIMARY_SIDEBAR_LABELS.analytics,
       traineeHistory: DEFAULT_PRIMARY_SIDEBAR_LABELS.traineeHistory,
       achievement: DEFAULT_PRIMARY_SIDEBAR_LABELS.achievement,
+      inquiry: DEFAULT_PRIMARY_SIDEBAR_LABELS.inquiry,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
@@ -180,6 +190,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       analytics: DEFAULT_PRIMARY_SIDEBAR_ICONS.analytics,
       traineeHistory: DEFAULT_PRIMARY_SIDEBAR_ICONS.traineeHistory,
       achievement: DEFAULT_PRIMARY_SIDEBAR_ICONS.achievement,
+      inquiry: DEFAULT_PRIMARY_SIDEBAR_ICONS.inquiry,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
     },
   };
