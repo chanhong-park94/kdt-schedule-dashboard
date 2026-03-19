@@ -31,6 +31,33 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// ─── 색상 맵 ─────────────────────────────────────────────────
+const CHANNEL_COLORS: Record<string, string> = {
+  디스코드: "background:#5865F2;color:#fff",
+  채널톡: "background:#3CB371;color:#fff",
+  유선: "background:#F59E0B;color:#fff",
+  zep: "background:#8B5CF6;color:#fff",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  출결: "background:#dbeafe;color:#1e40af",
+  수강신청: "background:#fce7f3;color:#9d174d",
+  내배카: "background:#fef3c7;color:#92400e",
+  훈련장려금: "background:#d1fae5;color:#065f46",
+  중도포기: "background:#fef2f2;color:#991b1b",
+  수업문의: "background:#e0e7ff;color:#3730a3",
+  취업: "background:#ede9fe;color:#5b21b6",
+  수료: "background:#ecfdf5;color:#065f46",
+  기타: "background:#f3f4f6;color:#374151",
+};
+
+const WRITER_PALETTE = [
+  "background:#6366f1;color:#fff",
+  "background:#8b5cf6;color:#fff",
+  "background:#ec4899;color:#fff",
+  "background:#f59e0b;color:#fff",
+];
+
 // ─── 통계 카드 렌더링 ───────────────────────────────────────
 function renderStats(stats: InquiryStats): void {
   const container = $("inquiryStats");
@@ -50,7 +77,10 @@ function renderStats(stats: InquiryStats): void {
   if (channelEl) {
     channelEl.innerHTML = Object.entries(stats.채널별)
       .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `<span class="inq-chip">${esc(k)} <strong>${v}</strong></span>`)
+      .map(([k, v]) => {
+        const style = CHANNEL_COLORS[k] ?? "background:#6b7280;color:#fff";
+        return `<span class="inq-chip" style="${style}">${esc(k)} <strong>${v}</strong></span>`;
+      })
       .join(" ");
   }
 
@@ -59,7 +89,10 @@ function renderStats(stats: InquiryStats): void {
   if (writerEl) {
     writerEl.innerHTML = Object.entries(stats.작성자별)
       .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `<span class="inq-chip">${esc(k)} <strong>${v}</strong></span>`)
+      .map(([k, v], i) => {
+        const style = WRITER_PALETTE[i % WRITER_PALETTE.length];
+        return `<span class="inq-chip" style="${style}">${esc(k)} <strong>${v}</strong></span>`;
+      })
       .join(" ");
   }
 
@@ -68,7 +101,10 @@ function renderStats(stats: InquiryStats): void {
   if (categoryEl) {
     categoryEl.innerHTML = Object.entries(stats.유형별)
       .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `<span class="inq-chip">${esc(k)} <strong>${v}</strong></span>`)
+      .map(([k, v]) => {
+        const style = CATEGORY_COLORS[k] ?? "background:#f3f4f6;color:#374151";
+        return `<span class="inq-chip" style="${style}">${esc(k)} <strong>${v}</strong></span>`;
+      })
       .join(" ");
   }
 }

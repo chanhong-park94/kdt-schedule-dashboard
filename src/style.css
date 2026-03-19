@@ -7455,7 +7455,7 @@ dialog {
   color: var(--text-secondary, #6b7280);
 }
 .inq-chip strong {
-  color: var(--text-strong, var(--text, #1e1e2e));
+  color: inherit;
 }
 .inq-detail-section {
   background: var(--card-bg);
