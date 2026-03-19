@@ -28,6 +28,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "traineeHistory",
   "achievement",
   "inquiry",
+  "satisfaction",
   "settings",
 ];
 
@@ -42,6 +43,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   traineeHistory: "훈련생 이력",
   achievement: "학업성취도",
   inquiry: "문의응대",
+  satisfaction: "만족도",
   settings: "설정",
 };
 
@@ -56,6 +58,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   traineeHistory: "user",
   achievement: "star",
   inquiry: "chat",
+  satisfaction: "heart",
   settings: "settings",
 };
 
@@ -146,6 +149,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       traineeHistory: normalizeSidebarMenuLabel("traineeHistory", config.labels.traineeHistory),
       achievement: normalizeSidebarMenuLabel("achievement", config.labels.achievement),
       inquiry: normalizeSidebarMenuLabel("inquiry", config.labels.inquiry),
+      satisfaction: normalizeSidebarMenuLabel("satisfaction", config.labels.satisfaction),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
@@ -159,6 +163,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       traineeHistory: normalizeSidebarMenuIcon("traineeHistory", config.icons.traineeHistory),
       achievement: normalizeSidebarMenuIcon("achievement", config.icons.achievement),
       inquiry: normalizeSidebarMenuIcon("inquiry", config.icons.inquiry),
+      satisfaction: normalizeSidebarMenuIcon("satisfaction", config.icons.satisfaction),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };

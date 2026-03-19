@@ -1963,6 +1963,94 @@
           </div>
           <!-- /sectionInquiry -->
 
+          <!-- ═══ 만족도 ═══ -->
+          <div class="card card-span-12 u-mt-14" id="sectionSatisfaction" data-page-group="satisfaction">
+            <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
+              <h3>😊 만족도</h3>
+              <div style="display: flex; gap: 8px">
+                <button id="satisfactionFetchBtn" class="btn btn--primary btn--sm">조회</button>
+              </div>
+            </div>
+
+            <div id="satisfactionConfigNotice" class="kpi-connect-status" style="display: none; margin-bottom: 12px">
+              ⚙️ 설정 → API 연동에서 Apps Script URL을 입력해주세요. (학업성취도와 동일 URL 사용)
+            </div>
+
+            <!-- 통계 카드 -->
+            <div id="satisfactionStats" class="inq-stats-grid" style="display: none">
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">총 응답</div>
+                <div class="inq-stat-value" id="satStatTotal">-</div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">NPS 평균</div>
+                <div class="inq-stat-value" id="satStatNps">-</div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">강사만족도</div>
+                <div class="inq-stat-value" id="satStatTeacher">-</div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">중간만족도</div>
+                <div class="inq-stat-value" id="satStatMid">-</div>
+              </div>
+              <div class="inq-stat-card">
+                <div class="inq-stat-label">최종만족도</div>
+                <div class="inq-stat-value" id="satStatFinal">-</div>
+              </div>
+              <div class="inq-stat-card inq-stat-card--wide">
+                <div class="inq-stat-label">과정별 NPS</div>
+                <div class="inq-stat-chips" id="satStatCourseNps"></div>
+              </div>
+            </div>
+
+            <!-- 필터 -->
+            <div id="satisfactionFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+              <select id="satFilterCourse" class="hrd-input">
+                <option value="">전체 과정</option>
+              </select>
+              <select id="satFilterCohort" class="hrd-input">
+                <option value="">전체 기수</option>
+              </select>
+              <span id="satRecordCount" class="muted" style="font-size: 13px"></span>
+            </div>
+
+            <div id="satisfactionStatus" class="ana-status"></div>
+
+            <div id="satisfactionEmpty" class="att-empty-state">
+              <div class="att-empty-title">만족도</div>
+              <div class="att-empty-desc">
+                조회 버튼을 클릭하면 만족도 데이터를 표시합니다.<br />
+                <small class="muted">연결 설정: 설정 → API 연동 → 만족도 (Apps Script, 학업성취도와 동일 URL)</small>
+              </div>
+            </div>
+
+            <div id="satisfactionContent" style="display: none">
+              <div style="overflow-x: auto">
+                <table class="hrd-table" style="margin-top: 0">
+                  <thead>
+                    <tr>
+                      <th>과정</th>
+                      <th>기수</th>
+                      <th>응답수</th>
+                      <th>NPS 평균</th>
+                      <th>강사만족도</th>
+                      <th>중간만족도</th>
+                      <th>최종만족도</th>
+                    </tr>
+                  </thead>
+                  <tbody id="satTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="satisfactionDetail" style="display: none; margin-top: 16px">
+              <h4 id="satDetailTitle" style="margin-bottom: 8px"></h4>
+              <div id="satDetailBody"></div>
+            </div>
+          </div>
+          <!-- /sectionSatisfaction -->
+
           <div class="card card-span-12 admin-only u-mt-14" id="sectionStaffingAssign" data-page-group="reports">
             <div class="row u-row-between u-row-center">
               <div>
@@ -2684,6 +2772,23 @@
                   <button id="settingsInquiryTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
                 </div>
                 <div id="settingsInquiryTestStatus" class="settings-status-msg u-mt-4"></div>
+              </div>
+
+              <!-- 만족도 (Apps Script) -->
+              <div id="satisfactionApiSection" class="hrd-settings-row" style="margin-top: 16px; border-top: 1px solid var(--card-border, rgba(0,0,0,0.06)); padding-top: 16px">
+                <div style="flex-basis: 100%; margin-bottom: 8px">
+                  <strong style="font-size: 14px">😊 만족도 (Apps Script)</strong>
+                  <small class="muted" style="display: block; margin-top: 4px">학업성취도와 동일한 Apps Script URL을 사용합니다. 스키마 시트 "만족도" 탭에 데이터를 수기 입력해주세요.</small>
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>Apps Script Web App URL</label>
+                  <input type="text" id="settingsSatisfactionUrl" class="hrd-input" placeholder="https://script.google.com/macros/s/.../exec" />
+                </div>
+                <div class="hrd-field-actions">
+                  <button id="settingsSatisfactionSave" class="btn-primary btn-sm" type="button">저장</button>
+                  <button id="settingsSatisfactionTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
+                </div>
+                <div id="settingsSatisfactionTestStatus" class="settings-status-msg u-mt-4"></div>
               </div>
             </div>
           </div>
