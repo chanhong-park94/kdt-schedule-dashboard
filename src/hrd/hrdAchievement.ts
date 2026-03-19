@@ -161,40 +161,61 @@ function applyFilterAndRender(): void {
   if (detailEl) detailEl.style.display = "none";
 }
 
-// ─── 초기화 ─────────────────────────────────────────────────
-export function initAchievement(): void {
-  currentConfig = loadAchievementConfig();
-
-  // 저장된 URL 반영
-  const urlInput = $("achievementWebAppUrl") as HTMLInputElement | null;
+// ─── 설정 탭 초기화 (API 연동 섹션) ────────────────────────
+function initSettingsAchievement(): void {
+  const urlInput = $("settingsAchievementUrl") as HTMLInputElement | null;
   if (urlInput && currentConfig.webAppUrl) urlInput.value = currentConfig.webAppUrl;
 
   // 연결 테스트
-  $("achievementConnectTestBtn")?.addEventListener("click", async () => {
+  $("settingsAchievementTestBtn")?.addEventListener("click", async () => {
     const url = (urlInput?.value ?? "").trim();
-    const statusEl = $("achievementConnectStatus");
+    const statusEl = $("settingsAchievementTestStatus");
+    if (!url) {
+      if (statusEl) {
+        statusEl.textContent = "URL을 입력하세요.";
+        statusEl.className = "settings-status-msg error";
+      }
+      return;
+    }
     if (statusEl) {
       statusEl.textContent = "테스트 중...";
-      statusEl.className = "kpi-connect-status loading";
+      statusEl.className = "settings-status-msg loading";
     }
     const result = await testAchievementConnection({ webAppUrl: url });
     if (statusEl) {
       statusEl.textContent = result.message;
-      statusEl.className = `kpi-connect-status ${result.ok ? "success" : "error"}`;
+      statusEl.className = `settings-status-msg ${result.ok ? "success" : "error"}`;
     }
   });
 
   // 저장
-  $("achievementConnectSaveBtn")?.addEventListener("click", () => {
+  $("settingsAchievementSave")?.addEventListener("click", () => {
     const url = (urlInput?.value ?? "").trim();
     currentConfig = { webAppUrl: url };
     saveAchievementConfig(currentConfig);
-    const statusEl = $("achievementConnectStatus");
+    const statusEl = $("settingsAchievementTestStatus");
     if (statusEl) {
-      statusEl.textContent = "저장됨";
-      statusEl.className = "kpi-connect-status success";
+      statusEl.textContent = "저장됨 ✓";
+      statusEl.className = "settings-status-msg success";
     }
+    updateAchievementNotice();
   });
+}
+
+// ─── 설정 미완료 안내 ───────────────────────────────────────
+function updateAchievementNotice(): void {
+  const noticeEl = $("achievementConfigNotice");
+  if (!noticeEl) return;
+  noticeEl.style.display = currentConfig.webAppUrl ? "none" : "";
+}
+
+// ─── 초기화 ─────────────────────────────────────────────────
+export function initAchievement(): void {
+  currentConfig = loadAchievementConfig();
+
+  // 설정 탭 UI 초기화
+  initSettingsAchievement();
+  updateAchievementNotice();
 
   // 필터 변경 이벤트
   $("achvFilterCourse")?.addEventListener("change", applyFilterAndRender);
@@ -202,8 +223,10 @@ export function initAchievement(): void {
 
   // 조회
   $("achievementFetchBtn")?.addEventListener("click", async () => {
+    // 매번 최신 설정 읽기
+    currentConfig = loadAchievementConfig();
     if (!currentConfig.webAppUrl) {
-      setStatus("Apps Script URL을 먼저 설정하세요.", "error");
+      setStatus("설정 → API 연동에서 Apps Script URL을 입력해주세요.", "error");
       return;
     }
     setStatus("데이터 로딩 중...", "loading");

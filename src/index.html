@@ -1812,20 +1812,9 @@
               </div>
             </div>
 
-            <!-- 설정 영역 -->
-            <div id="achievementConfigArea" style="margin-bottom: 16px">
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
-                <input
-                  id="achievementWebAppUrl"
-                  type="text"
-                  class="hrd-input"
-                  placeholder="Apps Script Web App URL"
-                  style="flex: 1; min-width: 200px"
-                />
-                <button id="achievementConnectTestBtn" class="btn btn--sm">연결 테스트</button>
-                <button id="achievementConnectSaveBtn" class="btn btn--sm btn--primary">저장</button>
-              </div>
-              <div id="achievementConnectStatus" class="kpi-connect-status" style="margin-top: 4px"></div>
+            <!-- 설정 미완료 안내 -->
+            <div id="achievementConfigNotice" class="kpi-connect-status" style="display: none; margin-bottom: 12px">
+              ⚙️ 설정 → API 연동에서 Apps Script URL을 입력해주세요.
             </div>
 
             <!-- 필터 -->
@@ -1845,7 +1834,8 @@
             <div id="achievementEmpty" class="att-empty-state">
               <div class="att-empty-title">학업성취도</div>
               <div class="att-empty-desc">
-                Apps Script URL을 설정하고 조회 버튼을 클릭하면 학업성취도 데이터를 표시합니다.
+                조회 버튼을 클릭하면 학업성취도 데이터를 표시합니다.<br />
+                <small class="muted">연결 설정: 설정 → API 연동 → 학업성취도 (Apps Script)</small>
               </div>
             </div>
 
@@ -2658,6 +2648,22 @@
                 </div>
               </div>
               <div id="hrdTestStatus" class="att-api-status u-mt-8"></div>
+
+              <!-- 학업성취도 Apps Script 연동 -->
+              <div id="achievementApiSection" class="hrd-settings-row" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-color, #27272a); padding-top: 16px">
+                <div style="flex-basis: 100%; margin-bottom: 8px">
+                  <strong style="font-size: 14px">🎓 학업성취도 (Apps Script)</strong>
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>Apps Script Web App URL</label>
+                  <input type="text" id="settingsAchievementUrl" class="hrd-input" placeholder="https://script.google.com/macros/s/.../exec" />
+                </div>
+                <div class="hrd-field-actions">
+                  <button id="settingsAchievementSave" class="btn-primary btn-sm" type="button">저장</button>
+                  <button id="settingsAchievementTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
+                </div>
+                <div id="settingsAchievementTestStatus" class="settings-status-msg u-mt-4"></div>
+              </div>
 
               <!-- Airtable 문의응대 연동 -->
               <div id="inquiryApiSection" class="hrd-settings-row" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-color, #27272a); padding-top: 16px">

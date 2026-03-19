@@ -1120,15 +1120,21 @@ function setupSettingsHandlers(): void {
       if (gate) gate.style.display = "none";
       if (section) section.style.display = "flex";
       if (gateError) gateError.style.display = "none";
-      // 문의응대 Airtable 섹션도 표시
+      // 학업성취도 + 문의응대 섹션도 표시
+      const achievementSection = $("achievementApiSection");
+      if (achievementSection) achievementSection.style.display = "flex";
       const inquirySection = $("inquiryApiSection");
       if (inquirySection) inquirySection.style.display = "flex";
-      // Auth key 표시
+      // Auth key, Proxy, Slack Webhook 복원
       const keyInput = $("hrdAuthKey") as HTMLInputElement | null;
       if (keyInput) {
         keyInput.type = "text";
         keyInput.value = currentConfig.authKey;
       }
+      const proxyInput = $("hrdProxy") as HTMLInputElement | null;
+      if (proxyInput) proxyInput.value = currentConfig.proxy || "";
+      const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
+      if (slackInput) slackInput.value = currentConfig.slackWebhookUrl || "";
     } else {
       if (gateError) {
         gateError.style.display = "block";
