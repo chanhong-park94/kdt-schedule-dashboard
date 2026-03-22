@@ -2032,9 +2032,23 @@ function handleMonthNext(): void {
   renderTimeline();
 }
 
+const TAB_SHORTCUT_KEYS: import("./ui/appState").PrimarySidebarNavKey[] = [
+  "dashboard", "timeline", "generator", "kpi", "attendance",
+  "analytics", "traineeHistory", "achievement", "inquiry",
+];
+
 function handleWindowKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape" && appState.activeDrawer) {
     closeDrawers();
+    return;
+  }
+  // Alt+1~9 → 탭 전환
+  if (event.altKey && !event.ctrlKey && !event.shiftKey) {
+    const num = parseInt(event.key);
+    if (num >= 1 && num <= 9 && TAB_SHORTCUT_KEYS[num - 1]) {
+      event.preventDefault();
+      activatePrimarySidebarPage(TAB_SHORTCUT_KEYS[num - 1]);
+    }
   }
 }
 
@@ -2544,3 +2558,81 @@ void import("./reports/reportsInit").then(({ initWeeklyReport }) => initWeeklyRe
 if (hasAuthSession) {
   void bootstrapAppAfterAuthLogin();
 }
+
+// ─── 오프라인 감지 ──────────────────────────────────────────
+(function initOfflineDetection() {
+  const update = () => {
+    const banner = document.getElementById("offlineBanner");
+    if (!banner) return;
+    banner.classList.toggle("u-hidden", navigator.onLine);
+  };
+  window.addEventListener("online", update);
+  window.addEventListener("offline", update);
+  update();
+})();
+
+// ─── 캐시 관리 (설정 탭) ────────────────────────────────────
+(function initCacheManagement() {
+  const CACHE_KEYS = [
+    { key: "kdt_achievement_cache_v1", label: "학업성취도" },
+    { key: "kdt_employed_cache_v1", label: "재직자" },
+    { key: "inquiry_airtable_cache", label: "문의응대" },
+    { key: "kdt_satisfaction_cache_v1", label: "만족도" },
+  ] as const;
+
+  function updateCacheStatus() {
+    const el = document.getElementById("cacheStatusSummary");
+    if (!el) return;
+    const parts: string[] = [];
+    for (const { key, label } of CACHE_KEYS) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const kb = Math.round((raw.length * 2) / 1024);
+        parts.push(`${label}: ${kb}KB`);
+      }
+    }
+    el.textContent = parts.length > 0 ? parts.join(" · ") : "캐시 없음";
+  }
+
+  function clearCache(key: string, label: string) {
+    localStorage.removeItem(key);
+    updateCacheStatus();
+    // showToast는 hrdCacheUtils에서 import 필요하지만 main.ts에서는 직접 DOM 조작
+    const container = document.getElementById("toastContainer");
+    if (container) {
+      const toast = document.createElement("div");
+      toast.className = "toast success";
+      toast.textContent = `${label} 캐시가 초기화되었습니다.`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  }
+
+  document.getElementById("clearAllCacheBtn")?.addEventListener("click", () => {
+    for (const { key } of CACHE_KEYS) localStorage.removeItem(key);
+    updateCacheStatus();
+    const container = document.getElementById("toastContainer");
+    if (container) {
+      const toast = document.createElement("div");
+      toast.className = "toast success";
+      toast.textContent = "전체 캐시가 초기화되었습니다.";
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  });
+
+  document.getElementById("clearAchievementCacheBtn")?.addEventListener("click", () => {
+    clearCache("kdt_achievement_cache_v1", "학업성취도");
+    clearCache("kdt_employed_cache_v1", "재직자");
+  });
+  document.getElementById("clearInquiryCacheBtn")?.addEventListener("click", () => {
+    clearCache("inquiry_airtable_cache", "문의응대");
+  });
+  document.getElementById("clearSatisfactionCacheBtn")?.addEventListener("click", () => {
+    clearCache("kdt_satisfaction_cache_v1", "만족도");
+  });
+
+  // 설정 탭 열 때 캐시 현황 갱신
+  const section = document.getElementById("sectionStateManagement");
+  section?.addEventListener("click", updateCacheStatus);
+})();

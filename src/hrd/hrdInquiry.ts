@@ -12,7 +12,9 @@ import {
   fetchInquiryRecords,
   calcInquiryStats,
   loadInquiryCache,
+  getInquiryCacheTimestamp,
 } from "./hrdInquiryApi";
+import { formatCacheAge, classifyApiError } from "./hrdCacheUtils";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
@@ -256,7 +258,7 @@ function initSettingsInquiry(): void {
       }
     } catch (e) {
       if (statusEl) {
-        statusEl.textContent = (e as Error).message;
+        statusEl.textContent = classifyApiError(e);
         statusEl.className = "settings-status-msg error";
       }
     }
@@ -304,6 +306,17 @@ export function initInquiry(): void {
   $("inqFilterWriter")?.addEventListener("change", applyFilterAndRender);
   $("inqFilterSearch")?.addEventListener("input", applyFilterAndRender);
 
+  // 필터 초기화
+  $("inqFilterReset")?.addEventListener("click", () => {
+    for (const id of ["inqFilterChannel", "inqFilterWriter"]) {
+      const el = $(id) as HTMLSelectElement | null;
+      if (el) el.selectedIndex = 0;
+    }
+    const search = $("inqFilterSearch") as HTMLInputElement | null;
+    if (search) search.value = "";
+    applyFilterAndRender();
+  });
+
   // 캐시에서 자동 복원
   restoreFromCache();
 
@@ -317,14 +330,14 @@ export function initInquiry(): void {
     }
     setStatus("데이터 로딩 중...", "loading");
     try {
-      allRecords = await fetchInquiryRecords(currentConfig);
+      allRecords = await fetchInquiryRecords(currentConfig, false);
       populateFilters(allRecords);
       const stats = calcInquiryStats(allRecords);
       renderStats(stats);
       applyFilterAndRender();
       setStatus(`${allRecords.length}건 로드 완료`, "success");
     } catch (e) {
-      setStatus(`로드 실패: ${(e as Error).message}`, "error");
+      setStatus(classifyApiError(e), "error");
     }
   });
 }
@@ -338,5 +351,7 @@ function restoreFromCache(): void {
   const stats = calcInquiryStats(allRecords);
   renderStats(stats);
   applyFilterAndRender();
-  setStatus(`${allRecords.length}건 (캐시)`, "success");
+  const ts = getInquiryCacheTimestamp();
+  const age = ts ? ` · ${formatCacheAge(ts)}` : "";
+  setStatus(`${allRecords.length}건 (캐시${age})`, "success");
 }

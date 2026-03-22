@@ -15,10 +15,12 @@ import {
   summarizeByTrainee,
   extractFilters,
   loadAchievementCache,
+  getAchievementCacheTimestamp,
 } from "./hrdAchievementApi";
 import type { UnifiedRecord } from "./hrdAchievementTypes";
 import type { EmployedRecord, EmployedSummary } from "./hrdEmployedTypes";
 import { fetchEmployedRecords, summarizeEmployed, extractEmployedFilters, loadEmployedCache } from "./hrdEmployedApi";
+import { formatCacheAge, classifyApiError, showToast } from "./hrdCacheUtils";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
@@ -377,7 +379,7 @@ function restoreEmpCache(): void {
   empRecords = cached;
   populateEmpFilters(empRecords);
   applyEmpFilterAndRender();
-  setEmpStatus(`${empRecords.length}명 (캐시)`, "success");
+  setEmpStatus(`${empRecords.length}명 (캐시)`, "success"); // 재직자는 별도 캐시 타임스탬프 없음
 }
 
 // ─── 초기화 ─────────────────────────────────────────────────
@@ -397,10 +399,32 @@ export function initAchievement(): void {
   $("achvFilterSignal")?.addEventListener("change", applyFilterAndRender);
   $("achvFilterSearch")?.addEventListener("input", applyFilterAndRender);
 
+  // 실업자 필터 초기화
+  $("achvFilterReset")?.addEventListener("click", () => {
+    for (const id of ["achvFilterCourse", "achvFilterCohort", "achvFilterStatus", "achvFilterSignal"]) {
+      const el = $(id) as HTMLSelectElement | null;
+      if (el) el.selectedIndex = 0;
+    }
+    const search = $("achvFilterSearch") as HTMLInputElement | null;
+    if (search) search.value = "";
+    applyFilterAndRender();
+  });
+
   // 재직자 필터
   $("empFilterCourse")?.addEventListener("change", applyEmpFilterAndRender);
   $("empFilterCohort")?.addEventListener("change", applyEmpFilterAndRender);
   $("empFilterSearch")?.addEventListener("input", applyEmpFilterAndRender);
+
+  // 재직자 필터 초기화
+  $("empFilterReset")?.addEventListener("click", () => {
+    for (const id of ["empFilterCourse", "empFilterCohort"]) {
+      const el = $(id) as HTMLSelectElement | null;
+      if (el) el.selectedIndex = 0;
+    }
+    const search = $("empFilterSearch") as HTMLInputElement | null;
+    if (search) search.value = "";
+    applyEmpFilterAndRender();
+  });
 
   // 캐시 복원
   restoreFromCache();
@@ -423,7 +447,7 @@ export function initAchievement(): void {
         applyFilterAndRender();
         setStatus(`${allRecords.length.toLocaleString()}건 로드 완료`, "success");
       } catch (e) {
-        setStatus(`로드 실패: ${(e as Error).message}`, "error");
+        setStatus(classifyApiError(e), "error");
       }
     } else {
       setEmpStatus("재직자 데이터 로딩 중...", "loading");
@@ -433,8 +457,37 @@ export function initAchievement(): void {
         applyEmpFilterAndRender();
         setEmpStatus(`${empRecords.length}명 로드 완료`, "success");
       } catch (e) {
-        setEmpStatus(`로드 실패: ${(e as Error).message}`, "error");
+        setEmpStatus(classifyApiError(e), "error");
       }
+    }
+  });
+
+  // Excel 다운로드
+  $("achievementExcelBtn")?.addEventListener("click", async () => {
+    if (allRecords.length === 0) {
+      showToast("데이터가 없습니다. 먼저 조회해주세요.", "warning");
+      return;
+    }
+    try {
+      const XLSX = await import("xlsx");
+      const summaries = summarizeByTrainee(allRecords, "", "");
+      const wsData = summaries.map((s) => ({
+        이름: s.이름,
+        과정: s.과정,
+        기수: s.기수,
+        훈련상태: s.훈련상태,
+        "노드 제출": `${s.제출노드수}/${s.총노드수}`,
+        "노드 평균별점": s.노드평균별점,
+        "퀘스트 패스": `${s.패스퀘스트수}/${s.총퀘스트수}`,
+        신호등: s.신호등 === "green" ? "양호" : s.신호등 === "yellow" ? "주의" : "위험",
+      }));
+      const ws = XLSX.utils.json_to_sheet(wsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "학업성취도");
+      XLSX.writeFile(wb, `학업성취도_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      showToast("Excel 다운로드 완료", "success");
+    } catch (e) {
+      showToast(`Excel 생성 실패: ${(e as Error).message}`, "error");
     }
   });
 }
@@ -447,5 +500,7 @@ function restoreFromCache(): void {
   const { courses, cohorts } = extractFilters(allRecords);
   populateFilters(courses, cohorts);
   applyFilterAndRender();
-  setStatus(`${allRecords.length.toLocaleString()}건 (캐시)`, "success");
+  const ts = getAchievementCacheTimestamp();
+  const age = ts ? ` · ${formatCacheAge(ts)}` : "";
+  setStatus(`${allRecords.length.toLocaleString()}건 (캐시${age})`, "success");
 }

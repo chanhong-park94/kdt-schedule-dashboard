@@ -1876,6 +1876,10 @@ dialog::backdrop {
 
 /* --- Print ---------------------------------------------------------- */
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   body {
     margin: 0;
     padding: 0;
@@ -3330,8 +3334,12 @@ tbody tr:hover {
   }
 
   .mobile-bottom-nav-label {
+    font-size: 11px;
     font-weight: 500;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 56px;
   }
 
   /* Add bottom padding to main content so it's not covered by nav */
@@ -7887,4 +7895,119 @@ dialog {
 
 .insights-list li:last-child {
   border-bottom: none;
+}
+
+/* ─── 필터 초기화 버튼 ──────────────────────────────────────── */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-ghost:hover {
+  background: var(--surface-hover);
+}
+
+/* ─── 토스트 알림 ────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards;
+  max-width: 360px;
+}
+.toast.success {
+  background: #ecfdf5;
+  color: #065f46;
+  border-left: 4px solid #10b981;
+}
+.toast.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+}
+.toast.info {
+  background: #dbeafe;
+  color: #1e40af;
+  border-left: 4px solid #3b82f6;
+}
+.toast.warning {
+  background: #fefce8;
+  color: #854d0e;
+  border-left: 4px solid #f59e0b;
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* ─── 오프라인 배너 ──────────────────────────────────────────── */
+.offline-banner {
+  background: #fef3c7;
+  color: #92400e;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid #fbbf24;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10001;
+}
+
+/* ─── 필터 바 공통 ───────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* ─── Skeleton 로딩 ──────────────────────────────────────────── */
+.skeleton-table {
+  padding: 20px;
+}
+.skeleton-row {
+  height: 16px;
+  background: linear-gradient(90deg, var(--surface-hover) 25%, #e8e5ed 50%, var(--surface-hover) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

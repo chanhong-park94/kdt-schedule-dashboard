@@ -12,6 +12,7 @@ import type {
   SatisfactionCache,
 } from "./hrdSatisfactionTypes";
 import { SATISFACTION_CONFIG_KEY, SATISFACTION_CACHE_KEY } from "./hrdSatisfactionTypes";
+import { fetchWithTimeout, classifyApiError } from "./hrdCacheUtils";
 
 // ── 설정 저장/불러오기 ──────────────────────────────────────
 export function loadSatisfactionConfig(): SatisfactionConfig {
@@ -34,6 +35,12 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 export function loadSatisfactionCache(): SatisfactionRecord[] | null {
   const c = _loadCache();
   return c ? c.records : null;
+}
+
+/** 캐시 저장 시점(ms) 반환. 캐시 없거나 만료면 null */
+export function getSatisfactionCacheTimestamp(): number | null {
+  const c = _loadCache();
+  return c ? c.timestamp : null;
 }
 
 function _loadCache(): SatisfactionCache | null {
@@ -62,7 +69,7 @@ async function fetchAction(baseUrl: string, params: Record<string, string>): Pro
   const qs = Object.entries(params)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join("&");
-  const r = await fetch(`${baseUrl}${sep}${qs}`);
+  const r = await fetchWithTimeout(`${baseUrl}${sep}${qs}`, {}, 30_000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
@@ -83,7 +90,7 @@ export async function testSatisfactionConnection(
     const count = json.rowCount ?? json.rows?.length ?? 0;
     return { ok: true, message: `연결 성공! (${count}건 확인)` };
   } catch (e) {
-    return { ok: false, message: `연결 실패: ${(e as Error).message}` };
+    return { ok: false, message: classifyApiError(e) };
   }
 }
 

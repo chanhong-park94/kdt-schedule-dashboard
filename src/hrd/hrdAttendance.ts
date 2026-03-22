@@ -1,4 +1,5 @@
 /** HRD 출결현황 대시보드 */
+import { classifyApiError } from "./hrdCacheUtils";
 import {
   getAssistantSession,
   loadAssistantCodes,
@@ -1577,7 +1578,7 @@ async function fetchAndRender(): Promise<void> {
     if (empty) empty.style.display = "none";
     if (content) content.style.display = "block";
   } catch (e) {
-    if (statusEl) statusEl.textContent = `❌ 조회 실패: ${e instanceof Error ? e.message : String(e)}`;
+    if (statusEl) statusEl.textContent = classifyApiError(e);
   }
 }
 
@@ -1601,6 +1602,19 @@ export function initAttendanceDashboard(): void {
   // Set default date to today
   const dateInput = $("attFilterDate") as HTMLInputElement | null;
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+
+  // 필터 초기화
+  $("attFilterReset")?.addEventListener("click", () => {
+    for (const id of ["attFilterCourse", "attFilterDegr"]) {
+      const el = $(id) as HTMLSelectElement | null;
+      if (el) el.selectedIndex = 0;
+    }
+    const dateInput = $("attFilterDate") as HTMLInputElement | null;
+    if (dateInput) dateInput.value = "";
+    // 뷰 모드 → 전체로 복원
+    document.querySelectorAll("[data-att-view]").forEach((b) => b.classList.remove("active"));
+    document.querySelector("[data-att-view='all']")?.classList.add("active");
+  });
 
   // Query button
   const queryBtn = $("attQueryBtn");

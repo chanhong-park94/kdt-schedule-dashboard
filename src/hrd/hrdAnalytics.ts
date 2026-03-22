@@ -8,6 +8,7 @@ import { Chart, registerables } from "chart.js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readClientEnv } from "../core/env";
 import { loadHrdConfig } from "./hrdConfig";
+import { classifyApiError } from "./hrdCacheUtils";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse, TraineeGender } from "./hrdTypes";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
@@ -1112,13 +1113,14 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
   interface CompGroup {
     course: string;
     degr: string;
+    category: string;
     list: TraineeAnalysis[];
   }
   const groups: CompGroup[] = [];
   for (const d of data) {
     let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
     if (!g) {
-      g = { course: d.courseName, degr: d.degr, list: [] };
+      g = { course: d.courseName, degr: d.degr, category: d.category ?? "", list: [] };
       groups.push(g);
     }
     g.list.push(d);
@@ -1620,13 +1622,13 @@ export function initAnalytics(): void {
   fetchBtn?.addEventListener("click", async () => {
     if (!fetchBtn || !statusEl) return;
     (fetchBtn as HTMLButtonElement).disabled = true;
-    statusEl.textContent = "조회 중...";
+    statusEl.textContent = "📊 데이터 수집 준비 중...";
     statusEl.className = "ana-status ana-status-info";
 
     try {
       destroyCharts();
       analysisData = await collectAnalyticsData((msg) => {
-        statusEl.textContent = msg;
+        statusEl.textContent = `📊 ${msg}`;
       });
 
       if (analysisData.length === 0) {
@@ -1661,7 +1663,7 @@ export function initAnalytics(): void {
       const pdfBtn = $("analyticsPdfBtn") as HTMLButtonElement | null;
       if (pdfBtn) pdfBtn.disabled = false;
     } catch (e) {
-      statusEl.textContent = `❌ ${e instanceof Error ? e.message : "조회 실패"}`;
+      statusEl.textContent = classifyApiError(e);
       statusEl.className = "ana-status ana-status-error";
     } finally {
       (fetchBtn as HTMLButtonElement).disabled = false;

@@ -13,6 +13,7 @@ import type {
   InquiryConfig,
 } from "./hrdInquiryTypes";
 import { INQUIRY_CONFIG_KEY, INQUIRY_CACHE_KEY, INQUIRY_CATEGORIES } from "./hrdInquiryTypes";
+import { fetchWithTimeout } from "./hrdCacheUtils";
 
 // ── 설정 저장/불러오기 (PAT 난독화) ─────────────────────────
 function obfuscate(s: string): string {
@@ -55,6 +56,12 @@ export function loadInquiryCache(): InquiryRecord[] | null {
   return c ? c.records : null;
 }
 
+/** 캐시 저장 시점(ms) 반환. 캐시 없거나 만료면 null */
+export function getInquiryCacheTimestamp(): number | null {
+  const c = _loadCache();
+  return c ? c.timestamp : null;
+}
+
 function _loadCache(): InquiryCache | null {
   try {
     const raw = localStorage.getItem(INQUIRY_CACHE_KEY);
@@ -93,9 +100,9 @@ async function fetchAllRecords<T>(
     params.set("pageSize", "100");
 
     const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?${params}`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { Authorization: `Bearer ${pat}` },
-    });
+    }, 30_000);
 
     if (!res.ok) {
       throw new Error(`Airtable API error: ${res.status} ${res.statusText}`);
@@ -112,7 +119,7 @@ async function fetchAllRecords<T>(
 // ── 연결 테스트 ─────────────────────────────────────────────
 export async function testInquiryConnection(config: InquiryConfig): Promise<string> {
   const url = `https://api.airtable.com/v0/${config.baseId}/${encodeURIComponent("응대")}?maxRecords=1`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     headers: { Authorization: `Bearer ${config.pat}` },
   });
 

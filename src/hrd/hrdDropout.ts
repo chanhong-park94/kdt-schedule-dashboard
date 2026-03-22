@@ -1,4 +1,5 @@
 /** HRD 하차방어율 대시보드 */
+import { classifyApiError } from "./hrdCacheUtils";
 import { Chart, registerables } from "chart.js";
 import { fetchRoster } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
@@ -863,7 +864,7 @@ async function fetchAndRenderDropout(): Promise<void> {
     if (emptyEl) emptyEl.style.display = "none";
     if (contentEl) contentEl.style.display = "block";
   } catch (e) {
-    if (statusEl) statusEl.textContent = `❌ 조회 실패: ${e instanceof Error ? e.message : String(e)}`;
+    if (statusEl) statusEl.textContent = classifyApiError(e);
   }
 }
 
