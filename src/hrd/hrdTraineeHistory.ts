@@ -270,25 +270,31 @@ async function showTraineeDetail(
       }
     }
 
-    // 주차별 출석률 (최근 12주)
+    // 주차별 출석률 (실제 출결 데이터가 있는 기간 기준)
     const weeklyRates: { label: string; rate: number }[] = [];
-    const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - 7 * 12);
-    for (let w = 0; w < 12; w++) {
-      const wStart = new Date(weekStart);
-      wStart.setDate(wStart.getDate() + w * 7);
-      const wEnd = new Date(wStart);
-      wEnd.setDate(wEnd.getDate() + 6);
-      let total = 0,
-        attended = 0;
-      for (const [dateStr, status] of dayMap) {
-        const d = new Date(dateStr);
-        if (d >= wStart && d <= wEnd) {
-          total++;
-          if (isAttendedStatus(status)) attended++;
+    const allDates = [...dayMap.keys()].sort();
+    if (allDates.length > 0) {
+      const firstDate = new Date(allDates[0]);
+      const lastDate = new Date(allDates[allDates.length - 1]);
+      // 첫 출결일 기준 월요일로 정렬
+      const startMonday = new Date(firstDate);
+      startMonday.setDate(startMonday.getDate() - ((startMonday.getDay() + 6) % 7));
+      const totalWeeks = Math.ceil((lastDate.getTime() - startMonday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+      for (let w = 0; w < totalWeeks; w++) {
+        const wStart = new Date(startMonday);
+        wStart.setDate(wStart.getDate() + w * 7);
+        const wEnd = new Date(wStart);
+        wEnd.setDate(wEnd.getDate() + 6);
+        let total = 0, attended = 0;
+        for (const [dateStr, status] of dayMap) {
+          const d = new Date(dateStr);
+          if (d >= wStart && d <= wEnd) {
+            total++;
+            if (isAttendedStatus(status)) attended++;
+          }
         }
+        if (total > 0) weeklyRates.push({ label: `${w + 1}주`, rate: (attended / total) * 100 });
       }
-      weeklyRates.push({ label: `${w + 1}주`, rate: total > 0 ? (attended / total) * 100 : -1 });
     }
 
     // HTML 렌더링
@@ -347,11 +353,10 @@ async function showTraineeDetail(
     // 캘린더 히트맵 렌더링
     renderCalendarHeatmap(dayMap, months);
 
-    // 주차별 바 차트 (CSS 기반 — 스크롤 없이 컴팩트)
-    const validWeeks = weeklyRates.filter((w) => w.rate >= 0);
+    // 주차별 바 차트 (CSS 기반)
     const barsEl = document.getElementById("thWeeklyBars");
-    if (barsEl && validWeeks.length > 0) {
-      barsEl.innerHTML = validWeeks.map((w) => {
+    if (barsEl && weeklyRates.length > 0) {
+      barsEl.innerHTML = weeklyRates.map((w) => {
         const color = w.rate < 70 ? "#ef4444" : w.rate < 80 ? "#f59e0b" : "#10b981";
         return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px">
           <span style="min-width:48px;color:var(--text-muted);text-align:right">${w.label}</span>
