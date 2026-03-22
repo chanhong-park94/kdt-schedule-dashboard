@@ -106,7 +106,7 @@ export async function fetchEmployedRecords(): Promise<EmployedRecord[]> {
 
       return {
         과정명: explicitCourse || parsed.과정명,
-        기수: parsed.기수 !== "99" ? parsed.기수 : String(rawCohort).trim(),
+        기수: parsed.기수,
         성명: String(row[idx("성명")] ?? row[idx("이름")] ?? "").trim(),
         레벨: Number(row[idx("레벨")]) || 0,
         경험치: Number(row[idx("경험치")]) || 0,
