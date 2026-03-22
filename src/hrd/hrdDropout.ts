@@ -23,6 +23,23 @@ let chartInstances: Chart[] = [];
 
 const $ = (id: string) => document.getElementById(id);
 
+/** "훈련중만" 필터 적용된 데이터 반환 */
+function getFilteredData(): DropoutRosterEntry[] {
+  const activeOnly = ($("doActiveOnly") as HTMLInputElement)?.checked ?? false;
+  if (!activeOnly) return dropoutData;
+  const today = new Date();
+  const config = loadHrdConfig();
+  return dropoutData.filter((e) => {
+    const course = config.courses.find((c) => c.trainPrId === e.trainPrId);
+    if (!course?.startDate) return false;
+    const start = new Date(course.startDate);
+    if (start > today) return false; // 아직 개강 전
+    const days = course.totalDays > 0 ? course.totalDays : 180;
+    const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+    return today <= end;
+  });
+}
+
 function destroyCharts(): void {
   chartInstances.forEach((c) => c.destroy());
   chartInstances = [];
@@ -138,19 +155,19 @@ function aggregateEntries(entries: DropoutRosterEntry[], label: string): Dropout
 }
 
 function getOverallSummary(): DropoutSummary {
-  return aggregateEntries(dropoutData, "전체");
+  return aggregateEntries(getFilteredData(), "전체");
 }
 
 function getCategorySummary(cat: CourseCategory): DropoutSummary {
   return aggregateEntries(
-    dropoutData.filter((e) => e.category === cat),
+    getFilteredData().filter((e) => e.category === cat),
     cat,
   );
 }
 
 function getCourseSummaries(): DropoutSummary[] {
   const courseMap = new Map<string, DropoutRosterEntry[]>();
-  for (const e of dropoutData) {
+  for (const e of getFilteredData()) {
     if (!courseMap.has(e.courseName)) courseMap.set(e.courseName, []);
     courseMap.get(e.courseName)!.push(e);
   }
@@ -353,7 +370,7 @@ function renderCategoryDetailTable(category: CourseCategory): void {
   const tbody = $(tbodyId);
   if (!tbody) return;
 
-  const filtered = dropoutData.filter((e) => e.category === category);
+  const filtered = getFilteredData().filter((e) => e.category === category);
   const sorted = sortByStartDateAsc(filtered);
 
   // 과정별 그룹핑
@@ -399,7 +416,7 @@ function populateMonthlyFilters(): void {
 
   // 데이터에서 가용 연도 추출
   const years = new Set<string>();
-  for (const e of dropoutData) {
+  for (const e of getFilteredData()) {
     const y = getEntryYear(e);
     if (y) years.add(y);
   }
@@ -473,7 +490,7 @@ function renderWeeklyTable(): void {
   const targetYear = parseInt(m[1]);
   const targetWeek = parseInt(m[2]);
 
-  const filtered = dropoutData.filter((e) => {
+  const filtered = getFilteredData().filter((e) => {
     if (!e.startDate) return false;
     const d = new Date(e.startDate);
     if (isNaN(d.getTime())) return false;
@@ -501,7 +518,7 @@ function renderCourseChart(): void {
   const summaries = getCourseSummaries().sort((a, b) => b.defenseRate - a.defenseRate);
 
   const catMap = new Map<string, CourseCategory>();
-  for (const e of dropoutData) {
+  for (const e of getFilteredData()) {
     if (!catMap.has(e.courseName)) catMap.set(e.courseName, e.category);
   }
 
@@ -605,7 +622,7 @@ function renderDegrChart(): void {
   if (!canvas) return;
 
   const courseMap = new Map<string, { degr: string; rate: number }[]>();
-  for (const e of dropoutData) {
+  for (const e of getFilteredData()) {
     if (!courseMap.has(e.courseName)) courseMap.set(e.courseName, []);
     courseMap.get(e.courseName)!.push({ degr: e.degr, rate: e.defenseRate });
   }
@@ -753,6 +770,20 @@ export function initDropoutDashboard(): void {
   // Query button
   const queryBtn = $("doQueryBtn");
   queryBtn?.addEventListener("click", fetchAndRenderDropout);
+
+  // "훈련중만" 필터 토글
+  $("doActiveOnly")?.addEventListener("change", () => {
+    if (dropoutData.length > 0) {
+      destroyCharts();
+      renderAllTables();
+      renderCourseChart();
+      renderCategoryChart();
+      renderDegrChart();
+      const filtered = getFilteredData();
+      const statusEl = $("doLoadStatus");
+      if (statusEl) statusEl.textContent = `✅ ${filtered.length}개 기수 표시 중`;
+    }
+  });
 
   // Internal tabs (course/degr/yearly/category/monthly/weekly)
   setupDropoutTabs();
