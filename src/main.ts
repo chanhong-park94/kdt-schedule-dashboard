@@ -2557,6 +2557,11 @@ initAchievement();
 initInquiry();
 initSatisfaction();
 initPatchNotes();
+
+// 모바일 더보기 토글
+document.getElementById("mobileMoreBtn")?.addEventListener("click", () => {
+  document.getElementById("mobileBottomNav")?.classList.toggle("is-expanded");
+});
 initAiTeam();
 initUserGuide();
 
