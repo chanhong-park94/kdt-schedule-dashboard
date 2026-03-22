@@ -98,6 +98,11 @@ export function isDropout(raw: HrdRawTrainee): boolean {
   return stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
 }
 
+function isTraining(raw: HrdRawTrainee): boolean {
+  const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
+  return stNm.includes("훈련중") || stNm.includes("참여중") || stNm === "";
+}
+
 function isActiveCourse(course: { startDate?: string; totalDays?: number }): boolean {
   const dateStr = course.startDate || "";
   if (!dateStr) return true; // 날짜 없으면 포함
@@ -112,12 +117,11 @@ function isActiveCourse(course: { startDate?: string; totalDays?: number }): boo
 
 async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => void, activeOnly = false): Promise<DropoutRosterEntry[]> {
   const results: DropoutRosterEntry[] = [];
-  const courses = activeOnly ? config.courses.filter(isActiveCourse) : config.courses;
-  const total = courses.reduce((sum, c) => sum + c.degrs.length, 0);
+  const total = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
   let done = 0;
 
   // 과정별 순차, 기수별 병렬 (3개씩 배치)
-  for (const course of courses) {
+  for (const course of config.courses) {
     const BATCH = 3;
     for (let i = 0; i < course.degrs.length; i += BATCH) {
       const batch = course.degrs.slice(i, i + BATCH);
@@ -126,6 +130,15 @@ async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => 
           const roster = await fetchRoster(config, course.trainPrId, degr);
           const dropoutCount = roster.filter(isDropout).length;
           const totalCount = roster.length;
+          const hasTraining = roster.some(isTraining);
+
+          // activeOnly: 훈련중 학생이 1명이라도 있는 기수만 포함
+          if (activeOnly && !hasTraining) {
+            done++;
+            onProgress?.(`${done}/${total} 조회 중... (${course.name} ${degr}기 — 종료)`);
+            return;
+          }
+
           results.push({
             courseName: course.name,
             trainPrId: course.trainPrId,
