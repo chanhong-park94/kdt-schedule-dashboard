@@ -17,7 +17,7 @@ interface PatchNote {
 const PATCH_NOTES: PatchNote[] = [
   {
     version: "v2.9.0",
-    date: "2026-03-22",
+    date: "2026-03-22 23:20",
     items: [
       { tag: "feat", text: "토스트 알림 시스템 — 작업 성공/실패 시 우상단 3초 팝업 (4종)" },
       { tag: "feat", text: "필터 초기화 버튼 — 출결·학업성취도·문의응대·만족도 5개 탭" },
