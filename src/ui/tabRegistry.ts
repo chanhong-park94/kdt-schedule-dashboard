@@ -38,6 +38,10 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
     const { initKpiSection } = await import("../kpi/kpiInit");
     initKpiSection();
   }),
+  crossAnalysis: createTabLoader(async () => {
+    const { initCrossAnalysis } = await import("../crossAnalysis/crossAnalysisInit");
+    initCrossAnalysis();
+  }),
 };
 
 export async function ensureTabLoaded(navKey: PrimarySidebarNavKey): Promise<void> {

@@ -29,6 +29,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "achievement",
   "inquiry",
   "satisfaction",
+  "crossAnalysis",
   "settings",
 ];
 
@@ -44,6 +45,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   achievement: "학업성취도",
   inquiry: "문의응대",
   satisfaction: "만족도",
+  crossAnalysis: "교차분석",
   settings: "설정",
 };
 
@@ -59,6 +61,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   achievement: "star",
   inquiry: "chat",
   satisfaction: "heart",
+  crossAnalysis: "compare",
   settings: "settings",
 };
 
@@ -90,6 +93,8 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       traineeHistory: config.labels.traineeHistory,
       achievement: config.labels.achievement,
       inquiry: config.labels.inquiry,
+      satisfaction: config.labels.satisfaction,
+      crossAnalysis: config.labels.crossAnalysis,
       settings: config.labels.settings,
     },
     icons: {
@@ -103,6 +108,8 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       traineeHistory: config.icons.traineeHistory,
       achievement: config.icons.achievement,
       inquiry: config.icons.inquiry,
+      satisfaction: config.icons.satisfaction,
+      crossAnalysis: config.icons.crossAnalysis,
       settings: config.icons.settings,
     },
   };
@@ -150,6 +157,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       achievement: normalizeSidebarMenuLabel("achievement", config.labels.achievement),
       inquiry: normalizeSidebarMenuLabel("inquiry", config.labels.inquiry),
       satisfaction: normalizeSidebarMenuLabel("satisfaction", config.labels.satisfaction),
+      crossAnalysis: normalizeSidebarMenuLabel("crossAnalysis", config.labels.crossAnalysis),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
@@ -164,6 +172,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       achievement: normalizeSidebarMenuIcon("achievement", config.icons.achievement),
       inquiry: normalizeSidebarMenuIcon("inquiry", config.icons.inquiry),
       satisfaction: normalizeSidebarMenuIcon("satisfaction", config.icons.satisfaction),
+      crossAnalysis: normalizeSidebarMenuIcon("crossAnalysis", config.icons.crossAnalysis),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };
@@ -183,6 +192,8 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       traineeHistory: DEFAULT_PRIMARY_SIDEBAR_LABELS.traineeHistory,
       achievement: DEFAULT_PRIMARY_SIDEBAR_LABELS.achievement,
       inquiry: DEFAULT_PRIMARY_SIDEBAR_LABELS.inquiry,
+      satisfaction: DEFAULT_PRIMARY_SIDEBAR_LABELS.satisfaction,
+      crossAnalysis: DEFAULT_PRIMARY_SIDEBAR_LABELS.crossAnalysis,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
@@ -196,6 +207,8 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       traineeHistory: DEFAULT_PRIMARY_SIDEBAR_ICONS.traineeHistory,
       achievement: DEFAULT_PRIMARY_SIDEBAR_ICONS.achievement,
       inquiry: DEFAULT_PRIMARY_SIDEBAR_ICONS.inquiry,
+      satisfaction: DEFAULT_PRIMARY_SIDEBAR_ICONS.satisfaction,
+      crossAnalysis: DEFAULT_PRIMARY_SIDEBAR_ICONS.crossAnalysis,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
     },
   };
@@ -251,6 +264,22 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
           ? parsed.labels.traineeHistory
           : fallback.labels.traineeHistory,
       ),
+      achievement: normalizeSidebarMenuLabel(
+        "achievement",
+        typeof parsed.labels?.achievement === "string" ? parsed.labels.achievement : fallback.labels.achievement,
+      ),
+      inquiry: normalizeSidebarMenuLabel(
+        "inquiry",
+        typeof parsed.labels?.inquiry === "string" ? parsed.labels.inquiry : fallback.labels.inquiry,
+      ),
+      satisfaction: normalizeSidebarMenuLabel(
+        "satisfaction",
+        typeof parsed.labels?.satisfaction === "string" ? parsed.labels.satisfaction : fallback.labels.satisfaction,
+      ),
+      crossAnalysis: normalizeSidebarMenuLabel(
+        "crossAnalysis",
+        typeof parsed.labels?.crossAnalysis === "string" ? parsed.labels.crossAnalysis : fallback.labels.crossAnalysis,
+      ),
       settings: normalizeSidebarMenuLabel(
         "settings",
         typeof parsed.labels?.settings === "string" ? parsed.labels.settings : fallback.labels.settings,
@@ -289,6 +318,22 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
       traineeHistory: normalizeSidebarMenuIcon(
         "traineeHistory",
         typeof parsed.icons?.traineeHistory === "string" ? parsed.icons.traineeHistory : fallback.icons.traineeHistory,
+      ),
+      achievement: normalizeSidebarMenuIcon(
+        "achievement",
+        typeof parsed.icons?.achievement === "string" ? parsed.icons.achievement : fallback.icons.achievement,
+      ),
+      inquiry: normalizeSidebarMenuIcon(
+        "inquiry",
+        typeof parsed.icons?.inquiry === "string" ? parsed.icons.inquiry : fallback.icons.inquiry,
+      ),
+      satisfaction: normalizeSidebarMenuIcon(
+        "satisfaction",
+        typeof parsed.icons?.satisfaction === "string" ? parsed.icons.satisfaction : fallback.icons.satisfaction,
+      ),
+      crossAnalysis: normalizeSidebarMenuIcon(
+        "crossAnalysis",
+        typeof parsed.icons?.crossAnalysis === "string" ? parsed.icons.crossAnalysis : fallback.icons.crossAnalysis,
       ),
       settings: normalizeSidebarMenuIcon(
         "settings",
