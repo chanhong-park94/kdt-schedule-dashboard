@@ -98,15 +98,7 @@ export function matchStudentData(
   // 성취도 데이터를 훈련생별로 집계 (필터 없이 전체)
   const summaries = summarizeByTrainee(achievementRecords, "", "");
 
-  // 이름 기준 맵 생성 (성취도)
-  const achievementMap = new Map<string, TraineeAchievementSummary>();
-  for (const s of summaries) {
-    const key = s.이름.trim();
-    // 동명이인 방지: 과정+기수 조합 키
-    achievementMap.set(`${key}|${s.과정}|${s.기수}`, s);
-  }
-
-  // 이름 단순 매칭용 보조 맵 (과정/기수 정보 없는 경우 fallback)
+  // 이름 기준 매칭 맵
   const achievementByName = new Map<string, TraineeAchievementSummary>();
   for (const s of summaries) {
     achievementByName.set(s.이름.trim(), s);

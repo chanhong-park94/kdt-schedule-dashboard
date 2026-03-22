@@ -42,23 +42,21 @@ function hexToRgba(hex: string, alpha: number): string {
  * 신호등(green/yellow/red) 별로 데이터셋을 분리하여 범례 표시.
  */
 export function renderScatterChart(canvas: HTMLCanvasElement, students: StudentCrossData[]): Chart {
-  // 신호등별 분류
-  const greenData: { x: number; y: number }[] = [];
-  const yellowData: { x: number; y: number }[] = [];
-  const redData: { x: number; y: number }[] = [];
-
-  // 툴팁에서 학생 정보를 조회하기 위한 맵 (key: "x,y")
-  const dataMap = new Map<string, StudentCrossData>();
+  // 신호등별 분류 + 원본 학생 참조 보존
+  const greenStudents: StudentCrossData[] = [];
+  const yellowStudents: StudentCrossData[] = [];
+  const redStudents: StudentCrossData[] = [];
 
   for (const s of students) {
-    const point = { x: s.attendanceRate, y: s.compositeScore };
-    const key = `${s.attendanceRate},${s.compositeScore}`;
-    dataMap.set(key, s);
-
-    if (s.신호등 === "green") greenData.push(point);
-    else if (s.신호등 === "yellow") yellowData.push(point);
-    else redData.push(point);
+    if (s.신호등 === "green") greenStudents.push(s);
+    else if (s.신호등 === "yellow") yellowStudents.push(s);
+    else redStudents.push(s);
   }
+
+  // 데이터셋 인덱스(1,2,3) → 학생 배열 매핑 (0번은 기준선)
+  const studentsByDataset: StudentCrossData[][] = [[], greenStudents, yellowStudents, redStudents];
+
+  const toPoints = (arr: StudentCrossData[]) => arr.map((s) => ({ x: s.attendanceRate, y: s.compositeScore }));
 
   // 대각선 기준선 (y = x) — 별도 line 데이터셋으로 표현
   const refLine = [
@@ -83,21 +81,21 @@ export function renderScatterChart(canvas: HTMLCanvasElement, students: StudentC
         },
         {
           label: "우수 (Green)",
-          data: greenData,
+          data: toPoints(greenStudents),
           backgroundColor: COLOR_GREEN,
           pointRadius: 6,
           pointHoverRadius: 8,
         },
         {
           label: "주의 (Yellow)",
-          data: yellowData,
+          data: toPoints(yellowStudents),
           backgroundColor: COLOR_YELLOW,
           pointRadius: 6,
           pointHoverRadius: 8,
         },
         {
           label: "위험 (Red)",
-          data: redData,
+          data: toPoints(redStudents),
           backgroundColor: COLOR_RED,
           pointRadius: 6,
           pointHoverRadius: 8,
@@ -135,7 +133,9 @@ export function renderScatterChart(canvas: HTMLCanvasElement, students: StudentC
         tooltip: {
           callbacks: {
             label(ctx) {
-              const student = dataMap.get(`${ctx.parsed.x},${ctx.parsed.y}`);
+              const dsIdx = ctx.datasetIndex;
+              const ptIdx = ctx.dataIndex;
+              const student = studentsByDataset[dsIdx]?.[ptIdx];
               if (!student) return "";
               return `${student.이름} (${student.기수}) - 출결 ${student.attendanceRate.toFixed(1)}%, 성취 ${student.compositeScore.toFixed(1)}`;
             },

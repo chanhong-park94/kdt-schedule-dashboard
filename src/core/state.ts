@@ -175,6 +175,9 @@ function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
     value === "analytics" ||
     value === "traineeHistory" ||
     value === "achievement" ||
+    value === "inquiry" ||
+    value === "satisfaction" ||
+    value === "crossAnalysis" ||
     value === "settings"
   );
 }
@@ -210,6 +213,9 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "analytics",
     "traineeHistory",
     "achievement",
+    "inquiry",
+    "satisfaction",
+    "crossAnalysis",
     "settings",
   ];
 

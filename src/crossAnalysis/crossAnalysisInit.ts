@@ -26,6 +26,11 @@ function $(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
 
+/** XSS 방지: HTML 특수문자 이스케이프 */
+function esc(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // ── State ──────────────────────────────────────────────────
 
 let scatterChart: Chart | null = null;
@@ -75,6 +80,23 @@ function setupSubTabs(): void {
 
 // ── 필터 채우기 ───────────────────────────────────────────
 
+function fillSelect(select: HTMLSelectElement, placeholder: string, items: string[]): void {
+  const prev = select.value;
+  select.innerHTML = "";
+  const def = document.createElement("option");
+  def.value = "";
+  def.textContent = placeholder;
+  select.appendChild(def);
+  for (const item of items) {
+    const opt = document.createElement("option");
+    opt.value = item;
+    opt.textContent = item;
+    select.appendChild(opt);
+  }
+  // 이전 선택 복원
+  if (prev && items.includes(prev)) select.value = prev;
+}
+
 function populateFilters(students: StudentCrossData[]): void {
   const courses = [...new Set(students.map((s) => s.과정))].sort();
   const cohorts = [...new Set(students.map((s) => s.기수))].sort();
@@ -83,24 +105,9 @@ function populateFilters(students: StudentCrossData[]): void {
   const cohortSelect = $("crossFilterCohort") as HTMLSelectElement | null;
   const cohortCourseSelect = $("crossCohortFilterCourse") as HTMLSelectElement | null;
 
-  if (courseSelect) {
-    courseSelect.innerHTML = '<option value="">전체 과정</option>';
-    for (const c of courses) {
-      courseSelect.innerHTML += `<option value="${c}">${c}</option>`;
-    }
-  }
-  if (cohortSelect) {
-    cohortSelect.innerHTML = '<option value="">전체 기수</option>';
-    for (const c of cohorts) {
-      cohortSelect.innerHTML += `<option value="${c}">${c}</option>`;
-    }
-  }
-  if (cohortCourseSelect) {
-    cohortCourseSelect.innerHTML = '<option value="">전체 과정</option>';
-    for (const c of courses) {
-      cohortCourseSelect.innerHTML += `<option value="${c}">${c}</option>`;
-    }
-  }
+  if (courseSelect) fillSelect(courseSelect, "전체 과정", courses);
+  if (cohortSelect) fillSelect(cohortSelect, "전체 기수", cohorts);
+  if (cohortCourseSelect) fillSelect(cohortCourseSelect, "전체 과정", courses);
 }
 
 // ── 학생 교차분석 렌더링 ──────────────────────────────────
@@ -166,8 +173,8 @@ function renderCohortAnalysis(cohorts: CohortCrossData[], students: StudentCross
     tbody.innerHTML = cohorts
       .map(
         (c) => `<tr>
-          <td>${c.과정명}</td>
-          <td>${c.기수}</td>
+          <td>${esc(c.과정명)}</td>
+          <td>${esc(c.기수)}</td>
           <td>${c.인원}명</td>
           <td>${c.avgAttendanceRate.toFixed(1)}%</td>
           <td>${c.greenRate.toFixed(1)}%</td>
@@ -184,7 +191,7 @@ function renderCohortAnalysis(cohorts: CohortCrossData[], students: StudentCross
   const insights = generateInsights(students, cohorts, studentStats);
   const insightsList = $("crossInsightsList");
   if (insightsList) {
-    insightsList.innerHTML = insights.map((text) => `<li>💡 ${text}</li>`).join("");
+    insightsList.innerHTML = insights.map((text) => `<li>💡 ${esc(text)}</li>`).join("");
   }
 }
 
@@ -212,8 +219,8 @@ function onHeatmapCellClick(cell: HeatmapCell): void {
   tbody.innerHTML = cell.students
     .map(
       (s) => `<tr>
-        <td>${s.이름}</td>
-        <td>${s.기수}</td>
+        <td>${esc(s.이름)}</td>
+        <td>${esc(s.기수)}</td>
         <td>${s.attendanceRate.toFixed(1)}%</td>
         <td>${s.compositeScore.toFixed(1)}</td>
         <td>${signalBadge(s.신호등)}</td>
@@ -249,8 +256,14 @@ async function runAnalysis(): Promise<void> {
   const courseFilter = ($("crossFilterCourse") as HTMLSelectElement | null)?.value ?? "";
   const cohortFilter = ($("crossFilterCohort") as HTMLSelectElement | null)?.value ?? "";
 
-  // 학생 매칭
-  let studentData = matchStudentData(attendanceStudents, achievementRecords);
+  // 학생 매칭 (전체)
+  const allStudentData = matchStudentData(attendanceStudents, achievementRecords);
+
+  // 필터 채우기 (전체 데이터 기준 — 필터 적용 전)
+  populateFilters(allStudentData);
+
+  // 필터 적용
+  let studentData = allStudentData;
   if (courseFilter) studentData = studentData.filter((s) => s.과정 === courseFilter);
   if (cohortFilter) studentData = studentData.filter((s) => s.기수 === cohortFilter);
   currentStudentData = studentData;
@@ -260,9 +273,6 @@ async function runAnalysis(): Promise<void> {
   let cohortData = matchCohortData(studentData, satisfactionRecords);
   if (cohortCourseFilter) cohortData = cohortData.filter((c) => c.과정명 === cohortCourseFilter);
   currentCohortData = cohortData;
-
-  // 필터 채우기
-  populateFilters(studentData);
 
   // 렌더링
   renderStudentAnalysis(studentData);
