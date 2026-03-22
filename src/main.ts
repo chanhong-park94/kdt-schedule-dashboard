@@ -1,34 +1,17 @@
 import "./style.css";
 
-declare global {
-  interface Window {
-    __kpiAllData: KpiAllData | null;
-  }
-}
 import {
   findAssistantCode,
   getAssistantSession,
   setAssistantSession,
   clearAssistantSession,
 } from "./auth/assistantAuth";
-import { initAttendanceDashboard } from "./hrd/hrdAttendance";
-import { initAnalytics } from "./hrd/hrdAnalytics";
-import { initDropoutDashboard } from "./hrd/hrdDropout";
-import { initDashboard } from "./hrd/hrdDashboard";
-import { initTraineeHistory } from "./hrd/hrdTraineeHistory";
 import { initAssistantCheck } from "./hrd/hrdAssistantCheck";
 import { initContacts } from "./hrd/hrdContactsUI";
 import { initExcusedAbsence } from "./hrd/hrdExcusedAbsence";
-import { initAchievement } from "./hrd/hrdAchievement";
-import { initInquiry } from "./hrd/hrdInquiry";
-import { initSatisfaction } from "./hrd/hrdSatisfaction";
 import { initPatchNotes } from "./ui/patchNotes";
 import { initAiTeam } from "./ui/aiTeam";
 import { initUserGuide } from "./ui/userGuide";
-import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from "./kpi/kpiSheets";
-import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
-import { printKpiReport } from "./kpi/kpiPdf";
-import type { KpiAllData, KpiConfig } from "./kpi/kpiTypes";
 import { createTableElement } from "./ui/utils/dom";
 import { domRefs } from "./ui/domRefs";
 import { generateSchedule } from "./core/calendar";
@@ -2544,18 +2527,10 @@ if (headerLogoutBtn) {
   headerLogoutBtn.addEventListener("click", handleLogout);
 }
 
-// HRD dashboards (attendance + dropout defense)
-initAttendanceDashboard();
-initDropoutDashboard();
-initAnalytics();
-initDashboard();
-initTraineeHistory();
+// HRD small modules (kept eagerly — settings tab dependencies)
 initAssistantCheck();
 initContacts();
 initExcusedAbsence();
-initAchievement();
-initInquiry();
-initSatisfaction();
 initPatchNotes();
 
 // 모바일 더보기 토글
@@ -2565,174 +2540,8 @@ document.getElementById("mobileMoreBtn")?.addEventListener("click", () => {
 initAiTeam();
 initUserGuide();
 
-// ─── 출결현황 / 하차방어율 상위 탭 전환 ───
-// ─── KPI 자율성과지표 Google Sheets 연동 ───
-(() => {
-  let kpiData: KpiAllData | null = null;
-  const statusEl = document.getElementById("kpiUploadStatus");
-  const connectStatusEl = document.getElementById("kpiConnectStatus");
-  const connectUrlInput = document.getElementById("kpiConnectUrl") as HTMLInputElement | null;
-  const connectModeSelect = document.getElementById("kpiConnectMode") as HTMLSelectElement | null;
-
-  // KPI 탭 전환 초기화
-  initKpiTabs();
-
-  function setStatus(el: HTMLElement | null, msg: string, type: "success" | "error" | "loading" = "loading") {
-    if (!el) return;
-    el.textContent = msg;
-    el.className = `kpi-connect-status ${type}`;
-  }
-
-  // 저장된 설정 로드 & UI 반영
-  const savedConfig = loadKpiConfig();
-  if (connectUrlInput && savedConfig.webAppUrl) {
-    connectUrlInput.value = savedConfig.webAppUrl;
-    if (connectModeSelect) connectModeSelect.value = "appsscript";
-  } else if (connectUrlInput && savedConfig.spreadsheetId) {
-    connectUrlInput.value = savedConfig.spreadsheetId;
-    if (connectModeSelect) connectModeSelect.value = "published";
-  }
-
-  function getConfigFromForm(): KpiConfig {
-    const mode = connectModeSelect?.value ?? "appsscript";
-    const val = connectUrlInput?.value.trim() ?? "";
-    if (mode === "appsscript") {
-      return { webAppUrl: val, spreadsheetId: "" };
-    } else {
-      // URL에서 스프레드시트 ID 추출
-      const match = val.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      return { webAppUrl: "", spreadsheetId: match ? match[1] : val };
-    }
-  }
-
-  // 연결 테스트
-  document.getElementById("kpiConnectTestBtn")?.addEventListener("click", async () => {
-    const config = getConfigFromForm();
-    setStatus(connectStatusEl, "연결 테스트 중...", "loading");
-    const result = await testKpiConnection(config);
-    setStatus(connectStatusEl, result.message, result.ok ? "success" : "error");
-  });
-
-  // 저장 후 불러오기
-  document.getElementById("kpiConnectSaveBtn")?.addEventListener("click", async () => {
-    const config = getConfigFromForm();
-    if (!config.webAppUrl && !config.spreadsheetId) {
-      setStatus(connectStatusEl, "URL 또는 스프레드시트 ID를 입력하세요.", "error");
-      return;
-    }
-    saveKpiConfig(config);
-    setStatus(connectStatusEl, "설정 저장됨. 데이터 불러오는 중...", "loading");
-    await loadKpiDataAndRender(config);
-  });
-
-  // 데이터 불러오기 버튼
-  document.getElementById("kpiLoadBtn")?.addEventListener("click", async () => {
-    const config = loadKpiConfig();
-    if (!config.webAppUrl && !config.spreadsheetId) {
-      if (statusEl) statusEl.textContent = "⚠️ Google Sheets 연결 설정을 먼저 해주세요.";
-      return;
-    }
-    if (statusEl) statusEl.textContent = "데이터 불러오는 중...";
-    await loadKpiDataAndRender(config);
-  });
-
-  // PDF 리포트
-  document.getElementById("kpiPdfBtn")?.addEventListener("click", () => {
-    if (!kpiData) {
-      alert("데이터를 먼저 불러오세요.");
-      return;
-    }
-    const course = (document.getElementById("kpiFilterCourse") as HTMLSelectElement)?.value ?? "all";
-    const cohort = (document.getElementById("kpiFilterCohort") as HTMLSelectElement)?.value ?? "all";
-    printKpiReport(kpiData, course, cohort);
-  });
-
-  // 초기화
-  document.getElementById("kpiClearBtn")?.addEventListener("click", () => {
-    kpiData = null;
-    window.__kpiAllData = null;
-    resetKpiDashboard();
-    if (statusEl) statusEl.textContent = "";
-  });
-
-  // 필터 변경
-  document.getElementById("kpiFilterCourse")?.addEventListener("change", () => applyFilters());
-  document.getElementById("kpiFilterCohort")?.addEventListener("change", () => applyFilters());
-
-  function applyFilters() {
-    if (!kpiData) return;
-    const course = (document.getElementById("kpiFilterCourse") as HTMLSelectElement)?.value ?? "all";
-    const cohort = (document.getElementById("kpiFilterCohort") as HTMLSelectElement)?.value ?? "all";
-    renderKpiDashboard(kpiData, course, cohort);
-  }
-
-  async function loadKpiDataAndRender(config: KpiConfig) {
-    try {
-      kpiData = await fetchKpiData(config);
-      window.__kpiAllData = kpiData;
-      populateFilters(kpiData);
-      renderKpiDashboard(kpiData);
-      if (statusEl) statusEl.textContent = `✅ ${kpiData.achievement.length}명 학습자 데이터 로드 완료`;
-      setStatus(connectStatusEl, `✅ 연결 완료! ${kpiData.achievement.length}명 데이터 로드`, "success");
-    } catch (e) {
-      const msg = `❌ 데이터 로드 실패: ${(e as Error).message}`;
-      if (statusEl) statusEl.textContent = msg;
-      setStatus(connectStatusEl, msg, "error");
-    }
-  }
-
-  // 저장된 설정이 있으면 자동 로드
-  if (savedConfig.webAppUrl || savedConfig.spreadsheetId) {
-    void loadKpiDataAndRender(savedConfig);
-  }
-})();
-
-// ─── 주간 운영회의 보고팩 ───
-import { printWeeklyOpsReport, checkDataAvailability, getWeekLabel } from "./reports/weeklyOpsReport";
-
-(() => {
-  const generateBtn = document.getElementById("weeklyReportGenerateBtn");
-  const statusEl = document.getElementById("weeklyReportStatus");
-  const dataStatusEl = document.getElementById("weeklyReportDataStatus");
-  const page3Check = document.getElementById("weeklyReportPage3") as HTMLInputElement | null;
-  const page4Check = document.getElementById("weeklyReportPage4") as HTMLInputElement | null;
-  const page5Check = document.getElementById("weeklyReportPage5") as HTMLInputElement | null;
-
-  function updateDataStatus(): void {
-    if (!dataStatusEl) return;
-    const avail = checkDataAvailability();
-    const kpiLoaded = window.__kpiAllData != null;
-    const indicator = (ok: boolean, label: string) =>
-      `<div class="weekly-report-indicator ${ok ? "is-ok" : "is-missing"}">${ok ? "✅" : "⚠️"} ${label} ${ok ? "준비됨" : "없음"}</div>`;
-    dataStatusEl.innerHTML = [
-      indicator(avail.hasAttendance, "출결 데이터"),
-      indicator(avail.hasDropout, "하차방어율 데이터"),
-      indicator(avail.hasAnalytics, "훈련생 분석 데이터"),
-      indicator(kpiLoaded, "KPI 데이터"),
-    ].join("");
-  }
-
-  const header = document.querySelector("#settingsWeeklyReport .settings-section-header");
-  header?.addEventListener("click", () => setTimeout(updateDataStatus, 50));
-
-  generateBtn?.addEventListener("click", () => {
-    updateDataStatus();
-    const config = {
-      includePage3: page3Check?.checked ?? true,
-      includePage4: page4Check?.checked ?? true,
-      includePage5: page5Check?.checked ?? false,
-      reportDate: new Date().toISOString().slice(0, 10),
-      reportWeekLabel: getWeekLabel(new Date()),
-    };
-    if (!config.includePage3 && !config.includePage4 && !config.includePage5) {
-      if (statusEl) statusEl.textContent = "⚠️ 최소 1개 페이지를 선택하세요.";
-      return;
-    }
-    if (statusEl) statusEl.textContent = "보고팩 생성 중...";
-    printWeeklyOpsReport(config, window.__kpiAllData ?? null);
-    if (statusEl) statusEl.textContent = `✅ 보고팩 생성 완료 (${new Date().toLocaleTimeString()})`;
-  });
-})();
+// ─── 주간 운영회의 보고팩 (lazy — settings 탭 내부) ───
+void import("./reports/reportsInit").then(({ initWeeklyReport }) => initWeeklyReport());
 
 if (hasAuthSession) {
   void bootstrapAppAfterAuthLogin();

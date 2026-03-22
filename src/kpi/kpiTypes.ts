@@ -118,3 +118,9 @@ export interface KpiConfig {
 }
 
 export const KPI_CONFIG_KEY = "kdt_kpi_config_v1";
+
+declare global {
+  interface Window {
+    __kpiAllData: KpiAllData | null;
+  }
+}
