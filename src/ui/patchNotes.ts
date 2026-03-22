@@ -16,6 +16,34 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v2.7.0",
+    date: "2026-03-22",
+    items: [
+      { tag: "feat", text: "학업성취도(실업자) 필터 강화 — 훈련상태/신호등 필터 + 50명 페이지네이션" },
+      { tag: "feat", text: "업무 가이드 모달 — 📖 12개 탭별 사용법·팁·설정 안내" },
+      { tag: "feat", text: "하차방어율 이탈 위험 히트맵 + Top 10 리스트 (도넛 차트 교체)" },
+      { tag: "fix", text: "훈련생분석 진행중/종강 분류 — 명단 훈련상태 기반 판단" },
+      { tag: "fix", text: "주차별 출석률 추이 — 1주차부터 정확히 표시" },
+      { tag: "improve", text: "훈련생이력 상세 패널 — 2열 레이아웃 (캘린더+차트)" },
+      { tag: "improve", text: "주차별 출석률 차트 → CSS 바 차트 (스크롤 문제 해결)" },
+    ],
+  },
+  {
+    version: "v2.6.0",
+    date: "2026-03-22",
+    items: [
+      { tag: "feat", text: "헤더 로그아웃 버튼 추가" },
+      { tag: "feat", text: "AI 에이전트 팀소개 (설정 탭, 14명 팀)" },
+      { tag: "feat", text: "하차방어율 '훈련중만' 필터 — 훈련상태 기반" },
+      { tag: "fix", text: "데이터의사결정 4기 조회 누락 수정" },
+      { tag: "fix", text: "Edge Function URL 더블 슬래시 방지" },
+      { tag: "fix", text: "출결현황 뷰 모드(전체/월별/일별) 실제 필터 연결" },
+      { tag: "improve", text: "기수별 하차방어율 추이 차트 확대 (전체 너비, 400px)" },
+      { tag: "improve", text: "모바일 하단 네비 스크롤 + 문의응대/만족도 탭 추가" },
+      { tag: "improve", text: "터치 타겟 44px (iOS 가이드라인)" },
+    ],
+  },
+  {
     version: "v2.5.0",
     date: "2026-03-22",
     items: [
