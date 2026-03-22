@@ -30,11 +30,14 @@ function getFilteredData(): DropoutRosterEntry[] {
   const today = new Date();
   const config = loadHrdConfig();
   return dropoutData.filter((e) => {
+    // 개강일: entry 자체 startDate → config startDate 순으로 확인
     const course = config.courses.find((c) => c.trainPrId === e.trainPrId);
-    if (!course?.startDate) return false;
-    const start = new Date(course.startDate);
-    if (start > today) return false; // 아직 개강 전
-    const days = course.totalDays > 0 ? course.totalDays : 180;
+    const dateStr = e.startDate || course?.startDate || "";
+    if (!dateStr) return true; // 날짜 정보 없으면 포함 (제외하지 않음)
+    const start = new Date(dateStr);
+    if (isNaN(start.getTime())) return true;
+    if (start > today) return true; // 개강 예정도 포함
+    const days = course?.totalDays && course.totalDays > 0 ? course.totalDays : 180;
     const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
     return today <= end;
   });
