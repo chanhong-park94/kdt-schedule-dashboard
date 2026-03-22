@@ -1,5 +1,6 @@
 import { appState, type PrimarySidebarNavKey } from "../appState";
 import { domRefs } from "../domRefs";
+import { ensureTabLoaded } from "../tabRegistry";
 import { isPrimarySidebarNavKey } from "./sidebarMenu";
 
 export type ActivatePrimaryPageOptions = {
@@ -120,6 +121,7 @@ export function activatePrimarySidebarPage(
   appState.activePrimarySidebarPage = navKey;
   setJibbleSidebarActive(navKey);
   setPageGroupVisibility(navKey);
+  void ensureTabLoaded(navKey);
 
   // 설정 페이지에 과정 정보입력(management) 콘텐츠가 통합됨
   const showManagement = navKey === "settings";
