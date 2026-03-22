@@ -1499,6 +1499,18 @@ function getSelectedCourse(): HrdCourse | undefined {
   return currentConfig.courses.find((c) => c.trainPrId === courseSelect.value);
 }
 
+// ─── View Mode Helper ────────────────────────────────────────
+
+function getViewMode(): "all" | "monthly" | "daily" {
+  const active = document.querySelector("[data-att-view].active") as HTMLElement | null;
+  return (active?.dataset.attView as "all" | "monthly" | "daily") || "all";
+}
+
+/** 뷰 모드 변경 시 자동 재조회 */
+function reRenderWithViewMode(): void {
+  fetchAndRender();
+}
+
 // ─── Main Data Fetch ────────────────────────────────────────
 
 async function fetchAndRender(): Promise<void> {
@@ -1533,8 +1545,10 @@ async function fetchAndRender(): Promise<void> {
     // Build cumulative records
     allDailyRecords = buildAllDailyRecords(daily);
 
-    // Build students
-    currentStudents = buildStudents(roster, daily, date, course, tid, deg);
+    // Build students — 뷰 모드에 따라 selectedDate 결정
+    const viewMode = getViewMode();
+    const selectedDate = viewMode === "daily" ? date : ""; // 전체/월별은 일별 필터 없음
+    currentStudents = buildStudents(roster, daily, selectedDate, course, tid, deg);
 
     // Calculate metrics
     const metrics = calculateMetrics(currentStudents);
@@ -1551,7 +1565,8 @@ async function fetchAndRender(): Promise<void> {
     renderPatternChart(patterns);
     renderPatternInsights(patterns);
 
-    if (statusEl) statusEl.textContent = `✅ ${roster.length}명 조회 완료 (${date})`;
+    const viewLabel = viewMode === "daily" ? `일별 (${date})` : viewMode === "monthly" ? `월별 (${month.slice(0, 4)}-${month.slice(4)})` : "전체";
+    if (statusEl) statusEl.textContent = `✅ ${roster.length}명 조회 완료 — ${viewLabel}`;
 
     // Update risk management button
     updateRiskButton();
@@ -1597,12 +1612,13 @@ export function initAttendanceDashboard(): void {
     renderTable(currentStudents, searchInput.value);
   });
 
-  // View mode buttons
+  // View mode buttons — 뷰 전환 시 자동 재조회
   document.querySelectorAll("[data-att-view]").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("[data-att-view]").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      // View mode changes will affect date range in fetchAndRender
+      // 데이터가 이미 로드되어 있으면 뷰 모드만 변경하여 재렌더
+      if (currentStudents.length > 0) reRenderWithViewMode();
     });
   });
 
