@@ -19,10 +19,10 @@
   /* Text Colors */
   --text: #1e1e2e;
   --text-strong: #0f0f1a;
-  --text-secondary: #6b7280;
-  --muted: #9ca3af;
-  --text-muted: #9ca3af;
-  --text-tertiary: #9ca3af;
+  --text-secondary: #555e6e;
+  --muted: #6b7280;
+  --text-muted: #6b7280;
+  --text-tertiary: #6b7280;
 
   /* Brand / Primary — Indigo */
   --primary: #6366f1;
