@@ -102,9 +102,10 @@ src/
 - CSS: data-theme light, text-secondary AA 충족, 하드코딩 100건 변수 교체
 - 모바일: 네비 그룹핑 (5개+더보기), 터치 타겟 44px
 - 스킬 6개: ux-review, data-analyst, hwpx, security-audit, perf-optimizer, frontend-design
+- 코드 스플리팅: 탭별 동적 import (777KB → 531KB, 18개 청크), tabLoader + tabRegistry 패턴
 
 ### 🔜 다음 작업
-1. **탭별 동적 import** — 번들 777KB → ~250KB 코드 스플리팅
+1. **main.ts 추가 분리** — 531KB → 500KB 이하 (generator 로직 모듈화)
 2. **교차분석** — 출결↔학업성취도↔만족도 상관관계 분석
 3. **HWPX/XLSX 내보내기** — 한글 공문서 + 엑셀 리포트
 4. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
