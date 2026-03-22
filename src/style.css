@@ -1438,6 +1438,38 @@ tbody tr:nth-child(even):hover {
   }
 }
 
+/* Tab lazy-loading indicator */
+.tab-loading-indicator {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.tab-loading-indicator.is-visible {
+  display: flex;
+}
+
+.tab-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
 /* --- Muted Link ----------------------------------------------------- */
 .muted-link {
   margin-left: 6px;

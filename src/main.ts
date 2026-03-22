@@ -9,9 +9,6 @@ import {
 import { initAssistantCheck } from "./hrd/hrdAssistantCheck";
 import { initContacts } from "./hrd/hrdContactsUI";
 import { initExcusedAbsence } from "./hrd/hrdExcusedAbsence";
-import { initPatchNotes } from "./ui/patchNotes";
-import { initAiTeam } from "./ui/aiTeam";
-import { initUserGuide } from "./ui/userGuide";
 import { createTableElement } from "./ui/utils/dom";
 import { domRefs } from "./ui/domRefs";
 import { generateSchedule } from "./core/calendar";
@@ -2531,14 +2528,15 @@ if (headerLogoutBtn) {
 initAssistantCheck();
 initContacts();
 initExcusedAbsence();
-initPatchNotes();
+// Lazy-load modal UI modules
+void import("./ui/patchNotes").then(({ initPatchNotes }) => initPatchNotes());
+void import("./ui/aiTeam").then(({ initAiTeam }) => initAiTeam());
+void import("./ui/userGuide").then(({ initUserGuide }) => initUserGuide());
 
 // 모바일 더보기 토글
 document.getElementById("mobileMoreBtn")?.addEventListener("click", () => {
   document.getElementById("mobileBottomNav")?.classList.toggle("is-expanded");
 });
-initAiTeam();
-initUserGuide();
 
 // ─── 주간 운영회의 보고팩 (lazy — settings 탭 내부) ───
 void import("./reports/reportsInit").then(({ initWeeklyReport }) => initWeeklyReport());
