@@ -37,8 +37,12 @@ src/
 │   ├── hrdSatisfaction*.ts   # 만족도 (Apps Script)
 │   └── hrd*.ts               # 출결, 분석, 이탈, Slack 알림 등
 ├── kpi/           # KPI 리포트 + PDF
+│   └── kpiInit.ts            # KPI 탭 초기화 (lazy-load 진입점)
 ├── ui/            # UI 레이어 (domRefs, events, appState, features/)
+│   ├── tabLoader.ts          # createTabLoader() — 캐시 기반 lazy load 헬퍼
+│   └── tabRegistry.ts        # ensureTabLoaded() — 탭별 dynamic import 매핑
 ├── reports/       # 보고서
+│   └── reportsInit.ts        # 주간보고팩 초기화 (lazy-load 진입점)
 ├── main.ts        # 앱 진입점
 ├── index.html     # SPA 메인 HTML
 └── style.css      # 전역 스타일 (~7500줄, 라이트 모드 기본)
@@ -65,6 +69,7 @@ src/
 - `as const` 패턴으로 타입 안전성 확보
 - 기존 코드 패턴을 먼저 읽고 변경
 - 재직자 기수 코드: 10의 자리=과정(0→LLM, 1→데이터, 2→기획/개발), 1의 자리=기수번호 (`parseCohortCode()` in `hrdEmployedApi.ts`)
+- 새 탭 추가 시 lazy-load 패턴: ① `src/[module]/[name]Init.ts` 생성 → ② `tabRegistry.ts`에 `createTabLoader()` 항목 등록 → ③ main.ts에 정적 import 추가 금지
 
 ## 빌드 & 배포
 - Vite root: `src/`, base: `/kdt-schedule-dashboard/`
