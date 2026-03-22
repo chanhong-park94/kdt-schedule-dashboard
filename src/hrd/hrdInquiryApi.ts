@@ -14,11 +14,23 @@ import type {
 } from "./hrdInquiryTypes";
 import { INQUIRY_CONFIG_KEY, INQUIRY_CACHE_KEY, INQUIRY_CATEGORIES } from "./hrdInquiryTypes";
 
-// ── 설정 저장/불러오기 ──────────────────────────────────────
+// ── 설정 저장/불러오기 (PAT 난독화) ─────────────────────────
+function obfuscate(s: string): string {
+  try { return btoa(unescape(encodeURIComponent(s))); } catch { return s; }
+}
+function deobfuscate(s: string): string {
+  try { return decodeURIComponent(escape(atob(s))); } catch { return s; }
+}
+
 export function loadInquiryConfig(): InquiryConfig {
   try {
     const raw = localStorage.getItem(INQUIRY_CONFIG_KEY);
-    if (raw) return JSON.parse(raw) as InquiryConfig;
+    if (raw) {
+      const stored = JSON.parse(raw);
+      // 난독화된 PAT 복원 (_pat 키 사용)
+      if (stored._pat) stored.pat = deobfuscate(stored._pat);
+      return stored as InquiryConfig;
+    }
   } catch {
     /* ignore */
   }
@@ -26,7 +38,8 @@ export function loadInquiryConfig(): InquiryConfig {
 }
 
 export function saveInquiryConfig(config: InquiryConfig): void {
-  localStorage.setItem(INQUIRY_CONFIG_KEY, JSON.stringify(config));
+  const toStore = { ...config, pat: "", _pat: obfuscate(config.pat) };
+  localStorage.setItem(INQUIRY_CONFIG_KEY, JSON.stringify(toStore));
 }
 
 // ── 캐시 ────────────────────────────────────────────────────

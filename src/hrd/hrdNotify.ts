@@ -4,6 +4,10 @@ import { getContact } from "./hrdContacts";
 import { loadHrdConfig } from "./hrdConfig";
 import type { AttendanceStudent } from "./hrdTypes";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 // ─── Edge Function URL ──────────────────────────────────────
 const _sbUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
 const _sbKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
@@ -282,10 +286,10 @@ function renderModalContent(): void {
             <div class="notify-target-item">
               <label class="notify-target-check">
                 <input type="checkbox" data-idx="${i}" ${t.selected ? "checked" : ""} />
-                ${riskEmoji} <strong>${t.student.name}</strong>
-                <span class="notify-target-meta">${contactInfo}</span>
+                ${riskEmoji} <strong>${esc(t.student.name)}</strong>
+                <span class="notify-target-meta">${esc(contactInfo)}</span>
               </label>
-              <div class="notify-target-preview">${t.message}</div>
+              <div class="notify-target-preview">${esc(t.message)}</div>
             </div>
           `;
           })
