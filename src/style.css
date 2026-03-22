@@ -6602,38 +6602,55 @@ tbody tr:hover {
   color: #6b7280;
 }
 
+.th-detail-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
 .th-calendar {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.th-calendar::-webkit-scrollbar { width: 4px; }
+.th-calendar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+.th-calendar-months {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 .th-calendar-month {
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 .th-calendar-month-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--text-secondary);
 }
 .th-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 2px;
 }
 .th-calendar-day-header {
-  font-size: 11px;
+  font-size: 10px;
   color: #9ca3af;
   text-align: center;
-  padding: 2px;
+  padding: 1px;
 }
 .th-calendar-cell {
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   cursor: default;
+  min-width: 20px;
 }
 .th-calendar-cell.cal-present {
   background: #dcfce7;
@@ -6662,14 +6679,14 @@ tbody tr:hover {
 .th-chart-area {
   background: var(--card-bg);
   border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 14px;
+  margin-bottom: 0;
   border: 1px solid var(--border);
 }
 .th-chart-area h4 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .th-alert-list {
@@ -6707,6 +6724,12 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
   .th-stat-cards {
+    grid-template-columns: 1fr;
+  }
+  .th-detail-body {
+    grid-template-columns: 1fr;
+  }
+  .th-calendar-months {
     grid-template-columns: 1fr;
   }
   .th-filter-bar {

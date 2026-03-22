@@ -348,11 +348,12 @@ async function showTraineeDetail(
           : ""
       }
 
-      <div class="th-calendar" id="thCalendar"></div>
-
-      <div class="th-chart-area">
-        <h4>주차별 출석률 추이</h4>
-        <canvas id="thWeeklyChart" height="200"></canvas>
+      <div class="th-detail-body">
+        <div class="th-calendar" id="thCalendar"></div>
+        <div class="th-chart-area">
+          <h4>주차별 출석률 추이</h4>
+          <canvas id="thWeeklyChart" height="280"></canvas>
+        </div>
       </div>
     `;
 
@@ -435,6 +436,7 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
     <span class="th-legend-item cal-weekend">주말</span>
   </div>`;
 
+  html += `<div class="th-calendar-months">`;
   for (const ms of monthsWithData) {
     const year = parseInt(ms.slice(0, 4), 10);
     const month = parseInt(ms.slice(4, 6), 10) - 1;
@@ -473,6 +475,7 @@ function renderCalendarHeatmap(dayMap: Map<string, string>, monthStrings: string
 
     html += `</div></div>`;
   }
+  html += `</div>`; // close th-calendar-months
 
   calContainer.innerHTML = html;
 }
