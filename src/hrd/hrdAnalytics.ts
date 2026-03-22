@@ -1113,13 +1113,14 @@ function renderRiskTabCompleted(container: HTMLElement, data: TraineeAnalysis[])
   interface CompGroup {
     course: string;
     degr: string;
+    category: string;
     list: TraineeAnalysis[];
   }
   const groups: CompGroup[] = [];
   for (const d of data) {
     let g = groups.find((x) => x.course === d.courseName && x.degr === d.degr);
     if (!g) {
-      g = { course: d.courseName, degr: d.degr, list: [] };
+      g = { course: d.courseName, degr: d.degr, category: d.category ?? "", list: [] };
       groups.push(g);
     }
     g.list.push(d);

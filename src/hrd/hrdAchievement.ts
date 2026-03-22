@@ -470,7 +470,7 @@ export function initAchievement(): void {
     }
     try {
       const XLSX = await import("xlsx");
-      const summaries = summarizeByTrainee(allRecords);
+      const summaries = summarizeByTrainee(allRecords, "", "");
       const wsData = summaries.map((s) => ({
         이름: s.이름,
         과정: s.과정,
