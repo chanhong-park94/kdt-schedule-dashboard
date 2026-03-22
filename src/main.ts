@@ -2536,6 +2536,13 @@ if (hasAuthSession) {
 
 document.getElementById("assistantLogoutBtn")?.addEventListener("click", handleLogout);
 
+// 헤더 로그아웃 버튼 (로그인 시 표시)
+const headerLogoutBtn = document.getElementById("headerLogoutBtn");
+if (headerLogoutBtn) {
+  if (hasAuthSession) headerLogoutBtn.style.display = "";
+  headerLogoutBtn.addEventListener("click", handleLogout);
+}
+
 // HRD dashboards (attendance + dropout defense)
 initAttendanceDashboard();
 initDropoutDashboard();
