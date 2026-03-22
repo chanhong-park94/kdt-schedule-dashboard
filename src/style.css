@@ -468,7 +468,7 @@ input[type="time"]:focus {
 }
 
 input::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 /* --- Buttons -------------------------------------------------------- */
@@ -2934,7 +2934,7 @@ tbody tr:hover {
   top: 0;
   bottom: 0;
   width: 280px;
-  border-left: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   background: var(--surface-hover);
   z-index: 20;
   padding: 82px 14px 14px;
@@ -2957,7 +2957,7 @@ tbody tr:hover {
 
 .app-shell--jibble .jibble-mini-muted {
   margin-top: 4px;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 17px;
   font-weight: 600;
 }
@@ -2978,7 +2978,7 @@ tbody tr:hover {
 
 .app-shell--jibble .jibble-stat-row span {
   font-size: 16px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -3142,7 +3142,7 @@ tbody tr:hover {
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
 }
@@ -3256,7 +3256,7 @@ tbody tr:hover {
     right: 0;
     z-index: 900;
     background: var(--card-bg);
-    border-top: 1px solid #e5e7eb;
+    border: 1px solid var(--card-border);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
     padding: 4px 0;
     padding-bottom: max(4px, env(safe-area-inset-bottom));
@@ -3276,7 +3276,7 @@ tbody tr:hover {
     padding: 6px 6px;
     border: none;
     background: none;
-    color: #9ca3af;
+    color: var(--text-muted);
     font-size: 10px;
     cursor: pointer;
     transition: color 0.15s;
@@ -3319,7 +3319,7 @@ tbody tr:hover {
 .kpi-subtitle {
   display: block;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 .kpi-header-actions {
@@ -3349,7 +3349,7 @@ tbody tr:hover {
 }
 .kpi-upload-status {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-top: 8px;
   min-height: 18px;
 }
@@ -3384,7 +3384,7 @@ tbody tr:hover {
 }
 .kpi-drop-desc {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 
@@ -3432,7 +3432,7 @@ tbody tr:hover {
   color: #ef4444;
 }
 .kpi-connect-status.loading {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 /* KPI Cards */
@@ -3451,7 +3451,7 @@ tbody tr:hover {
 }
 .kpi-card-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 6px;
   font-weight: 500;
 }
@@ -3469,7 +3469,7 @@ tbody tr:hover {
 }
 .kpi-card-unit {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -3519,7 +3519,7 @@ tbody tr:hover {
   background: none;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
@@ -3667,7 +3667,7 @@ tbody tr:hover {
 }
 .att-load-status {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .att-filters {
   display: flex;
@@ -3706,7 +3706,7 @@ tbody tr:hover {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-muted);
   transition: all 0.15s;
 }
 .att-view-btn:not(:last-child) {
@@ -3734,16 +3734,16 @@ tbody tr:hover {
 .att-empty-title {
   font-size: 16px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 6px;
 }
 .att-empty-desc {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 .att-empty-mini {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-muted);
   padding: 12px 0;
 }
 
@@ -3765,7 +3765,7 @@ tbody tr:hover {
 .att-mc-label {
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   margin-bottom: 4px;
@@ -3887,7 +3887,7 @@ tbody tr:hover {
 }
 .att-table-meta {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 /* Table */
@@ -3905,7 +3905,7 @@ tbody tr:hover {
   padding: 10px 14px;
   font-size: 11px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   text-align: left;
@@ -3925,13 +3925,13 @@ tbody tr:hover {
   white-space: nowrap;
 }
 .att-td-birth {
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 12px;
 }
 .att-td-time {
   font-family: monospace;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .att-name-link {
   cursor: pointer;
@@ -3985,7 +3985,7 @@ tbody tr:hover {
 }
 .att-chip-default {
   background: var(--surface-hover);
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .att-chip-missing {
   background: #fff7ed;
@@ -4021,7 +4021,7 @@ tbody tr:hover {
 }
 .att-risk-ended {
   background: #f3f4f6;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -4062,7 +4062,7 @@ tbody tr:hover {
   background: #fffbeb !important;
 }
 .att-row-dropout td {
-  color: #9ca3af !important;
+  color: var(--text-muted) !important;
   text-decoration: line-through;
 }
 
@@ -4153,7 +4153,7 @@ tbody tr:hover {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 .att-modal-close:hover {
   background: var(--surface-hover);
@@ -4180,7 +4180,7 @@ tbody tr:hover {
 }
 .att-detail-birth {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .att-detail-risk {
   padding: 2px 10px;
@@ -4214,7 +4214,7 @@ tbody tr:hover {
 }
 .att-ds-lbl {
   font-size: 10px;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   margin-top: 2px;
 }
@@ -4228,7 +4228,7 @@ tbody tr:hover {
   color: #ef4444;
 }
 .att-ds-card.c4 .att-ds-val {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 /* Detail Table */
@@ -4244,7 +4244,7 @@ tbody tr:hover {
 .att-detail-table th {
   padding: 8px 10px;
   background: var(--surface-hover);
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -4313,7 +4313,7 @@ tbody tr:hover {
 }
 .settings-section-header .settings-title .muted {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 .settings-section-header .settings-badge {
@@ -4329,11 +4329,11 @@ tbody tr:hover {
 }
 .settings-badge--off {
   background: var(--surface-hover);
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 .settings-chevron {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
   transition: transform 0.2s;
   flex-shrink: 0;
 }
@@ -4357,7 +4357,7 @@ tbody tr:hover {
 }
 .settings-status-msg {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 6px;
 }
 .btn-subtle-green {
@@ -4395,7 +4395,7 @@ tbody tr:hover {
 }
 .hrd-key-gate-text {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 500;
 }
 .hrd-key-gate-row {
@@ -4440,7 +4440,7 @@ tbody tr:hover {
 .hrd-field label {
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 .hrd-input {
@@ -4513,7 +4513,7 @@ tbody tr:hover {
 }
 .course-tag-label {
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -4572,7 +4572,7 @@ tbody tr:hover {
 .hrd-add-field label {
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .hrd-add-row {
   display: flex;
@@ -4738,7 +4738,7 @@ tbody tr:hover {
 .slack-course-manager-name .slack-course-degr {
   font-size: 11px;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-left: 4px;
 }
 .slack-course-manager-input {
@@ -4752,12 +4752,12 @@ tbody tr:hover {
   color: var(--text-primary);
 }
 .slack-course-manager-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 11px;
 }
 .slack-course-ended {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -4824,7 +4824,7 @@ tbody tr:hover {
   gap: 8px;
   flex-wrap: wrap;
   padding: 12px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   background: #fafafa;
 }
 .att-rps-chip {
@@ -4906,7 +4906,7 @@ tbody tr:hover {
   font-weight: 700;
 }
 .att-risk-student-birth {
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 11px;
 }
 .att-risk-student-right {
@@ -4963,7 +4963,7 @@ tbody tr:hover {
   font-weight: 600;
   border: none;
   background: none;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
@@ -5021,7 +5021,7 @@ tbody tr:hover {
 .do-card-label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 .do-card-rate {
@@ -5031,7 +5031,7 @@ tbody tr:hover {
 }
 .do-card-sub {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .do-rate-good {
   color: #059669;
@@ -5079,7 +5079,7 @@ tbody tr:hover {
 .do-detail-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #e5e7eb;
+  border: 1px solid var(--card-border);
   margin-bottom: 12px;
 }
 .do-tab {
@@ -5088,7 +5088,7 @@ tbody tr:hover {
   font-weight: 600;
   border: none;
   background: none;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -5107,7 +5107,7 @@ tbody tr:hover {
   padding: 10px 12px;
   font-weight: 600;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   border-bottom: 2px solid #e5e7eb;
 }
@@ -5196,7 +5196,7 @@ tbody tr:hover {
   padding: 1px 6px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.08);
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 500;
   margin-left: 4px;
 }
@@ -5253,7 +5253,7 @@ tbody tr:hover {
 }
 .th-status-partial {
   background: rgba(107, 114, 128, 0.15);
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 .th-stat-good {
   color: #10b981;
@@ -5313,7 +5313,7 @@ tbody tr:hover {
 }
 .do-panel-subtitle {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -5351,7 +5351,7 @@ tbody tr:hover {
 }
 .do-filter-status {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-left: auto;
 }
 
@@ -5370,7 +5370,7 @@ tbody tr:hover {
 /* ── 훈련생 분석 ─────────────────────────────────────── */
 .ana-status {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 12px;
 }
 .ana-status-chip {
@@ -5405,7 +5405,7 @@ tbody tr:hover {
   background: transparent;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
@@ -5436,7 +5436,7 @@ tbody tr:hover {
 .ana-card-label {
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   margin-bottom: 4px;
@@ -5449,7 +5449,7 @@ tbody tr:hover {
 }
 .ana-card-sub {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -5520,7 +5520,7 @@ tbody tr:hover {
   border-bottom: none;
 }
 .ana-compare-label {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .ana-compare-value {
   font-weight: 700;
@@ -5568,12 +5568,12 @@ tbody tr:hover {
   background: var(--card-bg);
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 .ana-filter-btn:hover {
-  border-color: #9ca3af;
+  border-color: var(--text-muted);
 }
 .ana-filter-btn.is-active {
   background: #4f46e5;
@@ -5583,7 +5583,7 @@ tbody tr:hover {
 /* Last queried timestamp */
 .ana-last-queried {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -5651,7 +5651,7 @@ tbody tr:hover {
 .ana-expandable-row td:first-child::before {
   content: "▶ ";
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-right: 4px;
 }
 .ana-row-expanded td:first-child::before {
@@ -5682,7 +5682,7 @@ tbody tr:hover {
   font-size: 13px;
 }
 .ana-detail-stat-label {
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 600;
 }
 .ana-detail-stat-value {
@@ -5836,7 +5836,7 @@ tbody tr:hover {
 /* ── Risk Tab: Course-Group Cards ── */
 .risk-summary-bar {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 12px;
 }
 .risk-group-list {
@@ -5883,7 +5883,7 @@ tbody tr:hover {
 }
 .risk-card-degr {
   font-weight: 400;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
 }
 .risk-card-badges {
@@ -5915,7 +5915,7 @@ tbody tr:hover {
   gap: 16px;
   margin-top: 6px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .risk-detail-panel {
   padding: 8px 16px 12px;
@@ -5953,19 +5953,19 @@ tbody tr:hover {
 .insight-card-rate-label {
   font-size: 11px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .insight-card-summary {
   display: flex;
   gap: 16px;
   margin-top: 6px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .insight-compare {
   margin-top: 4px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .insight-detail-grid {
   display: grid;
@@ -5977,7 +5977,7 @@ tbody tr:hover {
 }
 .insight-detail-label {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-weight: 500;
 }
 .insight-detail-value {
@@ -6026,7 +6026,7 @@ tbody tr:hover {
 }
 .asst-code-empty {
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 .asst-code-add {
   display: flex;
@@ -6380,13 +6380,13 @@ tbody tr:hover {
   }
 }
 .dash-loading p {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 14px;
 }
 .dash-empty {
   text-align: center;
   padding: 40px 0;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -6557,7 +6557,7 @@ tbody tr:hover {
 }
 .th-detail-meta {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .th-detail-badge {
   display: inline-block;
@@ -6574,7 +6574,7 @@ tbody tr:hover {
   padding: 4px 12px;
   cursor: pointer;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .th-detail-close:hover {
   background: #f1f5f9;
@@ -6599,7 +6599,7 @@ tbody tr:hover {
 }
 .th-stat-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .th-detail-body {
@@ -6637,7 +6637,7 @@ tbody tr:hover {
 }
 .th-calendar-day-header {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-align: center;
   padding: 1px;
 }
