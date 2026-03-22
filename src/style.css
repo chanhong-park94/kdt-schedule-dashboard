@@ -7562,6 +7562,70 @@ dialog {
 .patch-tag--feat { background: #dbeafe; color: #1e40af; }
 .patch-tag--fix { background: #fef2f2; color: #991b1b; }
 .patch-tag--improve { background: #ecfdf5; color: #065f46; }
+
+/* ═══ AI 에이전트 팀소개 ═══ */
+.ai-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.ai-team-card {
+  background: var(--surface-hover, #f5f3f8);
+  border: 1px solid var(--card-border, rgba(0,0,0,0.06));
+  border-radius: 12px;
+  padding: 16px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ai-team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.ai-team-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ai-team-avatar {
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--card-bg, #fff);
+}
+.ai-team-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-strong, var(--text, #1e1e2e));
+}
+.ai-team-role {
+  font-size: 11px;
+  color: var(--primary, #6366f1);
+  font-weight: 600;
+}
+.ai-team-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 8px;
+}
+.ai-team-tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ai-team-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  background: var(--card-bg, #fff);
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--card-border, rgba(0,0,0,0.06));
+}
 /* 학업성취도 상태/신호등 배지 */
 .achv-badge {
   display: inline-block;

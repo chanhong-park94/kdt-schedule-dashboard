@@ -2985,6 +2985,21 @@
             <div class="muted u-mt-4">문서: `spec/standardize.md`</div>
           </div>
 
+          <!-- AI 에이전트 팀소개 -->
+          <div class="card card-span-12 u-mt-14" data-page-group="settings">
+            <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
+              <h3>🤖 AI 에이전트 팀소개</h3>
+              <button id="aiTeamToggleBtn" class="btn btn--sm" style="font-size: 12px">펼치기</button>
+            </div>
+            <div id="aiTeamContent" style="display: none">
+              <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.6">
+                이 대시보드는 AI 에이전트와 사람이 하나의 팀으로 협업하여 만들었습니다.<br/>
+                각 에이전트는 전문 분야를 담당하며, 인간 PM의 기획·의사결정 아래 자율적으로 업무를 수행합니다.
+              </p>
+              <div id="aiTeamGrid" class="ai-team-grid"></div>
+            </div>
+          </div>
+
           <div id="printReportCard" class="card card-span-12 u-hidden u-mt-14">
             <div class="row u-row-between u-row-center">
               <div>
