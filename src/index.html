@@ -1866,10 +1866,22 @@
 
             <!-- ══ 실업자 패널 ══ -->
             <div id="achvPanelUnemployed">
-              <div id="achievementFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+              <div id="achievementFilters" class="ana-filters" style="margin-bottom: 12px; display: none; flex-wrap: wrap; gap: 8px">
                 <select id="achvFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
                 <select id="achvFilterCohort" class="hrd-input"><option value="">전체 기수</option></select>
-                <input type="text" id="achvFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 180px" />
+                <select id="achvFilterStatus" class="hrd-input">
+                  <option value="">전체 상태</option>
+                  <option value="훈련중">훈련중</option>
+                  <option value="정상수료">정상수료</option>
+                  <option value="중도탈락">중도탈락</option>
+                </select>
+                <select id="achvFilterSignal" class="hrd-input">
+                  <option value="">전체 신호등</option>
+                  <option value="red">🔴 위험</option>
+                  <option value="yellow">🟡 주의</option>
+                  <option value="green">🟢 양호</option>
+                </select>
+                <input type="text" id="achvFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 160px" />
                 <span id="achvTraineeCount" class="muted" style="font-size: 13px"></span>
               </div>
               <div id="achievementStatus" class="ana-status"></div>
@@ -1889,6 +1901,7 @@
                     <tbody id="achvTableBody"></tbody>
                   </table>
                 </div>
+                <div id="achvPagination" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;font-size:13px"></div>
               </div>
               <div id="achievementDetail" style="display: none; margin-top: 16px">
                 <h4 id="achvDetailTitle" style="margin-bottom: 8px"></h4>

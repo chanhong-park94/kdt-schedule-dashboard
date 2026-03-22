@@ -166,16 +166,57 @@ function populateFilters(courses: string[], cohorts: string[]): void {
   if (filtersEl) filtersEl.style.display = "";
 }
 
+// ─── 페이지네이션 ────────────────────────────────────────────
+const PAGE_SIZE = 50;
+let currentPage = 0;
+let lastFilteredSummaries: TraineeAchievementSummary[] = [];
+
+function renderPagination(total: number): void {
+  const el = $("achvPagination");
+  if (!el) return;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) { el.innerHTML = ""; return; }
+
+  const btns: string[] = [];
+  btns.push(`<button class="btn btn--sm" ${currentPage === 0 ? "disabled" : ""} data-achv-page="${currentPage - 1}">◀</button>`);
+  for (let i = 0; i < totalPages; i++) {
+    const active = i === currentPage ? "btn--primary" : "";
+    btns.push(`<button class="btn btn--sm ${active}" data-achv-page="${i}">${i + 1}</button>`);
+  }
+  btns.push(`<button class="btn btn--sm" ${currentPage >= totalPages - 1 ? "disabled" : ""} data-achv-page="${currentPage + 1}">▶</button>`);
+  el.innerHTML = btns.join("");
+
+  el.querySelectorAll<HTMLButtonElement>("button[data-achv-page]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const page = Number(btn.dataset.achvPage);
+      if (page >= 0 && page < totalPages) {
+        currentPage = page;
+        renderTable(lastFilteredSummaries.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE));
+        renderPagination(lastFilteredSummaries.length);
+        $("achievementContent")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
+}
+
 // ─── 필터 적용 + 재렌더 ────────────────────────────────────
 function applyFilterAndRender(): void {
   const courseVal = ($("achvFilterCourse") as HTMLSelectElement)?.value ?? "";
   const cohortVal = ($("achvFilterCohort") as HTMLSelectElement)?.value ?? "";
+  const statusVal = ($("achvFilterStatus") as HTMLSelectElement)?.value ?? "";
+  const signalVal = ($("achvFilterSignal") as HTMLSelectElement)?.value ?? "";
   const searchVal = ($("achvFilterSearch") as HTMLInputElement)?.value?.toLowerCase() ?? "";
+
   let summaries = summarizeByTrainee(allRecords, courseVal, cohortVal);
-  if (searchVal) {
-    summaries = summaries.filter((s) => s.이름.toLowerCase().includes(searchVal));
-  }
-  renderTable(summaries);
+  if (searchVal) summaries = summaries.filter((s) => s.이름.toLowerCase().includes(searchVal));
+  if (statusVal) summaries = summaries.filter((s) => s.훈련상태 === statusVal);
+  if (signalVal) summaries = summaries.filter((s) => s.신호등 === signalVal);
+
+  lastFilteredSummaries = summaries;
+  currentPage = 0;
+  renderTable(summaries.slice(0, PAGE_SIZE));
+  renderPagination(summaries.length);
+
   const detailEl = $("achievementDetail");
   if (detailEl) detailEl.style.display = "none";
 }
@@ -352,6 +393,8 @@ export function initAchievement(): void {
   // 실업자 필터
   $("achvFilterCourse")?.addEventListener("change", applyFilterAndRender);
   $("achvFilterCohort")?.addEventListener("change", applyFilterAndRender);
+  $("achvFilterStatus")?.addEventListener("change", applyFilterAndRender);
+  $("achvFilterSignal")?.addEventListener("change", applyFilterAndRender);
   $("achvFilterSearch")?.addEventListener("input", applyFilterAndRender);
 
   // 재직자 필터
