@@ -117,14 +117,13 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
 
   for (const course of config.courses) {
     const category = course.category || "실업자";
-    // 과정 상태 판정: startDate + totalDays(주5일 기준 달력일수 환산)
-    let courseStatus: "진행중" | "종강" = "진행중";
+    // 과정 상태 판정: startDate + totalDays 기반, 없으면 명단 훈련상태로 판단
+    let courseStatusFromDate: "진행중" | "종강" | null = null;
     let courseProgressRate = 0;
     if (course.startDate && course.totalDays > 0) {
       const estimatedEnd = new Date(course.startDate);
       estimatedEnd.setDate(estimatedEnd.getDate() + Math.ceil((course.totalDays / 5) * 7));
-      courseStatus = estimatedEnd < new Date() ? "종강" : "진행중";
-      // 훈련 진행률 계산: 경과 수업일수 / totalDays (재직자: 화~토, 실업자: 월~금)
+      courseStatusFromDate = estimatedEnd < new Date() ? "종강" : "진행중";
       const start = new Date(course.startDate);
       const now = new Date();
       let weekdaysPassed = 0;
@@ -135,7 +134,7 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
         if (isClassDay) weekdaysPassed++;
         cursor.setDate(cursor.getDate() + 1);
       }
-      courseProgressRate = courseStatus === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
+      courseProgressRate = courseStatusFromDate === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
     }
     for (const degr of course.degrs) {
       done++;
@@ -145,6 +144,16 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
         const roster = await fetchRoster(config, course.trainPrId, degr);
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
+
+        // courseStatus 결정: startDate 기반 → 없으면 명단 훈련상태로 판단
+        let courseStatus: "진행중" | "종강" = courseStatusFromDate ?? "진행중";
+        if (!courseStatusFromDate && roster.length > 0) {
+          const hasTraining = roster.some((r) => {
+            const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString();
+            return st.includes("훈련중") || st.includes("참여중") || st === "";
+          });
+          courseStatus = hasTraining ? "진행중" : "종강";
+        }
 
         for (const raw of roster) {
           const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
