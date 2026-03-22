@@ -69,6 +69,13 @@ const TEAM: AgentProfile[] = [
     desc: "세션 종료 시 작업 내역을 분석하고, CLAUDE.md 업데이트, 메모리 저장, 후속 작업 제안을 자동으로 수행합니다.",
     tags: ["문서화", "작업 추적", "컨텍스트 공유"],
   },
+  {
+    avatar: "🎨",
+    name: "UX Review Agent",
+    role: "AI · UI/UX 전문가",
+    desc: "색상 대비·접근성(WCAG), 레이아웃 일관성, 모바일 반응형, 사용자 동선, 시각적 위계, 한국어 타이포그래피를 분석하고 개선안을 제시합니다.",
+    tags: ["접근성", "반응형", "시각 위계", "타이포그래피"],
+  },
 ];
 
 function esc(s: string): string {
