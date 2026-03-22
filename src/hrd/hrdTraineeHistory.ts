@@ -1,26 +1,9 @@
 /** 훈련생 개인 이력 — 과정/기수 선택, 명단 조회, 개인 상세 (출결 캘린더, 주차별 추이) */
-import { Chart, registerables } from "chart.js";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
 import type { HrdRawAttendance } from "./hrdTypes";
-
-Chart.register(...registerables);
-
-// ─── State ──────────────────────────────────────────────
-let chartInstances: Chart[] = [];
-
-function destroyCharts(): void {
-  chartInstances.forEach((c) => {
-    try {
-      c.destroy();
-    } catch {
-      /* */
-    }
-  });
-  chartInstances = [];
-}
 
 const $ = (id: string) => document.getElementById(id);
 
@@ -206,7 +189,6 @@ async function showTraineeDetail(
 
   container.style.display = "block";
   container.innerHTML = `<div class="dash-loading"><div class="dash-spinner"></div><p>${name} 출결 데이터 조회 중...</p></div>`;
-  destroyCharts();
 
   try {
     const config = loadHrdConfig();
@@ -350,9 +332,9 @@ async function showTraineeDetail(
 
       <div class="th-detail-body">
         <div class="th-calendar" id="thCalendar"></div>
-        <div class="th-chart-area">
+        <div class="th-chart-area" style="display:flex;flex-direction:column">
           <h4>주차별 출석률 추이</h4>
-          <canvas id="thWeeklyChart" height="280"></canvas>
+          <div id="thWeeklyBars" style="flex:1;overflow-y:auto"></div>
         </div>
       </div>
     `;
@@ -360,43 +342,27 @@ async function showTraineeDetail(
     // 닫기 버튼
     $("thDetailClose")?.addEventListener("click", () => {
       container.style.display = "none";
-      destroyCharts();
-    });
+        });
 
     // 캘린더 히트맵 렌더링
     renderCalendarHeatmap(dayMap, months);
 
-    // 주차별 차트
+    // 주차별 바 차트 (CSS 기반 — 스크롤 없이 컴팩트)
     const validWeeks = weeklyRates.filter((w) => w.rate >= 0);
-    const ctx = (document.getElementById("thWeeklyChart") as HTMLCanvasElement)?.getContext("2d");
-    if (ctx && validWeeks.length > 0) {
-      const chart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: validWeeks.map((w) => w.label),
-          datasets: [
-            {
-              label: "출석률 (%)",
-              data: validWeeks.map((w) => w.rate),
-              borderColor: "#6366f1",
-              backgroundColor: "rgba(99,102,241,.1)",
-              fill: true,
-              tension: 0.3,
-              pointRadius: 4,
-              pointBackgroundColor: validWeeks.map((w) =>
-                w.rate < 70 ? "#ef4444" : w.rate < 80 ? "#f59e0b" : "#10b981",
-              ),
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { y: { min: 0, max: 100, title: { display: true, text: "%" } } },
-          plugins: { legend: { display: false } },
-        },
-      });
-      chartInstances.push(chart);
+    const barsEl = document.getElementById("thWeeklyBars");
+    if (barsEl && validWeeks.length > 0) {
+      barsEl.innerHTML = validWeeks.map((w) => {
+        const color = w.rate < 70 ? "#ef4444" : w.rate < 80 ? "#f59e0b" : "#10b981";
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:12px">
+          <span style="min-width:48px;color:var(--text-muted);text-align:right">${w.label}</span>
+          <div style="flex:1;height:16px;background:var(--surface-hover,#f5f3f8);border-radius:4px;overflow:hidden">
+            <div style="width:${w.rate}%;height:100%;background:${color};border-radius:4px;transition:width 0.3s"></div>
+          </div>
+          <span style="min-width:38px;font-weight:600;color:${color}">${w.rate.toFixed(0)}%</span>
+        </div>`;
+      }).join("");
+    } else if (barsEl) {
+      barsEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px">주차별 데이터 없음</div>';
     }
 
     container.scrollIntoView({ behavior: "smooth", block: "start" });
