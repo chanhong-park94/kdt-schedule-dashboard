@@ -104,6 +104,13 @@ const TEAM: AgentProfile[] = [
     desc: "번들 크기 분석, 코드 스플리팅, lazy loading, 캐시 전략, 렌더링 성능을 최적화합니다. 현재 757KB → 500KB 이하 목표.",
     tags: ["번들 최적화", "코드 스플리팅", "캐시", "렌더링"],
   },
+  {
+    avatar: "✨",
+    name: "Frontend Design Agent",
+    role: "AI · 프론트엔드 디자인 전문가",
+    desc: "Google Stitch 연동, DESIGN.md 기반 CSS 변수 동기화, 컴포넌트 디자인, 색상 팔레트, 레이아웃 시스템을 구현합니다.",
+    tags: ["디자인 시스템", "Stitch", "CSS 변수", "컴포넌트"],
+  },
 ];
 
 function esc(s: string): string {
