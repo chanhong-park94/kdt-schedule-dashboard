@@ -16,6 +16,17 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v2.8.0",
+    date: "2026-03-22",
+    items: [
+      { tag: "feat", text: "교차분석 탭 신규 — 출결 × 성취도 × 만족도 상관관계 분석" },
+      { tag: "feat", text: "학생 교차분석 — 산점도(출결률 vs 성취도) + 히트맵(출결구간×신호등) + Pearson 상관계수" },
+      { tag: "feat", text: "기수 교차분석 — 레이더 차트(3축 비교) + 종합점수 비교 테이블 + 자동 인사이트" },
+      { tag: "improve", text: "코드 스플리팅 — 교차분석 별도 청크(11.84KB) lazy-load" },
+      { tag: "fix", text: "사이드바 메뉴 설정 가드에 누락 키(inquiry/satisfaction) 추가" },
+    ],
+  },
+  {
     version: "v2.7.0",
     date: "2026-03-22",
     items: [
