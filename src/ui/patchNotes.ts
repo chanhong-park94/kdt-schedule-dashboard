@@ -16,6 +16,26 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v2.9.0",
+    date: "2026-03-22",
+    items: [
+      { tag: "feat", text: "토스트 알림 시스템 — 작업 성공/실패 시 우상단 3초 팝업 (4종)" },
+      { tag: "feat", text: "필터 초기화 버튼 — 출결·학업성취도·문의응대·만족도 5개 탭" },
+      { tag: "feat", text: "캐시 관리 UI — 설정 탭에서 전체/개별 캐시 초기화" },
+      { tag: "feat", text: "학업성취도 Excel 내보내기 — 📥 Excel 버튼 (xlsx)" },
+      { tag: "feat", text: "키보드 단축키 — Alt+1~9로 탭 빠른 전환" },
+      { tag: "feat", text: "오프라인 감지 — 네트워크 끊김 시 배너 자동 표시" },
+      { tag: "improve", text: "API 타임아웃 — HRD 15초, Airtable/Apps Script 30초 (무한 대기 방지)" },
+      { tag: "improve", text: "에러 메시지 통일 — 8가지 분류 (인증실패·권한부족·타임아웃 등)" },
+      { tag: "improve", text: "캐시 시점 표시 — '82건 (캐시 · 3시간 전)' 형태" },
+      { tag: "improve", text: "모바일 탭 라벨 가독성 향상 (11px + ellipsis)" },
+      { tag: "improve", text: "필터 UI 통일 — .filter-bar 공통 클래스 적용" },
+      { tag: "improve", text: "빈 상태 안내 통일 — 아이콘 + 설정 안내 메시지" },
+      { tag: "fix", text: "문의응대 조회 버튼 캐시 무시 — 항상 최신 데이터 로드" },
+      { tag: "fix", text: "CompGroup.category 타입 누락 수정" },
+    ],
+  },
+  {
     version: "v2.8.0",
     date: "2026-03-22",
     items: [
