@@ -658,13 +658,16 @@ function renderDegrChart(): void {
 
   const colors = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
   const datasets = Array.from(courseMap.entries()).map(([name, points], i) => ({
-    label: name.length > 12 ? name.slice(0, 12) + "…" : name,
+    label: name,
     data: points.sort((a, b) => Number(a.degr) - Number(b.degr)).map((p) => p.rate),
     borderColor: colors[i % colors.length],
     backgroundColor: colors[i % colors.length] + "20",
+    borderWidth: 2.5,
     tension: 0.3,
-    pointRadius: 5,
-    pointHoverRadius: 7,
+    pointRadius: 6,
+    pointHoverRadius: 9,
+    pointBackgroundColor: colors[i % colors.length],
+    fill: false,
   }));
 
   const maxDegr = Math.max(...Array.from(courseMap.values()).map((v) => v.length));
@@ -676,8 +679,19 @@ function renderDegrChart(): void {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: "top", labels: { font: { size: 10 } } } },
-      scales: { y: { min: 0, max: 100, title: { display: true, text: "하차방어율 (%)" } } },
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { position: "top", labels: { font: { size: 11 }, usePointStyle: true, pointStyle: "circle" } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}%`,
+          },
+        },
+      },
+      scales: {
+        y: { min: 0, max: 100, title: { display: true, text: "하차방어율 (%)" }, grid: { color: "rgba(0,0,0,0.05)" } },
+        x: { grid: { display: false } },
+      },
     },
     plugins: [
       {
