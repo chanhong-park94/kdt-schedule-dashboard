@@ -83,6 +83,13 @@ const TEAM: AgentProfile[] = [
     desc: "출결률, 학업성취도, 만족도, 이탈률 등 교육 운영 데이터를 분석하고 인사이트를 도출합니다. 과정별 비교, 위험군 예측, 트렌드 분석을 수행합니다.",
     tags: ["통계 분석", "트렌드", "위험 예측", "KPI 리포트"],
   },
+  {
+    avatar: "📄",
+    name: "Document Agent",
+    role: "AI · 문서 전문가",
+    desc: "HWPX(한글), PPTX(파워포인트), DOCX(워드), PDF, XLSX(엑셀) 문서를 생성·편집·변환합니다. 훈련 보고서, 공문서, 발표 자료 등 교육 운영 문서를 처리합니다.",
+    tags: ["HWPX", "PPTX", "DOCX", "PDF", "보고서"],
+  },
 ];
 
 function esc(s: string): string {
