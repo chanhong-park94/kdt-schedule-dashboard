@@ -85,25 +85,33 @@ src/
 
 ---
 
-## 🔄 작업 현황 (마지막 업데이트: 2026-03-19)
+## 🔄 작업 현황 (마지막 업데이트: 2026-03-22)
 
-### ✅ 완료
-- 학업성취도(실업자): Apps Script → 689명/45,574건, 신호등 정렬, 캐시 복원
-- 학업성취도(재직자): 서브탭 분리, 유닛1~12 강사/운영진단 + 프로젝트1~4, 등급 A~D
-- 문의응대: Airtable API (응대+수강생+과정 3테이블 매핑), 82건, 통계카드+필터+검색
-- 만족도: 스키마 시트 기반 (NPS/강사/중간/최종, 과정·기수·모듈 단위)
-- 기수 코드 매핑: 0-x=LLM, 1-x=데이터, 2-x=기획/개발 (parseCohortCode)
-- UI: 셀 색상 강화, 라이트 모드 호환, API 설정 통합, 캐시 자동 복원
-- 스키마 시트 포맷팅 (헤더 남색, 줄무늬, 자동 열 너비)
+### ✅ 완료 (v2.7.0)
+- 학업성취도(실업자): 689명/45,574건, 신호등 정렬, 훈련상태/신호등 필터, 50명 페이지네이션
+- 학업성취도(재직자): 서브탭 분리, 유닛1~12 강사/운영진단, 등급 A~D, 기수 코드 매핑
+- 문의응대: Airtable API (3테이블 매핑), 82건, 통계카드+필터+검색
+- 만족도: 수기 입력 폼 + Apps Script 조회, NPS/강사/HRD 중간·최종
+- 하차방어율: 훈련중만 필터, 히트맵+이탈위험 Top10, 기수별 추이 차트 확대
+- 출결현황: 뷰 모드(전체/월별/일별) 실제 필터 연결
+- 훈련생분석: 진행중/종강 분류 (명단 훈련상태 기반)
+- 훈련생이력: 2열 레이아웃, CSS 바 차트, 1주차부터 표시
+- SMS 발송: 솔라피 API + Supabase Edge Function
+- 보안: CORS 도메인 제한, XSS 이스케이프, PAT 난독화
+- UI: 패치노트, 업무 가이드 📖, AI 팀소개 🤖 (14명), 로그아웃 버튼
+- CSS: data-theme light, text-secondary AA 충족, 하드코딩 100건 변수 교체
+- 모바일: 네비 그룹핑 (5개+더보기), 터치 타겟 44px
+- 스킬 6개: ux-review, data-analyst, hwpx, security-audit, perf-optimizer, frontend-design
 
 ### 🔜 다음 작업
-1. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중 → 직접 API 호출로 전환
-2. **Apps Script 재배포** — schema_employed action 추가 필요
-3. **스키마 시트 데이터 입력** — 학업성취도(재직자) CSV 붙여넣기, 만족도 수기 입력
-4. **cmux 터미널 셋업** — macOS에서 Claude + GPT 병렬 실행
+1. **탭별 동적 import** — 번들 777KB → ~250KB 코드 스플리팅
+2. **교차분석** — 출결↔학업성취도↔만족도 상관관계 분석
+3. **HWPX/XLSX 내보내기** — 한글 공문서 + 엑셀 리포트
+4. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
+5. **이메일 발송** — Google SMTP 계정 확보 후 연동
 
 ### 📌 주요 URL
 - 배포: https://chanhong-park94.github.io/kdt-schedule-dashboard/
 - 대시보드용 DB 시트: https://docs.google.com/spreadsheets/d/1jwFQ6M-ZHCBoYkGSoT7u8GhNM2ssBZwjfYXvt_FvGGw/edit
 - 스키마 시트: https://docs.google.com/spreadsheets/d/1FO_U99xts2OEaFOniPDaS0Qfz9Stx3iO66zdQRnK0IE/edit
-- 재직자 CSV: trainee_reports (4).csv (543명, UUID+기수+유닛1~12 강사/운영진단)
+- Supabase: https://supabase.com/dashboard/project/ltywspfpyjhrmkgiarti
