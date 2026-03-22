@@ -1,0 +1,131 @@
+/**
+ * 패치노트 모듈
+ *
+ * 헤더의 📋 업데이트 버튼 클릭 시 드롭다운으로 패치노트를 표시합니다.
+ * 새 버전이 있으면 뱃지를 표시하고, 확인하면 localStorage에 읽은 버전을 저장합니다.
+ */
+
+const SEEN_KEY = "kdt_patch_note_seen_v1";
+
+interface PatchNote {
+  version: string;
+  date: string;
+  items: { tag: "feat" | "fix" | "improve"; text: string }[];
+}
+
+// ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
+const PATCH_NOTES: PatchNote[] = [
+  {
+    version: "v2.5.0",
+    date: "2026-03-22",
+    items: [
+      { tag: "feat", text: "SMS 문자 발송 기능 추가 (솔라피 API 연동)" },
+      { tag: "feat", text: "만족도 수기 입력 폼 추가 (NPS/강사/HRD 중간·최종)" },
+      { tag: "feat", text: "패치노트 알림 뱃지 추가" },
+      { tag: "improve", text: "만족도 탭 사이드바 네비게이션 추가" },
+    ],
+  },
+  {
+    version: "v2.4.0",
+    date: "2026-03-20",
+    items: [
+      { tag: "feat", text: "학업성취도 실업자/재직자 서브탭 분리" },
+      { tag: "feat", text: "재직자 유닛리포트 (유닛1~12 강사진단/운영진단 + 프로젝트1~4)" },
+      { tag: "feat", text: "기수 코드 → 과정명 자동 매핑 (0-x: LLM, 1-x: 데이터, 2-x: 기획/개발)" },
+      { tag: "improve", text: "학업성취도 이름 검색 기능 추가" },
+    ],
+  },
+  {
+    version: "v2.3.0",
+    date: "2026-03-19",
+    items: [
+      { tag: "feat", text: "문의응대 대시보드 추가 (Airtable API 연동, 82건)" },
+      { tag: "feat", text: "문의응대 통계카드 (총 문의, 채널별, 작성자별, 질문유형 분포)" },
+      { tag: "feat", text: "API 연동 설정 통합 (학업성취도/문의응대/Slack → 설정 탭)" },
+      { tag: "fix", text: "라이트 모드에서 통계 카드 텍스트 안 보이는 문제 수정" },
+      { tag: "improve", text: "테이블 셀 색상 강화 (채널 배지, 신호등, 등급)" },
+    ],
+  },
+  {
+    version: "v2.2.0",
+    date: "2026-03-18",
+    items: [
+      { tag: "feat", text: "학업성취도(실업자) 대시보드 추가 (Apps Script → 689명/45,574건)" },
+      { tag: "feat", text: "과정/기수 필터 + 신호등 정렬 (🔴→🟡→🟢)" },
+      { tag: "improve", text: "캐시 자동 복원 (새로고침 시 데이터 유지)" },
+    ],
+  },
+];
+
+// ─── 로직 ───────────────────────────────────────────────────
+function getSeenVersion(): string {
+  return localStorage.getItem(SEEN_KEY) || "";
+}
+
+function markAsSeen(): void {
+  if (PATCH_NOTES.length > 0) {
+    localStorage.setItem(SEEN_KEY, PATCH_NOTES[0].version);
+  }
+}
+
+function hasNewUpdates(): boolean {
+  return PATCH_NOTES.length > 0 && getSeenVersion() !== PATCH_NOTES[0].version;
+}
+
+function renderDropdown(): string {
+  return PATCH_NOTES.map(
+    (note) => `
+    <div class="patch-note-version">
+      <h4>${note.version}</h4>
+      <div class="patch-date">${note.date}</div>
+      <ul>
+        ${note.items.map((item) => `<li><span class="patch-tag patch-tag--${item.tag}">${tagLabel(item.tag)}</span>${esc(item.text)}</li>`).join("")}
+      </ul>
+    </div>`,
+  ).join("");
+}
+
+function tagLabel(tag: string): string {
+  if (tag === "feat") return "신규";
+  if (tag === "fix") return "수정";
+  return "개선";
+}
+
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// ─── 초기화 ─────────────────────────────────────────────────
+export function initPatchNotes(): void {
+  const btn = document.getElementById("patchNoteBtn");
+  const dropdown = document.getElementById("patchNoteDropdown");
+  const badge = document.getElementById("patchNoteBadge");
+
+  if (!btn || !dropdown) return;
+
+  // 새 업데이트 뱃지
+  if (hasNewUpdates() && badge) {
+    badge.style.display = "";
+  }
+
+  // 드롭다운 내용
+  dropdown.innerHTML = renderDropdown();
+
+  // 토글
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.style.display !== "none";
+    dropdown.style.display = isOpen ? "none" : "";
+    if (!isOpen) {
+      markAsSeen();
+      if (badge) badge.style.display = "none";
+    }
+  });
+
+  // 바깥 클릭 시 닫기
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target as Node) && e.target !== btn) {
+      dropdown.style.display = "none";
+    }
+  });
+}

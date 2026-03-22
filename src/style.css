@@ -7494,6 +7494,74 @@ dialog {
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* ═══ 패치노트 ═══ */
+.patch-note-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--primary, #6366f1);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.patch-note-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 380px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, rgba(0,0,0,0.08));
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  z-index: 9999;
+  padding: 16px;
+}
+.patch-note-version {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border, rgba(0,0,0,0.06));
+}
+.patch-note-version:last-child { border-bottom: none; margin-bottom: 0; }
+.patch-note-version h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-strong, var(--text, #1e1e2e));
+  margin: 0 0 4px;
+}
+.patch-note-version .patch-date {
+  font-size: 11px;
+  color: var(--text-muted, #9ca3af);
+  margin-bottom: 8px;
+}
+.patch-note-version ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text, #1e1e2e);
+}
+.patch-note-version li { margin-bottom: 2px; }
+.patch-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.patch-tag--feat { background: #dbeafe; color: #1e40af; }
+.patch-tag--fix { background: #fef2f2; color: #991b1b; }
+.patch-tag--improve { background: #ecfdf5; color: #065f46; }
 /* 학업성취도 상태/신호등 배지 */
 .achv-badge {
   display: inline-block;

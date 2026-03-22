@@ -360,6 +360,14 @@
             </div>
             <div class="header-runtime-time" id="headerCurrentTime">--:--:--</div>
           </div>
+          <div style="position: relative; display: inline-block">
+            <button id="patchNoteBtn" class="icon-btn icon-btn--label" type="button" aria-label="패치노트">
+              <span aria-hidden="true">📋</span>
+              <span>업데이트</span>
+              <span id="patchNoteBadge" class="patch-note-badge" style="display: none">N</span>
+            </button>
+            <div id="patchNoteDropdown" class="patch-note-dropdown" style="display: none"></div>
+          </div>
           <button
             id="openNotificationDrawer"
             class="icon-btn icon-btn--label u-hidden"
