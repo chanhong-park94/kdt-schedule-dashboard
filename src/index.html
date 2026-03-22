@@ -376,6 +376,10 @@
             </button>
             <div id="patchNoteDropdown" class="patch-note-dropdown" style="display: none"></div>
           </div>
+          <button id="guideBtn" class="icon-btn icon-btn--label" type="button" aria-label="사용 가이드">
+            <span aria-hidden="true">📖</span>
+            <span>가이드</span>
+          </button>
           <button id="headerLogoutBtn" class="icon-btn icon-btn--label" type="button" aria-label="로그아웃" style="display: none">
             <span aria-hidden="true">🚪</span>
             <span>로그아웃</span>
@@ -3049,6 +3053,15 @@
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- 업무 가이드 모달 -->
+    <div id="guideModal" style="display: none">
+      <div id="guideBackdrop" class="guide-backdrop"></div>
+      <div class="guide-modal-box">
+        <button id="guideCloseBtn" class="guide-close-btn" type="button">&times;</button>
+        <div id="guideModalBody"></div>
+      </div>
     </div>
 
     <script type="module" src="./main.ts"></script>

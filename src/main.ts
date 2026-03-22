@@ -24,6 +24,7 @@ import { initInquiry } from "./hrd/hrdInquiry";
 import { initSatisfaction } from "./hrd/hrdSatisfaction";
 import { initPatchNotes } from "./ui/patchNotes";
 import { initAiTeam } from "./ui/aiTeam";
+import { initUserGuide } from "./ui/userGuide";
 import { fetchKpiData, testKpiConnection, loadKpiConfig, saveKpiConfig } from "./kpi/kpiSheets";
 import { renderKpiDashboard, populateFilters, initKpiTabs, resetKpiDashboard } from "./kpi/kpiReport";
 import { printKpiReport } from "./kpi/kpiPdf";
@@ -2557,6 +2558,7 @@ initInquiry();
 initSatisfaction();
 initPatchNotes();
 initAiTeam();
+initUserGuide();
 
 // ─── 출결현황 / 하차방어율 상위 탭 전환 ───
 // ─── KPI 자율성과지표 Google Sheets 연동 ───

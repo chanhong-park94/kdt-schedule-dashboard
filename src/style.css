@@ -7503,6 +7503,109 @@ dialog {
   white-space: nowrap;
 }
 
+/* ═══ 업무 가이드 모달 ═══ */
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9998;
+}
+.guide-modal-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px));
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--card-bg, #fff);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+  z-index: 9999;
+  padding: 28px;
+}
+.guide-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted, #9ca3af);
+  line-height: 1;
+}
+.guide-modal-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+.guide-modal-emoji {
+  font-size: 36px;
+  flex-shrink: 0;
+}
+.guide-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-strong, var(--text, #1e1e2e));
+  margin: 0 0 4px;
+}
+.guide-modal-desc {
+  font-size: 13px;
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+  line-height: 1.5;
+}
+.guide-setup-banner {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.guide-section {
+  margin-bottom: 18px;
+}
+.guide-section h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-strong, var(--text, #1e1e2e));
+  margin: 0 0 10px;
+}
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 12px;
+  background: var(--surface-hover, #f5f3f8);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text, #1e1e2e);
+}
+.guide-step-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.guide-tips {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary, #6b7280);
+}
+.guide-tips li {
+  margin-bottom: 4px;
+}
+
 /* ═══ 패치노트 ═══ */
 .patch-note-badge {
   position: absolute;
