@@ -28,7 +28,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "데이터 기반 의사결정",
     trainPrId: "AIG20250000501393",
-    degrs: ["1", "2", "3", "5"],
+    degrs: ["1", "2", "3", "4", "5"],
     startDate: "",
     totalDays: 0,
     endTime: "18:00",
