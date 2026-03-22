@@ -24,6 +24,7 @@ export type AppSidebarNavKey =
   | "achievement"
   | "inquiry"
   | "satisfaction"
+  | "crossAnalysis"
   | "settings";
 
 export type AppSidebarMenuConfig = {
@@ -243,6 +244,9 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       analytics: toSidebarLabel(labelsSource.analytics, "훈련생 분석"),
       traineeHistory: toSidebarLabel(labelsSource.traineeHistory, "훈련생 이력"),
       achievement: toSidebarLabel(labelsSource.achievement, "학업성취도"),
+      inquiry: toSidebarLabel(labelsSource.inquiry, "문의응대"),
+      satisfaction: toSidebarLabel(labelsSource.satisfaction, "만족도"),
+      crossAnalysis: toSidebarLabel(labelsSource.crossAnalysis, "교차분석"),
       settings: toSidebarLabel(labelsSource.settings, "설정"),
     },
     icons: {
@@ -255,6 +259,9 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       analytics: toSidebarIcon(iconsSource.analytics, "📈"),
       traineeHistory: toSidebarIcon(iconsSource.traineeHistory, "👤"),
       achievement: toSidebarIcon(iconsSource.achievement, "🎓"),
+      inquiry: toSidebarIcon(iconsSource.inquiry, "💬"),
+      satisfaction: toSidebarIcon(iconsSource.satisfaction, "❤️"),
+      crossAnalysis: toSidebarIcon(iconsSource.crossAnalysis, "📊"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️"),
     },
   };
