@@ -8,7 +8,9 @@ import type { AttendanceStudent } from "./hrdTypes";
 const _sbUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
 const _sbKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
 const NOTIFY_FUNCTION_URL =
-  typeof _sbUrl === "string" && _sbUrl.trim() ? `${_sbUrl.trim()}/functions/v1/send-notification` : "";
+  typeof _sbUrl === "string" && _sbUrl.trim()
+    ? `${_sbUrl.trim().replace(/\/+$/, "")}/functions/v1/send-notification`
+    : "";
 const SUPABASE_ANON_KEY = typeof _sbKey === "string" ? _sbKey.trim() : "";
 
 // ─── 템플릿 ────────────────────────────────────────────────

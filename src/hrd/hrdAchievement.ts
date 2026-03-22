@@ -284,7 +284,8 @@ function renderEmpTable(summaries: EmployedSummary[]): void {
   tbody.querySelectorAll<HTMLTableRowElement>("tr[data-emp-idx]").forEach((tr) => {
     tr.addEventListener("click", () => {
       const idx = Number(tr.getAttribute("data-emp-idx"));
-      if (summaries[idx]) showEmpDetail(empRecords.find((r) => r.성명 === summaries[idx].성명 && r.기수 === summaries[idx].기수));
+      const s = summaries[idx];
+      if (s) showEmpDetail(empRecords.find((r) => r.성명 === s.성명 && r.기수 === s.기수));
     });
   });
 }
