@@ -98,13 +98,26 @@ export function isDropout(raw: HrdRawTrainee): boolean {
   return stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
 }
 
-async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => void): Promise<DropoutRosterEntry[]> {
+function isActiveCourse(course: { startDate?: string; totalDays?: number }): boolean {
+  const dateStr = course.startDate || "";
+  if (!dateStr) return true; // 날짜 없으면 포함
+  const start = new Date(dateStr);
+  if (isNaN(start.getTime())) return true;
+  const today = new Date();
+  if (start > today) return true; // 개강 예정 포함
+  const days = course.totalDays && course.totalDays > 0 ? course.totalDays : 180;
+  const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+  return today <= end;
+}
+
+async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => void, activeOnly = false): Promise<DropoutRosterEntry[]> {
   const results: DropoutRosterEntry[] = [];
-  const total = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
+  const courses = activeOnly ? config.courses.filter(isActiveCourse) : config.courses;
+  const total = courses.reduce((sum, c) => sum + c.degrs.length, 0);
   let done = 0;
 
   // 과정별 순차, 기수별 병렬 (3개씩 배치)
-  for (const course of config.courses) {
+  for (const course of courses) {
     const BATCH = 3;
     for (let i = 0; i < course.degrs.length; i += BATCH) {
       const batch = course.degrs.slice(i, i + BATCH);
@@ -735,13 +748,14 @@ async function fetchAndRenderDropout(): Promise<void> {
   const emptyEl = $("doEmptyState");
   const contentEl = $("doContent");
 
-  if (statusEl) statusEl.textContent = "전체 과정 명단 조회 중...";
+  const activeOnly = ($("doActiveOnly") as HTMLInputElement)?.checked ?? false;
+  if (statusEl) statusEl.textContent = activeOnly ? "훈련중 과정 조회 중..." : "전체 과정 명단 조회 중...";
 
   try {
     const config = loadHrdConfig();
     dropoutData = await fetchAllRosters(config, (msg) => {
       if (statusEl) statusEl.textContent = msg;
-    });
+    }, activeOnly);
 
     if (dropoutData.length === 0) {
       if (statusEl) statusEl.textContent = "데이터가 없습니다.";
