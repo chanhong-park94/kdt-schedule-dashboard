@@ -61,7 +61,7 @@ function fmtRate(rate: number): string {
 
 // ─── 데이터 저장 ────────────────────────────────────────────
 let analysisData: TraineeAnalysis[] = [];
-let activeCourseStatusFilter: "" | "진행중" | "종강" = "";
+let activeCourseStatusFilter: "" | "진행중" | "종강" = "진행중";
 const CACHE_KEY = "kdt_analytics_cache_v1";
 
 // ─── 연령 파싱 ──────────────────────────────────────────────
@@ -1629,16 +1629,16 @@ export function initAnalytics(): void {
       if (emptyEl) emptyEl.style.display = "none";
       if (contentEl) contentEl.style.display = "block";
 
-      // 필터 초기화
-      activeCourseStatusFilter = "";
+      // 필터 초기화 — 기본 "진행중"
+      activeCourseStatusFilter = "진행중";
       const filterContainer = $("anaCourseStatusFilter");
       if (filterContainer) {
-        filterContainer.querySelectorAll(".ana-filter-btn").forEach((b, i) => {
-          b.classList.toggle("is-active", i === 0);
+        filterContainer.querySelectorAll(".ana-filter-btn").forEach((b) => {
+          b.classList.toggle("is-active", (b as HTMLElement).dataset.courseStatus === "진행중");
         });
       }
 
-      renderAllTabs(analysisData);
+      renderAllTabs(getFilteredData());
 
       // 캐시 저장 + 타임스탬프
       const now = new Date().toISOString();
