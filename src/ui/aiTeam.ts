@@ -90,6 +90,20 @@ const TEAM: AgentProfile[] = [
     desc: "HWPX(한글), PPTX(파워포인트), DOCX(워드), PDF, XLSX(엑셀) 문서를 생성·편집·변환합니다. 훈련 보고서, 공문서, 발표 자료 등 교육 운영 문서를 처리합니다.",
     tags: ["HWPX", "PPTX", "DOCX", "PDF", "보고서"],
   },
+  {
+    avatar: "🔒",
+    name: "Security Agent",
+    role: "AI · 보안/개인정보 감사",
+    desc: "학생 PII(이름/연락처) 노출, API 키 하드코딩, localStorage 민감 데이터, XSS 취약점을 검사합니다. 커밋 전 시크릿 스캔을 수행합니다.",
+    tags: ["PII 보호", "시크릿 스캔", "XSS 방어", "CORS"],
+  },
+  {
+    avatar: "⚡",
+    name: "Performance Agent",
+    role: "AI · 성능 최적화",
+    desc: "번들 크기 분석, 코드 스플리팅, lazy loading, 캐시 전략, 렌더링 성능을 최적화합니다. 현재 757KB → 500KB 이하 목표.",
+    tags: ["번들 최적화", "코드 스플리팅", "캐시", "렌더링"],
+  },
 ];
 
 function esc(s: string): string {
