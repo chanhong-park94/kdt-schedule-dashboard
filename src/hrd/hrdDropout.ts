@@ -612,38 +612,100 @@ function renderCourseChart(): void {
   chartInstances.push(chart);
 }
 
+// ─── 이탈 위험 히트맵 ──────────────────────────────────────
+function renderHeatmap(): void {
+  const wrap = $("doHeatmapWrap");
+  if (!wrap) return;
+
+  const data = getFilteredData();
+  // 과정별 기수 히트맵
+  const courseMap = new Map<string, { degr: string; rate: number; category: CourseCategory }[]>();
+  for (const e of data) {
+    if (!courseMap.has(e.courseName)) courseMap.set(e.courseName, []);
+    courseMap.get(e.courseName)!.push({ degr: e.degr, rate: e.defenseRate, category: e.category });
+  }
+
+  const heatColor = (rate: number, cat: CourseCategory) => {
+    const target = getTargetRate(cat);
+    if (rate >= target) return "background:#ecfdf5;color:#065f46";
+    if (rate >= target - 5) return "background:#fefce8;color:#854d0e";
+    if (rate >= target - 10) return "background:#fff7ed;color:#9a3412";
+    return "background:#fef2f2;color:#991b1b;font-weight:700";
+  };
+
+  const rows = Array.from(courseMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([name, entries]) => {
+      const sorted = entries.sort((a, b) => Number(a.degr) - Number(b.degr));
+      const cells = sorted.map((e) =>
+        `<td style="${heatColor(e.rate, e.category)};text-align:center;padding:6px 8px;font-size:12px;border-radius:4px" title="${name} ${e.degr}기: ${e.rate.toFixed(1)}%">${e.rate.toFixed(0)}%</td>`
+      ).join("");
+      return `<tr><td style="font-size:12px;font-weight:600;white-space:nowrap;padding:4px 8px">${name.length > 10 ? name.slice(0, 10) + "…" : name}</td>${cells}</tr>`;
+    }).join("");
+
+  const maxDegrs = Math.max(...Array.from(courseMap.values()).map((v) => v.length));
+  const headers = Array.from({ length: maxDegrs }, (_, i) => `<th style="font-size:11px;padding:4px 6px;text-align:center">${i + 1}기</th>`).join("");
+
+  wrap.innerHTML = `<table style="width:100%;border-collapse:separate;border-spacing:3px"><thead><tr><th></th>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ─── 이탈 위험 Top 10 리스트 ────────────────────────────────
+function renderRiskList(): void {
+  const wrap = $("doRiskListWrap");
+  if (!wrap) return;
+
+  const data = getFilteredData();
+  // 방어율 낮은 순 + 이탈자 있는 기수
+  const risky = data
+    .filter((e) => e.dropout > 0)
+    .sort((a, b) => a.defenseRate - b.defenseRate)
+    .slice(0, 10);
+
+  if (risky.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:13px">이탈 위험 데이터 없음</div>';
+    return;
+  }
+
+  const riskBadge = (rate: number, cat: CourseCategory) => {
+    const target = getTargetRate(cat);
+    if (rate < target - 10) return '<span class="achv-badge" style="background:#fef2f2;color:#991b1b">위험</span>';
+    if (rate < target - 5) return '<span class="achv-badge" style="background:#fff7ed;color:#9a3412">경고</span>';
+    if (rate < target) return '<span class="achv-badge" style="background:#fefce8;color:#854d0e">주의</span>';
+    return '<span class="achv-badge" style="background:#ecfdf5;color:#065f46">양호</span>';
+  };
+
+  // 스파크라인 (해당 과정의 기수별 추이)
+  const courseData = new Map<string, number[]>();
+  for (const e of data) {
+    if (!courseData.has(e.courseName)) courseData.set(e.courseName, []);
+    courseData.get(e.courseName)!.push(e.defenseRate);
+  }
+
+  const sparkline = (courseName: string) => {
+    const vals = courseData.get(courseName) || [];
+    if (vals.length < 2) return "";
+    const max = 100;
+    const w = 60, h = 20;
+    const points = vals.map((v, i) => `${(i / (vals.length - 1)) * w},${h - (v / max) * h}`).join(" ");
+    return `<svg width="${w}" height="${h}" style="vertical-align:middle"><polyline points="${points}" fill="none" stroke="#6366f1" stroke-width="1.5"/></svg>`;
+  };
+
+  wrap.innerHTML = risky.map((e) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.courseName} ${e.degr}기</div>
+        <div style="color:var(--text-muted)">${e.dropout}명 이탈 / ${e.total}명</div>
+      </div>
+      <div>${sparkline(e.courseName)}</div>
+      <div style="text-align:right;min-width:50px;font-weight:700">${e.defenseRate.toFixed(1)}%</div>
+      <div>${riskBadge(e.defenseRate, e.category)}</div>
+    </div>`).join("");
+}
+
+// 기존 도넛 차트 대체 — 히트맵 + 리스크 리스트를 한 번에 렌더
 function renderCategoryChart(): void {
-  const canvas = $("doChartCategory") as HTMLCanvasElement | null;
-  if (!canvas) return;
-
-  const employed = getCategorySummary("재직자");
-  const unemployed = getCategorySummary("실업자");
-
-  const chart = new Chart(canvas, {
-    type: "doughnut",
-    data: {
-      labels: ["재직자 방어", "재직자 이탈", "실업자 방어", "실업자 이탈"],
-      datasets: [
-        {
-          data: [employed.active, employed.dropout, unemployed.active, unemployed.dropout],
-          backgroundColor: [
-            "rgba(99,102,241,0.8)",
-            "rgba(99,102,241,0.25)",
-            "rgba(16,185,129,0.8)",
-            "rgba(16,185,129,0.25)",
-          ],
-          borderWidth: 2,
-          borderColor: "#ffffff",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } },
-    },
-  });
-  chartInstances.push(chart);
+  renderHeatmap();
+  renderRiskList();
 }
 
 function renderDegrChart(): void {
