@@ -240,17 +240,137 @@ function restoreFromCache(): void {
   setStatus(`${allRecords.length}건 (캐시)`, "success");
 }
 
+// ─── 수기 입력 로직 ──────────────────────────────────────────
+const SAT_LOCAL_KEY = "kdt_satisfaction_manual_v1";
+
+function loadManualRecords(): SatisfactionRecord[] {
+  try {
+    const raw = localStorage.getItem(SAT_LOCAL_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveManualRecords(records: SatisfactionRecord[]): void {
+  localStorage.setItem(SAT_LOCAL_KEY, JSON.stringify(records));
+}
+
+function populateCourseDatalist(): void {
+  const datalist = $("satCourseList");
+  if (!datalist) return;
+
+  // 기존 데이터 + HRD 과정 목록에서 추출
+  const courses = new Set<string>();
+  allRecords.forEach((r) => { if (r.과정명) courses.add(r.과정명); });
+
+  try {
+    const stored = localStorage.getItem("academic_schedule_manager_hrd_config_v1");
+    if (stored) {
+      const config = JSON.parse(stored);
+      config.courses?.forEach((c: { name: string }) => { if (c.name) courses.add(c.name); });
+    }
+  } catch { /* no config */ }
+
+  datalist.innerHTML = [...courses].sort().map((c) => `<option value="${esc(c)}">`).join("");
+}
+
+function initSatInput(): void {
+  const formEl = $("satInputForm");
+  const bodyEl = $("satInputBody");
+  let isOpen = false;
+
+  // 입력 버튼 토글
+  $("satShowInputBtn")?.addEventListener("click", () => {
+    isOpen = !isOpen;
+    if (formEl) formEl.style.display = isOpen ? "" : "none";
+    if (isOpen) populateCourseDatalist();
+  });
+
+  // 접기 버튼
+  $("satInputToggleBtn")?.addEventListener("click", () => {
+    if (bodyEl) bodyEl.style.display = bodyEl.style.display === "none" ? "" : "none";
+    const btn = $("satInputToggleBtn");
+    if (btn) btn.textContent = bodyEl?.style.display === "none" ? "펼치기" : "접기";
+  });
+
+  // 추가 버튼
+  $("satInputAddBtn")?.addEventListener("click", () => {
+    const courseSelect = $("satInputCourse") as HTMLInputElement | null;
+    const cohortInput = $("satInputCohort") as HTMLInputElement | null;
+    const moduleInput = $("satInputModule") as HTMLInputElement | null;
+    const npsInput = $("satInputNps") as HTMLInputElement | null;
+    const teacherInput = $("satInputTeacher") as HTMLInputElement | null;
+    const midInput = $("satInputMid") as HTMLInputElement | null;
+    const finalInput = $("satInputFinal") as HTMLInputElement | null;
+    const statusEl = $("satInputStatus");
+
+    const course = courseSelect?.value ?? "";
+    const cohort = cohortInput?.value?.trim() ?? "";
+    const module = moduleInput?.value?.trim() ?? "";
+    const nps = Number(npsInput?.value) || 0;
+
+    if (!course || !cohort || !module) {
+      if (statusEl) { statusEl.textContent = "과정, 기수, 모듈명은 필수입니다."; statusEl.style.color = "var(--text-danger, #ef4444)"; }
+      return;
+    }
+
+    const record: SatisfactionRecord = {
+      과정명: course,
+      기수: cohort,
+      모듈명: module,
+      NPS: nps,
+      강사만족도: Number(teacherInput?.value) || 0,
+      중간만족도: Number(midInput?.value) || 0,
+      최종만족도: Number(finalInput?.value) || 0,
+    };
+
+    // 로컬 저장
+    const manual = loadManualRecords();
+    manual.push(record);
+    saveManualRecords(manual);
+
+    // 현재 데이터에도 추가
+    allRecords.push(record);
+    populateFilters(allRecords);
+    const stats = calcSatisfactionStats(allRecords);
+    renderStats(stats);
+    applyFilterAndRender();
+    setStatus(`${allRecords.length}건 (${manual.length}건 수기 입력 포함)`, "success");
+
+    // 입력 필드 초기화 (과정/기수는 유지)
+    if (moduleInput) moduleInput.value = "";
+    if (npsInput) npsInput.value = "";
+    if (teacherInput) teacherInput.value = "";
+    if (midInput) midInput.value = "";
+    if (finalInput) finalInput.value = "";
+    if (statusEl) { statusEl.textContent = `✓ "${module}" 추가됨`; statusEl.style.color = "var(--text-success, #22c55e)"; }
+  });
+}
+
 // ─── 초기화 ─────────────────────────────────────────────────
 export function initSatisfaction(): void {
   currentConfig = loadSatisfactionConfig();
   initSettingsSatisfaction();
   updateConfigNotice();
+  initSatInput();
 
   $("satFilterCourse")?.addEventListener("change", applyFilterAndRender);
   $("satFilterCohort")?.addEventListener("change", applyFilterAndRender);
 
-  // 캐시 자동 복원
+  // 캐시 자동 복원 + 수기 입력 데이터 병합
   restoreFromCache();
+  const manual = loadManualRecords();
+  if (manual.length > 0) {
+    allRecords = [...allRecords, ...manual];
+    if (allRecords.length > 0) {
+      populateFilters(allRecords);
+      const stats = calcSatisfactionStats(allRecords);
+      renderStats(stats);
+      applyFilterAndRender();
+      setStatus(`${allRecords.length}건 (${manual.length}건 수기 포함)`, "success");
+    }
+  }
 
   // 조회
   $("satisfactionFetchBtn")?.addEventListener("click", async () => {
@@ -261,12 +381,14 @@ export function initSatisfaction(): void {
     }
     setStatus("데이터 로딩 중...", "loading");
     try {
-      allRecords = await fetchSatisfactionRecords(currentConfig);
+      const fetched = await fetchSatisfactionRecords(currentConfig);
+      const manual = loadManualRecords();
+      allRecords = [...fetched, ...manual];
       populateFilters(allRecords);
       const stats = calcSatisfactionStats(allRecords);
       renderStats(stats);
       applyFilterAndRender();
-      setStatus(`${allRecords.length}건 로드 완료`, "success");
+      setStatus(`${allRecords.length}건 로드 완료 (${manual.length}건 수기 포함)`, "success");
     } catch (e) {
       setStatus(`로드 실패: ${(e as Error).message}`, "error");
     }

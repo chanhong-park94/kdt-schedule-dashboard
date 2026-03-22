@@ -165,6 +165,17 @@
             <span class="jibble-nav-emoji" aria-hidden="true">💬</span>
             <span class="jibble-nav-label">문의응대</span>
           </button>
+          <button
+            class="jibble-nav-item"
+            type="button"
+            data-scroll-target="sectionSatisfaction"
+            data-nav-key="satisfaction"
+            data-nav-icon="star"
+            data-default-label="만족도"
+          >
+            <span class="jibble-nav-emoji" aria-hidden="true">😊</span>
+            <span class="jibble-nav-label">만족도</span>
+          </button>
 
           <div class="nav-spacer" aria-hidden="true"></div>
           <button
@@ -1988,12 +1999,58 @@
             <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
               <h3>😊 만족도</h3>
               <div style="display: flex; gap: 8px">
+                <button id="satShowInputBtn" class="btn btn--sm" style="font-size: 13px">📝 입력</button>
                 <button id="satisfactionFetchBtn" class="btn btn--primary btn--sm">조회</button>
               </div>
             </div>
 
             <div id="satisfactionConfigNotice" class="kpi-connect-status" style="display: none; margin-bottom: 12px">
               ⚙️ 설정 → API 연동에서 Apps Script URL을 입력해주세요. (학업성취도와 동일 URL 사용)
+            </div>
+
+            <!-- 수기 입력 폼 -->
+            <div id="satInputForm" style="margin-bottom: 16px; display: none">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px">
+                <h4 style="margin: 0">📝 만족도 수기 입력</h4>
+                <button id="satInputToggleBtn" class="btn btn--sm" style="font-size: 12px">접기</button>
+              </div>
+              <div id="satInputBody">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px">
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">과정</label>
+                    <input id="satInputCourse" class="hrd-input" list="satCourseList" placeholder="예: 리서치17기" style="width: 100%" />
+                    <datalist id="satCourseList"></datalist>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">기수</label>
+                    <input id="satInputCohort" class="hrd-input" type="text" placeholder="예: 17기" style="width: 100%" />
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">모듈명</label>
+                    <input id="satInputModule" class="hrd-input" type="text" placeholder="예: NLP 기초" style="width: 100%" />
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">NPS 점수</label>
+                    <input id="satInputNps" class="hrd-input" type="number" placeholder="0~100" min="0" max="100" style="width: 100%" />
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">강사만족도</label>
+                    <input id="satInputTeacher" class="hrd-input" type="number" placeholder="1~5" min="1" max="5" step="0.1" style="width: 100%" />
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">HRD 중간만족도</label>
+                    <input id="satInputMid" class="hrd-input" type="number" placeholder="1~5" min="1" max="5" step="0.1" style="width: 100%" />
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; color: var(--text-muted)">HRD 최종만족도</label>
+                    <input id="satInputFinal" class="hrd-input" type="number" placeholder="1~5" min="1" max="5" step="0.1" style="width: 100%" />
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button id="satInputAddBtn" class="btn btn--primary btn--sm">추가</button>
+                  <span id="satInputStatus" style="font-size: 12px; align-self: center"></span>
+                </div>
+              </div>
             </div>
 
             <!-- 통계 카드 -->
