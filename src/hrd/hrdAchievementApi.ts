@@ -12,6 +12,7 @@ import type {
   AchievementConfig,
 } from "./hrdAchievementTypes";
 import { ACHIEVEMENT_CONFIG_KEY, ACHIEVEMENT_CACHE_KEY } from "./hrdAchievementTypes";
+import { fetchWithTimeout, classifyApiError } from "./hrdCacheUtils";
 
 // ── 설정 저장/불러오기 ──────────────────────────────────────
 export function loadAchievementConfig(): AchievementConfig {
@@ -42,6 +43,12 @@ export function loadAchievementCache(): UnifiedRecord[] | null {
   return c ? c.unified : null;
 }
 
+/** 캐시 저장 시점(ms) 반환. 캐시 없거나 만료면 null */
+export function getAchievementCacheTimestamp(): number | null {
+  const c = _loadCache();
+  return c ? c.timestamp : null;
+}
+
 function _loadCache(): AchievementCache | null {
   try {
     const raw = localStorage.getItem(ACHIEVEMENT_CACHE_KEY);
@@ -68,7 +75,7 @@ async function fetchAction(baseUrl: string, params: Record<string, string>): Pro
   const qs = Object.entries(params)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join("&");
-  const r = await fetch(`${baseUrl}${sep}${qs}`);
+  const r = await fetchWithTimeout(`${baseUrl}${sep}${qs}`, {}, 30_000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
@@ -275,6 +282,6 @@ export async function testAchievementConnection(config: AchievementConfig): Prom
     const count = json.sheets?.length ?? 0;
     return { ok: true, message: `연결 성공! (${count}개 시트 확인)` };
   } catch (e) {
-    return { ok: false, message: `연결 실패: ${(e as Error).message}` };
+    return { ok: false, message: classifyApiError(e) };
   }
 }

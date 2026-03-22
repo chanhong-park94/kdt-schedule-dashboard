@@ -1058,6 +1058,7 @@
                       <button class="att-view-btn" data-att-view="monthly">월별</button>
                       <button class="att-view-btn" data-att-view="weekly">주간</button>
                     </div>
+                    <button id="attFilterReset" class="btn-sm btn-ghost" type="button" title="필터 초기화">↺ 초기화</button>
                     <button id="attQueryBtn" class="btn-primary att-query-btn" type="button">조회</button>
                     <button id="attRiskBtn" class="att-risk-btn" type="button" disabled>
                       🚨 관리대상 <span id="attRiskBadge" class="att-risk-count-badge">0</span>
@@ -1808,7 +1809,7 @@
 
               <!-- [상세 데이터] 탭 -->
               <div id="anaPanel-detail" class="ana-tab-panel" style="display: none">
-                <div class="ana-filters">
+                <div class="filter-bar ana-filters">
                   <select id="anaFilterCourse" class="hrd-input">
                     <option value="">전체 과정</option>
                   </select>
@@ -1872,6 +1873,7 @@
               <h3>🎓 학업성취도</h3>
               <div style="display: flex; gap: 8px">
                 <button id="achievementFetchBtn" class="btn btn--primary btn--sm">조회</button>
+                <button id="achievementExcelBtn" class="btn-sm btn-ghost" type="button" title="Excel 내보내기">📥 Excel</button>
               </div>
             </div>
 
@@ -1887,7 +1889,7 @@
 
             <!-- ══ 실업자 패널 ══ -->
             <div id="achvPanelUnemployed">
-              <div id="achievementFilters" class="ana-filters" style="margin-bottom: 12px; display: none; flex-wrap: wrap; gap: 8px">
+              <div id="achievementFilters" class="filter-bar ana-filters" style="margin-bottom: 12px; display: none; flex-wrap: wrap; gap: 8px">
                 <select id="achvFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
                 <select id="achvFilterCohort" class="hrd-input"><option value="">전체 기수</option></select>
                 <select id="achvFilterStatus" class="hrd-input">
@@ -1903,12 +1905,14 @@
                   <option value="green">🟢 양호</option>
                 </select>
                 <input type="text" id="achvFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 160px" />
+                <button id="achvFilterReset" class="btn-sm btn-ghost" type="button" title="필터 초기화">↺ 초기화</button>
                 <span id="achvTraineeCount" class="muted" style="font-size: 13px"></span>
               </div>
               <div id="achievementStatus" class="ana-status"></div>
               <div id="achievementEmpty" class="att-empty-state">
+                <div class="att-empty-icon">🎓</div>
                 <div class="att-empty-title">학업성취도 (실업자)</div>
-                <div class="att-empty-desc">조회 버튼을 클릭하면 실업자 학업성취도 데이터를 표시합니다.</div>
+                <div class="att-empty-desc">조회 버튼을 클릭하면 실업자 학업성취도 데이터를 표시합니다.<br /><small class="muted">연결 설정: 설정 → API 연동 → 학업성취도 (Apps Script)</small></div>
               </div>
               <div id="achievementContent" style="display: none">
                 <div style="overflow-x: auto">
@@ -1933,16 +1937,18 @@
 
             <!-- ══ 재직자 패널 ══ -->
             <div id="achvPanelEmployed" style="display: none">
-              <div id="empFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+              <div id="empFilters" class="filter-bar ana-filters" style="margin-bottom: 12px; display: none">
                 <select id="empFilterCourse" class="hrd-input"><option value="">전체 과정</option></select>
                 <select id="empFilterCohort" class="hrd-input"><option value="">전체 기수</option></select>
                 <input type="text" id="empFilterSearch" class="hrd-input" placeholder="이름 검색..." style="max-width: 180px" />
+                <button id="empFilterReset" class="btn-sm btn-ghost" type="button" title="필터 초기화">↺ 초기화</button>
                 <span id="empTraineeCount" class="muted" style="font-size: 13px"></span>
               </div>
               <div id="empStatus" class="ana-status"></div>
               <div id="empEmpty" class="att-empty-state">
+                <div class="att-empty-icon">📊</div>
                 <div class="att-empty-title">학업성취도 (재직자)</div>
-                <div class="att-empty-desc">조회 버튼을 클릭하면 재직자 유닛리포트 데이터를 표시합니다.</div>
+                <div class="att-empty-desc">조회 버튼을 클릭하면 재직자 유닛리포트 데이터를 표시합니다.<br /><small class="muted">연결 설정: 설정 → API 연동 → 학업성취도 (Apps Script)</small></div>
               </div>
               <div id="empContent" style="display: none">
                 <div style="overflow-x: auto">
@@ -2004,7 +2010,7 @@
             </div>
 
             <!-- 필터 -->
-            <div id="inquiryFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+            <div id="inquiryFilters" class="filter-bar ana-filters" style="margin-bottom: 12px; display: none">
               <select id="inqFilterChannel" class="hrd-input">
                 <option value="">전체 채널</option>
               </select>
@@ -2018,6 +2024,7 @@
                 placeholder="검색 (이름, 질문, 과정...)"
                 style="min-width: 180px"
               />
+              <button id="inqFilterReset" class="btn-sm btn-ghost" type="button" title="필터 초기화">↺ 초기화</button>
               <span id="inqRecordCount" class="muted" style="font-size: 13px"></span>
             </div>
 
@@ -2147,13 +2154,14 @@
             </div>
 
             <!-- 필터 -->
-            <div id="satisfactionFilters" class="ana-filters" style="margin-bottom: 12px; display: none">
+            <div id="satisfactionFilters" class="filter-bar ana-filters" style="margin-bottom: 12px; display: none">
               <select id="satFilterCourse" class="hrd-input">
                 <option value="">전체 과정</option>
               </select>
               <select id="satFilterCohort" class="hrd-input">
                 <option value="">전체 기수</option>
               </select>
+              <button id="satFilterReset" class="btn-sm btn-ghost" type="button" title="필터 초기화">↺ 초기화</button>
               <span id="satRecordCount" class="muted" style="font-size: 13px"></span>
             </div>
 
@@ -3125,6 +3133,18 @@
               <div id="stateStorageStatus" class="muted u-mt-6">자동저장 대기</div>
               <div id="stateStorageWarning" class="muted u-mt-4"></div>
 
+              <!-- 캐시 관리 -->
+              <div class="hrd-settings-row u-mt-10">
+                <strong>API 캐시 관리</strong>
+                <div class="muted u-mt-4" id="cacheStatusSummary">캐시 현황을 확인하려면 아래 버튼을 사용하세요.</div>
+                <div class="u-mt-6" style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button id="clearAllCacheBtn" class="btn-sm btn-ghost" type="button">전체 캐시 초기화</button>
+                  <button id="clearAchievementCacheBtn" class="btn-sm btn-ghost" type="button">학업성취도</button>
+                  <button id="clearInquiryCacheBtn" class="btn-sm btn-ghost" type="button">문의응대</button>
+                  <button id="clearSatisfactionCacheBtn" class="btn-sm btn-ghost" type="button">만족도</button>
+                </div>
+              </div>
+
               <div id="menuConfigCard" class="menu-config-card admin-only u-mt-10">
                 <strong>사이드 메뉴 설정</strong>
                 <div class="muted u-mt-4">메뉴 이모지, 이름, 순서를 직접 바꿔서 저장할 수 있습니다.</div>
@@ -3234,6 +3254,11 @@
         <div id="guideModalBody"></div>
       </div>
     </div>
+
+    <!-- 토스트 알림 컨테이너 -->
+    <div id="toastContainer" class="toast-container"></div>
+    <!-- 오프라인 배너 -->
+    <div id="offlineBanner" class="offline-banner u-hidden">📡 인터넷 연결이 끊어졌습니다. 일부 기능이 제한될 수 있습니다.</div>
 
     <script type="module" src="./main.ts"></script>
   </body>

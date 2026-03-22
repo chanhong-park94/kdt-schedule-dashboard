@@ -14,7 +14,9 @@ import {
   summarizeByCohort,
   extractSatisfactionFilters,
   loadSatisfactionCache,
+  getSatisfactionCacheTimestamp,
 } from "./hrdSatisfactionApi";
+import { formatCacheAge, classifyApiError } from "./hrdCacheUtils";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
@@ -237,7 +239,9 @@ function restoreFromCache(): void {
   const stats = calcSatisfactionStats(allRecords);
   renderStats(stats);
   applyFilterAndRender();
-  setStatus(`${allRecords.length}건 (캐시)`, "success");
+  const ts = getSatisfactionCacheTimestamp();
+  const age = ts ? ` · ${formatCacheAge(ts)}` : "";
+  setStatus(`${allRecords.length}건 (캐시${age})`, "success");
 }
 
 // ─── 수기 입력 로직 ──────────────────────────────────────────
@@ -358,6 +362,15 @@ export function initSatisfaction(): void {
   $("satFilterCourse")?.addEventListener("change", applyFilterAndRender);
   $("satFilterCohort")?.addEventListener("change", applyFilterAndRender);
 
+  // 필터 초기화
+  $("satFilterReset")?.addEventListener("click", () => {
+    for (const id of ["satFilterCourse", "satFilterCohort"]) {
+      const el = $(id) as HTMLSelectElement | null;
+      if (el) el.selectedIndex = 0;
+    }
+    applyFilterAndRender();
+  });
+
   // 캐시 자동 복원 + 수기 입력 데이터 병합
   restoreFromCache();
   const manual = loadManualRecords();
@@ -390,7 +403,7 @@ export function initSatisfaction(): void {
       applyFilterAndRender();
       setStatus(`${allRecords.length}건 로드 완료 (${manual.length}건 수기 포함)`, "success");
     } catch (e) {
-      setStatus(`로드 실패: ${(e as Error).message}`, "error");
+      setStatus(classifyApiError(e), "error");
     }
   });
 }

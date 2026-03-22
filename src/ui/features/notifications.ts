@@ -1,5 +1,6 @@
 import { appState, type NotificationItem } from "../appState";
 import { domRefs } from "../domRefs";
+import { formatRelativeTime } from "../../hrd/hrdCacheUtils";
 
 type NotificationsDeps = {
   scrollToSection: (sectionId: string) => void;
@@ -69,7 +70,7 @@ export function renderNotificationCenter(): void {
     }
 
     const head = document.createElement("div");
-    head.innerHTML = `<strong>${row.severity}</strong> · ${new Date(row.createdAt).toLocaleString()}`;
+    head.innerHTML = `<strong>${row.severity}</strong> · ${formatRelativeTime(row.createdAt)}`;
     card.appendChild(head);
 
     const msg = document.createElement("div");

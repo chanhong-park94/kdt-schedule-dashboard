@@ -1,5 +1,6 @@
 /** HRD-Net API 호출 모듈 (CORS 프록시 폴백) */
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig } from "./hrdTypes";
+import { fetchWithTimeout } from "./hrdCacheUtils";
 
 const HRD_BASE = "https://hrd.work24.go.kr/jsp/HRDP/HRDPO00/HRDPOA60/HRDPOA60_4.jsp";
 
@@ -22,10 +23,10 @@ let _activeProxyIndex = 0;
 async function proxyFetch(rawUrl: string, config: HrdConfig, label: string): Promise<unknown> {
   const tryOne = async (entry: ProxyEntry): Promise<Response> => {
     const url = entry.encode ? entry.prefix + encodeURIComponent(rawUrl) : entry.prefix + rawUrl;
-    const r = await fetch(url, {
+    const r = await fetchWithTimeout(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
-    });
+    }, 15_000);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r;
   };
