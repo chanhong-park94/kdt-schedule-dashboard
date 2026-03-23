@@ -154,27 +154,7 @@ async function fetchDashboardData(
           const totalCount = roster.length;
           const now = new Date();
 
-          // 과정 진행률 계산
-          let progress = 0;
-          if (course.startDate && course.totalDays) {
-            const start = new Date(course.startDate);
-            const totalCalendarDays = Math.ceil((course.totalDays / 5) * 7);
-            const elapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-            progress = Math.min(100, Math.round((elapsed / totalCalendarDays) * 100 * 10) / 10);
-          }
-
-          courseData.push({
-            courseName: course.name,
-            trainPrId: course.trainPrId,
-            degr,
-            category: course.category || "실업자",
-            total: totalCount,
-            dropout: dropoutCount,
-            active: totalCount - dropoutCount,
-            defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
-            progress,
-          });
-
+          // 출결 데이터 조회 (진행률 계산에도 사용)
           const months: string[] = [];
           for (let m = 2; m >= 0; m--) {
             const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
@@ -191,12 +171,34 @@ async function fetchDashboardData(
             }
           }
 
-          // 당일 출결 데이터 제외 — 수업일 당일에는 퇴실체크 전까지 결석으로 표기되므로
-          // 전일자까지의 확정된 데이터만 사용
+          // 당일 출결 데이터 제외 — 퇴실체크 전 결석 오표기 방지
           const todayStr = now.toISOString().slice(0, 10).replace(/-/g, "");
           const confirmedAttendance = allAttendance.filter((r) => {
             const dateStr = (r.atendDe || "").toString().replace(/-/g, "").trim();
             return dateStr < todayStr;
+          });
+
+          // 과정 진행률 계산 — 출결 기록 일수 기반
+          let progress = 0;
+          const td = course.totalDays || 0;
+          if (td > 0) {
+            // 출결 데이터에서 고유 날짜 수 = 실제 수업 진행일
+            const uniqueDates = new Set(
+              confirmedAttendance.map((r) => (r.atendDe || "").toString().replace(/-/g, "").trim()).filter(Boolean),
+            );
+            progress = Math.min(100, Math.round((uniqueDates.size / td) * 100 * 10) / 10);
+          }
+
+          courseData.push({
+            courseName: course.name,
+            trainPrId: course.trainPrId,
+            degr,
+            category: course.category || "실업자",
+            total: totalCount,
+            dropout: dropoutCount,
+            active: totalCount - dropoutCount,
+            defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
+            progress,
           });
 
           for (const raw of roster) {
