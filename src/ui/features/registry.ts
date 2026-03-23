@@ -37,6 +37,7 @@ import type { TemplateRowState } from "../../core/state";
 import type { InstructorDirectoryEntry } from "../../core/types";
 import { pushRecentActionLog } from "./notifications";
 import { renderCourseTemplateOptions } from "./courseTemplates";
+import { syncHrdCoursesToRegistry } from "../../core/courseSyncBridge";
 
 type RegistryDeps = {
   scheduleAutoSave: () => void;
@@ -73,6 +74,24 @@ let deps: RegistryDeps = defaultDeps;
 
 export function initRegistryFeature(nextDeps: RegistryDeps): void {
   deps = nextDeps;
+  wireImportHrdCoursesButton();
+}
+
+function wireImportHrdCoursesButton(): void {
+  document.getElementById("importHrdCoursesButton")?.addEventListener("click", () => {
+    const added = syncHrdCoursesToRegistry();
+    renderCourseRegistry();
+    renderCourseSelectOptions();
+    const statusEl = document.getElementById("importHrdCoursesStatus");
+    if (statusEl) {
+      statusEl.textContent =
+        added > 0 ? `${added}개 과정이 추가되었습니다.` : "이미 모든 HRD 과정이 동기화되어 있습니다.";
+      setTimeout(() => {
+        statusEl.textContent = "";
+      }, 3000);
+    }
+    deps.scheduleAutoSave();
+  });
 }
 
 export function ensureCourseRegistryDefaults(): void {
@@ -136,6 +155,17 @@ export function renderCourseRegistry(): void {
     courseIdTd.textContent = entry.courseId;
     const nameTd = document.createElement("td");
     nameTd.textContent = entry.courseName;
+    const badge = document.createElement("span");
+    if (entry.hrdTrainPrId) {
+      badge.className = "badge badge--hrd";
+      badge.title = "HRD 과정등록과 동기화됨";
+      badge.textContent = "HRD";
+    } else {
+      badge.className = "badge badge--manual";
+      badge.title = "수동 등록";
+      badge.textContent = "수동";
+    }
+    nameTd.appendChild(badge);
     const memoTd = document.createElement("td");
     memoTd.textContent = entry.memo;
     const actionTd = document.createElement("td");

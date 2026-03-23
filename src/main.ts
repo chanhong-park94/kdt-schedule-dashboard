@@ -39,6 +39,7 @@ import {
   TrackType,
 } from "./core/types";
 import { isInstructorCloudEnabled } from "./core/instructorSync";
+import { syncHrdCoursesToRegistry, syncSingleHrdCourse, unlinkHrdCourse } from "./core/courseSyncBridge";
 import { addDaysToIso, formatDate, getTodayCompactDate, getTodayIsoDate, parseCompactDate, parseIsoDate } from "./ui/utils/date";
 import {
   formatHours,
@@ -1083,11 +1084,38 @@ function setCohortOptions(cohortSummaries: CohortSummary[], preferredCohort = ""
 
   cohortSelect.innerHTML = "";
 
-  for (const summary of cohortSummaries) {
-    const option = document.createElement("option");
-    option.value = summary.과정기수;
-    option.textContent = summary.과정기수;
-    cohortSelect.appendChild(option);
+  const csvSummaries = cohortSummaries.filter((s) => s.source !== "kdt");
+  const kdtSummaries = cohortSummaries.filter((s) => s.source === "kdt");
+
+  if (csvSummaries.length > 0 && kdtSummaries.length > 0) {
+    // 두 그룹 모두 있을 때 optgroup 사용
+    const csvGroup = document.createElement("optgroup");
+    csvGroup.label = "CSV 업로드 과정";
+    for (const summary of csvSummaries) {
+      const option = document.createElement("option");
+      option.value = summary.과정기수;
+      option.textContent = `${summary.과정기수} (${summary.세션수}세션)`;
+      csvGroup.appendChild(option);
+    }
+    cohortSelect.appendChild(csvGroup);
+
+    const kdtGroup = document.createElement("optgroup");
+    kdtGroup.label = "KDT 학사일정 (참조용)";
+    for (const summary of kdtSummaries) {
+      const option = document.createElement("option");
+      option.value = summary.과정기수;
+      option.textContent = summary.과정기수;
+      kdtGroup.appendChild(option);
+    }
+    cohortSelect.appendChild(kdtGroup);
+  } else {
+    // 한 그룹만 있을 때 기존 방식
+    for (const summary of cohortSummaries) {
+      const option = document.createElement("option");
+      option.value = summary.과정기수;
+      option.textContent = summary.source === "csv" ? `${summary.과정기수} (${summary.세션수}세션)` : summary.과정기수;
+      cohortSelect.appendChild(option);
+    }
   }
 
   if (cohortSummaries.length > 0) {
@@ -1789,9 +1817,11 @@ function downloadStaffingCsv(): void {
 
 function regenerateSummariesAndTimeline(preferredCohort = ""): void {
   const sessionSummaries = buildCohortSummaries(appState.sessions);
+  for (const s of sessionSummaries) s.source = "csv";
   // KDT 학사일정 데이터 병합 (세션 데이터가 없는 과정만 추가)
   const sessionCohortNames = new Set(sessionSummaries.map((s) => s.과정기수));
   const kdtSummaries = getKdtScheduleSummaries().filter((s) => !sessionCohortNames.has(s.과정기수));
+  for (const s of kdtSummaries) s.source = "kdt";
   appState.summaries = [...sessionSummaries, ...kdtSummaries];
   setCohortOptions(appState.summaries, preferredCohort);
   renderTimeline();
@@ -2583,6 +2613,18 @@ void import("./reports/reportsInit").then(({ initWeeklyReport }) => initWeeklyRe
 if (hasAuthSession) {
   void bootstrapAppAfterAuthLogin();
 }
+
+// ─── HRD → courseRegistry 초기 동기화 ────────────────────────
+syncHrdCoursesToRegistry();
+
+// HRD 과정 변경 이벤트 리스너
+document.addEventListener("hrd-course-changed", ((e: CustomEvent) => {
+  const { action, course, trainPrId } = e.detail;
+  if (action === "add" && course) syncSingleHrdCourse(course);
+  if (action === "remove" && trainPrId) unlinkHrdCourse(trainPrId);
+  if (action === "restore") syncHrdCoursesToRegistry();
+  scheduleAutoSave();
+}) as EventListener);
 
 // ─── 오프라인 감지 ──────────────────────────────────────────
 (function initOfflineDetection() {

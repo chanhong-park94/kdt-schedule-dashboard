@@ -790,50 +790,56 @@
                   </tr>
                 </tbody>
               </table>
-              <div class="row template-preset-row">
-                <div>
-                  <label>저장된 템플릿</label>
-                  <select id="scheduleTemplateSelect"></select>
+              <div class="gen-card">
+                <div class="gen-card-title">템플릿 관리</div>
+                <div class="row template-preset-row">
+                  <div>
+                    <label>저장된 템플릿</label>
+                    <select id="scheduleTemplateSelect"></select>
+                  </div>
+                  <button id="loadScheduleTemplateButton" class="btn-secondary" type="button">불러오기</button>
+                  <div>
+                    <label>현재 설정 저장(이름)</label>
+                    <input id="scheduleTemplateName" type="text" placeholder="예: 재직자 LLM" />
+                  </div>
+                  <button id="saveScheduleTemplateButton" class="btn-secondary" type="button">저장</button>
+                  <button id="deleteScheduleTemplateButton" class="btn-danger" type="button">삭제</button>
                 </div>
-                <button id="loadScheduleTemplateButton" class="btn-secondary" type="button">불러오기</button>
-                <div>
-                  <label>현재 설정 저장(이름)</label>
-                  <input id="scheduleTemplateName" type="text" placeholder="예: 재직자 LLM" />
-                </div>
-                <button id="saveScheduleTemplateButton" class="btn-secondary" type="button">저장</button>
-                <button id="deleteScheduleTemplateButton" class="btn-danger" type="button">삭제</button>
+                <div id="scheduleTemplateStatus" class="muted template-status"></div>
               </div>
-              <div id="scheduleTemplateStatus" class="muted template-status"></div>
             </div>
 
-            <div class="row u-mt-10 u-row-start" id="holidaySection">
-              <div class="date-block">
-                <label>공휴일 추가</label>
-                <div class="row date-input-row">
-                  <input id="holidayDateInput" type="date" />
-                  <button id="addHolidayButton" class="btn-secondary" type="button">추가</button>
-                  <button id="loadPublicHolidaysButton" class="btn-secondary" type="button">
-                    공휴일 불러오기(대한민국)
-                  </button>
-                </div>
-                <div class="row date-action-row">
-                  <button id="clearHolidaysButton" type="button" class="small-btn">전체 삭제</button>
-                  <button id="dedupeHolidaysButton" type="button" class="small-btn">중복 제거</button>
-                  <div class="holiday-load-wrap">
-                    <span id="holidayLoadSpinner" class="spinner u-hidden"></span>
-                    <span id="holidayLoadStatus" class="muted"></span>
+            <div class="gen-card">
+              <div class="gen-card-title">휴강일 관리</div>
+              <div class="row u-row-start" id="holidaySection">
+                <div class="date-block">
+                  <label>공휴일 추가</label>
+                  <div class="row date-input-row">
+                    <input id="holidayDateInput" type="date" />
+                    <button id="addHolidayButton" class="btn-secondary btn-sm" type="button">추가</button>
+                    <button id="loadPublicHolidaysButton" class="btn-secondary btn-sm" type="button">
+                      공휴일 불러오기(대한민국)
+                    </button>
                   </div>
+                  <div class="row date-action-row">
+                    <button id="clearHolidaysButton" type="button" class="btn-secondary btn-sm">전체 삭제</button>
+                    <button id="dedupeHolidaysButton" type="button" class="btn-secondary btn-sm">중복 제거</button>
+                    <div class="holiday-load-wrap">
+                      <span id="holidayLoadSpinner" class="spinner u-hidden"></span>
+                      <span id="holidayLoadStatus" class="muted"></span>
+                    </div>
+                  </div>
+                  <ul id="holidayList" class="date-list"></ul>
                 </div>
-                <ul id="holidayList" class="date-list"></ul>
-              </div>
 
-              <div class="date-block">
-                <label>자체휴강 추가</label>
-                <div class="row date-input-row">
-                  <input id="customBreakDateInput" type="date" />
-                  <button id="addCustomBreakButton" class="btn-secondary" type="button">추가</button>
+                <div class="date-block">
+                  <label>자체휴강 추가</label>
+                  <div class="row date-input-row">
+                    <input id="customBreakDateInput" type="date" />
+                    <button id="addCustomBreakButton" class="btn-secondary btn-sm" type="button">추가</button>
+                  </div>
+                  <ul id="customBreakList" class="date-list"></ul>
                 </div>
-                <ul id="customBreakList" class="date-list"></ul>
               </div>
             </div>
 
@@ -841,46 +847,50 @@
             <input id="scheduleClassroomCode" type="hidden" value="AUTO-ROOM" />
             <input id="scheduleSubjectCode" type="hidden" value="AUTO-SUBJECT" />
 
-            <div class="row u-mt-10 u-row-center">
-              <button id="generateScheduleButton" class="btn-primary" type="button">일정 생성</button>
-              <label class="inline-check">
-                <input id="pushScheduleToConflicts" type="checkbox" />
-                충돌 확인 대상에 포함
-              </label>
-              <button id="appendScheduleButton" class="btn-primary" type="button" disabled>생성 결과 반영</button>
-            </div>
+            <div class="gen-card">
+              <div class="gen-card-title">일정 생성 및 다운로드</div>
 
-            <div id="scheduleError" class="error-box u-hidden"></div>
-
-            <div id="scheduleResult" class="u-hidden u-mt-10">
-              <div class="row u-row-between u-row-center">
-                <div class="muted" id="scheduleSummary"></div>
-                <button id="scheduleDownloadCsvButton" class="btn-sm btn-primary" type="button">CSV 다운로드</button>
+              <div class="row u-mt-4 u-row-center">
+                <button id="generateScheduleButton" class="btn-primary" type="button">일정 생성</button>
+                <label class="inline-check">
+                  <input id="pushScheduleToConflicts" type="checkbox" />
+                  충돌 확인 대상에 포함
+                </label>
+                <button id="appendScheduleButton" class="btn-primary" type="button" disabled>생성 결과 반영</button>
               </div>
-              <div class="muted u-mt-4" id="scheduleSkippedSummary"></div>
-              <div id="scheduleSkippedDetails" class="skipped-details"></div>
-              <div class="muted u-mt-4" id="scheduleDaysInfo"></div>
-              <ul id="scheduleDaysPreview" class="schedule-preview-list"></ul>
-              <div class="muted" id="scheduleAppendStatus"></div>
-            </div>
 
-            <div class="card u-mt-12" id="hrdDownloadCard">
-              <label>HRD 업로드용 CSV 다운로드</label>
-              <div class="row u-mt-8 u-row-center">
-                <div>
-                  <label>과정 기수 선택</label>
-                  <select id="cohort"></select>
+              <div id="scheduleError" class="error-box u-hidden"></div>
+
+              <div id="scheduleResult" class="u-hidden u-mt-10">
+                <div class="row u-row-between u-row-center">
+                  <div class="muted" id="scheduleSummary"></div>
+                  <button id="scheduleDownloadCsvButton" class="btn-sm btn-primary" type="button">CSV 다운로드</button>
                 </div>
-                <button id="download" class="btn-primary" disabled>선택한 기수 CSV 다운로드</button>
+                <div class="muted u-mt-4" id="scheduleSkippedSummary"></div>
+                <div id="scheduleSkippedDetails" class="skipped-details"></div>
+                <div class="muted u-mt-4" id="scheduleDaysInfo"></div>
+                <ul id="scheduleDaysPreview" class="schedule-preview-list"></ul>
+                <div class="muted" id="scheduleAppendStatus"></div>
               </div>
-              <div class="muted u-mt-6" id="cohortInfo"></div>
-              <div class="muted u-mt-6">
-                컬럼: 훈련일자, 훈련시작시간, 훈련종료시간, 방학/원격여부, 시작시간, 시간구분, 훈련강사코드,
-                교육장소(강의실)코드, 교과목(및 능력단위)코드
-              </div>
-              <div id="hrdValidationPanel" class="error-box u-hidden u-mt-8">
-                <strong>다운로드 검증 결과</strong>
-                <ul id="hrdValidationList" class="error-list"></ul>
+
+              <div class="card u-mt-12" id="hrdDownloadCard">
+                <label>HRD 업로드용 CSV 다운로드</label>
+                <div class="row u-mt-8 u-row-center">
+                  <div>
+                    <label>과정 기수 선택</label>
+                    <select id="cohort"></select>
+                  </div>
+                  <button id="download" class="btn-primary" disabled>선택한 기수 CSV 다운로드</button>
+                </div>
+                <div class="muted u-mt-6" id="cohortInfo"></div>
+                <div class="muted u-mt-6">
+                  컬럼: 훈련일자, 훈련시작시간, 훈련종료시간, 방학/원격여부, 시작시간, 시간구분, 훈련강사코드,
+                  교육장소(강의실)코드, 교과목(및 능력단위)코드
+                </div>
+                <div id="hrdValidationPanel" class="error-box u-hidden u-mt-8">
+                  <strong>다운로드 검증 결과</strong>
+                  <ul id="hrdValidationList" class="error-list"></ul>
+                </div>
               </div>
             </div>
           </div>
@@ -2604,7 +2614,7 @@
                 <button id="instructorTabCourse" class="tab-btn active" type="button">과정 관리</button>
                 <button id="instructorTabSubject" class="tab-btn" type="button">교과목 관리</button>
                 <button id="instructorTabRegister" class="tab-btn" type="button">강사 관리</button>
-                <button id="instructorTabMapping" class="tab-btn u-hidden" type="button">강사 매핑</button>
+                <button id="instructorTabMapping" class="tab-btn" type="button">강사 매핑</button>
               </div>
 
               <div id="instructorCoursePanel" class="u-mt-10">
@@ -2637,6 +2647,10 @@
                     </thead>
                     <tbody id="courseRegistryBody"></tbody>
                   </table>
+                  <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center">
+                    <button id="importHrdCoursesButton" class="btn-secondary btn-sm" type="button">📋 HRD 과정 가져오기</button>
+                    <span id="importHrdCoursesStatus" class="muted" style="font-size: 12px"></span>
+                  </div>
                 </div>
 
                 <div class="u-mt-12">
@@ -2695,7 +2709,7 @@
                 </div>
               </div>
 
-              <div id="instructorMappingPanel" class="u-hidden u-mt-10">
+              <div id="instructorMappingPanel" class="u-mt-10">
                 <div>
                   <strong>강사 목록</strong>
                   <table id="instructorDirectoryTable">
@@ -2785,8 +2799,8 @@
             </div>
             <div class="settings-section-body is-collapsed">
               <div class="settings-action-row">
-                <button id="hrdResetDefaults" class="btn-sm btn-subtle-green" type="button">🔄 기본 과정 복원</button>
-                <button id="hrdDiscoverAll" class="btn-sm btn-subtle-blue" type="button">🔍 전체 기수 자동탐색</button>
+                <button id="hrdResetDefaults" class="btn-secondary btn-sm" type="button">🔄 기본 과정 복원</button>
+                <button id="hrdDiscoverAll" class="btn-secondary btn-sm" type="button">🔍 전체 기수 자동탐색</button>
               </div>
               <div id="hrdDiscoverStatus" class="settings-status-msg" style="display: none"></div>
               <div id="hrdCourseList" class="hrd-course-list"></div>
@@ -2820,6 +2834,7 @@
                 <button id="hrdCourseAdd" class="btn-primary btn-sm u-mt-6" type="button" style="width: 100%">
                   + 추가
                 </button>
+                <div class="muted u-mt-4" style="font-size:12px">💡 등록된 과정은 정보입력 > 과정관리에 자동 동기화됩니다</div>
               </div>
             </div>
           </div>

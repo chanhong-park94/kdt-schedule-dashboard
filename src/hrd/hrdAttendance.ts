@@ -916,8 +916,12 @@ export async function renderHrdSettingsSection(): Promise<void> {
     courseList.querySelectorAll(".hrd-course-remove").forEach((btn) => {
       btn.addEventListener("click", () => {
         const idx = parseInt((btn as HTMLElement).dataset.idx || "0");
+        const removedTrainPrId = currentConfig.courses[idx]?.trainPrId;
         currentConfig.courses.splice(idx, 1);
         saveHrdConfig(currentConfig);
+        document.dispatchEvent(
+          new CustomEvent("hrd-course-changed", { detail: { action: "remove", trainPrId: removedTrainPrId } }),
+        );
         void renderHrdSettingsSection();
         populateFilters();
       });
@@ -1220,7 +1224,7 @@ export function setupSettingsHandlers(): void {
       return;
     }
 
-    currentConfig.courses.push({
+    const newCourse = {
       name,
       trainPrId: id,
       degrs: degrs.split(",").map((d) => d.trim()),
@@ -1228,8 +1232,10 @@ export function setupSettingsHandlers(): void {
       totalDays: totalDays || 0,
       endTime,
       smsFrom: smsFrom || undefined,
-    });
+    };
+    currentConfig.courses.push(newCourse);
     saveHrdConfig(currentConfig);
+    document.dispatchEvent(new CustomEvent("hrd-course-changed", { detail: { action: "add", course: newCourse } }));
     void renderHrdSettingsSection();
     populateFilters();
 
@@ -1247,6 +1253,7 @@ export function setupSettingsHandlers(): void {
   resetBtn?.addEventListener("click", () => {
     currentConfig.courses = DEFAULT_COURSES.map((c) => ({ ...c, degrs: [...c.degrs] }));
     saveHrdConfig(currentConfig);
+    document.dispatchEvent(new CustomEvent("hrd-course-changed", { detail: { action: "restore" } }));
     void renderHrdSettingsSection();
     populateFilters();
     const status = $("hrdTestStatus");

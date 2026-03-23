@@ -47,6 +47,8 @@ export type CohortSummary = {
   종료일: string;
   훈련일수: number;
   세션수: number;
+  /** 데이터 출처: csv=업로드, kdt=학사일정, generated=생성 */
+  source?: "csv" | "kdt" | "generated";
 };
 
 export type Conflict = {

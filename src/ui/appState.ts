@@ -59,6 +59,8 @@ export type CourseRegistryEntry = {
   courseId: string;
   courseName: string;
   memo: string;
+  /** HRD 과정등록에서 동기화된 경우 trainPrId 저장 */
+  hrdTrainPrId?: string;
 };
 
 export type RecentActionLog = {
