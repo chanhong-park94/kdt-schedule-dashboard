@@ -146,9 +146,9 @@ function formatTime(raw: string | undefined): string {
 /** 잔여 허용 결석일수 기반 위험등급 */
 function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   if (totalDays === 0) return "safe"; // 설정 미완료
-  if (remainingAbsent <= 0) return "danger"; // 제적 대상
-  if (remainingAbsent <= 2) return "warning"; // 결석 2일 이내 제적
-  if (remainingAbsent <= 5) return "caution"; // 결석 5일 이내 주의
+  if (remainingAbsent <= 1) return "danger"; // 제적위험 (잔여 1일 이하)
+  if (remainingAbsent <= 3) return "warning"; // 경고 (잔여 2~3일)
+  if (remainingAbsent <= 6) return "caution"; // 주의 (잔여 4~6일)
   return "safe";
 }
 
@@ -692,10 +692,10 @@ function renderStudentRow(s: AttendanceStudent, reason: string): string {
   const tagText = reason === "missing" ? "퇴실미체크" : getRiskLabel(s.riskLevel);
   const rateText = s.totalDays > 0 ? `결석 ${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`;
   const remainText =
-    s.totalDays > 0 && s.remainingAbsent > 0
+    s.totalDays > 0 && s.remainingAbsent > 1
       ? ` · 잔여 ${s.remainingAbsent}일`
-      : s.remainingAbsent <= 0 && s.totalDays > 0
-        ? " · 제적대상"
+      : s.remainingAbsent <= 1 && s.totalDays > 0
+        ? " · 제적위험"
         : "";
   return `<div class="att-risk-student" data-student="${s.name}">
     <div class="att-risk-student-left">
@@ -755,8 +755,8 @@ function openRiskPanel(): void {
   };
 
   renderGroup("attRiskListDanger", danger, "🔴 위험 — 허용 결석일 초과 (제적 대상)", "rg-danger", "risk");
-  renderGroup("attRiskListWarning", warning, "🟠 경고 — 잔여 결석 2일 이내", "rg-warning", "risk");
-  renderGroup("attRiskListCaution", caution, "🟡 주의 — 잔여 결석 5일 이내", "rg-caution", "risk");
+  renderGroup("attRiskListWarning", warning, "🟠 경고 — 잔여 결석 2~3일", "rg-warning", "risk");
+  renderGroup("attRiskListCaution", caution, "🟡 주의 — 잔여 결석 4~6일", "rg-caution", "risk");
   renderGroup("attRiskListMissing", missing, "⚠️ 퇴실 미체크", "rg-missing", "missing");
 
   // Attach click events to open student detail

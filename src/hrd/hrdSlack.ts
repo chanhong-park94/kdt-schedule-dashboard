@@ -29,7 +29,7 @@ function _getRiskEmoji(level: RiskLevel): string {
 function formatStudentLine(s: AttendanceStudent): string {
   const rateText = s.totalDays > 0 ? `결석 ${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`;
   const remainText =
-    s.totalDays > 0 ? (s.remainingAbsent <= 0 ? " · *제적대상*" : ` · 잔여 ${s.remainingAbsent}일`) : "";
+    s.totalDays > 0 ? (s.remainingAbsent <= 1 ? " · *제적위험*" : ` · 잔여 ${s.remainingAbsent}일`) : "";
   return `  • ${s.name} (${rateText}${remainText})`;
 }
 
@@ -144,16 +144,16 @@ export function buildSlackMessage(
       .sort((a, b) => a.remainingAbsent - b.remainingAbsent)
       .forEach((s) => {
         const emoji = _getRiskEmoji(s.riskLevel);
-        const remainText = s.remainingAbsent <= 0 ? "*제적대상*" : `잔여 ${s.remainingAbsent}일`;
+        const remainText = s.remainingAbsent <= 1 ? "*제적위험*" : `잔여 ${s.remainingAbsent}일`;
         sections.push(`  ${emoji} ${s.name} — 결석 ${s.absentDays}/${s.maxAbsent}일 · ${remainText}`);
       });
     sections.push("");
   }
 
   // Risk groups (상세)
-  const dangerBlock = buildRiskGroup("🔴 위험 (제적 대상)", danger);
-  const warningBlock = buildRiskGroup("🟠 경고 (잔여 2일 이내)", warning);
-  const cautionBlock = buildRiskGroup("🟡 주의 (잔여 5일 이내)", caution);
+  const dangerBlock = buildRiskGroup("🔴 제적위험 (잔여 1일 이하)", danger);
+  const warningBlock = buildRiskGroup("🟠 경고 (잔여 2~3일)", warning);
+  const cautionBlock = buildRiskGroup("🟡 주의 (잔여 4~6일)", caution);
   const missingBlock = buildRiskGroup("⚠️ 퇴실 미체크", missing);
 
   if (dangerBlock) sections.push(dangerBlock);
