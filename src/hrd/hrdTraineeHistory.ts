@@ -18,9 +18,9 @@ function isLateStatus(s: string): boolean {
 
 function getRiskLevel(remaining: number, total: number): "safe" | "caution" | "warning" | "danger" {
   if (total === 0) return "safe";
-  if (remaining <= 0) return "danger";
-  if (remaining <= 2) return "warning";
-  if (remaining <= 5) return "caution";
+  if (remaining <= 1) return "danger"; // 제적위험 (잔여 1일 이하)
+  if (remaining <= 3) return "warning"; // 경고 (잔여 2~3일)
+  if (remaining <= 6) return "caution"; // 주의 (잔여 4~6일)
   return "safe";
 }
 
@@ -319,7 +319,7 @@ async function showTraineeDetail(
           <div class="th-stat-label">결석 / 최대허용</div>
         </div>
         <div class="th-stat-card">
-          <div class="th-stat-value ${remainingAbsent <= 0 ? "th-stat-danger" : remainingAbsent <= 2 ? "th-stat-warn" : "th-stat-good"}">
+          <div class="th-stat-value ${remainingAbsent <= 1 ? "th-stat-danger" : remainingAbsent <= 3 ? "th-stat-warn" : "th-stat-good"}">
             ${remainingAbsent}일
           </div>
           <div class="th-stat-label">잔여 허용 결석</div>

@@ -6378,6 +6378,63 @@ tbody tr:hover {
   color: #059669;
 }
 
+/* — KPI 도움말 아이콘 — */
+.dash-kpi-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+  cursor: help;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+.dash-kpi-help:hover {
+  color: var(--text, #1e1e2e);
+}
+
+/* — 관리대상 기준 가이드 바 — */
+.dash-risk-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 20px;
+  background: var(--surface-hover, #f8f8fc);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+.dash-risk-guide-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dash-risk-guide-item small {
+  color: var(--text-secondary, #9ca3af);
+  font-size: 11px;
+}
+.dash-risk-guide-note {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+  font-style: italic;
+}
+@media (max-width: 768px) {
+  .dash-risk-guide {
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  .dash-risk-guide-note {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
 /* — Charts — */
 .dash-chart-grid {
   display: grid;

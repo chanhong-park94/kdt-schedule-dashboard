@@ -91,9 +91,9 @@ function getTargetRate(cat: CourseCategory): number {
 
 function getRiskLevel(remaining: number, total: number): "safe" | "caution" | "warning" | "danger" {
   if (total === 0) return "safe";
-  if (remaining <= 0) return "danger";
-  if (remaining <= 2) return "warning";
-  if (remaining <= 5) return "caution";
+  if (remaining <= 1) return "danger";
+  if (remaining <= 3) return "warning";
+  if (remaining <= 6) return "caution";
   return "safe";
 }
 
@@ -158,13 +158,21 @@ async function fetchDashboardData(
             }
           }
 
+          // 당일 출결 데이터 제외 — 수업일 당일에는 퇴실체크 전까지 결석으로 표기되므로
+          // 전일자까지의 확정된 데이터만 사용
+          const todayStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+          const confirmedAttendance = allAttendance.filter((r) => {
+            const dateStr = (r.atendDe || "").toString().replace(/-/g, "").trim();
+            return dateStr < todayStr;
+          });
+
           for (const raw of roster) {
             const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
             const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
             const dropout = isDropout(raw);
 
             const nameKey = name.replace(/\s+/g, "");
-            const myRecords = allAttendance.filter((r) => {
+            const myRecords = confirmedAttendance.filter((r) => {
               const rName = (r.cstmrNm || r.trneeCstmrNm || r.trneNm || "").toString().replace(/\s+/g, "");
               return rName === nameKey;
             });
@@ -262,13 +270,13 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
     <div class="dash-kpi-card dash-kpi-gradient-3">
       <div class="dash-kpi-icon">⚠️</div>
       <div class="dash-kpi-body">
-        <div class="dash-kpi-label">관리대상</div>
+        <div class="dash-kpi-label">관리대상 <span class="dash-kpi-help" title="총 훈련일수의 20%가 최대 허용 결석일수입니다.&#10;&#10;🔴 제적위험: 잔여 허용 결석 1일 이하&#10;🟠 경고: 잔여 허용 결석 2~3일&#10;🟡 주의: 잔여 허용 결석 4~6일&#10;&#10;※ 전일자까지의 확정 출결 데이터 기준">ⓘ</span></div>
         <div class="dash-kpi-value">${riskTotal}명</div>
       </div>
       <div class="dash-kpi-footer">
-        <span class="dash-kpi-risk-tag risk-danger">제적위험 ${dangerCount}</span>
-        <span class="dash-kpi-risk-tag risk-warning">경고 ${warningCount}</span>
-        <span class="dash-kpi-risk-tag risk-caution">주의 ${cautionCount}</span>
+        <span class="dash-kpi-risk-tag risk-danger">🔴 제적위험 ${dangerCount}</span>
+        <span class="dash-kpi-risk-tag risk-warning">🟠 경고 ${warningCount}</span>
+        <span class="dash-kpi-risk-tag risk-caution">🟡 주의 ${cautionCount}</span>
       </div>
     </div>
   `;
@@ -489,6 +497,12 @@ function renderRiskStudentList(trainees: DashTrainee[]): void {
     <div class="dash-panel-header">
       <h3 class="dash-panel-title">관리대상 학생</h3>
       <span class="dash-panel-count">${riskStudents.length}명</span>
+    </div>
+    <div class="dash-risk-guide">
+      <span class="dash-risk-guide-item">🔴 제적위험 <small>잔여 1일 이하</small></span>
+      <span class="dash-risk-guide-item">🟠 경고 <small>잔여 2~3일</small></span>
+      <span class="dash-risk-guide-item">🟡 주의 <small>잔여 4~6일</small></span>
+      <span class="dash-risk-guide-note">※ 총 훈련일수의 20% 기준 · 전일자 확정 데이터</span>
     </div>
     <div class="dash-risk-list">
       ${riskStudents
