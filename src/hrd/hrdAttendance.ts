@@ -1082,8 +1082,10 @@ function renderSlackScheduleUI(config: HrdConfig): void {
 const HRD_KEY_GATE_PASSWORD = "admin";
 
 function setupSettingsHandlers(): void {
-  // ─── 접이식 섹션 토글 ──────────────────────────
+  // ─── 접이식 섹션 토글 (settingsInit.ts에서도 바인딩, 중복 방지) ───
   document.querySelectorAll<HTMLElement>("[data-settings-toggle]").forEach((header) => {
+    if (header.dataset.toggleBound) return;
+    header.dataset.toggleBound = "1";
     header.addEventListener("click", () => {
       const body = header.nextElementSibling as HTMLElement | null;
       if (!body) return;
