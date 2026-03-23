@@ -246,16 +246,14 @@ async function checkAndSend(): Promise<void> {
     return schedule.targetCourses.includes(c.trainPrId);
   });
 
-  // 운영중 판별: startDate~종강일 사이인 과정만 (날짜 정보 없으면 제외)
+  // 운영중 판별: 종강 확인된 과정만 제외, 날짜 미설정은 포함
   const activeCourses = allCourses
     .filter((c) => {
-      if (!c.startDate || !c.totalDays) return false; // 날짜 정보 없으면 제외
-      const start = new Date(c.startDate);
+      if (!c.startDate || !c.totalDays) return true; // 날짜 정보 없으면 포함
       const now = new Date();
-      if (start > now) return false; // 아직 개강 전
       const end = new Date(c.startDate);
       end.setDate(end.getDate() + Math.ceil((c.totalDays / 5) * 7));
-      return now <= end; // 종강일 이전만
+      return end >= now; // 종강일이 지난 과정만 제외
     })
     .sort((a, b) => {
       // 최근 개강 순 (내림차순)
