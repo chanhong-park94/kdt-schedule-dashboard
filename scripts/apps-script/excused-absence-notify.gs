@@ -12,8 +12,11 @@
  *   SUPABASE_URL          — Supabase 프로젝트 URL (예: https://xxx.supabase.co)
  *   SUPABASE_ANON_KEY     — Supabase anon key
  *   FORM_TYPE             — "application" (공가 신청서) 또는 "evidence" (증빙자료)
- *   COURSE_MANAGERS       — JSON 문자열: {"재직자 LLM":"U12345,U67890","AI 활용 서비스":"U11111"}
  *   FOOTER_TEXT           — 푸터 텍스트 (기본: "📍 모두의연구소 HRD 운영팀")
+ *
+ * ■ 운영매니저 그룹 태깅:
+ *   코드 상단 MANAGER_GROUP_ID 변수로 관리 (현재: S0A4X17TN4X)
+ *   <!subteam^ID> 형식으로 Slack 그룹 멘션
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -28,14 +31,8 @@ function getProp(key, fallback) {
   return getProps().getProperty(key) || fallback || "";
 }
 
-function getCourseManagers() {
-  try {
-    return JSON.parse(getProp("COURSE_MANAGERS", "{}"));
-  } catch (e) {
-    Logger.log("COURSE_MANAGERS 파싱 실패: " + e.message);
-    return {};
-  }
-}
+// 운영매니저 그룹 Slack ID (하드코딩 — 변경 시 여기만 수정)
+var MANAGER_GROUP_ID = "S0A4X17TN4X";
 
 // ═══════════════════════════════════════════════════════════════
 // 트리거 등록 (최초 1회 실행)
@@ -182,7 +179,7 @@ function sendSlackNotification(data, formType) {
   }
 
   var footer = getProp("FOOTER_TEXT", "📍 모두의연구소 HRD 운영팀");
-  var managerMention = getManagerMention(data.course_name);
+  var managerMention = "<!subteam^" + MANAGER_GROUP_ID + ">"; // 운영매니저 그룹 태깅
   var message = "";
 
   if (formType === "application") {
@@ -206,24 +203,6 @@ function sendSlackNotification(data, formType) {
   } else {
     Logger.log("⚠️ Slack 알림 발송 실패 (" + code + "): " + res.getContentText());
   }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 매니저 매핑 조회
-// ═══════════════════════════════════════════════════════════════
-
-function getManagerMention(courseName) {
-  var managers = getCourseManagers();
-
-  // 과정명에 포함된 키워드로 매칭 (부분 매칭 지원)
-  for (var key in managers) {
-    if (courseName.indexOf(key) !== -1 || key.indexOf(courseName) !== -1) {
-      var ids = managers[key].split(",").map(function(id) { return id.trim(); });
-      return ids.map(function(id) { return "<@" + id + ">"; }).join(" ");
-    }
-  }
-
-  return "_(담당 매니저 미지정)_";
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -272,28 +251,14 @@ function buildEvidenceMessage(data, managerMention, footer) {
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || "";
 
-  if (action === "getManagers") {
-    return ContentService.createTextOutput(
-      JSON.stringify({ managers: getCourseManagers() })
-    ).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  if (action === "setManagers") {
-    var json = e.parameter.data || "{}";
-    getProps().setProperty("COURSE_MANAGERS", json);
-    return ContentService.createTextOutput(
-      JSON.stringify({ success: true })
-    ).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 기본: 상태 확인
+  // 상태 확인
   return ContentService.createTextOutput(
     JSON.stringify({
       status: "ok",
       formType: getProp("FORM_TYPE", "unknown"),
       hasWebhook: !!getProp("SLACK_WEBHOOK_URL"),
       hasSupabase: !!getProp("SUPABASE_URL"),
-      courseCount: Object.keys(getCourseManagers()).length
+      managerGroup: MANAGER_GROUP_ID
     })
   ).setMimeType(ContentService.MimeType.JSON);
 }
