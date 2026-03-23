@@ -73,6 +73,7 @@ export interface HrdConfig {
   authKey: string;
   proxy: string;
   slackWebhookUrl?: string;
+  excusedSlackWebhookUrl?: string; // 공결신청 전용 Slack Webhook
   slackSchedule?: SlackScheduleConfig;
   courses: HrdCourse[];
 }

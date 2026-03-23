@@ -3018,6 +3018,23 @@
                   </div>
                   <div id="hrdSlackTestStatus" class="settings-status-msg u-mt-4"></div>
                 </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label
+                    >공결신청 Slack Webhook URL
+                    <span style="font-weight: 400; color: #9ca3af; font-size: 11px">공가 신청/증빙 알림 전용 채널</span></label
+                  >
+                  <div style="display: flex; gap: 6px; align-items: center">
+                    <input
+                      type="password"
+                      id="hrdExcusedSlackWebhook"
+                      class="hrd-input"
+                      placeholder="https://hooks.slack.com/services/..."
+                      style="flex: 1"
+                    />
+                    <button id="hrdExcusedSlackTestBtn" class="btn-sm" type="button">테스트</button>
+                  </div>
+                  <div id="hrdExcusedSlackTestStatus" class="settings-status-msg u-mt-4"></div>
+                </div>
                 <div class="hrd-field-actions">
                   <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>
                   <button id="hrdTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>

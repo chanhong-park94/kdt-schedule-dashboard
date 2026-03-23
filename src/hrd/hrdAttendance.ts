@@ -842,6 +842,8 @@ export async function renderHrdSettingsSection(): Promise<void> {
   if (proxyInput) proxyInput.value = currentConfig.proxy;
   const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
   if (slackInput && isUnlocked) slackInput.value = currentConfig.slackWebhookUrl || "";
+  const excusedSlackInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
+  if (excusedSlackInput && isUnlocked) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
 
   if (courseList) {
     // Supabase에서 보조강사 코드 비동기 조회
@@ -1138,6 +1140,8 @@ export function setupSettingsHandlers(): void {
       if (proxyInput) proxyInput.value = currentConfig.proxy || "";
       const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
       if (slackInput) slackInput.value = currentConfig.slackWebhookUrl || "";
+      const excusedSlackInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
+      if (excusedSlackInput) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
     } else {
       if (gateError) {
         gateError.style.display = "block";
@@ -1161,9 +1165,11 @@ export function setupSettingsHandlers(): void {
     const key = ($("hrdAuthKey") as HTMLInputElement)?.value?.trim() || "";
     const proxy = ($("hrdProxy") as HTMLInputElement)?.value?.trim() || "";
     const slackUrl = ($("hrdSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
+    const excusedSlackUrl = ($("hrdExcusedSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
     currentConfig.authKey = key;
     currentConfig.proxy = proxy;
     currentConfig.slackWebhookUrl = slackUrl || undefined;
+    currentConfig.excusedSlackWebhookUrl = excusedSlackUrl || undefined;
     saveHrdConfig(currentConfig);
     const status = $("hrdTestStatus");
     if (status) {
@@ -1317,6 +1323,33 @@ export function setupSettingsHandlers(): void {
       statusEl.style.color = result.ok ? "#059669" : "#dc2626";
     }
     if (slackTestBtn instanceof HTMLButtonElement) slackTestBtn.disabled = false;
+  });
+
+  // ─── 공결신청 Slack Webhook 테스트 ──────────────
+  const excusedSlackTestBtn = $("hrdExcusedSlackTestBtn");
+  excusedSlackTestBtn?.addEventListener("click", async () => {
+    const excusedInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
+    const statusEl = $("hrdExcusedSlackTestStatus");
+    const url = excusedInput?.value?.trim() || "";
+    if (!url) {
+      if (statusEl) {
+        statusEl.textContent = "Webhook URL을 입력해주세요.";
+        statusEl.style.color = "#dc2626";
+      }
+      return;
+    }
+    if (statusEl) {
+      statusEl.textContent = "테스트 전송 중...";
+      statusEl.style.color = "#6b7280";
+    }
+    if (excusedSlackTestBtn instanceof HTMLButtonElement) excusedSlackTestBtn.disabled = true;
+
+    const result = await testSlackWebhook(url);
+    if (statusEl) {
+      statusEl.textContent = result.ok ? `✅ ${result.message}` : `❌ ${result.message}`;
+      statusEl.style.color = result.ok ? "#059669" : "#dc2626";
+    }
+    if (excusedSlackTestBtn instanceof HTMLButtonElement) excusedSlackTestBtn.disabled = false;
   });
 
   // ─── Slack 자동 알림 토글 ───────────────────────
