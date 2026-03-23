@@ -14,7 +14,7 @@ import { domRefs } from "./ui/domRefs";
 import { generateSchedule } from "./core/calendar";
 import { parseCsv } from "./core/csv";
 import { removeBasicModeSections } from "./core/basicModeSections";
-import { createCsvBlob, toDayConflictRow } from "./ui/utils/csv";
+import { createCsvBlob, downloadCsvFile, toDayConflictRow } from "./ui/utils/csv";
 import { detectConflicts } from "./core/conflicts";
 import { assignInstructorToModule } from "./core/autoAssignInstructor";
 import { exportHrdCsvForCohort } from "./core/export";
@@ -39,7 +39,7 @@ import {
   TrackType,
 } from "./core/types";
 import { isInstructorCloudEnabled } from "./core/instructorSync";
-import { addDaysToIso, formatDate, getTodayIsoDate, parseCompactDate, parseIsoDate } from "./ui/utils/date";
+import { addDaysToIso, formatDate, getTodayCompactDate, getTodayIsoDate, parseCompactDate, parseIsoDate } from "./ui/utils/date";
 import {
   formatHours,
   getConflictTabLabel,
@@ -268,6 +268,7 @@ const scheduleSkippedDetails = domRefs.scheduleSkippedDetails;
 const scheduleDaysInfo = domRefs.scheduleDaysInfo;
 const scheduleDaysPreview = domRefs.scheduleDaysPreview;
 const scheduleAppendStatus = domRefs.scheduleAppendStatus;
+const scheduleDownloadCsvButton = domRefs.scheduleDownloadCsvButton;
 
 const staffingStatus = domRefs.staffingStatus;
 const staffingModeSelect = domRefs.staffingModeSelect;
@@ -1716,6 +1717,29 @@ function renderGeneratedScheduleResult(): void {
   }
 }
 
+const SCHEDULE_CSV_WEEKDAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"] as const;
+const SCHEDULE_CSV_COLUMNS = ["날짜", "요일", "시작시간", "종료시간", "훈련시간(분)", "휴게시간"] as const;
+
+function downloadScheduleCsv(): void {
+  const result = appState.generatedScheduleResult;
+  const cohort = appState.generatedScheduleCohort;
+  if (!result || result.days.length === 0) return;
+
+  const rows: string[][] = result.days.map((day) => {
+    const d = new Date(day.date + "T00:00:00");
+    const weekday = SCHEDULE_CSV_WEEKDAY_NAMES[d.getDay()];
+    const startTime = day.blocks.length > 0 ? day.blocks[0].startHHMM : "";
+    const endTime = day.blocks.length > 0 ? day.blocks[day.blocks.length - 1].endHHMM : "";
+    const breakStr = day.breaks.map((b) => `${b.startHHMM}~${b.endHHMM}`).join(", ");
+
+    return [day.date, weekday, startTime, endTime, String(day.netMinutes), breakStr];
+  });
+
+  const safeCourseName = cohort.replace(/[\\/:*?"<>|]/g, "_");
+  const fileName = `HRD시간표_${safeCourseName}_${getTodayCompactDate()}.csv`;
+  downloadCsvFile(fileName, [...SCHEDULE_CSV_COLUMNS], rows);
+}
+
 function clearHolidayList(): void {
   holidayClearHolidayList();
 }
@@ -2422,6 +2446,7 @@ initEventListeners({
   onSaveScheduleTemplateButtonClick: saveCurrentScheduleTemplate,
   onDeleteScheduleTemplateButtonClick: deleteSelectedScheduleTemplate,
   onGenerateScheduleButtonClick: generateScheduleFromUi,
+  onScheduleDownloadCsvButtonClick: downloadScheduleCsv,
   onAppendScheduleButtonClick: appendGeneratedScheduleToSessions,
   onPushScheduleToConflictsChange: handlePushScheduleToConflictsChange,
   onStaffAutoFillButtonClick: autoFillStaffingFromCohorts,

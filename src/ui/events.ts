@@ -55,6 +55,7 @@ export interface HandlerSet {
   onDeleteScheduleTemplateButtonClick: () => void;
   // Schedule generation
   onGenerateScheduleButtonClick: () => void;
+  onScheduleDownloadCsvButtonClick: () => void;
   onAppendScheduleButtonClick: () => void;
   onPushScheduleToConflictsChange: () => void;
   // Staffing
@@ -153,6 +154,7 @@ export function initEventListeners(handlers: HandlerSet): void {
     saveScheduleTemplateButton,
     deleteScheduleTemplateButton,
     generateScheduleButton,
+    scheduleDownloadCsvButton,
     appendScheduleButton,
     pushScheduleToConflicts,
     staffAutoFillButton,
@@ -259,6 +261,7 @@ export function initEventListeners(handlers: HandlerSet): void {
   deleteScheduleTemplateButton.addEventListener("click", handlers.onDeleteScheduleTemplateButtonClick);
 
   generateScheduleButton.addEventListener("click", handlers.onGenerateScheduleButtonClick);
+  scheduleDownloadCsvButton.addEventListener("click", handlers.onScheduleDownloadCsvButtonClick);
   appendScheduleButton.addEventListener("click", handlers.onAppendScheduleButtonClick);
   pushScheduleToConflicts.addEventListener("change", handlers.onPushScheduleToConflictsChange);
 
