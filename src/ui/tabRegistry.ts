@@ -44,7 +44,7 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
   }),
   settings: createTabLoader(async () => {
     const { initSettings } = await import("../hrd/settingsInit");
-    initSettings();
+    await initSettings();
   }),
 };
 
