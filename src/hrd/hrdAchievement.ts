@@ -19,7 +19,15 @@ import {
 } from "./hrdAchievementApi";
 import type { UnifiedRecord } from "./hrdAchievementTypes";
 import type { EmployedRecord, EmployedSummary } from "./hrdEmployedTypes";
-import { fetchEmployedRecords, summarizeEmployed, extractEmployedFilters, loadEmployedCache } from "./hrdEmployedApi";
+import {
+  fetchEmployedRecords,
+  summarizeEmployed,
+  extractEmployedFilters,
+  loadEmployedCache,
+  loadEmployedConfig,
+  saveEmployedConfig,
+  testEmployedConnection,
+} from "./hrdEmployedApi";
 import { formatCacheAge, classifyApiError, showToast } from "./hrdCacheUtils";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
@@ -264,6 +272,44 @@ function initSettingsAchievement(): void {
   });
 }
 
+// ─── 재직자 유닛리포트 설정 초기화 ─────────────────────────
+function initSettingsEmployed(): void {
+  const urlInput = $("settingsEmployedUrl") as HTMLInputElement | null;
+  const empConfig = loadEmployedConfig();
+  if (urlInput && empConfig.webAppUrl) urlInput.value = empConfig.webAppUrl;
+
+  $("settingsEmployedTestBtn")?.addEventListener("click", async () => {
+    const url = (urlInput?.value ?? "").trim();
+    const statusEl = $("settingsEmployedTestStatus");
+    if (!url) {
+      if (statusEl) {
+        statusEl.textContent = "URL을 입력하세요.";
+        statusEl.className = "settings-status-msg error";
+      }
+      return;
+    }
+    if (statusEl) {
+      statusEl.textContent = "테스트 중...";
+      statusEl.className = "settings-status-msg loading";
+    }
+    const result = await testEmployedConnection({ webAppUrl: url });
+    if (statusEl) {
+      statusEl.textContent = result.message;
+      statusEl.className = `settings-status-msg ${result.ok ? "success" : "error"}`;
+    }
+  });
+
+  $("settingsEmployedSave")?.addEventListener("click", () => {
+    const url = (urlInput?.value ?? "").trim();
+    saveEmployedConfig({ webAppUrl: url });
+    const statusEl = $("settingsEmployedTestStatus");
+    if (statusEl) {
+      statusEl.textContent = "저장됨 ✓";
+      statusEl.className = "settings-status-msg success";
+    }
+  });
+}
+
 // ─── 설정 미완료 안내 ───────────────────────────────────────
 function updateAchievementNotice(): void {
   const noticeEl = $("achievementConfigNotice");
@@ -386,6 +432,7 @@ function restoreEmpCache(): void {
 export function initAchievement(): void {
   currentConfig = loadAchievementConfig();
   initSettingsAchievement();
+  initSettingsEmployed();
   updateAchievementNotice();
 
   // 서브탭 전환

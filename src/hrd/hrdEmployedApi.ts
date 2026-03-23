@@ -1,14 +1,44 @@
 /**
  * 재직자 학업성취도 API 모듈
  *
- * 스키마 구글시트 "학업성취도(재직자)" 탭을 Apps Script Web App을 통해 조회.
- * 학업성취도(실업자)와 동일한 Apps Script URL을 사용합니다.
+ * 재직자 유닛리포트 통합DB 구글시트를 전용 Apps Script Web App으로 조회.
+ * 실업자와 별도 URL을 사용합니다 (설정: kdt_employed_config_v1).
+ * fallback: 기존 학업성취도 공용 URL (kdt_achievement_config_v1).
  */
-import type { EmployedRecord, EmployedSummary, EmployedCache } from "./hrdEmployedTypes";
-import { EMPLOYED_CACHE_KEY } from "./hrdEmployedTypes";
+import type { EmployedRecord, EmployedSummary, EmployedCache, EmployedConfig } from "./hrdEmployedTypes";
+import { EMPLOYED_CACHE_KEY, EMPLOYED_CONFIG_KEY } from "./hrdEmployedTypes";
 import { loadAchievementConfig } from "./hrdAchievementApi";
+import { fetchWithTimeout } from "./hrdCacheUtils";
 
 const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+// ── 재직자 전용 설정 ────────────────────────────────────────
+export function loadEmployedConfig(): EmployedConfig {
+  try {
+    const raw = localStorage.getItem(EMPLOYED_CONFIG_KEY);
+    if (raw) return JSON.parse(raw) as EmployedConfig;
+  } catch {
+    /* ignore */
+  }
+  return { webAppUrl: "" };
+}
+
+export function saveEmployedConfig(config: EmployedConfig): void {
+  localStorage.setItem(EMPLOYED_CONFIG_KEY, JSON.stringify(config));
+}
+
+export async function testEmployedConnection(config: EmployedConfig): Promise<{ ok: boolean; message: string }> {
+  try {
+    if (!config.webAppUrl) return { ok: false, message: "재직자 유닛리포트 Apps Script URL을 입력하세요." };
+    const r = await fetchWithTimeout(`${config.webAppUrl}?action=sheets`, {}, 30_000);
+    if (!r.ok) return { ok: false, message: `HTTP ${r.status}` };
+    const json = (await r.json()) as { sheets?: string[]; error?: string };
+    if (json.error) return { ok: false, message: `오류: ${json.error}` };
+    return { ok: true, message: `연결 성공! (${json.sheets?.length ?? 0}개 시트 확인)` };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "연결 실패" };
+  }
+}
 
 // ── 기수 코드 → 과정명/기수 매핑 ────────────────────────────
 // CSV 기수: 1~9 → 재직자LLM, 11~19 → 재직자데이터, 21~29 → 재직자기획/개발
@@ -54,9 +84,18 @@ async function fetchAction(baseUrl: string, params: Record<string, string>): Pro
   const qs = Object.entries(params)
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join("&");
-  const r = await fetch(`${baseUrl}${sep}${qs}`);
+  const r = await fetchWithTimeout(`${baseUrl}${sep}${qs}`, {}, 30_000);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
+}
+
+/** 재직자 전용 URL → 학업성취도 공용 URL 순으로 확인 */
+function resolveEmployedUrl(): string {
+  const empConfig = loadEmployedConfig();
+  if (empConfig.webAppUrl) return empConfig.webAppUrl;
+  const achConfig = loadAchievementConfig();
+  if (achConfig.webAppUrl) return achConfig.webAppUrl;
+  throw new Error("재직자 유닛리포트 Apps Script URL이 설정되지 않았습니다. 설정 탭에서 입력하세요.");
 }
 
 // ── 데이터 로드 ─────────────────────────────────────────────
@@ -64,10 +103,9 @@ export async function fetchEmployedRecords(): Promise<EmployedRecord[]> {
   const cached = loadEmployedCache();
   if (cached) return cached;
 
-  const config = loadAchievementConfig();
-  if (!config.webAppUrl) throw new Error("Apps Script URL이 설정되지 않았습니다.");
+  const webAppUrl = resolveEmployedUrl();
 
-  const json = (await fetchAction(config.webAppUrl, { action: "schema_employed" })) as {
+  const json = (await fetchAction(webAppUrl, { action: "schema_employed" })) as {
     headers: string[];
     rows: (string | number | null)[][];
     error?: string;

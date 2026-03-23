@@ -1125,9 +1125,11 @@ export function setupSettingsHandlers(): void {
       if (gate) gate.style.display = "none";
       if (section) section.style.display = "flex";
       if (gateError) gateError.style.display = "none";
-      // 학업성취도 + 문의응대 섹션도 표시
+      // 학업성취도 + 재직자 + 문의응대 섹션도 표시
       const achievementSection = $("achievementApiSection");
       if (achievementSection) achievementSection.style.display = "flex";
+      const employedSection = $("employedApiSection");
+      if (employedSection) employedSection.style.display = "flex";
       const inquirySection = $("inquiryApiSection");
       if (inquirySection) inquirySection.style.display = "flex";
       // Auth key, Proxy, Slack Webhook 복원

@@ -1951,7 +1951,7 @@
               <div id="empEmpty" class="att-empty-state">
                 <div class="att-empty-icon">📊</div>
                 <div class="att-empty-title">학업성취도 (재직자)</div>
-                <div class="att-empty-desc">조회 버튼을 클릭하면 재직자 유닛리포트 데이터를 표시합니다.<br /><small class="muted">연결 설정: 설정 → API 연동 → 학업성취도 (Apps Script)</small></div>
+                <div class="att-empty-desc">조회 버튼을 클릭하면 재직자 유닛리포트 데이터를 표시합니다.<br /><small class="muted">연결 설정: 설정 → API 연동 → 재직자 유닛리포트 (Apps Script)</small></div>
               </div>
               <div id="empContent" style="display: none">
                 <div style="overflow-x: auto">
@@ -3059,6 +3059,23 @@
                   <button id="settingsAchievementTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
                 </div>
                 <div id="settingsAchievementTestStatus" class="settings-status-msg u-mt-4"></div>
+              </div>
+
+              <!-- 재직자 유닛리포트 (Apps Script) -->
+              <div id="employedApiSection" class="hrd-settings-row" style="display: none; margin-top: 16px; border-top: 1px solid var(--card-border, rgba(0,0,0,0.06)); padding-top: 16px">
+                <div style="flex-basis: 100%; margin-bottom: 8px">
+                  <strong style="font-size: 14px">📊 재직자 유닛리포트 (Apps Script)</strong>
+                  <small class="muted" style="display: block; margin-top: 4px">재직자 유닛리포트 통합DB 시트의 전용 Apps Script URL. 비워두면 학업성취도 URL을 fallback으로 사용합니다.</small>
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>Apps Script Web App URL</label>
+                  <input type="text" id="settingsEmployedUrl" class="hrd-input" placeholder="https://script.google.com/macros/s/.../exec" />
+                </div>
+                <div class="hrd-field-actions">
+                  <button id="settingsEmployedSave" class="btn-primary btn-sm" type="button">저장</button>
+                  <button id="settingsEmployedTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
+                </div>
+                <div id="settingsEmployedTestStatus" class="settings-status-msg u-mt-4"></div>
               </div>
 
               <!-- Airtable 문의응대 연동 -->

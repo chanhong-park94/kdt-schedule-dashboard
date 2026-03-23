@@ -1,12 +1,18 @@
 /**
  * 재직자 학업성취도 (유닛리포트) 타입 정의
  *
- * CSV 기반 유닛리포트 데이터를 스키마 구글시트 "학업성취도(재직자)"에서 조회합니다.
+ * 재직자 유닛리포트 통합DB 구글시트에서 Apps Script Web App을 통해 조회합니다.
  * 헤더: 과정명, 기수, 성명, 레벨, 경험치, 작성일,
- *       유닛1~12_강사진단, 유닛1~12_운영진단, 프로젝트1~4
+ *       유닛1~12_강사진단, 유닛1~12_운영진단
  */
 
 export const EMPLOYED_CACHE_KEY = "kdt_employed_cache_v1";
+export const EMPLOYED_CONFIG_KEY = "kdt_employed_config_v1";
+
+/** 재직자 유닛리포트 전용 Apps Script 설정 */
+export interface EmployedConfig {
+  webAppUrl: string;
+}
 
 export interface EmployedRecord {
   과정명: string;
