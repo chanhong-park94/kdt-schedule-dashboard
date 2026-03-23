@@ -42,6 +42,10 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
     const { initCrossAnalysis } = await import("../crossAnalysis/crossAnalysisInit");
     initCrossAnalysis();
   }),
+  settings: createTabLoader(async () => {
+    const { initSettings } = await import("../hrd/settingsInit");
+    initSettings();
+  }),
 };
 
 export async function ensureTabLoaded(navKey: PrimarySidebarNavKey): Promise<void> {
