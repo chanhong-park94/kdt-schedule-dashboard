@@ -111,6 +111,16 @@ function resolveStatusStr(raw: HrdRawAttendance): string {
 }
 
 // ─── Data Fetch ─────────────────────────────────────────
+
+/** 명단 훈련상태로 "훈련중" 기수인지 판별 */
+function isDegrTraining(roster: { trneeSttusNm?: string; atendSttsNm?: string; stttsCdNm?: string; [key: string]: unknown }[]): boolean {
+  if (roster.length === 0) return false;
+  return roster.some((r) => {
+    const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString().trim();
+    return st === "" || st.includes("훈련중") || st.includes("참여중");
+  });
+}
+
 async function fetchDashboardData(
   config: HrdConfig,
   onProgress?: (msg: string) => void,
@@ -132,8 +142,17 @@ async function fetchDashboardData(
       const promises = batch.map(async (degr) => {
         try {
           const roster = await fetchRoster(config, course.trainPrId, degr);
+
+          // ★ HRD 명단 훈련상태로 훈련중 기수만 포함
+          if (!isDegrTraining(roster)) {
+            done++;
+            onProgress?.(`${done}/${totalDegrs} 조회 중...`);
+            return; // 종강/수료 기수는 건너뜀
+          }
+
           const dropoutCount = roster.filter(isDropout).length;
           const totalCount = roster.length;
+          const now = new Date();
 
           // 과정 진행률 계산
           let progress = 0;
@@ -156,7 +175,6 @@ async function fetchDashboardData(
             progress,
           });
 
-          const now = new Date();
           const months: string[] = [];
           for (let m = 2; m >= 0; m--) {
             const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
