@@ -134,6 +134,7 @@ export const domRefs = {
   scheduleDaysInfo: getRequiredElement<HTMLElement>("#scheduleDaysInfo"),
   scheduleDaysPreview: getRequiredElement<HTMLUListElement>("#scheduleDaysPreview"),
   scheduleAppendStatus: getRequiredElement<HTMLElement>("#scheduleAppendStatus"),
+  scheduleDownloadCsvButton: getRequiredElement<HTMLButtonElement>("#scheduleDownloadCsvButton"),
 
   staffingStatus: getRequiredElement<HTMLElement>("#staffingStatus"),
   staffingModeSelect: getRequiredElement<HTMLSelectElement>("#staffingModeSelect"),
