@@ -18,6 +18,7 @@ interface DashCourseData {
   dropout: number;
   active: number;
   defenseRate: number;
+  progress: number; // 과정 진행률 (%)
 }
 
 interface DashTrainee {
@@ -130,6 +131,15 @@ async function fetchDashboardData(
           const dropoutCount = roster.filter(isDropout).length;
           const totalCount = roster.length;
 
+          // 과정 진행률 계산
+          let progress = 0;
+          if (course.startDate && course.totalDays) {
+            const start = new Date(course.startDate);
+            const totalCalendarDays = Math.ceil((course.totalDays / 5) * 7);
+            const elapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+            progress = Math.min(100, Math.round((elapsed / totalCalendarDays) * 100 * 10) / 10);
+          }
+
           courseData.push({
             courseName: course.name,
             trainPrId: course.trainPrId,
@@ -139,6 +149,7 @@ async function fetchDashboardData(
             dropout: dropoutCount,
             active: totalCount - dropoutCount,
             defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
+            progress,
           });
 
           const now = new Date();
@@ -347,6 +358,7 @@ function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[])
   const avgAttendance =
     activeTrainees.length > 0 ? activeTrainees.reduce((s, t) => s + t.attendanceRate, 0) / activeTrainees.length : 0;
   const courseCount = new Set(courseData.map((c) => c.courseName)).size;
+  const degrCount = courseData.length;
 
   container.innerHTML = `
     <div class="dash-panel-header">
@@ -356,7 +368,7 @@ function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[])
       <div class="dash-stat-big">${activeAll}<span style="font-size:14px;font-weight:500;color:var(--text-secondary);margin-left:4px;">명 재적</span></div>
       <div class="dash-stat-bar"><div class="dash-stat-bar-fill" style="width:${totalAll > 0 ? (activeAll / totalAll) * 100 : 0}%"></div></div>
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:0;">
-        <div class="dash-stat-row"><span class="dash-stat-label">운영 과정</span><span class="dash-stat-value">${courseCount}개</span></div>
+        <div class="dash-stat-row"><span class="dash-stat-label">운영 과정</span><span class="dash-stat-value">${courseCount}개 · ${degrCount}기수</span></div>
         <div class="dash-stat-row"><span class="dash-stat-label">전체 등록</span><span class="dash-stat-value">${totalAll}명</span></div>
         <div class="dash-stat-row"><span class="dash-stat-label">이탈 인원</span><span class="dash-stat-value">${dropoutAll}명</span></div>
         <div class="dash-stat-row"><span class="dash-stat-label">평균 출석률</span><span class="dash-stat-value">${avgAttendance.toFixed(1)}%</span></div>
@@ -366,53 +378,46 @@ function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[])
   `;
 }
 
-// ─── Trend Chart (과정별 진행률 + 출석률) ────────────────
-function renderTrendChart(courses: HrdCourse[], trainees: DashTrainee[]): void {
+// ─── Progress Chart (기수별 진행률 세로형 막대그래프) ────────────────
+function renderProgressChart(courseData: DashCourseData[], courses: HrdCourse[]): void {
   const container = $("dashboardTrendChart");
   if (!container) return;
 
   const activeCourses = courses.filter(isActiveCourse);
 
-  // 과정별 진행률 계산
-  const now = new Date();
-  const progressMap = new Map<string, number>();
-  for (const c of activeCourses) {
-    if (c.startDate && c.totalDays) {
-      const start = new Date(c.startDate);
-      const totalCalendarDays = Math.ceil((c.totalDays / 5) * 7);
-      const elapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-      const progress = Math.min(100, (elapsed / totalCalendarDays) * 100);
-      progressMap.set(c.name, Math.round(progress * 10) / 10);
-    }
+  // 기수 단위 라벨 + 진행률 — 진행률순 내림차순 정렬
+  const entries = courseData
+    .filter((c) => {
+      const course = activeCourses.find((ac) => ac.name === c.courseName);
+      return !!course;
+    })
+    .sort((a, b) => b.progress - a.progress);
+
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="dash-empty">운영 중인 과정이 없습니다.</div>`;
+    return;
   }
 
-  // 과정별 출석률 집계
-  const activeTrainees = trainees.filter((t) => !t.isDropout && t.attendanceRate >= 0);
-  const attMap = new Map<string, { sum: number; count: number }>();
-  for (const t of activeTrainees) {
-    const entry = attMap.get(t.courseName) || { sum: 0, count: 0 };
-    entry.sum += t.attendanceRate;
-    entry.count++;
-    attMap.set(t.courseName, entry);
-  }
-
-  // 진행률이 있는 과정만 표시
-  const courseNames = [...progressMap.keys()];
-  const labels = courseNames.map((n) => (n.length > 10 ? n.slice(0, 10) + ".." : n));
-  const progressData = courseNames.map((n) => progressMap.get(n) || 0);
-  const attendanceData = courseNames.map((n) => {
-    const att = attMap.get(n);
-    return att && att.count > 0 ? Math.round((att.sum / att.count) * 10) / 10 : 0;
+  const labels = entries.map((e) => {
+    const shortName = e.courseName.length > 8 ? e.courseName.slice(0, 8) + ".." : e.courseName;
+    return `${shortName} ${e.degr}기`;
   });
+  const progressData = entries.map((e) => e.progress);
+
+  // 진행률 구간별 색상
+  const barColors = progressData.map((p) =>
+    p >= 80 ? CHART_COLORS.primary : p >= 50 ? CHART_COLORS.green : p >= 20 ? CHART_COLORS.amber : CHART_COLORS.orange,
+  );
 
   container.innerHTML = `
     <div class="dash-panel-header">
-      <h3 class="dash-panel-title">운영 과정 진행률 · 출석률</h3>
+      <h3 class="dash-panel-title">운영 과정 · 기수별 진행률</h3>
+      <span class="dash-panel-count">${entries.length}개 기수</span>
     </div>
-    <div class="dash-chart-canvas-wrap"><canvas id="dashChartTrend"></canvas></div>
+    <div class="dash-chart-canvas-wrap"><canvas id="dashChartProgress"></canvas></div>
   `;
 
-  const ctx = (document.getElementById("dashChartTrend") as HTMLCanvasElement)?.getContext("2d");
+  const ctx = (document.getElementById("dashChartProgress") as HTMLCanvasElement)?.getContext("2d");
   if (ctx) {
     const chart = new Chart(ctx, {
       type: "bar",
@@ -422,26 +427,22 @@ function renderTrendChart(courses: HrdCourse[], trainees: DashTrainee[]): void {
           {
             label: "진행률 (%)",
             data: progressData,
-            backgroundColor: "rgba(99, 102, 241, 0.7)",
-            borderColor: CHART_COLORS.primary,
-            borderWidth: 1,
-            borderRadius: 4,
-          },
-          {
-            label: "출석률 (%)",
-            data: attendanceData,
-            backgroundColor: "rgba(249, 115, 22, 0.7)",
-            borderColor: CHART_COLORS.orange,
-            borderWidth: 1,
-            borderRadius: 4,
+            backgroundColor: barColors,
+            borderRadius: 6,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        indexAxis: "x",
         scales: {
-          x: { ticks: { color: CHART_COLORS.text, font: { size: 11 } }, grid: { display: false } },
+          x: {
+            ticks: { color: CHART_COLORS.text, font: { size: 10 }, maxRotation: 45, minRotation: 0 },
+            grid: { display: false },
+          },
           y: {
             min: 0,
             max: 100,
@@ -450,19 +451,30 @@ function renderTrendChart(courses: HrdCourse[], trainees: DashTrainee[]): void {
           },
         },
         plugins: {
-          legend: { labels: { color: CHART_COLORS.text, usePointStyle: true, pointStyle: "rectRounded", padding: 16 } },
+          legend: { display: false },
           tooltip: {
             callbacks: {
-              afterBody: (items) => {
-                if (items.length > 0 && items[0].datasetIndex === 0) {
+              title: (items) => {
+                if (items.length > 0) {
                   const idx = items[0].dataIndex;
-                  const name = courseNames[idx];
-                  const c = activeCourses.find((ac) => ac.name === name);
-                  if (c?.startDate && c?.totalDays) {
-                    const end = new Date(c.startDate);
-                    end.setDate(end.getDate() + Math.ceil((c.totalDays / 5) * 7));
-                    return `종강 예정: ${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+                  const e = entries[idx];
+                  return `${e.courseName} ${e.degr}기`;
+                }
+                return "";
+              },
+              afterBody: (items) => {
+                if (items.length > 0) {
+                  const idx = items[0].dataIndex;
+                  const e = entries[idx];
+                  const course = activeCourses.find((ac) => ac.name === e.courseName);
+                  const lines: string[] = [];
+                  lines.push(`재적 ${e.active}명 / 이탈 ${e.dropout}명`);
+                  if (course?.startDate && course?.totalDays) {
+                    const end = new Date(course.startDate);
+                    end.setDate(end.getDate() + Math.ceil((course.totalDays / 5) * 7));
+                    lines.push(`종강 예정: ${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`);
                   }
+                  return lines.join("\n");
                 }
                 return "";
               },
@@ -657,7 +669,7 @@ export async function initDashboard(): Promise<void> {
     renderKpiCards(courseData, trainees);
     renderDonutChart(courseData);
     renderStatsPanel(courseData, trainees);
-    renderTrendChart(config.courses, trainees);
+    renderProgressChart(courseData, config.courses);
     renderRiskStudentList(trainees);
     renderCompareCharts(courseData, trainees);
   } catch (e) {
