@@ -79,14 +79,15 @@ function destroyCharts(): void {
 const $ = (id: string) => document.getElementById(id);
 
 // ─── Helpers ────────────────────────────────────────────
-/** 훈련중인 과정만 필터 — 개강일~종강일 사이, startDate/totalDays 필수 */
+/** 훈련중인 과정 필터 — 종강 확인된 과정만 제외, 날짜 미설정은 포함 */
 function isTrainingCourse(course: HrdCourse): boolean {
-  if (!course.startDate || !course.totalDays) return false;
+  // startDate나 totalDays가 없으면 종강 여부 판단 불가 → 포함
+  if (!course.startDate || !course.totalDays) return true;
   const now = new Date();
-  const start = new Date(course.startDate);
   const end = new Date(course.startDate);
   end.setDate(end.getDate() + Math.ceil((course.totalDays / 5) * 7));
-  return start <= now && end >= now;
+  // 종강일이 지난 과정만 제외
+  return end >= now;
 }
 
 function getTargetRate(cat: CourseCategory): number {
