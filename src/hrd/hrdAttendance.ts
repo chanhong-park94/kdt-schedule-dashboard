@@ -825,7 +825,7 @@ function openRiskPanel(): void {
 
 // ─── Settings Integration ───────────────────────────────────
 
-async function renderHrdSettingsSection(): Promise<void> {
+export async function renderHrdSettingsSection(): Promise<void> {
   const container = $("settingsCourseRegistration") ?? $("hrdSettingsSection");
   if (!container) return;
 
@@ -1081,7 +1081,7 @@ function renderSlackScheduleUI(config: HrdConfig): void {
 
 const HRD_KEY_GATE_PASSWORD = "admin";
 
-function setupSettingsHandlers(): void {
+export function setupSettingsHandlers(): void {
   // ─── 접이식 섹션 토글 (settingsInit.ts에서도 바인딩, 중복 방지) ───
   document.querySelectorAll<HTMLElement>("[data-settings-toggle]").forEach((header) => {
     if (header.dataset.toggleBound) return;
