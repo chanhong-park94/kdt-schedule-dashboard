@@ -79,11 +79,14 @@ function destroyCharts(): void {
 const $ = (id: string) => document.getElementById(id);
 
 // ─── Helpers ────────────────────────────────────────────
-function isActiveCourse(course: HrdCourse): boolean {
-  if (!course.startDate || !course.totalDays) return true;
+/** 훈련중인 과정만 필터 — 개강일~종강일 사이, startDate/totalDays 필수 */
+function isTrainingCourse(course: HrdCourse): boolean {
+  if (!course.startDate || !course.totalDays) return false;
+  const now = new Date();
+  const start = new Date(course.startDate);
   const end = new Date(course.startDate);
   end.setDate(end.getDate() + Math.ceil((course.totalDays / 5) * 7));
-  return end >= new Date();
+  return start <= now && end >= now;
 }
 
 function getTargetRate(cat: CourseCategory): number {
@@ -117,7 +120,7 @@ async function fetchDashboardData(
   const courseData: DashCourseData[] = [];
   const trainees: DashTrainee[] = [];
 
-  const activeCourses = config.courses.filter(isActiveCourse);
+  const activeCourses = config.courses.filter(isTrainingCourse);
   const totalDegrs = activeCourses.reduce((s, c) => s + c.degrs.length, 0);
   let done = 0;
 
@@ -383,7 +386,7 @@ function renderProgressChart(courseData: DashCourseData[], courses: HrdCourse[])
   const container = $("dashboardTrendChart");
   if (!container) return;
 
-  const activeCourses = courses.filter(isActiveCourse);
+  const activeCourses = courses.filter(isTrainingCourse);
 
   // 기수 단위 라벨 + 진행률 — 진행률순 내림차순 정렬
   const entries = courseData
