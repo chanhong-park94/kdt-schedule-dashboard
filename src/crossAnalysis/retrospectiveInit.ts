@@ -204,7 +204,9 @@ async function generateReport(): Promise<void> {
   destroyAllCharts();
 
   try {
-    const data = await collectRetrospectiveData(filter);
+    const data = await collectRetrospectiveData(filter, (msg) => {
+      if (statusEl) statusEl.textContent = msg;
+    });
     const insights = generateRetrospectiveInsights(data);
 
     lastReportData = data;

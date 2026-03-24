@@ -6,9 +6,9 @@
  * 캐시가 없거나 비어 있으면 해당 섹션은 null로 반환 (graceful degradation).
  */
 
-import { loadAchievementCache, summarizeByTrainee } from "../hrd/hrdAchievementApi";
-import { loadSatisfactionCache, summarizeByCohort } from "../hrd/hrdSatisfactionApi";
-import { loadInquiryCache, calcInquiryStats } from "../hrd/hrdInquiryApi";
+import { loadAchievementCache, loadAchievementConfig, fetchUnified, summarizeByTrainee } from "../hrd/hrdAchievementApi";
+import { loadSatisfactionCache, loadSatisfactionConfig, fetchSatisfactionRecords, summarizeByCohort } from "../hrd/hrdSatisfactionApi";
+import { loadInquiryCache, loadInquiryConfig, fetchInquiryRecords, calcInquiryStats } from "../hrd/hrdInquiryApi";
 import type { UnifiedRecord } from "../hrd/hrdAchievementTypes";
 import type { SatisfactionRecord } from "../hrd/hrdSatisfactionTypes";
 import type { InquiryRecord } from "../hrd/hrdInquiryTypes";
@@ -438,18 +438,80 @@ export function generateRetrospectiveInsights(data: RetrospectiveReportData): Se
 // ── 메인: 데이터 수집 ───────────────────────────────────────────
 
 /**
+ * 캐시 또는 API에서 성취도 데이터 로드.
+ * 캐시가 있으면 캐시 사용, 없으면 API 설정이 있을 때 직접 fetch.
+ */
+async function loadOrFetchAchievement(onStatus?: (msg: string) => void): Promise<UnifiedRecord[]> {
+  const cached = loadAchievementCache();
+  if (cached && cached.length > 0) return cached;
+
+  const config = loadAchievementConfig();
+  if (!config.webAppUrl) return [];
+
+  onStatus?.("학업성취도 데이터 조회 중...");
+  try {
+    return await fetchUnified(config);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 캐시 또는 API에서 만족도 데이터 로드.
+ */
+async function loadOrFetchSatisfaction(onStatus?: (msg: string) => void): Promise<SatisfactionRecord[]> {
+  const cached = loadSatisfactionCache();
+  if (cached && cached.length > 0) return cached;
+
+  const config = loadSatisfactionConfig();
+  if (!config.webAppUrl) return [];
+
+  onStatus?.("만족도 데이터 조회 중...");
+  try {
+    return await fetchSatisfactionRecords(config);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 캐시 또는 API에서 문의응대 데이터 로드.
+ */
+async function loadOrFetchInquiry(onStatus?: (msg: string) => void): Promise<InquiryRecord[]> {
+  const cached = loadInquiryCache();
+  if (cached && cached.length > 0) return cached;
+
+  const config = loadInquiryConfig();
+  if (!config.baseId || !config.pat) return [];
+
+  onStatus?.("문의응대 데이터 조회 중...");
+  try {
+    return await fetchInquiryRecords(config);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * 5개 데이터 소스를 병렬 로드하여 회고 리포트 데이터를 생성합니다.
  *
- * 각 소스는 캐시에서 로드하며, 캐시가 없으면 해당 섹션은 null.
+ * 캐시가 있으면 캐시 사용, 없으면 API 설정이 되어 있을 때 자동으로 fetch.
  * 에러 발생 시에도 다른 섹션은 정상 반환 (graceful degradation).
+ *
+ * @param onStatus — 진행 상태 콜백 (UI에 표시용)
  */
-export async function collectRetrospectiveData(filter: RetrospectiveFilter): Promise<RetrospectiveReportData> {
-  // 5개 소스 병렬 로드 — 각각 에러 시 null/빈배열
+export async function collectRetrospectiveData(
+  filter: RetrospectiveFilter,
+  onStatus?: (msg: string) => void,
+): Promise<RetrospectiveReportData> {
+  onStatus?.("데이터 로딩 중...");
+
+  // 5개 소스 병렬 로드 — 캐시 우선, 없으면 API fetch
   const [attendanceStudents, achievementRecords, satisfactionRecords, inquiryRecords] = await Promise.all([
     loadAttendanceStudents().catch(() => [] as AttendanceStudent[]),
-    Promise.resolve(loadAchievementCache() ?? ([] as UnifiedRecord[])),
-    Promise.resolve(loadSatisfactionCache() ?? ([] as SatisfactionRecord[])),
-    Promise.resolve(loadInquiryCache() ?? ([] as InquiryRecord[])),
+    loadOrFetchAchievement(onStatus).catch(() => [] as UnifiedRecord[]),
+    loadOrFetchSatisfaction(onStatus).catch(() => [] as SatisfactionRecord[]),
+    loadOrFetchInquiry(onStatus).catch(() => [] as InquiryRecord[]),
   ]);
 
   // 데이터 가용성 판별
