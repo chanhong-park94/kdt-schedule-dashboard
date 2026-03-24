@@ -233,10 +233,21 @@ export function summarizeByTrainee(
   const results: TraineeAchievementSummary[] = [];
   for (const [, { nodes, quests, first }] of map) {
     const submitted = nodes.filter((n) => n.노드실행여부);
-    const passed = quests.filter((q) => q.퀘스트상태 === "P");
+
+    // 퀘스트: 퀘스트명 기준 중복 제거 (같은 퀘스트 여러 행 → P 우선)
+    const uniqueQuests = new Map<string, "P" | "F" | null>();
+    for (const q of quests) {
+      const prev = uniqueQuests.get(q.퀘스트명);
+      // P가 하나라도 있으면 P로 확정
+      if (prev === "P") continue;
+      uniqueQuests.set(q.퀘스트명, q.퀘스트상태);
+    }
+    const totalQuests = uniqueQuests.size;
+    const passedQuests = [...uniqueQuests.values()].filter((v) => v === "P").length;
+
     const avgStar = submitted.length > 0 ? submitted.reduce((s, n) => s + n.별점, 0) / submitted.length : 0;
     const nodeRate = nodes.length > 0 ? submitted.length / nodes.length : 0;
-    const questRate = quests.length > 0 ? passed.length / quests.length : 0;
+    const questRate = totalQuests > 0 ? passedQuests / totalQuests : 0;
     // 복합 스코어: 노드제출률 40% + 퀘스트패스률 60%
     const composite = nodeRate * 0.4 + questRate * 0.6;
     const 신호등: "green" | "yellow" | "red" = composite >= 0.7 ? "green" : composite >= 0.4 ? "yellow" : "red";
@@ -250,8 +261,8 @@ export function summarizeByTrainee(
       총노드수: nodes.length,
       제출노드수: submitted.length,
       노드평균별점: Math.round(avgStar * 10) / 10,
-      총퀘스트수: quests.length,
-      패스퀘스트수: passed.length,
+      총퀘스트수: totalQuests,
+      패스퀘스트수: passedQuests,
       신호등,
     });
   }
