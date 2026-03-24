@@ -127,10 +127,10 @@
             data-scroll-target="sectionAnalytics"
             data-nav-key="analytics"
             data-nav-icon="analytics"
-            data-default-label="훈련생 분석"
+            data-default-label="출결 리스크"
           >
             <span class="jibble-nav-emoji" aria-hidden="true">🔍</span>
-            <span class="jibble-nav-label">훈련생 분석</span>
+            <span class="jibble-nav-label">출결 리스크</span>
           </button>
           <button
             class="jibble-nav-item"
@@ -182,10 +182,10 @@
             data-scroll-target="sectionCrossAnalysis"
             data-nav-key="crossAnalysis"
             data-nav-icon="compare"
-            data-default-label="교차분석"
+            data-default-label="종합 분석 리포트"
           >
             <span class="jibble-nav-emoji" aria-hidden="true">📊</span>
-            <span class="jibble-nav-label">교차분석</span>
+            <span class="jibble-nav-label">종합 분석 리포트</span>
           </button>
 
           <div class="nav-spacer" aria-hidden="true"></div>
@@ -300,7 +300,7 @@
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <span class="mobile-bottom-nav-label">훈련생분석</span>
+          <span class="mobile-bottom-nav-label">출결 리스크</span>
         </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="traineeHistory">
           <svg
@@ -1741,7 +1741,7 @@
           <!-- ═══ 훈련생 분석 ═══ -->
           <div class="card card-span-12 u-mt-14" id="sectionAnalytics" data-page-group="analytics">
             <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
-              <h3>📊 훈련생 분석</h3>
+              <h3>📊 출결 리스크</h3>
               <div style="display: flex; gap: 8px">
                 <button id="analyticsFetchBtn" class="btn btn--primary btn--sm">전체 조회</button>
                 <button
@@ -1760,7 +1760,7 @@
 
             <!-- 빈 상태 -->
             <div id="analyticsEmpty" class="att-empty-state">
-              <div class="att-empty-title">훈련생 분석</div>
+              <div class="att-empty-title">출결 리스크</div>
               <div class="att-empty-desc">전체 조회 버튼을 클릭하면 등록된 과정의 훈련생 데이터를 분석합니다.</div>
             </div>
 
@@ -1847,6 +1847,7 @@
                     <option value="남">남</option>
                     <option value="여">여</option>
                   </select>
+                  <button id="anaFilterReset" class="btn-sm btn-ghost" type="button">↺ 초기화</button>
                   <span id="anaDetailCount" class="muted" style="font-size: 13px"></span>
                 </div>
                 <div style="overflow-x: auto">
@@ -2464,13 +2465,13 @@
 
           <!-- ═══════════ 교차분석 ═══════════ -->
           <section id="sectionCrossAnalysis" class="card card-span-12 u-mt-14" data-page-group="crossAnalysis">
-            <h2 class="section-title">📊 교차분석 (출결 × 성취도 × 만족도)</h2>
+            <h2 class="section-title">📊 종합 분석 리포트</h2>
             <p class="section-desc" id="crossAnalysisStatus"></p>
 
             <!-- 서브탭 -->
             <div class="sub-tab-bar">
-              <button class="sub-tab active" id="crossTabStudent" data-cross-tab="student">학생 교차분석</button>
-              <button class="sub-tab" id="crossTabCohort" data-cross-tab="cohort">기수 교차분석</button>
+              <button class="sub-tab active" id="crossTabStudent" data-cross-tab="student">학생 상관분석</button>
+              <button class="sub-tab" id="crossTabCohort" data-cross-tab="cohort">기수 비교분석</button>
               <button class="sub-tab" id="crossTabRetrospective" data-cross-tab="retrospective">운영 회고 리포트</button>
             </div>
 

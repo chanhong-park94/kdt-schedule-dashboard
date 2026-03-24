@@ -120,7 +120,7 @@ const GUIDES: Record<string, GuideSection> = {
     setup: "설정 → API 연동 → HRD-Net API 키 + 과정 등록 필요",
   },
   analytics: {
-    title: "훈련생 분석",
+    title: "출결 리스크",
     emoji: "🔍",
     desc: "전체 훈련생의 인구통계, 출결 패턴, 위험군을 종합 분석합니다.",
     steps: [

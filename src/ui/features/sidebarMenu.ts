@@ -40,7 +40,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   generator: "HRD시간표 생성",
   kpi: "자율성과지표",
   attendance: "출결현황",
-  analytics: "훈련생 분석",
+  analytics: "출결 리스크",
   traineeHistory: "훈련생 이력",
   achievement: "학업성취도",
   inquiry: "문의응대",

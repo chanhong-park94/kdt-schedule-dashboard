@@ -247,7 +247,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       generator: toSidebarLabel(labelsSource.generator, "HRD시간표 생성"),
       kpi: toSidebarLabel(labelsSource.kpi, "재직자 자율성과지표"),
       attendance: toSidebarLabel(labelsSource.attendance, "출결현황"),
-      analytics: toSidebarLabel(labelsSource.analytics, "훈련생 분석"),
+      analytics: toSidebarLabel(labelsSource.analytics, "출결 리스크"),
       traineeHistory: toSidebarLabel(labelsSource.traineeHistory, "훈련생 이력"),
       achievement: toSidebarLabel(labelsSource.achievement, "학업성취도"),
       inquiry: toSidebarLabel(labelsSource.inquiry, "문의응대"),

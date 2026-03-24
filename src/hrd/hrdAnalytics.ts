@@ -1397,9 +1397,19 @@ function renderDetailTab(data: TraineeAnalysis[]): void {
   applyFiltersAndRender(data);
 
   // 필터 이벤트
-  for (const id of ["anaFilterCourse", "anaFilterDegr", "anaFilterAge", "anaFilterStatus", "anaFilterGender"]) {
+  const filterIds = ["anaFilterCourse", "anaFilterDegr", "anaFilterAge", "anaFilterStatus", "anaFilterGender"];
+  for (const id of filterIds) {
     $(id)?.addEventListener("change", () => applyFiltersAndRender(data));
   }
+
+  // 필터 초기화 버튼
+  $("anaFilterReset")?.addEventListener("click", () => {
+    for (const id of filterIds) {
+      const el = $(id) as HTMLSelectElement | null;
+      if (el) el.value = "";
+    }
+    applyFiltersAndRender(data);
+  });
 }
 
 function populateFilters(data: TraineeAnalysis[]): void {

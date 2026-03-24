@@ -238,35 +238,35 @@ async function generateReport(): Promise<void> {
       renderAttendanceSection(data.attendance);
       renderSectionInsights("attendance", insights);
     } else {
-      renderEmptySection("retroAttendanceSection");
+      renderEmptySection("retroSectionAttendance");
     }
 
     if (data.achievement) {
       renderAchievementSection(data.achievement);
       renderSectionInsights("achievement", insights);
     } else {
-      renderEmptySection("retroAchievementSection");
+      renderEmptySection("retroSectionAchievement");
     }
 
     if (data.satisfaction) {
       renderSatisfactionSection(data.satisfaction);
       renderSectionInsights("satisfaction", insights);
     } else {
-      renderEmptySection("retroSatisfactionSection");
+      renderEmptySection("retroSectionSatisfaction");
     }
 
     if (data.inquiry) {
       renderInquirySection(data.inquiry);
       renderSectionInsights("inquiry", insights);
     } else {
-      renderEmptySection("retroInquirySection");
+      renderEmptySection("retroSectionInquiry");
     }
 
     if (data.dropout) {
       renderDropoutSection(data.dropout);
       renderSectionInsights("dropout", insights);
     } else {
-      renderEmptySection("retroDropoutSection");
+      renderEmptySection("retroSectionDropout");
     }
 
     renderSummarySection(data, insights);
@@ -552,15 +552,26 @@ function renderSummarySection(data: RetrospectiveReportData, insights: SectionIn
 
 // ── Empty Section ────────────────────────────────────────────
 
+const EMPTY_SECTION_GUIDES: Record<string, string> = {
+  retroSectionAttendance: "출결현황 탭에서 해당 과정/기수를 먼저 조회하세요.",
+  retroSectionAchievement: "학업성취도 탭에서 데이터를 조회하거나, 설정 → API 연동에서 Apps Script URL을 등록하세요.",
+  retroSectionSatisfaction: "만족도 탭에서 데이터를 조회하거나, 설정 → API 연동에서 Apps Script URL을 등록하세요.",
+  retroSectionInquiry: "문의응대 탭에서 데이터를 조회하거나, 설정 → API 연동에서 Airtable 설정을 등록하세요.",
+  retroSectionDropout: "출결현황 탭에서 해당 과정/기수를 먼저 조회하세요.",
+};
+
 function renderEmptySection(sectionId: string): void {
   const section = $(sectionId);
   if (!section) return;
   section.setAttribute("data-empty", "true");
 
+  const guide = EMPTY_SECTION_GUIDES[sectionId] || "";
   const insightEl = section.querySelector(".retro-insight");
   if (insightEl) {
-    insightEl.innerHTML =
-      '<div style="color:#9ca3af;padding:16px;text-align:center">데이터가 부족하여 분석을 생략합니다</div>';
+    insightEl.innerHTML = `<div style="color:#9ca3af;padding:16px;text-align:center">
+      📭 데이터가 없어 분석을 생략합니다.<br>
+      <span style="font-size:12px">${guide}</span>
+    </div>`;
   }
 }
 

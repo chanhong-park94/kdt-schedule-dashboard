@@ -56,7 +56,7 @@ function pearsonR(xs: number[], ys: number[]): number {
 }
 
 /** 상관계수 강도 한국어 설명 */
-function describeCorrelation(r: number): string {
+export function describeCorrelation(r: number): string {
   const abs = Math.abs(r);
   const direction = r >= 0 ? "양" : "음";
   if (abs >= 0.7) return `강한 ${direction}의 상관`;

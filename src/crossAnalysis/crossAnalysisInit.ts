@@ -16,6 +16,7 @@ import {
   calcStudentStats,
   calcCohortStats,
   generateInsights,
+  describeCorrelation,
 } from "./crossAnalysisData";
 import { renderScatterChart, renderHeatmapTable, renderRadarChart, destroyChart } from "./crossAnalysisCharts";
 import type { StudentCrossData, CohortCrossData, HeatmapCell } from "./crossAnalysisTypes";
@@ -134,7 +135,8 @@ function renderStudentAnalysis(students: StudentCrossData[]): void {
   if (elMatched) elMatched.textContent = `${stats.matchedStudents}명`;
   if (elCorr) {
     const r = stats.correlationR;
-    elCorr.textContent = r >= 0 ? `+${r.toFixed(3)}` : r.toFixed(3);
+    const rText = r >= 0 ? `+${r.toFixed(3)}` : r.toFixed(3);
+    elCorr.innerHTML = `${rText}<br><span style="font-size:11px;color:var(--text-secondary)">${describeCorrelation(r)}</span>`;
   }
   if (elRisk) elRisk.textContent = `${stats.highRiskCount}명`;
   if (elExcellent) elExcellent.textContent = `${stats.excellentCount}명`;
@@ -169,7 +171,13 @@ function renderCohortAnalysis(cohorts: CohortCrossData[], students: StudentCross
   const elImprove = $("crossStatNeedsImprovement");
   if (elCohorts) elCohorts.textContent = `${stats.matchedCohorts}개`;
   if (elBest) elBest.textContent = stats.bestCohort;
-  if (elImprove) elImprove.textContent = stats.needsImprovement.length > 0 ? `${stats.needsImprovement.length}개` : "-";
+  if (elImprove) {
+    if (stats.needsImprovement.length > 0) {
+      elImprove.innerHTML = `${stats.needsImprovement.length}개<br><span style="font-size:11px;color:var(--text-secondary)">${stats.needsImprovement.map(esc).join(", ")}</span>`;
+    } else {
+      elImprove.textContent = "-";
+    }
+  }
 
   // 레이더 차트
   destroyChart(radarChart);
