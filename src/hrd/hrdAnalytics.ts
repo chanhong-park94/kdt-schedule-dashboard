@@ -53,6 +53,19 @@ function destroyCharts(): void {
   charts.length = 0;
 }
 
+// ─── 모달 차트 인스턴스 관리 ─────────────────────────────────
+const modalCharts: Chart[] = [];
+function destroyModalCharts(): void {
+  for (const c of modalCharts) {
+    try {
+      c.destroy();
+    } catch {
+      /* ignore */
+    }
+  }
+  modalCharts.length = 0;
+}
+
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
 
@@ -1514,6 +1527,7 @@ function populateFilters(data: TraineeAnalysis[]): void {
 
 let sortCol = "name";
 let sortAsc = true;
+let lastFilteredData: TraineeAnalysis[] = [];
 
 function applyFiltersAndRender(data: TraineeAnalysis[]): void {
   const nameFilter = (($("anaFilterName") as HTMLInputElement)?.value || "").trim();
@@ -1570,10 +1584,13 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
   const countEl = $("anaDetailCount");
   if (countEl) countEl.textContent = `${filtered.length}명`;
 
+  // 모듈 레벨에 필터된 데이터 저장 (모달 클릭용)
+  lastFilteredData = filtered;
+
   tbody.innerHTML = filtered
     .map(
-      (d) => `<tr>
-    <td>${d.name}</td>
+      (d, i) => `<tr>
+    <td><a href="#" class="ana-trainee-link" data-idx="${i}" style="color:var(--primary);cursor:pointer;text-decoration:underline">${d.name}</a></td>
     <td>${d.courseName.length > 12 ? d.courseName.slice(0, 12) + "…" : d.courseName}</td>
     <td>${d.degr}기</td>
     <td>${d.age > 0 ? d.age + "세" : "-"}</td>
@@ -1584,6 +1601,163 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
   </tr>`,
     )
     .join("");
+
+  // 훈련생 이름 클릭 → 드릴다운 모달
+  tbody.querySelectorAll<HTMLElement>(".ana-trainee-link").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      const idx = parseInt(el.dataset.idx || "0", 10);
+      if (lastFilteredData[idx]) openTraineeModal(lastFilteredData[idx]);
+    });
+  });
+}
+
+// ─── 훈련생 상세 모달 ────────────────────────────────────────
+
+function openTraineeModal(t: TraineeAnalysis): void {
+  const modal = $("anaDetailModal");
+  if (!modal) return;
+
+  // Title
+  const title = $("anaDetailTitle");
+  if (title) title.textContent = `${t.name} — ${t.courseName} ${t.degr}기`;
+
+  // Info cards
+  const info = $("anaDetailInfo");
+  if (info) {
+    const rateClass =
+      t.attendanceRate >= 90 ? "color:#22c55e" : t.attendanceRate >= 80 ? "color:#f59e0b" : "color:#ef4444";
+    info.innerHTML = `
+      <div class="stat-card"><div class="stat-label">출석률</div><div class="stat-value" style="${rateClass}">${fmtRate(t.attendanceRate)}</div></div>
+      <div class="stat-card"><div class="stat-label">결석/지각</div><div class="stat-value">${t.absentDays}일 / ${t.lateDays}일</div></div>
+      <div class="stat-card"><div class="stat-label">연속결석</div><div class="stat-value">${t.currentConsecutiveAbsent}일 (최대 ${t.maxConsecutiveAbsent}일)</div></div>
+      <div class="stat-card"><div class="stat-label">상태</div><div class="stat-value">${t.dropout ? "탈락" : t.completionStatus || "훈련중"}</div></div>
+    `;
+  }
+
+  // Alert badges
+  const alerts = $("anaDetailAlerts");
+  if (alerts) {
+    if (t.alertReasons.length > 0) {
+      alerts.innerHTML = t.alertReasons
+        .map(
+          (r) =>
+            `<span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;background:#fef2f2;color:#991b1b;margin-right:6px">⚠️ ${r}</span>`,
+        )
+        .join("");
+    } else {
+      alerts.innerHTML = '<span style="color:#22c55e;font-size:13px">✅ 경보 없음</span>';
+    }
+  }
+
+  // Render charts
+  destroyModalCharts();
+  renderModalCharts(t);
+
+  // Show modal
+  modal.classList.add("active");
+}
+
+function renderModalCharts(t: TraineeAnalysis): void {
+  // 1. Weekly attendance line chart
+  if (t.weeklyAttendanceRates.length > 0) {
+    const ctx = ($("anaDetailWeekly") as HTMLCanvasElement)?.getContext("2d");
+    if (ctx) {
+      modalCharts.push(
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: t.weeklyAttendanceRates.map((_, i) => `${i + 1}주`),
+            datasets: [
+              {
+                label: "출석률",
+                data: t.weeklyAttendanceRates,
+                borderColor: "#7c5cfc",
+                backgroundColor: "rgba(124,92,252,0.1)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } } },
+          },
+        }),
+      );
+    }
+  }
+
+  // 2. Weekday absence bar chart
+  const weekdayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+  if (t.absentByWeekday.some((v) => v > 0)) {
+    const ctx = ($("anaDetailWeekday") as HTMLCanvasElement)?.getContext("2d");
+    if (ctx) {
+      modalCharts.push(
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: weekdayLabels,
+            datasets: [{ label: "결석", data: t.absentByWeekday, backgroundColor: "#ef4444" }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          },
+        }),
+      );
+    }
+  }
+
+  // 3. Monthly absence bar chart
+  if (t.absentByMonth.some((v) => v > 0)) {
+    const ctx = ($("anaDetailMonth") as HTMLCanvasElement)?.getContext("2d");
+    if (ctx) {
+      modalCharts.push(
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: t.absentByMonth.map((_, i) => `${i + 1}월차`),
+            datasets: [{ label: "결석", data: t.absentByMonth, backgroundColor: "#f59e0b" }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          },
+        }),
+      );
+    }
+  }
+
+  // 4. Late by hour bar chart
+  const hourLabels = ["7시", "8시", "9시", "10시", "11시", "12시"];
+  if (t.lateByHour.some((v) => v > 0)) {
+    const ctx = ($("anaDetailHour") as HTMLCanvasElement)?.getContext("2d");
+    if (ctx) {
+      modalCharts.push(
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: hourLabels,
+            datasets: [{ label: "지각", data: t.lateByHour, backgroundColor: "#64748b" }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+          },
+        }),
+      );
+    }
+  }
 }
 
 // ─── 탭 전환 ────────────────────────────────────────────────
@@ -1694,6 +1868,21 @@ export function initAnalytics(): void {
   setupTabs();
   setupTableSort();
   setupCourseStatusFilter();
+
+  // 훈련생 상세 모달 닫기
+  const closeModalBtn = $("anaDetailClose");
+  const modalBackdrop = $("anaDetailModal");
+  const closeModal = () => {
+    destroyModalCharts();
+    modalBackdrop?.classList.remove("active");
+  };
+  closeModalBtn?.addEventListener("click", closeModal);
+  modalBackdrop?.addEventListener("click", (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modalBackdrop?.classList.contains("active")) closeModal();
+  });
 
   // 위험군 CSV 내보내기 버튼
   $("anaRiskCsvBtn")?.addEventListener("click", () => {
