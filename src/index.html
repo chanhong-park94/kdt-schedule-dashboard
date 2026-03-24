@@ -1811,10 +1811,21 @@
                   <div class="ana-chart-box"><canvas id="chartLateByHour"></canvas></div>
                   <div class="ana-chart-box"><canvas id="chartDegrDropout"></canvas></div>
                 </div>
+
+                <!-- 주간 출석률 추이 -->
+                <div class="card" style="margin-top:16px">
+                  <h4 class="card-title">📈 주간 출석률 추이</h4>
+                  <div class="chart-container" style="height:300px">
+                    <canvas id="chartWeeklyTrend"></canvas>
+                  </div>
+                </div>
               </div>
 
               <!-- [리스크 분석] 탭 -->
               <div id="anaPanel-risk" class="ana-tab-panel" style="display: none">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                  <button id="anaRiskCsvBtn" class="btn-sm btn-secondary" type="button">📥 위험군 CSV</button>
+                </div>
                 <div id="analyticsInsights" style="margin-bottom: 16px"></div>
                 <!-- 동적 콘텐츠: renderRiskTab에서 렌더링 -->
                 <div id="riskTabContent"></div>
@@ -1823,6 +1834,7 @@
               <!-- [상세 데이터] 탭 -->
               <div id="anaPanel-detail" class="ana-tab-panel" style="display: none">
                 <div class="filter-bar ana-filters">
+                  <input type="text" id="anaFilterName" class="hrd-input" placeholder="이름 검색" style="max-width:140px">
                   <select id="anaFilterCourse" class="hrd-input">
                     <option value="">전체 과정</option>
                   </select>

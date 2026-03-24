@@ -210,10 +210,12 @@ export function renderHeatmapTable(
       td.dataset.count = String(count);
       td.textContent = count > 0 ? `${count}명` : "-";
 
-      // 배경색 — 인원수 비례 투명도
-      if (count > 0 && maxCount > 0) {
-        const alpha = Math.max(0.1, count / maxCount);
+      // 배경색 — 3단계 색상 강도: 저(1~5명), 중(6~15명), 고(16명+)
+      if (count > 0) {
+        const alpha = count <= 5 ? 0.25 : count <= 15 ? 0.55 : 0.85;
         td.style.background = hexToRgba(signalColor(sig), alpha);
+        td.style.fontSize = count <= 5 ? "13px" : count <= 15 ? "15px" : "17px";
+        td.style.fontWeight = count > 15 ? "700" : count > 5 ? "600" : "400";
         td.style.cursor = "pointer";
 
         // 클릭 핸들러

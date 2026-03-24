@@ -9,6 +9,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readClientEnv } from "../core/env";
 import { loadHrdConfig } from "./hrdConfig";
 import { classifyApiError } from "./hrdCacheUtils";
+import { downloadCsvFile } from "../ui/utils/csv";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse, TraineeGender } from "./hrdTypes";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
@@ -949,6 +950,85 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
           '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">2개 이상의 기수 데이터가 필요합니다</div>';
     }
   }
+
+  // ── 주간 출석률 추이 (Line chart) ──
+  const weeklyTrendCtx = ($("chartWeeklyTrend") as HTMLCanvasElement)?.getContext("2d");
+  if (weeklyTrendCtx) {
+    // 탈락자 제외, 출결 데이터가 있는 학생만
+    const activeStudents = data.filter((d) => !d.dropout && d.hasAttendanceData && d.weeklyAttendanceRates.length > 0);
+    if (activeStudents.length > 0) {
+      const maxWeeks = Math.max(...activeStudents.map((d) => d.weeklyAttendanceRates.length));
+      const weeklyAvg: number[] = [];
+      for (let w = 0; w < maxWeeks; w++) {
+        let sum = 0;
+        let count = 0;
+        for (const s of activeStudents) {
+          if (w < s.weeklyAttendanceRates.length) {
+            sum += s.weeklyAttendanceRates[w];
+            count++;
+          }
+        }
+        weeklyAvg.push(count > 0 ? +(sum / count).toFixed(1) : 0);
+      }
+      const labels = weeklyAvg.map((_, i) => `${i + 1}주`);
+      // 80% 경고 기준선 (별도 데이터셋으로 표현)
+      const warningLine = labels.map(() => 80);
+      charts.push(
+        new Chart(weeklyTrendCtx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "평균 출석률",
+                data: weeklyAvg,
+                borderColor: "#7c5cfc",
+                backgroundColor: "rgba(124,92,252,0.1)",
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+              },
+              {
+                label: "경고 기준 (80%)",
+                data: warningLine,
+                borderColor: "#f59e0b",
+                borderWidth: 1.5,
+                borderDash: [6, 4],
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                min: 0,
+                max: 100,
+                ticks: { callback: (v) => v + "%" },
+                title: { display: true, text: "출석률" },
+              },
+              x: { title: { display: true, text: "주차" } },
+            },
+            plugins: {
+              legend: {
+                display: true,
+                labels: { usePointStyle: true, pointStyle: "line", boxWidth: 20, font: { size: 11 } },
+              },
+            },
+          },
+        }),
+      );
+    } else {
+      const parent = weeklyTrendCtx.canvas.parentElement;
+      if (parent)
+        parent.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:180px;color:#9ca3af;font-size:13px;">주간 출석률 데이터가 없습니다</div>';
+    }
+  }
 }
 
 function renderRiskTab(data: TraineeAnalysis[], insights: InsightCard[]): void {
@@ -1402,8 +1482,13 @@ function renderDetailTab(data: TraineeAnalysis[]): void {
     $(id)?.addEventListener("change", () => applyFiltersAndRender(data));
   }
 
+  // 이름 검색 input 이벤트
+  $("anaFilterName")?.addEventListener("input", () => applyFiltersAndRender(data));
+
   // 필터 초기화 버튼
   $("anaFilterReset")?.addEventListener("click", () => {
+    const nameInput = $("anaFilterName") as HTMLInputElement | null;
+    if (nameInput) nameInput.value = "";
     for (const id of filterIds) {
       const el = $(id) as HTMLSelectElement | null;
       if (el) el.value = "";
@@ -1431,6 +1516,7 @@ let sortCol = "name";
 let sortAsc = true;
 
 function applyFiltersAndRender(data: TraineeAnalysis[]): void {
+  const nameFilter = (($("anaFilterName") as HTMLInputElement)?.value || "").trim();
   const course = ($("anaFilterCourse") as HTMLSelectElement)?.value || "";
   const degr = ($("anaFilterDegr") as HTMLSelectElement)?.value || "";
   const age = ($("anaFilterAge") as HTMLSelectElement)?.value || "";
@@ -1438,6 +1524,7 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
   const gender = ($("anaFilterGender") as HTMLSelectElement)?.value || "";
 
   let filtered = data;
+  if (nameFilter) filtered = filtered.filter((d) => d.name.includes(nameFilter));
   if (course) filtered = filtered.filter((d) => d.courseName === course);
   if (degr) filtered = filtered.filter((d) => d.degr === degr);
   if (age) filtered = filtered.filter((d) => d.age > 0 && getAgeGroup(d.age) === age);
@@ -1607,6 +1694,34 @@ export function initAnalytics(): void {
   setupTabs();
   setupTableSort();
   setupCourseStatusFilter();
+
+  // 위험군 CSV 내보내기 버튼
+  $("anaRiskCsvBtn")?.addEventListener("click", () => {
+    const data = getFilteredData();
+    const riskStudents = data.filter(
+      (d) =>
+        !d.dropout &&
+        d.hasAttendanceData &&
+        (d.attendanceRate < 80 || d.currentConsecutiveAbsent >= 3 || d.alertReasons.length > 0),
+    );
+    if (riskStudents.length === 0) {
+      alert("내보낼 위험군 학생이 없습니다.");
+      return;
+    }
+    const columns = ["이름", "과정", "기수", "출결률(%)", "결석일수", "지각일수", "연속결석", "경보사유"] as const;
+    const rows = riskStudents.map((d) => [
+      d.name,
+      d.courseName,
+      d.degr,
+      d.attendanceRate < 0 ? "N/A" : d.attendanceRate.toFixed(1),
+      String(d.absentDays),
+      String(d.lateDays),
+      String(d.currentConsecutiveAbsent),
+      d.alertReasons.join(", "),
+    ]);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    downloadCsvFile(`위험군_${today}.csv`, [...columns], rows);
+  });
 
   const fetchBtn = $("analyticsFetchBtn");
   const statusEl = $("analyticsStatus");

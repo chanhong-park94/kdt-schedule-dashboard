@@ -94,24 +94,32 @@ export function loadCachedSatisfactionRecords(): SatisfactionRecord[] {
 export function matchStudentData(
   attendanceStudents: AttendanceStudent[],
   achievementRecords: UnifiedRecord[],
+  cohortHint?: string,
 ): StudentCrossData[] {
   // 성취도 데이터를 훈련생별로 집계 (필터 없이 전체)
   const summaries = summarizeByTrainee(achievementRecords, "", "");
 
-  // 이름 기준 매칭 맵
-  const achievementByName = new Map<string, TraineeAchievementSummary>();
+  // 이름 기준 매칭 (동명이인 대응: 이름별 배열로 저장)
+  const achievementByName = new Map<string, TraineeAchievementSummary[]>();
   for (const s of summaries) {
-    achievementByName.set(s.이름.trim(), s);
+    const name = s.이름.trim();
+    if (!achievementByName.has(name)) achievementByName.set(name, []);
+    achievementByName.get(name)!.push(s);
   }
 
   const results: StudentCrossData[] = [];
 
   for (const att of attendanceStudents) {
     const name = att.name.trim();
+    const candidates = achievementByName.get(name);
+    if (!candidates || candidates.length === 0) continue;
 
-    // 정확한 매칭 시도 (이름만으로)
-    const ach = achievementByName.get(name);
-    if (!ach) continue;
+    // 동명이인 없으면 바로 매칭
+    // 동명이인 있으면 cohortHint로 구분, 없으면 첫 번째 후보 사용
+    const ach =
+      candidates.length === 1
+        ? candidates[0]
+        : ((cohortHint ? candidates.find((c) => c.기수 === cohortHint) : null) ?? candidates[0]);
 
     // 성취도 복합점수 계산: 노드제출률 40% + 퀘스트패스률 60%
     const nodeRate = ach.총노드수 > 0 ? ach.제출노드수 / ach.총노드수 : 0;

@@ -275,8 +275,8 @@ async function runAnalysis(): Promise<void> {
   const courseFilter = ($("crossFilterCourse") as HTMLSelectElement | null)?.value ?? "";
   const cohortFilter = ($("crossFilterCohort") as HTMLSelectElement | null)?.value ?? "";
 
-  // 학생 매칭 (전체)
-  const allStudentData = matchStudentData(attendanceStudents, achievementRecords);
+  // 학생 매칭 (전체, cohortHint로 동명이인 구분)
+  const allStudentData = matchStudentData(attendanceStudents, achievementRecords, cohortFilter || undefined);
 
   // 필터 채우기 (전체 데이터 기준 — 필터 적용 전)
   populateFilters(allStudentData);
