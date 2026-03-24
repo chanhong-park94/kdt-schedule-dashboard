@@ -8104,3 +8104,83 @@ dialog {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ── 운영 회고 리포트 ──────────────────────────── */
+.retro-degr-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.retro-degr-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--surface-hover);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+.retro-degr-checkboxes label:hover {
+  background: var(--primary-light, #ede9f3);
+}
+.retro-degr-checkboxes input[type="checkbox"] {
+  accent-color: var(--primary, #7c5cfc);
+}
+.retro-section {
+  margin-top: 16px;
+}
+.retro-section[data-empty="true"] {
+  opacity: 0.5;
+}
+.retro-section[data-empty="true"] .cross-charts-grid,
+.retro-section[data-empty="true"] canvas {
+  display: none;
+}
+.retro-insight {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--surface-hover);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary, #7c5cfc);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.retro-insight[data-level="positive"] {
+  border-left-color: #22c55e;
+  background: #f0fdf4;
+}
+.retro-insight[data-level="negative"] {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+.retro-insight[data-level="neutral"] {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+.retro-insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.retro-insights-list .retro-insight {
+  margin-top: 0;
+}
+.retro-header {
+  text-align: center;
+  padding: 24px;
+}
+.retro-header .card-title {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+@media print {
+  .retro-section {
+    page-break-inside: avoid;
+  }
+}

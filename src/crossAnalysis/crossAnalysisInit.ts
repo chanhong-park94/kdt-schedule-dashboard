@@ -64,16 +64,27 @@ async function loadAttendanceStudents(): Promise<AttendanceStudent[]> {
 
 function setupSubTabs(): void {
   const tabBtns = document.querySelectorAll<HTMLButtonElement>("[data-cross-tab]");
+  let retroInitialized = false;
+
   tabBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const target = btn.dataset.crossTab;
       tabBtns.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
 
       const studentPanel = $("crossPanelStudent");
       const cohortPanel = $("crossPanelCohort");
+      const retroPanel = $("crossPanelRetrospective");
       if (studentPanel) studentPanel.style.display = target === "student" ? "" : "none";
       if (cohortPanel) cohortPanel.style.display = target === "cohort" ? "" : "none";
+      if (retroPanel) retroPanel.style.display = target === "retrospective" ? "" : "none";
+
+      // lazy init: 처음 열 때만 초기화
+      if (target === "retrospective" && !retroInitialized) {
+        retroInitialized = true;
+        const { initRetrospective } = await import("./retrospectiveInit");
+        initRetrospective();
+      }
     });
   });
 }

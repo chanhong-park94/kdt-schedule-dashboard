@@ -16,6 +16,20 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.0.0",
+    date: "2026-03-24",
+    items: [
+      { tag: "feat", text: "운영 회고 리포트 — 교차분석 탭 내 서브탭 추가 (과정/기수 선택 → 5개 지표 종합 대시보드)" },
+      { tag: "feat", text: "회고 리포트 PDF 내보내기 — 6개 섹션 차트 포함 인쇄/저장" },
+      { tag: "feat", text: "회고 리포트 5개 지표 — 출결, 성취도, 만족도, 문의응대, 하차방어 + 종합 레이더" },
+      { tag: "feat", text: "기수 멀티셀렉트 — 전체/개별 기수 체크박스 선택" },
+      { tag: "feat", text: "섹션별 자동 인사이트 — 데이터 기반 강점/개선점 자동 생성" },
+      { tag: "improve", text: "데이터 부족 시 graceful degradation — 부족한 섹션 흐리게 + 다른 지표 강조" },
+      { tag: "fix", text: "출결 알림 리포트 — 최신 기수만 → 전체 운영중 기수 전송 (재직자 LLM 5기 누락 해결)" },
+      { tag: "fix", text: "재직자 기획/개발·데이터 과정 totalDays 0→60 (관리대상 분류 정상화)" },
+    ],
+  },
+  {
     version: "v2.9.0",
     date: "2026-03-22 23:20",
     items: [

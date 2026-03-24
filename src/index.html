@@ -2471,6 +2471,7 @@
             <div class="sub-tab-bar">
               <button class="sub-tab active" id="crossTabStudent" data-cross-tab="student">학생 교차분석</button>
               <button class="sub-tab" id="crossTabCohort" data-cross-tab="cohort">기수 교차분석</button>
+              <button class="sub-tab" id="crossTabRetrospective" data-cross-tab="retrospective">운영 회고 리포트</button>
             </div>
 
             <!-- ── 학생 교차분석 패널 ── -->
@@ -2595,6 +2596,78 @@
               <div class="card" id="crossInsightsCard">
                 <h3 class="card-title">💡 자동 인사이트</h3>
                 <ul id="crossInsightsList" class="insights-list"></ul>
+              </div>
+            </div>
+            <!-- ── 운영 회고 리포트 패널 ── -->
+            <div id="crossPanelRetrospective" class="sub-tab-panel" style="display:none">
+              <!-- 필터 -->
+              <div class="filter-bar" style="flex-wrap:wrap;gap:8px;align-items:flex-start">
+                <select id="retroFilterCourse"><option value="">과정 선택</option></select>
+                <div id="retroDegrCheckboxes" class="retro-degr-checkboxes"></div>
+                <button class="btn btn-primary" id="retroGenerateBtn">리포트 생성</button>
+                <button class="btn btn-secondary" id="retroPdfBtn" style="display:none">PDF 내보내기</button>
+              </div>
+              <p id="retroStatus" class="section-desc"></p>
+
+              <!-- 리포트 영역 -->
+              <div id="retroReportContainer" style="display:none">
+                <!-- 헤더 -->
+                <div class="retro-header card">
+                  <h3 id="retroTitle" class="card-title"></h3>
+                  <p id="retroSubtitle" class="section-desc"></p>
+                </div>
+
+                <!-- ① 출결 현황 -->
+                <div id="retroSectionAttendance" class="retro-section card">
+                  <h3 class="card-title">📋 출결 현황</h3>
+                  <div class="stat-cards" id="retroAttendanceStats"></div>
+                  <div class="cross-charts-grid">
+                    <div><canvas id="retroAttDistChart" height="250"></canvas></div>
+                    <div><canvas id="retroRiskDonut" height="250"></canvas></div>
+                  </div>
+                  <div class="retro-insight" id="retroAttendanceInsight"></div>
+                </div>
+
+                <!-- ② 학업성취도 -->
+                <div id="retroSectionAchievement" class="retro-section card">
+                  <h3 class="card-title">📚 학업성취도</h3>
+                  <div class="stat-cards" id="retroAchievementStats"></div>
+                  <div class="cross-charts-grid">
+                    <div><canvas id="retroSignalDonut" height="250"></canvas></div>
+                    <div><canvas id="retroNodeQuestBar" height="250"></canvas></div>
+                  </div>
+                  <div class="retro-insight" id="retroAchievementInsight"></div>
+                </div>
+
+                <!-- ③ 만족도 -->
+                <div id="retroSectionSatisfaction" class="retro-section card">
+                  <h3 class="card-title">😊 만족도</h3>
+                  <div class="stat-cards" id="retroSatisfactionStats"></div>
+                  <div style="max-width:500px;margin:0 auto"><canvas id="retroNpsBar" height="250"></canvas></div>
+                  <div class="retro-insight" id="retroSatisfactionInsight"></div>
+                </div>
+
+                <!-- ④ 문의응대 -->
+                <div id="retroSectionInquiry" class="retro-section card">
+                  <h3 class="card-title">💬 문의응대</h3>
+                  <div class="stat-cards" id="retroInquiryStats"></div>
+                  <div style="max-width:500px;margin:0 auto"><canvas id="retroChannelDonut" height="250"></canvas></div>
+                  <div class="retro-insight" id="retroInquiryInsight"></div>
+                </div>
+
+                <!-- ⑤ 하차방어 -->
+                <div id="retroSectionDropout" class="retro-section card">
+                  <h3 class="card-title">🛡️ 하차방어</h3>
+                  <div class="stat-cards" id="retroDropoutStats"></div>
+                  <div class="retro-insight" id="retroDropoutInsight"></div>
+                </div>
+
+                <!-- ⑥ 종합 요약 -->
+                <div id="retroSectionSummary" class="retro-section card">
+                  <h3 class="card-title">📊 종합 요약</h3>
+                  <div style="max-width:500px;margin:0 auto"><canvas id="retroSummaryRadar" height="350"></canvas></div>
+                  <div id="retroInsightsList" class="retro-insights-list"></div>
+                </div>
               </div>
             </div>
           </section>
