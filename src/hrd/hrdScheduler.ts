@@ -271,44 +271,58 @@ async function checkAndSend(): Promise<void> {
   let failCount = 0;
 
   for (const course of activeCourses) {
-    // 각 과정의 최신 기수만 전송
-    const latestDegr = course.degrs[course.degrs.length - 1] || "1";
-    try {
-      // 과정 유형별 가장 최근 수업일 계산
-      const reportDate = await findLastClassDay(course.category);
-      if (!reportDate) {
-        console.warn(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
-        continue;
+    // 과정 유형별 가장 최근 수업일 계산 (기수 공통)
+    const reportDate = await findLastClassDay(course.category);
+    if (!reportDate) {
+      console.warn(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
+      continue;
+    }
+
+    // 모든 기수에 대해 리포트 전송 (운영중 기수 = 명단이 있는 기수)
+    for (const degr of course.degrs) {
+      try {
+        const students = await fetchAttendanceForReport(config, course, degr, reportDate);
+
+        // 명단 없는 기수(종강 등)는 건너뛰기
+        if (students.length === 0) {
+          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 명단 없음`);
+          continue;
+        }
+
+        // 훈련중인 학생이 없으면 건너뛰기 (전원 수료/탈락)
+        const activeStudents = students.filter((s) => !s.dropout);
+        if (activeStudents.length === 0) {
+          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 훈련중 학생 없음`);
+          continue;
+        }
+
+        // 하차방어율 계산 (명단 기반: 전체 인원 대비 재적 인원)
+        const total = students.length;
+        const dropoutCount = students.filter((s) => s.dropout).length;
+        const activeCount = total - dropoutCount;
+        const defenseRate = total > 0 ? (activeCount / total) * 100 : 100;
+
+        // 주간 하차인원 — 직접 산출이 어려우므로 undefined (향후 확장)
+        const weeklyDropouts: number | undefined = undefined;
+
+        await sendSlackReportDirect(
+          webhookUrl,
+          course.name,
+          degr,
+          reportDate,
+          students,
+          defenseRate,
+          weeklyDropouts,
+          course.trainPrId,
+        );
+        sentCount++;
+        console.warn(
+          `[Scheduler] Sent report for ${course.name} ${degr}기 (${reportDate} 출결, ${course.category || "실업자"})`,
+        );
+      } catch (e) {
+        failCount++;
+        console.error(`[Scheduler] Failed for ${course.name} ${degr}기:`, e);
       }
-
-      const students = await fetchAttendanceForReport(config, course, latestDegr, reportDate);
-
-      // 하차방어율 계산 (명단 기반: 전체 인원 대비 재적 인원)
-      const total = students.length;
-      const dropoutCount = students.filter((s) => s.dropout).length;
-      const activeCount = total - dropoutCount;
-      const defenseRate = total > 0 ? (activeCount / total) * 100 : 100;
-
-      // 주간 하차인원 — 직접 산출이 어려우므로 undefined (향후 확장)
-      const weeklyDropouts: number | undefined = undefined;
-
-      await sendSlackReportDirect(
-        webhookUrl,
-        course.name,
-        latestDegr,
-        reportDate,
-        students,
-        defenseRate,
-        weeklyDropouts,
-        course.trainPrId,
-      );
-      sentCount++;
-      console.warn(
-        `[Scheduler] Sent report for ${course.name} ${latestDegr}기 (${reportDate} 출결, ${course.category || "실업자"})`,
-      );
-    } catch (e) {
-      failCount++;
-      console.error(`[Scheduler] Failed for ${course.name}:`, e);
     }
   }
 
@@ -320,7 +334,7 @@ async function checkAndSend(): Promise<void> {
   // 마지막 전송 시간 업데이트
   const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   if (failCount === 0 && sentCount > 0) {
-    emitStatus(`✅ ${today} ${timeStr} — ${sentCount}개 과정 전송 완료`, "success");
+    emitStatus(`✅ ${today} ${timeStr} — ${sentCount}개 기수 전송 완료`, "success");
   } else if (sentCount > 0) {
     emitStatus(`⚠️ ${today} ${timeStr} — 성공 ${sentCount} / 실패 ${failCount}`, "error");
   } else {
