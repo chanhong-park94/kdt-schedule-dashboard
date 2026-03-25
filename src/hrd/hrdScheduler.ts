@@ -109,9 +109,12 @@ function formatTime(raw: string | undefined): string {
 
 function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   if (totalDays === 0) return "safe";
-  if (remainingAbsent <= 1) return "danger"; // 제적위험 (잔여 1일 이하)
-  if (remainingAbsent <= 3) return "warning"; // 경고 (잔여 2~3일)
-  if (remainingAbsent <= 6) return "caution"; // 주의 (잔여 4~6일)
+  const maxAbsent = Math.floor(totalDays * 0.2);
+  if (maxAbsent === 0) return "safe";
+  const remainRate = remainingAbsent / maxAbsent;
+  if (remainRate <= 0.1) return "danger";
+  if (remainRate <= 0.25) return "warning";
+  if (remainRate <= 0.5) return "caution";
   return "safe";
 }
 

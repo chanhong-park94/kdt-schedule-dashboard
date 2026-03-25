@@ -143,12 +143,15 @@ function formatTime(raw: string | undefined): string {
   return `${s.slice(0, 2)}:${s.slice(2, 4)}`;
 }
 
-/** 잔여 허용 결석일수 기반 위험등급 */
+/** 잔여 허용 결석일수 기반 위험등급 — 비율 기반 (maxAbsent 대비 잔여 비율) */
 function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   if (totalDays === 0) return "safe"; // 설정 미완료
-  if (remainingAbsent <= 1) return "danger"; // 제적위험 (잔여 1일 이하)
-  if (remainingAbsent <= 3) return "warning"; // 경고 (잔여 2~3일)
-  if (remainingAbsent <= 6) return "caution"; // 주의 (잔여 4~6일)
+  const maxAbsent = Math.floor(totalDays * 0.2);
+  if (maxAbsent === 0) return "safe";
+  const remainRate = remainingAbsent / maxAbsent;
+  if (remainRate <= 0.1) return "danger"; // 제적위험: 잔여 ≤10% (거의 소진)
+  if (remainRate <= 0.25) return "warning"; // 경고: 잔여 ≤25%
+  if (remainRate <= 0.5) return "caution"; // 주의: 잔여 ≤50%
   return "safe";
 }
 

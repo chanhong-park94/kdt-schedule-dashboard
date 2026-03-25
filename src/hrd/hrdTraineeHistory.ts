@@ -18,9 +18,12 @@ function isLateStatus(s: string): boolean {
 
 function getRiskLevel(remaining: number, total: number): "safe" | "caution" | "warning" | "danger" {
   if (total === 0) return "safe";
-  if (remaining <= 1) return "danger"; // 제적위험 (잔여 1일 이하)
-  if (remaining <= 3) return "warning"; // 경고 (잔여 2~3일)
-  if (remaining <= 6) return "caution"; // 주의 (잔여 4~6일)
+  const maxAbsent = Math.floor(total * 0.2);
+  if (maxAbsent === 0) return "safe";
+  const remainRate = remaining / maxAbsent;
+  if (remainRate <= 0.1) return "danger";
+  if (remainRate <= 0.25) return "warning";
+  if (remainRate <= 0.5) return "caution";
   return "safe";
 }
 
