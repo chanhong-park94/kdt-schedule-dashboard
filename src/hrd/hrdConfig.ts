@@ -30,7 +30,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     trainPrId: "AIG20250000501393",
     degrs: ["1", "2", "3", "4", "5"],
     startDate: "",
-    totalDays: 60,
+    totalDays: 45,
     endTime: "18:00",
     category: "재직자",
   },
@@ -82,12 +82,13 @@ export function loadHrdConfig(): HrdConfig {
       if (config.courses.length === 0) {
         config.courses = [...DEFAULT_COURSES];
       }
-      // 기존 저장된 과정의 totalDays/category가 없으면 DEFAULT_COURSES에서 병합
+      // 기존 저장된 과정의 totalDays/category를 DEFAULT_COURSES 기준으로 동기화
       let updated = false;
       for (const course of config.courses) {
         const def = DEFAULT_COURSES.find((d) => d.trainPrId === course.trainPrId);
         if (def) {
-          if ((course.totalDays === 0 || course.totalDays === undefined) && def.totalDays > 0) {
+          // totalDays: 미설정이면 기본값 적용, DEFAULT 값이 변경된 경우에도 동기화
+          if (def.totalDays > 0 && course.totalDays !== def.totalDays) {
             course.totalDays = def.totalDays;
             updated = true;
           }
