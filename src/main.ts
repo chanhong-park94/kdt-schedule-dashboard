@@ -232,7 +232,6 @@ const adminModeToggle = domRefs.adminModeToggle;
 const drawerBackdrop = domRefs.drawerBackdrop;
 const instructorDrawer = domRefs.instructorDrawer;
 const headerRuntimePanel = domRefs.headerRuntimePanel;
-const headerCurrentTime = domRefs.headerCurrentTime;
 const headerSyncState = domRefs.headerSyncState;
 const menuConfigStatus = domRefs.menuConfigStatus;
 
@@ -763,26 +762,22 @@ function applyManagementInlineMode(): void {
 }
 
 function renderHeaderRuntimeStatus(): void {
-  headerCurrentTime.textContent = new Date().toLocaleTimeString("ko-KR", { hour12: false });
-
   const cloudEnabled = isInstructorCloudEnabled();
   const hasWarning = appState.instructorDirectoryCloudWarning.trim().length > 0;
   const isHealthy = cloudEnabled && !hasWarning;
 
   headerRuntimePanel.classList.remove("runtime-online", "runtime-warning");
   headerSyncState.classList.remove("runtime-online", "runtime-warning");
-  if (isHealthy) {
-    headerSyncState.textContent = "클라우드 동기화 정상";
-    headerSyncState.classList.add("runtime-online");
-    headerRuntimePanel.classList.add("runtime-online");
+
+  // 정상 상태: 패널 숨김 (특이사항 없음)
+  if (isHealthy || !cloudEnabled) {
+    headerRuntimePanel.classList.add("u-hidden");
     return;
   }
 
-  if (cloudEnabled) {
-    headerSyncState.textContent = "동기화 점검 필요";
-  } else {
-    headerSyncState.textContent = "로컬 모드";
-  }
+  // 특이사항 있을 때만 표시
+  headerRuntimePanel.classList.remove("u-hidden");
+  headerSyncState.textContent = "동기화 점검 필요";
   headerSyncState.classList.add("runtime-warning");
   headerRuntimePanel.classList.add("runtime-warning");
 }
@@ -2529,7 +2524,7 @@ appState.sidebarMenuConfig = loadSidebarMenuConfig();
 appState.sidebarMenuDraft = cloneSidebarMenuConfig(appState.sidebarMenuConfig);
 applyManagementInlineMode();
 renderHeaderRuntimeStatus();
-window.setInterval(renderHeaderRuntimeStatus, 1000);
+// 상태 변경은 클라우드 설정 변경 시에만 필요 (1초 갱신 불필요)
 
 applyViewMode("full");
 setTimelineViewType("COHORT_TIMELINE");

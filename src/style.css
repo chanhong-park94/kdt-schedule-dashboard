@@ -6118,6 +6118,31 @@ tbody tr:hover {
 #sectionTraineeHistory {
   grid-column: 1 / -1;
 }
+/* — Dashboard Year Filter — */
+.dash-year-filter {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.dash-year-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dash-year-btn:hover {
+  background: var(--surface-hover);
+}
+.dash-year-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
 /* — Dashboard Multi-Panel Grid — */
 .dash-grid {
   display: grid;

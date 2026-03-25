@@ -19,7 +19,6 @@ export const domRefs = {
   notificationDrawer: getRequiredElement<HTMLElement>("#notificationDrawer"),
   instructorDrawer: getRequiredElement<HTMLElement>("#instructorDrawer"),
   headerRuntimePanel: getRequiredElement<HTMLElement>(".header-runtime-panel"),
-  headerCurrentTime: getRequiredElement<HTMLElement>("#headerCurrentTime"),
   headerSyncState: getRequiredElement<HTMLElement>("#headerSyncState"),
   openNotificationDrawerButton: getRequiredElement<HTMLButtonElement>("#openNotificationDrawer"),
   openInstructorDrawerButton: getRequiredElement<HTMLButtonElement>("#openInstructorDrawer"),

@@ -64,6 +64,7 @@ const KPI_TARGET = { employed: 75, unemployed: 85 } as const;
 
 // ─── State ──────────────────────────────────────────────
 let chartInstances: Chart[] = [];
+let currentYearFilter: string = "training"; // "training" | "all" | "2024" | "2025" | "2026"
 
 function destroyCharts(): void {
   chartInstances.forEach((c) => {
@@ -121,6 +122,23 @@ function isDegrTraining(roster: { trneeSttusNm?: string; atendSttsNm?: string; s
   });
 }
 
+/** 년도 필터에 따라 과정 필터링 */
+function filterCoursesByYear(courses: HrdCourse[], yearFilter: string): HrdCourse[] {
+  if (yearFilter === "training") return courses.filter(isTrainingCourse);
+  if (yearFilter === "all") return courses;
+  // 특정 년도: startDate 기준 필터
+  const year = parseInt(yearFilter, 10);
+  return courses.filter((c) => {
+    if (!c.startDate) return false;
+    return new Date(c.startDate).getFullYear() === year;
+  });
+}
+
+/** 년도 필터에 따라 훈련중 기수만 표시할지 결정 */
+function shouldFilterTrainingOnly(): boolean {
+  return currentYearFilter === "training";
+}
+
 async function fetchDashboardData(
   config: HrdConfig,
   onProgress?: (msg: string) => void,
@@ -131,7 +149,7 @@ async function fetchDashboardData(
   const courseData: DashCourseData[] = [];
   const trainees: DashTrainee[] = [];
 
-  const activeCourses = config.courses.filter(isTrainingCourse);
+  const activeCourses = filterCoursesByYear(config.courses, currentYearFilter);
   const totalDegrs = activeCourses.reduce((s, c) => s + c.degrs.length, 0);
   let done = 0;
 
@@ -143,8 +161,8 @@ async function fetchDashboardData(
         try {
           const roster = await fetchRoster(config, course.trainPrId, degr);
 
-          // ★ HRD 명단 훈련상태로 훈련중 기수만 포함
-          if (!isDegrTraining(roster)) {
+          // ★ "훈련중" 필터일 때만 HRD 명단 훈련상태로 기수 필터링
+          if (shouldFilterTrainingOnly() && !isDegrTraining(roster)) {
             done++;
             onProgress?.(`${done}/${totalDegrs} 조회 중...`);
             return; // 종강/수료 기수는 건너뜀
@@ -677,7 +695,8 @@ export function navigateToTraineeHistory(name: string, courseName: string, train
 }
 
 // ─── Init ───────────────────────────────────────────────
-export async function initDashboard(): Promise<void> {
+
+async function loadAndRender(): Promise<void> {
   const loading = $("dashboardLoading");
   const loadingMsg = $("dashboardLoadingMsg");
 
@@ -693,9 +712,20 @@ export async function initDashboard(): Promise<void> {
     renderKpiCards(courseData, trainees);
     renderDonutChart(courseData);
     renderStatsPanel(courseData, trainees);
-    renderProgressChart(courseData, config.courses);
+    renderProgressChart(courseData, filterCoursesByYear(config.courses, currentYearFilter));
     renderRiskStudentList(trainees);
     renderCompareCharts(courseData, trainees);
+
+    // 필터 설명 업데이트
+    const descEl = $("dashFilterDesc");
+    if (descEl) {
+      const labels: Record<string, string> = {
+        training: "훈련 중인 과정의 핵심 KPI를 한눈에 확인합니다.",
+        all: "전체 과정(종강 포함)의 KPI를 한눈에 확인합니다.",
+      };
+      descEl.textContent =
+        labels[currentYearFilter] ?? `${currentYearFilter}년 개강 과정의 KPI를 한눈에 확인합니다.`;
+    }
   } catch (e) {
     const container = $("dashboardKpiCards");
     if (container)
@@ -704,4 +734,24 @@ export async function initDashboard(): Promise<void> {
   } finally {
     if (loading) loading.style.display = "none";
   }
+}
+
+function setupYearFilter(): void {
+  const btns = document.querySelectorAll<HTMLButtonElement>("[data-dash-year]");
+  btns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const year = btn.dataset.dashYear ?? "training";
+      if (year === currentYearFilter) return;
+
+      currentYearFilter = year;
+      btns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      void loadAndRender();
+    });
+  });
+}
+
+export async function initDashboard(): Promise<void> {
+  setupYearFilter();
+  await loadAndRender();
 }
