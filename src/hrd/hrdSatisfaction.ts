@@ -269,8 +269,8 @@ interface CourseOption {
   category: string;
 }
 
-let matrixSatType: "course" | "facil" = "course";
-let matrixRows: string[] = [];
+let moduleRows: string[] = [];
+let projectRows: string[] = [];
 
 function buildCourseOptions(): CourseOption[] {
   const options: CourseOption[] = [];
@@ -280,12 +280,7 @@ function buildCourseOptions(): CourseOption[] {
       const config = JSON.parse(stored);
       for (const c of config.courses || []) {
         for (const d of c.degrs || []) {
-          options.push({
-            label: `${c.name} ${d}기`,
-            courseName: c.name,
-            degr: d,
-            category: c.category || "실업자",
-          });
+          options.push({ label: `${c.name} ${d}기`, courseName: c.name, degr: d, category: c.category || "실업자" });
         }
       }
     }
@@ -293,145 +288,183 @@ function buildCourseOptions(): CourseOption[] {
   return options;
 }
 
-function getDefaultRows(category: string): string[] {
-  if (category === "재직자") {
-    return ["프로젝트1", "프로젝트2", "프로젝트3", "프로젝트4"];
-  }
-  return Array.from({ length: 12 }, (_, i) => `모듈${i + 1}`);
-}
-
-function getTypeSuffix(): string {
-  return matrixSatType === "course" ? "(과정만족도)" : "(퍼실만족도)";
-}
-
-function renderMatrixTable(): void {
-  const container = $("satMatrixContainer");
-  if (!container) return;
-
+function getSelectedCourseOpt(): CourseOption | null {
   const select = $("satMatrixCourse") as HTMLSelectElement | null;
-  if (!select || !select.value) {
-    container.innerHTML = '<p class="muted">과정·기수를 선택해주세요.</p>';
-    return;
-  }
+  if (!select?.value) return null;
+  try { return JSON.parse(select.value) as CourseOption; } catch { return null; }
+}
 
-  const opt = JSON.parse(select.value) as CourseOption;
-  const suffix = getTypeSuffix();
-
-  // 기존 저장 데이터 로드
-  const manual = loadManualRecords();
-  const existing = manual.filter(
-    (r) => r.과정명 === opt.courseName && r.기수 === opt.degr && r.모듈명.endsWith(suffix),
-  );
-  const existingMap = new Map(existing.map((r) => [r.모듈명.replace(` ${suffix}`, ""), r]));
-
-  // 저장된 행이 있으면 그 행 목록 사용, 없으면 기본값
-  if (existing.length > 0 && matrixRows.length === 0) {
-    matrixRows = existing.map((r) => r.모듈명.replace(` ${suffix}`, ""));
-  } else if (matrixRows.length === 0) {
-    matrixRows = getDefaultRows(opt.category);
-  }
-
-  const rows = matrixRows
-    .map(
-      (label, i) => {
-        const r = existingMap.get(label);
-        return `<tr>
-          <td>
-            <input class="sat-mx-label hrd-input" data-row="${i}" value="${esc(label)}" style="width:100%;min-width:80px" />
-          </td>
-          <td><input class="sat-mx-nps hrd-input" data-row="${i}" type="number" min="-100" max="100" value="${r?.NPS ?? ""}" style="width:70px" /></td>
-          <td><input class="sat-mx-teacher hrd-input" data-row="${i}" type="number" min="0" max="5" step="0.1" value="${r?.강사만족도 || ""}" style="width:70px" /></td>
-          <td><input class="sat-mx-hrd hrd-input" data-row="${i}" type="number" min="0" max="5" step="0.1" value="${r?.최종만족도 || ""}" style="width:70px" /></td>
-          <td><button class="btn btn--sm sat-mx-del" data-row="${i}" type="button" style="color:var(--text-danger,#ef4444);padding:2px 6px">✕</button></td>
-        </tr>`;
-      },
-    )
+/** 섹션별 테이블 렌더링 공통 */
+function renderSectionTable(
+  container: HTMLElement,
+  rows: string[],
+  colHeaders: string[],
+  colKeys: string[],
+  existingMap: Map<string, SatisfactionRecord>,
+  prefix: string,
+): void {
+  const tableRows = rows
+    .map((label, i) => {
+      const r = existingMap.get(label);
+      const cells = colKeys
+        .map((key) => {
+          const val = r ? (r as unknown as Record<string, number>)[key] : "";
+          return `<td><input class="sat-input sat-mx-${key}" data-row="${i}" type="number" step="0.1" value="${val || ""}" /></td>`;
+        })
+        .join("");
+      return `<tr>
+        <td class="sat-mx-label-cell">
+          <input class="sat-input sat-mx-label" data-row="${i}" value="${esc(label)}" />
+        </td>
+        ${cells}
+        <td><button class="sat-mx-del" data-row="${i}" data-prefix="${prefix}" type="button" title="삭제">✕</button></td>
+      </tr>`;
+    })
     .join("");
 
   container.innerHTML = `
     <table class="sat-matrix-table">
-      <thead>
-        <tr>
-          <th>${opt.category === "재직자" ? "프로젝트" : "모듈"}</th>
-          <th>NPS</th>
-          <th>강사만족도</th>
-          <th>HRD만족도</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
+      <thead><tr><th class="sat-th-label">${prefix === "module" ? "모듈" : "프로젝트"}</th>${colHeaders.map((h) => `<th>${h}</th>`).join("")}<th></th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>`;
 
-  // 삭제 버튼
+  // 삭제 핸들러
   container.querySelectorAll<HTMLButtonElement>(".sat-mx-del").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.row);
-      matrixRows.splice(idx, 1);
-      renderMatrixTable();
+      const p = btn.dataset.prefix;
+      if (p === "module") { moduleRows.splice(idx, 1); } else { projectRows.splice(idx, 1); }
+      renderAllSections();
     });
   });
 }
 
-function saveMatrixData(): void {
-  const select = $("satMatrixCourse") as HTMLSelectElement | null;
-  const statusEl = $("satInputStatus");
-  if (!select?.value) return;
+function renderAllSections(): void {
+  const opt = getSelectedCourseOpt();
+  const moduleContainer = $("satModuleContainer");
+  const projectSection = $("satProjectSection");
+  const projectContainer = $("satProjectContainer");
+  const moduleSectionLabel = $("satModuleSectionLabel");
 
-  const opt = JSON.parse(select.value) as CourseOption;
-  const suffix = getTypeSuffix();
-  const container = $("satMatrixContainer");
-  if (!container) return;
+  if (!opt || !moduleContainer) {
+    if (moduleContainer) moduleContainer.innerHTML = '<p class="muted">과정·기수를 선택해주세요.</p>';
+    if (projectSection) projectSection.style.display = "none";
+    return;
+  }
+
+  const manual = loadManualRecords();
+  const courseRecords = manual.filter((r) => r.과정명 === opt.courseName && r.기수 === opt.degr);
+
+  const isEmployed = opt.category === "재직자";
+
+  // ── 모듈/프로젝트별 (과정NPS + 강사만족도) ──
+  if (isEmployed) {
+    // 재직자: 프로젝트1~4
+    if (moduleSectionLabel) moduleSectionLabel.textContent = "프로젝트별 만족도 (과정 NPS + 강사만족도)";
+    const existing = courseRecords.filter((r) => r.모듈명.startsWith("프로젝트") && !r.모듈명.includes("(퍼실)"));
+    const existingMap = new Map(existing.map((r) => [r.모듈명, r]));
+    if (moduleRows.length === 0) {
+      moduleRows = existing.length > 0 ? existing.map((r) => r.모듈명) : ["프로젝트1", "프로젝트2", "프로젝트3", "프로젝트4"];
+    }
+    renderSectionTable(moduleContainer, moduleRows, ["과정 NPS", "강사만족도"], ["NPS", "강사만족도"], existingMap, "module");
+    if (projectSection) projectSection.style.display = "none";
+  } else {
+    // 실업자: 모듈1~12 (과정NPS + 강사만족도)
+    if (moduleSectionLabel) moduleSectionLabel.textContent = "모듈별 만족도 (과정 NPS + 강사만족도)";
+    const existing = courseRecords.filter((r) => r.모듈명.startsWith("모듈"));
+    const existingMap = new Map(existing.map((r) => [r.모듈명, r]));
+    if (moduleRows.length === 0) {
+      moduleRows = existing.length > 0 ? existing.map((r) => r.모듈명) : Array.from({ length: 12 }, (_, i) => `모듈${i + 1}`);
+    }
+    renderSectionTable(moduleContainer, moduleRows, ["과정 NPS", "강사만족도"], ["NPS", "강사만족도"], existingMap, "module");
+
+    // 실업자 프로젝트 (과정NPS + 퍼실NPS)
+    if (projectSection && projectContainer) {
+      projectSection.style.display = "";
+      const projExisting = courseRecords.filter((r) => r.모듈명.includes("(퍼실)") || (r.모듈명.startsWith("프로젝트") && !r.모듈명.startsWith("모듈")));
+      const projMap = new Map(projExisting.map((r) => [r.모듈명.replace(" (퍼실)", ""), r]));
+      if (projectRows.length === 0) {
+        projectRows = projExisting.length > 0
+          ? projExisting.map((r) => r.모듈명.replace(" (퍼실)", ""))
+          : ["프로젝트"];
+      }
+      renderSectionTable(projectContainer, projectRows, ["과정 NPS", "퍼실 NPS"], ["NPS", "강사만족도"], projMap, "project");
+    }
+  }
+
+  // HRD 만족도 기존값 로드
+  const hrdRecord = courseRecords.find((r) => r.모듈명 === "HRD만족도");
+  const midInput = $("satHrdMid") as HTMLInputElement | null;
+  const finalInput = $("satHrdFinal") as HTMLInputElement | null;
+  if (midInput) midInput.value = hrdRecord?.중간만족도 ? String(hrdRecord.중간만족도) : "";
+  if (finalInput) finalInput.value = hrdRecord?.최종만족도 ? String(hrdRecord.최종만족도) : "";
+}
+
+function collectAndSave(): void {
+  const opt = getSelectedCourseOpt();
+  const statusEl = $("satInputStatus");
+  if (!opt) {
+    if (statusEl) { statusEl.textContent = "과정·기수를 선택해주세요."; statusEl.className = "sat-status-msg error"; }
+    return;
+  }
 
   const newRecords: SatisfactionRecord[] = [];
-  const labelInputs = container.querySelectorAll<HTMLInputElement>(".sat-mx-label");
 
-  labelInputs.forEach((labelInput) => {
-    const i = labelInput.dataset.row!;
-    const label = labelInput.value.trim();
-    if (!label) return;
+  // HRD 만족도
+  const midVal = Number(($("satHrdMid") as HTMLInputElement)?.value) || 0;
+  const finalVal = Number(($("satHrdFinal") as HTMLInputElement)?.value) || 0;
+  if (midVal || finalVal) {
+    newRecords.push({ 과정명: opt.courseName, 기수: opt.degr, 모듈명: "HRD만족도", NPS: 0, 강사만족도: 0, 중간만족도: midVal, 최종만족도: finalVal });
+  }
 
-    const nps = Number(container.querySelector<HTMLInputElement>(`.sat-mx-nps[data-row="${i}"]`)?.value) || 0;
-    const teacher = Number(container.querySelector<HTMLInputElement>(`.sat-mx-teacher[data-row="${i}"]`)?.value) || 0;
-    const hrd = Number(container.querySelector<HTMLInputElement>(`.sat-mx-hrd[data-row="${i}"]`)?.value) || 0;
+  // 모듈/프로젝트 (과정NPS + 강사만족도)
+  const moduleContainer = $("satModuleContainer");
+  if (moduleContainer) {
+    moduleContainer.querySelectorAll<HTMLInputElement>(".sat-mx-label").forEach((labelInput) => {
+      const i = labelInput.dataset.row!;
+      const label = labelInput.value.trim();
+      if (!label) return;
+      const nps = Number(moduleContainer.querySelector<HTMLInputElement>(`.sat-mx-NPS[data-row="${i}"]`)?.value) || 0;
+      const teacher = Number(moduleContainer.querySelector<HTMLInputElement>(`.sat-mx-강사만족도[data-row="${i}"]`)?.value) || 0;
+      if (nps || teacher) {
+        newRecords.push({ 과정명: opt.courseName, 기수: opt.degr, 모듈명: label, NPS: nps, 강사만족도: teacher, 중간만족도: 0, 최종만족도: 0 });
+      }
+    });
+  }
 
-    // NPS/강사/HRD 중 하나라도 입력된 행만 저장
-    if (nps || teacher || hrd) {
-      newRecords.push({
-        과정명: opt.courseName,
-        기수: opt.degr,
-        모듈명: `${label} ${suffix}`,
-        NPS: nps,
-        강사만족도: teacher,
-        중간만족도: 0,
-        최종만족도: hrd,
-      });
-    }
-  });
+  // 실업자 프로젝트 (과정NPS + 퍼실NPS)
+  const projectContainer = $("satProjectContainer");
+  if (projectContainer && opt.category !== "재직자") {
+    projectContainer.querySelectorAll<HTMLInputElement>(".sat-mx-label").forEach((labelInput) => {
+      const i = labelInput.dataset.row!;
+      const label = labelInput.value.trim();
+      if (!label) return;
+      const nps = Number(projectContainer.querySelector<HTMLInputElement>(`.sat-mx-NPS[data-row="${i}"]`)?.value) || 0;
+      const facil = Number(projectContainer.querySelector<HTMLInputElement>(`.sat-mx-강사만족도[data-row="${i}"]`)?.value) || 0;
+      if (nps || facil) {
+        newRecords.push({ 과정명: opt.courseName, 기수: opt.degr, 모듈명: `${label} (퍼실)`, NPS: nps, 강사만족도: facil, 중간만족도: 0, 최종만족도: 0 });
+      }
+    });
+  }
 
-  // 기존 manual에서 해당 과정·기수·유형 제거 후 새 데이터 추가
+  // 저장: 해당 과정·기수 기존 수기 데이터 교체
   let manual = loadManualRecords();
-  manual = manual.filter(
-    (r) => !(r.과정명 === opt.courseName && r.기수 === opt.degr && r.모듈명.endsWith(suffix)),
-  );
+  manual = manual.filter((r) => !(r.과정명 === opt.courseName && r.기수 === opt.degr));
   manual.push(...newRecords);
   saveManualRecords(manual);
 
   // allRecords 갱신
-  allRecords = allRecords.filter(
-    (r) => !(r.과정명 === opt.courseName && r.기수 === opt.degr && r.모듈명.endsWith(suffix)),
-  );
+  allRecords = allRecords.filter((r) => !(r.과정명 === opt.courseName && r.기수 === opt.degr));
   allRecords.push(...newRecords);
   populateFilters(allRecords);
   const stats = calcSatisfactionStats(allRecords);
   renderStats(stats);
   applyFilterAndRender();
+  setStatus(`${allRecords.length}건 (${manual.length}건 수기 포함)`, "success");
 
-  const totalManual = loadManualRecords().length;
-  setStatus(`${allRecords.length}건 (${totalManual}건 수기 포함)`, "success");
   if (statusEl) {
-    statusEl.textContent = `✓ ${opt.label} ${matrixSatType === "course" ? "과정" : "퍼실"}만족도 ${newRecords.length}건 저장`;
-    statusEl.style.color = "var(--text-success, #22c55e)";
+    statusEl.textContent = `✓ ${opt.label} — ${newRecords.length}건 저장 완료`;
+    statusEl.className = "sat-status-msg success";
   }
 }
 
@@ -440,7 +473,6 @@ function initSatInput(): void {
   const bodyEl = $("satInputBody");
   let isOpen = false;
 
-  // 과정 드롭다운 채우기
   function populateCourseSelect(): void {
     const select = $("satMatrixCourse") as HTMLSelectElement | null;
     if (!select) return;
@@ -450,58 +482,44 @@ function initSatInput(): void {
       options.map((o) => `<option value='${esc(JSON.stringify(o))}'>${esc(o.label)}</option>`).join("");
   }
 
-  // 입력 버튼 토글
   $("satShowInputBtn")?.addEventListener("click", () => {
     isOpen = !isOpen;
     if (formEl) formEl.style.display = isOpen ? "" : "none";
     if (isOpen) populateCourseSelect();
   });
 
-  // 접기
   $("satInputToggleBtn")?.addEventListener("click", () => {
     if (bodyEl) bodyEl.style.display = bodyEl.style.display === "none" ? "" : "none";
     const btn = $("satInputToggleBtn");
     if (btn) btn.textContent = bodyEl?.style.display === "none" ? "펼치기" : "접기";
   });
 
-  // 과정 선택 변경
   $("satMatrixCourse")?.addEventListener("change", () => {
-    matrixRows = []; // 초기화해서 기본값 또는 저장된 값으로 로드
-    renderMatrixTable();
+    moduleRows = [];
+    projectRows = [];
+    renderAllSections();
   });
 
-  // 만족도 유형 탭
-  document.querySelectorAll<HTMLButtonElement>("[data-sat-type]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      matrixSatType = (btn.dataset.satType as "course" | "facil") ?? "course";
-      document.querySelectorAll("[data-sat-type]").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      matrixRows = []; // 유형 전환 시 행 초기화
-      renderMatrixTable();
-    });
-  });
-
-  // 행 추가
-  $("satMatrixAddRowBtn")?.addEventListener("click", () => {
-    const select = $("satMatrixCourse") as HTMLSelectElement | null;
-    if (!select?.value) return;
-    const opt = JSON.parse(select.value) as CourseOption;
+  $("satModuleAddBtn")?.addEventListener("click", () => {
+    const opt = getSelectedCourseOpt();
+    if (!opt) return;
     const prefix = opt.category === "재직자" ? "프로젝트" : "모듈";
-    matrixRows.push(`${prefix}${matrixRows.length + 1}`);
-    renderMatrixTable();
+    moduleRows.push(`${prefix}${moduleRows.length + 1}`);
+    renderAllSections();
   });
 
-  // 초기화
+  $("satProjectAddBtn")?.addEventListener("click", () => {
+    projectRows.push(`프로젝트${projectRows.length + 1}`);
+    renderAllSections();
+  });
+
   $("satMatrixResetBtn")?.addEventListener("click", () => {
-    const select = $("satMatrixCourse") as HTMLSelectElement | null;
-    if (!select?.value) return;
-    const opt = JSON.parse(select.value) as CourseOption;
-    matrixRows = getDefaultRows(opt.category);
-    renderMatrixTable();
+    moduleRows = [];
+    projectRows = [];
+    renderAllSections();
   });
 
-  // 일괄 저장
-  $("satMatrixSaveBtn")?.addEventListener("click", saveMatrixData);
+  $("satMatrixSaveBtn")?.addEventListener("click", collectAndSave);
 }
 
 // ─── 초기화 ─────────────────────────────────────────────────

@@ -2151,23 +2151,53 @@
             </div>
 
             <!-- 만족도 수기 입력 매트릭스 폼 -->
-            <div id="satInputForm" style="margin-bottom: 16px; display: none">
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap">
-                <h4 style="margin: 0">📝 만족도 수기 입력</h4>
-                <select id="satMatrixCourse" class="hrd-input" style="min-width: 200px"></select>
-                <div class="sub-tab-bar" style="margin:0">
-                  <button class="sub-tab active" data-sat-type="course" type="button">과정만족도</button>
-                  <button class="sub-tab" data-sat-type="facil" type="button">퍼실만족도</button>
-                </div>
-                <button id="satInputToggleBtn" class="btn btn--sm" style="font-size: 12px">접기</button>
+            <div id="satInputForm" class="sat-form-panel" style="display: none">
+              <!-- 헤더 -->
+              <div class="sat-form-header">
+                <h4 class="sat-form-title">📝 만족도 수기 입력</h4>
+                <select id="satMatrixCourse" class="sat-form-select"></select>
+                <button id="satInputToggleBtn" class="btn btn--sm">접기</button>
               </div>
+
               <div id="satInputBody">
-                <div id="satMatrixContainer" style="overflow-x:auto"></div>
-                <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center">
-                  <button id="satMatrixSaveBtn" class="btn btn--primary btn--sm">일괄 저장</button>
-                  <button id="satMatrixAddRowBtn" class="btn btn--sm" style="font-size: 12px">+ 행 추가</button>
-                  <button id="satMatrixResetBtn" class="btn btn--sm" style="font-size: 12px; color: var(--text-danger, #ef4444)">초기화</button>
-                  <span id="satInputStatus" style="font-size: 12px"></span>
+                <!-- HRD 만족도 (과정·기수별 1건) -->
+                <div class="sat-section">
+                  <div class="sat-section-label">HRD 만족도</div>
+                  <div class="sat-hrd-row">
+                    <div class="sat-hrd-field">
+                      <label>중간만족도</label>
+                      <input id="satHrdMid" class="sat-input" type="number" min="0" max="5" step="0.1" placeholder="1~5" />
+                    </div>
+                    <div class="sat-hrd-field">
+                      <label>최종만족도</label>
+                      <input id="satHrdFinal" class="sat-input" type="number" min="0" max="5" step="0.1" placeholder="1~5" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 모듈별 만족도 (과정만족도 NPS + 강사만족도) -->
+                <div class="sat-section">
+                  <div class="sat-section-label" id="satModuleSectionLabel">모듈별 만족도 (과정 NPS + 강사만족도)</div>
+                  <div id="satModuleContainer" style="overflow-x:auto"></div>
+                  <div class="sat-row-actions">
+                    <button id="satModuleAddBtn" class="btn btn--sm">+ 모듈 추가</button>
+                  </div>
+                </div>
+
+                <!-- 프로젝트별 만족도 (실업자만 표시) -->
+                <div class="sat-section" id="satProjectSection" style="display:none">
+                  <div class="sat-section-label">프로젝트별 만족도 (과정 NPS + 퍼실 NPS)</div>
+                  <div id="satProjectContainer" style="overflow-x:auto"></div>
+                  <div class="sat-row-actions">
+                    <button id="satProjectAddBtn" class="btn btn--sm">+ 프로젝트 추가</button>
+                  </div>
+                </div>
+
+                <!-- 액션 -->
+                <div class="sat-form-actions">
+                  <button id="satMatrixSaveBtn" class="btn btn--primary btn--sm">💾 일괄 저장</button>
+                  <button id="satMatrixResetBtn" class="btn btn--sm sat-reset-btn">초기화</button>
+                  <span id="satInputStatus" class="sat-status-msg"></span>
                 </div>
               </div>
             </div>
