@@ -251,15 +251,13 @@ function renderSectionTable(
       const cells = colKeys
         .map((key) => {
           const val = r ? (r as unknown as Record<string, number>)[key] : "";
-          return `<td><input class="sat-input sat-mx-${key}" data-row="${i}" type="number" step="0.1" value="${val || ""}" /></td>`;
+          return `<td><input class="sat-input sat-mx-val sat-mx-${key}" data-row="${i}" type="number" step="0.1" placeholder="-" value="${val || ""}" /></td>`;
         })
         .join("");
       return `<tr>
-        <td class="sat-mx-label-cell">
-          <input class="sat-input sat-mx-label" data-row="${i}" value="${esc(label)}" />
-        </td>
+        <td class="sat-mx-label-cell"><input class="sat-input sat-mx-label" data-row="${i}" value="${esc(label)}" /></td>
         ${cells}
-        <td><button class="sat-mx-del" data-row="${i}" data-prefix="${prefix}" type="button" title="삭제">✕</button></td>
+        <td class="sat-mx-del-cell"><button class="sat-mx-del" data-row="${i}" data-prefix="${prefix}" type="button" title="삭제">✕</button></td>
       </tr>`;
     })
     .join("");
