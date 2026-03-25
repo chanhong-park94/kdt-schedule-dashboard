@@ -2150,47 +2150,24 @@
               ⚙️ 설정 → API 연동에서 Apps Script URL을 입력해주세요. (학업성취도와 동일 URL 사용)
             </div>
 
-            <!-- 수기 입력 폼 -->
+            <!-- 만족도 수기 입력 매트릭스 폼 -->
             <div id="satInputForm" style="margin-bottom: 16px; display: none">
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap">
                 <h4 style="margin: 0">📝 만족도 수기 입력</h4>
+                <select id="satMatrixCourse" class="hrd-input" style="min-width: 200px"></select>
+                <div class="sub-tab-bar" style="margin:0">
+                  <button class="sub-tab active" data-sat-type="course" type="button">과정만족도</button>
+                  <button class="sub-tab" data-sat-type="facil" type="button">퍼실만족도</button>
+                </div>
                 <button id="satInputToggleBtn" class="btn btn--sm" style="font-size: 12px">접기</button>
               </div>
               <div id="satInputBody">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px">
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">과정</label>
-                    <input id="satInputCourse" class="hrd-input" list="satCourseList" placeholder="예: 리서치17기" style="width: 100%" />
-                    <datalist id="satCourseList"></datalist>
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">기수</label>
-                    <input id="satInputCohort" class="hrd-input" type="text" placeholder="예: 17기" style="width: 100%" />
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">모듈명</label>
-                    <input id="satInputModule" class="hrd-input" type="text" placeholder="예: NLP 기초" style="width: 100%" />
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">NPS 점수</label>
-                    <input id="satInputNps" class="hrd-input" type="number" placeholder="0~100" min="0" max="100" style="width: 100%" />
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">강사만족도</label>
-                    <input id="satInputTeacher" class="hrd-input" type="number" placeholder="1~5" min="1" max="5" step="0.1" style="width: 100%" />
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">HRD 중간만족도</label>
-                    <input id="satInputMid" class="hrd-input" type="number" placeholder="1~5" min="1" max="5" step="0.1" style="width: 100%" />
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; color: var(--text-muted)">HRD 최종만족도</label>
-                    <input id="satInputFinal" class="hrd-input" type="number" placeholder="1~5" min="1" max="5" step="0.1" style="width: 100%" />
-                  </div>
-                </div>
-                <div style="display: flex; gap: 8px">
-                  <button id="satInputAddBtn" class="btn btn--primary btn--sm">추가</button>
-                  <span id="satInputStatus" style="font-size: 12px; align-self: center"></span>
+                <div id="satMatrixContainer" style="overflow-x:auto"></div>
+                <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center">
+                  <button id="satMatrixSaveBtn" class="btn btn--primary btn--sm">일괄 저장</button>
+                  <button id="satMatrixAddRowBtn" class="btn btn--sm" style="font-size: 12px">+ 행 추가</button>
+                  <button id="satMatrixResetBtn" class="btn btn--sm" style="font-size: 12px; color: var(--text-danger, #ef4444)">초기화</button>
+                  <span id="satInputStatus" style="font-size: 12px"></span>
                 </div>
               </div>
             </div>
