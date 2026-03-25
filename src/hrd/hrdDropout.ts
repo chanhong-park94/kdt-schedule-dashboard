@@ -18,6 +18,43 @@ function getTargetRate(category: CourseCategory): number {
   return category === "재직자" ? KPI_TARGET.employed : KPI_TARGET.unemployed;
 }
 
+// ─── Cache ──────────────────────────────────────────────────
+const DROPOUT_CACHE_KEY = "kdt_dropout_cache_v1";
+const DROPOUT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
+
+interface DropoutCache {
+  data: DropoutRosterEntry[];
+  timestamp: number;
+}
+
+function loadDropoutCache(): DropoutCache | null {
+  try {
+    const raw = localStorage.getItem(DROPOUT_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as DropoutCache;
+    if (Date.now() - cache.timestamp > DROPOUT_CACHE_TTL) return null;
+    return cache;
+  } catch {
+    return null;
+  }
+}
+
+function saveDropoutCache(data: DropoutRosterEntry[]): void {
+  try {
+    const cache: DropoutCache = { data, timestamp: Date.now() };
+    localStorage.setItem(DROPOUT_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* storage full 등 무시 */
+  }
+}
+
+function formatCacheAge(ts: number): string {
+  const diff = Math.floor((Date.now() - ts) / 60_000);
+  if (diff < 1) return "방금 전";
+  if (diff < 60) return `${diff}분 전`;
+  return `${Math.floor(diff / 60)}시간 전`;
+}
+
 // ─── State ──────────────────────────────────────────────────
 let dropoutData: DropoutRosterEntry[] = [];
 let chartInstances: Chart[] = [];
@@ -852,6 +889,9 @@ async function fetchAndRenderDropout(): Promise<void> {
       return;
     }
 
+    // 캐시 저장
+    saveDropoutCache(dropoutData);
+
     destroyCharts();
     renderAllTables();
     renderCourseChart();
@@ -895,4 +935,30 @@ export function initDropoutDashboard(): void {
   // Internal tabs (course/degr/yearly/category/monthly/weekly)
   setupDropoutTabs();
   setupFilterHandlers();
+
+  // ── 캐시 자동 로드: 이전 데이터가 있으면 즉시 표시 ──
+  const cached = loadDropoutCache();
+  if (cached && cached.data.length > 0) {
+    dropoutData = cached.data;
+    const emptyEl = $("doEmptyState");
+    const contentEl = $("doContent");
+    const statusEl = $("doLoadStatus");
+
+    destroyCharts();
+    renderAllTables();
+    renderCourseChart();
+    renderCategoryChart();
+    renderDegrChart();
+
+    if (emptyEl) emptyEl.style.display = "none";
+    if (contentEl) contentEl.style.display = "block";
+    if (statusEl)
+      statusEl.textContent = `캐시 데이터 ${dropoutData.length}개 기수 표시 중 (${formatCacheAge(cached.timestamp)})`;
+
+    // 백그라운드 갱신 (UI 차단 없이)
+    fetchAndRenderDropout().catch(() => {/* 실패 시 캐시 유지 */});
+  } else {
+    // 캐시 없으면 자동 조회 시작
+    void fetchAndRenderDropout();
+  }
 }

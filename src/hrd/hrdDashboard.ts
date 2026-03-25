@@ -21,6 +21,8 @@ interface DashCourseData {
   defenseRate: number;
   progress: number; // 과정 진행률 (%)
   isCompleted: boolean; // 종강 여부
+  actualDays: number; // 실제 출결 기록 고유 날짜 수
+  configTotalDays: number; // config에 설정된 totalDays
 }
 
 interface DashTrainee {
@@ -206,12 +208,12 @@ async function fetchDashboardData(
           // 과정 진행률 계산 — 출결 기록 일수 기반
           let progress = 0;
           const td = course.totalDays || 0;
+          const uniqueDates = new Set(
+            confirmedAttendance.map((r) => (r.atendDe || "").toString().replace(/-/g, "").trim()).filter(Boolean),
+          );
+          const actualDays = uniqueDates.size;
           if (td > 0) {
-            // 출결 데이터에서 고유 날짜 수 = 실제 수업 진행일
-            const uniqueDates = new Set(
-              confirmedAttendance.map((r) => (r.atendDe || "").toString().replace(/-/g, "").trim()).filter(Boolean),
-            );
-            progress = Math.min(100, Math.round((uniqueDates.size / td) * 100 * 10) / 10);
+            progress = Math.min(100, Math.round((actualDays / td) * 100 * 10) / 10);
           }
 
           courseData.push({
@@ -225,6 +227,8 @@ async function fetchDashboardData(
             defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
             progress,
             isCompleted: !isTraining,
+            actualDays,
+            configTotalDays: td,
           });
 
           for (const raw of roster) {
@@ -426,6 +430,54 @@ function renderStatsPanel(courseData: DashCourseData[], trainees: DashTrainee[])
       </div>
     </div>
   `;
+}
+
+// ─── Data Integrity Warnings ─────────────────────────────
+/** totalDays vs 실제 출결일수 정합성 검증 경고 */
+function renderIntegrityWarnings(courseData: DashCourseData[]): void {
+  // 기존 경고 제거
+  document.getElementById("dashIntegrityWarnings")?.remove();
+
+  const warnings: string[] = [];
+
+  for (const c of courseData) {
+    if (c.configTotalDays === 0) continue; // 미설정 과정은 스킵
+    if (c.isCompleted) {
+      // 종강 과정: 실제 출결일이 설정값보다 크면 totalDays 설정 오류 가능
+      if (c.actualDays > c.configTotalDays) {
+        warnings.push(
+          `<strong>${c.courseName} ${c.degr}기</strong>: 실제 출결일(${c.actualDays}일) > 설정 훈련일(${c.configTotalDays}일) — totalDays 확인 필요`,
+        );
+      }
+    } else {
+      // 훈련중 과정: 실제 출결일이 설정값의 진행률 대비 크게 초과하면 경고
+      if (c.actualDays > c.configTotalDays) {
+        warnings.push(
+          `<strong>${c.courseName} ${c.degr}기</strong>: 실제 출결일(${c.actualDays}일)이 설정 훈련일(${c.configTotalDays}일)을 초과 — 결석허용일수(${Math.floor(c.configTotalDays * 0.2)}일) 부정확 가능`,
+        );
+      }
+    }
+  }
+
+  if (warnings.length === 0) return;
+
+  const section = document.getElementById("sectionDashboard");
+  if (!section) return;
+
+  const el = document.createElement("div");
+  el.id = "dashIntegrityWarnings";
+  el.className = "dash-integrity-warn";
+  el.innerHTML = `
+    <div class="dash-integrity-header">⚠️ 데이터 정합성 경고 (${warnings.length}건)</div>
+    <ul class="dash-integrity-list">${warnings.map((w) => `<li>${w}</li>`).join("")}</ul>
+    <p class="dash-integrity-note">설정 → 과정 관리에서 totalDays를 확인해주세요.</p>
+  `;
+
+  // KPI 카드 아래에 삽입
+  const kpiCards = document.getElementById("dashboardKpiCards");
+  if (kpiCards?.parentElement) {
+    kpiCards.parentElement.insertBefore(el, kpiCards.nextSibling);
+  }
 }
 
 // ─── Progress Chart (기수별 진행률 세로형 막대그래프) ────────────────
@@ -798,6 +850,7 @@ async function loadAndRender(): Promise<void> {
     renderRiskStudentList(trainees);
     renderCompletedCourseResults(courseData);
     renderCompareCharts(courseData, trainees);
+    renderIntegrityWarnings(courseData);
 
     // 필터 설명 업데이트
     const descEl = $("dashFilterDesc");
