@@ -41,14 +41,7 @@ let currentCohortData: CohortCrossData[] = [];
 
 // ── 출결 데이터 조회 ──────────────────────────────────────
 
-/**
- * 현재 로드된 출결 데이터를 가져옵니다.
- * hrdAttendance 모듈의 내부 상태를 직접 참조할 수 없으므로
- * DOM 테이블에서 역파싱하거나, 전역 이벤트로 전달받습니다.
- *
- * 현실적 접근: hrdAttendance에서 export한 getter를 사용.
- * 해당 getter가 없을 경우 빈 배열 반환 → 사용자에게 안내.
- */
+/** 캐시된 출결 데이터 반환 (이미 로드된 경우) */
 async function loadAttendanceStudents(): Promise<AttendanceStudent[]> {
   try {
     const mod = await import("../hrd/hrdAttendance");
@@ -59,6 +52,34 @@ async function loadAttendanceStudents(): Promise<AttendanceStudent[]> {
     /* hrdAttendance 미로드 시 무시 */
   }
   return [];
+}
+
+/** 전체 과정/기수 출결 데이터를 HRD API에서 직접 조회 */
+async function fetchAllAttendanceAndAnalyze(): Promise<void> {
+  const statusEl = $("crossAnalysisStatus");
+  const fetchBtn = $("crossFetchAllBtn") as HTMLButtonElement | null;
+
+  if (fetchBtn) fetchBtn.disabled = true;
+  if (statusEl) statusEl.textContent = "📊 전체 출결 데이터 조회 중...";
+
+  try {
+    const mod = await import("../hrd/hrdAttendance");
+    if (typeof mod.fetchAllAttendanceData !== "function") {
+      if (statusEl) statusEl.textContent = "⚠️ 전체 조회 기능을 사용할 수 없습니다.";
+      return;
+    }
+
+    await mod.fetchAllAttendanceData((msg: string) => {
+      if (statusEl) statusEl.textContent = `📊 ${msg}`;
+    });
+
+    // 조회 완료 → 분석 실행
+    await runAnalysis();
+  } catch (e) {
+    if (statusEl) statusEl.textContent = `⚠️ 조회 실패: ${e instanceof Error ? e.message : String(e)}`;
+  } finally {
+    if (fetchBtn) fetchBtn.disabled = false;
+  }
 }
 
 // ── 서브탭 전환 ───────────────────────────────────────────
@@ -308,7 +329,13 @@ async function runAnalysis(): Promise<void> {
 // ── 이벤트 바인딩 ─────────────────────────────────────────
 
 function setupEvents(): void {
-  // 분석 실행 버튼
+  // 전체 조회 버튼 (HRD API 직접 조회)
+  const fetchAllBtn = $("crossFetchAllBtn");
+  if (fetchAllBtn) {
+    fetchAllBtn.addEventListener("click", () => void fetchAllAttendanceAndAnalyze());
+  }
+
+  // 분석 실행 버튼 (캐시된 데이터로 재분석)
   const analyzeBtn = $("crossAnalyzeBtn");
   if (analyzeBtn) {
     analyzeBtn.addEventListener("click", () => void runAnalysis());

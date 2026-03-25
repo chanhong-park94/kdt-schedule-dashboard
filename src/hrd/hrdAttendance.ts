@@ -1674,6 +1674,73 @@ async function fetchAndRender(): Promise<void> {
   }
 }
 
+// ─── 전체 과정/기수 출결 데이터 조회 (교차분석용) ────────────
+
+/**
+ * 등록된 전체 과정·기수의 출결 데이터를 HRD API에서 조회하여
+ * currentStudents에 저장합니다. 교차분석 등 전체 데이터가 필요한 탭에서 사용.
+ *
+ * @returns 전체 학생 배열
+ */
+export async function fetchAllAttendanceData(
+  onProgress?: (msg: string) => void,
+): Promise<AttendanceStudent[]> {
+  const config = loadHrdConfig();
+  if (!config.courses.length) {
+    throw new Error("등록된 과정이 없습니다. 설정에서 과정을 먼저 등록해주세요.");
+  }
+
+  currentConfig = config;
+  const allStudents: AttendanceStudent[] = [];
+  const totalJobs = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
+  let done = 0;
+
+  for (const course of config.courses) {
+    for (const degr of course.degrs) {
+      done++;
+      onProgress?.(`${done}/${totalJobs} 조회 중... (${course.name} ${degr}기)`);
+
+      try {
+        const now = new Date();
+        const month = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+        const [roster, daily] = await Promise.all([
+          fetchRoster(config, course.trainPrId, degr),
+          fetchDailyAttendance(config, course.trainPrId, degr, month),
+        ]);
+
+        if (roster.length === 0) continue;
+
+        // 누적 일별 기록 구축
+        const dailyRecords = buildAllDailyRecords(daily);
+        // 기존 allDailyRecords에 병합 (이름 충돌 방지: 과정+기수 정보는 따로 매칭됨)
+        for (const [name, records] of dailyRecords) {
+          if (!allDailyRecords.has(name)) {
+            allDailyRecords.set(name, records);
+          } else {
+            // 기존 레코드와 날짜 중복 없이 병합
+            const existing = allDailyRecords.get(name)!;
+            const existingDates = new Set(existing.map((r) => r.date));
+            for (const r of records) {
+              if (!existingDates.has(r.date)) existing.push(r);
+            }
+            existing.sort((a, b) => a.date.localeCompare(b.date));
+          }
+        }
+
+        // 전체 월 데이터 기반 학생 빌드 (filterDate="" → 전체)
+        const students = buildStudents(roster, daily, "", course, course.trainPrId, degr);
+        allStudents.push(...students);
+      } catch (e) {
+        console.warn(`[FetchAll] ${course.name} ${degr}기 실패:`, e);
+      }
+    }
+  }
+
+  currentStudents = allStudents;
+  return allStudents;
+}
+
 // ─── Data Getters (for reports) ──────────────────────────────
 export function getCachedAttendanceStudents(): AttendanceStudent[] {
   return currentStudents;
