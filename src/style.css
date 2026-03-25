@@ -6143,6 +6143,39 @@ tbody tr:hover {
   color: #fff;
   border-color: var(--primary);
 }
+/* — Dashboard Completed Course Results — */
+.dash-result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.dash-result-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.dash-result-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.dash-result-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+.dash-result-good {
+  color: #059669;
+  font-weight: 600;
+}
+.dash-result-ok {
+  color: #d97706;
+  font-weight: 600;
+}
+.dash-result-low {
+  color: #dc2626;
+  font-weight: 600;
+}
 /* — Dashboard Multi-Panel Grid — */
 .dash-grid {
   display: grid;

@@ -3,6 +3,7 @@ import { Chart, registerables } from "chart.js";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
+import { loadSatisfactionCache, summarizeByCohort } from "./hrdSatisfactionApi";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
 import type { HrdConfig, HrdRawAttendance, CourseCategory } from "./hrdTypes";
 
@@ -19,6 +20,7 @@ interface DashCourseData {
   active: number;
   defenseRate: number;
   progress: number; // 과정 진행률 (%)
+  isCompleted: boolean; // 종강 여부
 }
 
 interface DashTrainee {
@@ -161,8 +163,10 @@ async function fetchDashboardData(
         try {
           const roster = await fetchRoster(config, course.trainPrId, degr);
 
+          const isTraining = isDegrTraining(roster);
+
           // ★ "훈련중" 필터일 때만 HRD 명단 훈련상태로 기수 필터링
-          if (shouldFilterTrainingOnly() && !isDegrTraining(roster)) {
+          if (shouldFilterTrainingOnly() && !isTraining) {
             done++;
             onProgress?.(`${done}/${totalDegrs} 조회 중...`);
             return; // 종강/수료 기수는 건너뜀
@@ -217,6 +221,7 @@ async function fetchDashboardData(
             active: totalCount - dropoutCount,
             defenseRate: totalCount > 0 ? ((totalCount - dropoutCount) / totalCount) * 100 : 0,
             progress,
+            isCompleted: !isTraining,
           });
 
           for (const raw of roster) {
@@ -680,6 +685,80 @@ function renderCompareCharts(courseData: DashCourseData[], trainees: DashTrainee
   }
 }
 
+// ─── Completed Course Results ────────────────────────────
+/** 종강 과정 운영 결과 지표 렌더링 */
+function renderCompletedCourseResults(courseData: DashCourseData[]): void {
+  const container = $("dashboardCompleted");
+  if (!container) return;
+
+  const completed = courseData.filter((c) => c.isCompleted);
+  if (completed.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  // 만족도 캐시 로드 + 기수별 집계
+  const satRecords = loadSatisfactionCache() ?? [];
+  const satSummaries = summarizeByCohort(satRecords, "", "");
+  const satMap = new Map<string, { NPS: number; 강사만족도: number; 중간만족도: number; 최종만족도: number }>();
+  for (const s of satSummaries) {
+    satMap.set(`${s.과정명}|${s.기수}`, {
+      NPS: s.NPS평균,
+      강사만족도: s.강사만족도평균,
+      중간만족도: s.중간만족도평균,
+      최종만족도: s.최종만족도평균,
+    });
+  }
+
+  const rows = completed
+    .sort((a, b) => b.defenseRate - a.defenseRate)
+    .map((c) => {
+      const completionRate = c.total > 0 ? ((c.active / c.total) * 100).toFixed(1) : "-";
+      const sat = satMap.get(`${c.courseName}|${c.degr}`);
+      const nps = sat ? String(sat.NPS) : "-";
+      const instrSat = sat ? sat.강사만족도.toFixed(1) : "-";
+      const finalSat = sat ? (sat.최종만족도 > 0 ? sat.최종만족도.toFixed(1) : sat.중간만족도 > 0 ? sat.중간만족도.toFixed(1) : "-") : "-";
+
+      // 수료율 색상
+      const rateNum = parseFloat(completionRate);
+      const rateClass = isNaN(rateNum) ? "" : rateNum >= 85 ? "dash-result-good" : rateNum >= 75 ? "dash-result-ok" : "dash-result-low";
+
+      return `<tr>
+        <td><strong>${c.courseName}</strong> ${c.degr}기</td>
+        <td>${c.total}명</td>
+        <td class="${rateClass}">${completionRate}%</td>
+        <td>${nps}</td>
+        <td>${instrSat}</td>
+        <td>${finalSat}</td>
+      </tr>`;
+    })
+    .join("");
+
+  container.style.display = "";
+  container.innerHTML = `
+    <div class="dash-panel-header">
+      <h3 class="dash-panel-title">종강 과정 운영 결과</h3>
+      <span class="dash-panel-count">${completed.length}개 기수</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="dash-result-table">
+        <thead>
+          <tr>
+            <th>과정·기수</th>
+            <th>등록</th>
+            <th>수료율</th>
+            <th>NPS</th>
+            <th>강사만족도</th>
+            <th>HRD만족도</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${satRecords.length === 0 ? '<p class="muted" style="margin:8px 0 0;font-size:12px;">※ 만족도 데이터가 없습니다. 만족도 탭에서 먼저 조회해주세요.</p>' : ""}
+  `;
+}
+
 // ─── Navigation to Trainee History ──────────────────────
 export function navigateToTraineeHistory(name: string, courseName: string, trainPrId: string, degr: string): void {
   const navButton = document.querySelector<HTMLButtonElement>('[data-nav-key="traineeHistory"]');
@@ -714,6 +793,7 @@ async function loadAndRender(): Promise<void> {
     renderStatsPanel(courseData, trainees);
     renderProgressChart(courseData, filterCoursesByYear(config.courses, currentYearFilter));
     renderRiskStudentList(trainees);
+    renderCompletedCourseResults(courseData);
     renderCompareCharts(courseData, trainees);
 
     // 필터 설명 업데이트
