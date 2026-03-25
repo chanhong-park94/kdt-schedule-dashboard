@@ -13,7 +13,7 @@ const SUPABASE_ANON_KEY = typeof _sbKey === "string" ? _sbKey.trim() : "";
 
 // ─── Slack Message Builder ───────────────────────────────────
 
-function _getRiskEmoji(level: RiskLevel): string {
+function _getRiskTag(level: RiskLevel): string {
   switch (level) {
     case "danger":
       return "🔴";
@@ -22,43 +22,32 @@ function _getRiskEmoji(level: RiskLevel): string {
     case "caution":
       return "🟡";
     default:
-      return "🟢";
+      return "";
   }
-}
-
-function formatStudentLine(s: AttendanceStudent): string {
-  const rateText = s.totalDays > 0 ? `결석 ${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`;
-  const remainText =
-    s.totalDays > 0 ? (s.remainingAbsent <= 1 ? " · *제적위험*" : ` · 잔여 ${s.remainingAbsent}일`) : "";
-  return `  • ${s.name} (${rateText}${remainText})`;
-}
-
-function buildRiskGroup(label: string, students: AttendanceStudent[]): string {
-  if (students.length === 0) return "";
-  const lines = students.sort((a, b) => a.attendanceRate - b.attendanceRate).map(formatStudentLine);
-  return `${label} — *${students.length}명*\n${lines.join("\n")}`;
-}
-
-/** 매니저 태그 문자열 생성 — Slack <@U12345> 형식 */
-function buildManagerMentions(managerIds: string): string {
-  if (!managerIds || !managerIds.trim()) return "";
-  const ids = managerIds
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-  if (ids.length === 0) return "";
-  return "👤 담당: " + ids.map((id) => `<@${id}>`).join(" ") + "\n";
 }
 
 /** 연속 결석자 목록 추출 (2일 이상 연속 결석) */
 function getConsecutiveAbsentees(students: AttendanceStudent[]): AttendanceStudent[] {
-  // 결석일수 2일 이상이면서 현재 결석 상태인 훈련생 = 연속 결석 관리 대상
   return students.filter(
     (s) =>
       !s.dropout &&
       s.absentDays >= 2 &&
       (s.riskLevel === "danger" || s.riskLevel === "warning" || s.riskLevel === "caution"),
   );
+}
+
+/** 매니저 ID 목록에서 고유 Slack 멤버 ID 추출 */
+function collectUniqueManagerIds(managerIdsList: string[]): string[] {
+  const set = new Set<string>();
+  for (const ids of managerIdsList) {
+    if (!ids || !ids.trim()) continue;
+    ids
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .forEach((id) => set.add(id));
+  }
+  return Array.from(set);
 }
 
 export interface SlackReportOptions {
@@ -78,8 +67,7 @@ export interface SlackReportOptions {
 }
 
 /**
- * Slack 메시지 빌드 — 신규 KPI 요약 형식
- * 전체 훈련인원, 현재 훈련인원, 주간 하차인원, 하차방어율, 연속 결석 관리대상
+ * 개별 과정 Slack 메시지 빌드 (수동 전송용)
  */
 export function buildSlackMessage(
   courseName: string,
@@ -93,90 +81,143 @@ export function buildSlackMessage(
   managerIds?: string,
   trainPrId?: string,
 ): string {
+  // 단일 과정을 통합 빌더에 위임
+  const config = loadHrdConfig();
+  const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
+  const resolvedManagerIds =
+    managerIds ?? (trainPrId && schedule.courseManagers ? (schedule.courseManagers[trainPrId] ?? "") : "");
+
+  return buildConsolidatedSlackMessage(
+    [{ courseName, degr, date, students, defenseRate, weeklyDropouts, managerIds: resolvedManagerIds }],
+    headerText,
+    footerText,
+  );
+}
+
+/** 통합 리포트용 과정 데이터 */
+export interface CourseReportData {
+  courseName: string;
+  degr: string;
+  date: string;
+  students: AttendanceStudent[];
+  defenseRate?: number;
+  weeklyDropouts?: number;
+  managerIds?: string;
+}
+
+/**
+ * 통합 Slack 메시지 빌드 — 전 과정을 하나의 메시지로 합침
+ *
+ * 구조:
+ * ┌─ 헤더 (1회)
+ * ├─ 담당자 태그 (고유 멤버만, 1회)
+ * ├─ 과정 A 블록 (운영현황 + 관리대상)
+ * ├─ 과정 B 블록
+ * ├─ ...
+ * ├─ 전체 요약 (1회)
+ * └─ 푸터 (1회)
+ */
+export function buildConsolidatedSlackMessage(
+  courses: CourseReportData[],
+  headerText?: string,
+  footerText?: string,
+): string {
   const config = loadHrdConfig();
   const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
   const header = headerText ?? schedule.headerText ?? DEFAULT_SLACK_SCHEDULE.headerText;
   const footer = footerText ?? schedule.footerText ?? DEFAULT_SLACK_SCHEDULE.footerText;
 
-  // 매니저 ID: 직접 전달 > config에서 조회
-  const resolvedManagerIds =
-    managerIds ?? (trainPrId && schedule.courseManagers ? (schedule.courseManagers[trainPrId] ?? "") : "");
+  const lines: string[] = [];
 
-  const total = students.length;
-  const active = students.filter((s) => !s.dropout);
-  const dropouts = total - active.length;
-  const danger = active.filter((s) => s.riskLevel === "danger");
-  const warning = active.filter((s) => s.riskLevel === "warning");
-  const caution = active.filter((s) => s.riskLevel === "caution");
-  const missing = active.filter((s) => s.missingCheckout);
-  const consecutiveAbsent = getConsecutiveAbsentees(active);
+  // ─── 헤더 (1회) ───
+  lines.push(header);
+  lines.push("━━━━━━━━━━━━━━━━━━━");
 
-  const totalRisk = danger.length + warning.length + caution.length;
-  const defRate = defenseRate ?? (total > 0 ? (active.length / total) * 100 : 100);
-
-  const sections: string[] = [];
-
-  // Header
-  sections.push(header);
-  sections.push(`━━━━━━━━━━━━━━━━━━━`);
-  sections.push(`📋 *${courseName} ${degr}기* | ${date}`);
-
-  // 매니저 태그
-  const mentions = buildManagerMentions(resolvedManagerIds);
-  if (mentions) sections.push(mentions);
-
-  sections.push("");
-
-  // KPI 요약 블록
-  sections.push(`📊 *운영 현황*`);
-  sections.push(`  • 전체 훈련인원: *${total}명*`);
-  sections.push(`  • 현재 훈련인원: *${active.length}명* (하차 ${dropouts}명)`);
-  if (weeklyDropouts != null) {
-    sections.push(`  • 주간 하차인원: *${weeklyDropouts}명*`);
+  // ─── 담당자 태그 (고유 멤버, 1회) ───
+  const allManagerIds = courses.map((c) => c.managerIds ?? "");
+  const uniqueManagers = collectUniqueManagerIds(allManagerIds);
+  if (uniqueManagers.length > 0) {
+    lines.push("담당: " + uniqueManagers.map((id) => `<@${id}>`).join(" "));
   }
-  sections.push(`  • 하차방어율: *${defRate.toFixed(1)}%*`);
-  sections.push("");
 
-  // 연속 결석 관리대상
-  if (consecutiveAbsent.length > 0) {
-    sections.push(`🚨 *연속 결석 관리대상* — *${consecutiveAbsent.length}명*`);
-    consecutiveAbsent
-      .sort((a, b) => a.remainingAbsent - b.remainingAbsent)
-      .forEach((s) => {
-        const emoji = _getRiskEmoji(s.riskLevel);
+  lines.push("");
+
+  // ─── 전체 요약 집계용 ───
+  let grandTotalRisk = 0;
+  let grandTotalMissing = 0;
+  let grandTotalConsec = 0;
+
+  // ─── 과정별 블록 ───
+  courses.forEach((c, idx) => {
+    const total = c.students.length;
+    const active = c.students.filter((s) => !s.dropout);
+    const dropouts = total - active.length;
+    const danger = active.filter((s) => s.riskLevel === "danger");
+    const warning = active.filter((s) => s.riskLevel === "warning");
+    const caution = active.filter((s) => s.riskLevel === "caution");
+    const missing = active.filter((s) => s.missingCheckout);
+    const consecutiveAbsent = getConsecutiveAbsentees(active);
+    const totalRisk = danger.length + warning.length + caution.length;
+    const defRate = c.defenseRate ?? (total > 0 ? (active.length / total) * 100 : 100);
+
+    grandTotalRisk += totalRisk;
+    grandTotalMissing += missing.length;
+    grandTotalConsec += consecutiveAbsent.length;
+
+    // 과정 구분선 (2번째부터)
+    if (idx > 0) lines.push("");
+
+    // 과정 헤더: 과정명 + 날짜
+    lines.push(`*${c.courseName} ${c.degr}기* | ${c.date}`);
+
+    // 운영 현황 — 1줄 요약
+    lines.push(
+      `  전체 ${total}명 · 현재 ${active.length}명 (하차 ${dropouts}명) · 하차방어율 ${defRate.toFixed(1)}%`,
+    );
+
+    // 관리대상 없으면 정상 표시
+    if (totalRisk === 0 && missing.length === 0 && consecutiveAbsent.length === 0) {
+      lines.push("  ✅ 관리대상 없음 — 정상 운영 중");
+      return;
+    }
+
+    // 관리대상: 위험도별 인라인 표시
+    const riskStudents = [...danger, ...warning, ...caution].sort(
+      (a, b) => a.remainingAbsent - b.remainingAbsent,
+    );
+    if (riskStudents.length > 0) {
+      lines.push(`  관리대상 ${totalRisk}명 | 퇴실미체크 ${missing.length}명 | 연속결석 ${consecutiveAbsent.length}명`);
+      for (const s of riskStudents) {
+        const tag = _getRiskTag(s.riskLevel);
         const remainText = s.remainingAbsent <= 1 ? "*제적위험*" : `잔여 ${s.remainingAbsent}일`;
-        sections.push(`  ${emoji} ${s.name} — 결석 ${s.absentDays}/${s.maxAbsent}일 · ${remainText}`);
-      });
-    sections.push("");
+        lines.push(`    ${tag} ${s.name} — 결석 ${s.absentDays}/${s.maxAbsent}일 · ${remainText}`);
+      }
+    } else if (missing.length > 0 || consecutiveAbsent.length > 0) {
+      lines.push(`  관리대상 0명 | 퇴실미체크 ${missing.length}명 | 연속결석 ${consecutiveAbsent.length}명`);
+    }
+
+    // 퇴실 미체크 (관리대상과 별도 — 이름만 나열)
+    if (missing.length > 0) {
+      const names = missing.map((s) => s.name).join(", ");
+      lines.push(`    ⚠️ 퇴실미체크: ${names}`);
+    }
+  });
+
+  // ─── 전체 요약 (1회) ───
+  if (courses.length > 1) {
+    lines.push("");
+    lines.push("─────────────────────");
+    lines.push(
+      `전체 요약 | 관리대상 ${grandTotalRisk}명 · 퇴실미체크 ${grandTotalMissing}명 · 연속결석 ${grandTotalConsec}명`,
+    );
   }
 
-  // Risk groups (상세)
-  const dangerBlock = buildRiskGroup("🔴 제적위험 (잔여 1일 이하)", danger);
-  const warningBlock = buildRiskGroup("🟠 경고 (잔여 2~3일)", warning);
-  const cautionBlock = buildRiskGroup("🟡 주의 (잔여 4~6일)", caution);
-  const missingBlock = buildRiskGroup("⚠️ 퇴실 미체크", missing);
-
-  if (dangerBlock) sections.push(dangerBlock);
-  if (warningBlock) sections.push(warningBlock);
-  if (cautionBlock) sections.push(cautionBlock);
-  if (missingBlock) sections.push(missingBlock);
-
-  if (totalRisk === 0 && missing.length === 0 && consecutiveAbsent.length === 0) {
-    sections.push("✅ 관리대상 없음 — 정상 운영 중");
-  }
-
-  // Summary
-  sections.push("");
-  sections.push(
-    `📈 관리대상: ${totalRisk}명 | 퇴실미체크: ${missing.length}명 | 연속결석: ${consecutiveAbsent.length}명`,
-  );
-
-  // Footer
+  // ─── 푸터 (1회) ───
   if (footer) {
-    sections.push(`\n${footer}`);
+    lines.push(`\n${footer}`);
   }
 
-  return sections.join("\n");
+  return lines.join("\n");
 }
 
 // ─── Slack Webhook Sender ────────────────────────────────────
@@ -238,6 +279,7 @@ export async function testSlackWebhook(webhookUrl: string): Promise<{ ok: boolea
 
 /**
  * 특정 webhook URL로 리포트 전송 (스케줄러용)
+ * prebuiltText가 있으면 빌드 없이 직접 전송
  */
 export async function sendSlackReportDirect(
   webhookUrl: string,
@@ -248,18 +290,10 @@ export async function sendSlackReportDirect(
   defenseRate?: number,
   weeklyDropouts?: number,
   trainPrId?: string,
+  prebuiltText?: string,
 ): Promise<void> {
-  const text = buildSlackMessage(
-    courseName,
-    degr,
-    date,
-    students,
-    undefined,
-    undefined,
-    defenseRate,
-    weeklyDropouts,
-    undefined,
-    trainPrId,
-  );
+  const text =
+    prebuiltText ??
+    buildSlackMessage(courseName, degr, date, students, undefined, undefined, defenseRate, weeklyDropouts, undefined, trainPrId);
   await postToSlack(webhookUrl, { text });
 }
