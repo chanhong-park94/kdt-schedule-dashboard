@@ -102,9 +102,9 @@ function getRiskLevel(remaining: number, total: number): "safe" | "caution" | "w
   const maxAbsent = Math.floor(total * 0.2);
   if (maxAbsent === 0) return "safe";
   const remainRate = remaining / maxAbsent;
-  if (remainRate <= 0.1) return "danger";
-  if (remainRate <= 0.25) return "warning";
-  if (remainRate <= 0.5) return "caution";
+  if (remainRate <= 0.15) return "danger";
+  if (remainRate <= 0.30) return "warning";
+  if (remainRate <= 0.60) return "caution";
   return "safe";
 }
 
@@ -331,7 +331,7 @@ function renderKpiCards(courseData: DashCourseData[], trainees: DashTrainee[]): 
     <div class="dash-kpi-card dash-kpi-gradient-3">
       <div class="dash-kpi-icon">⚠️</div>
       <div class="dash-kpi-body">
-        <div class="dash-kpi-label">관리대상 <span class="dash-kpi-help" title="총 훈련일수의 20%가 최대 허용 결석일수입니다.&#10;&#10;🔴 제적위험: 잔여 허용 결석 1일 이하&#10;🟠 경고: 잔여 허용 결석 2~3일&#10;🟡 주의: 잔여 허용 결석 4~6일&#10;&#10;※ 전일자까지의 확정 출결 데이터 기준">ⓘ</span></div>
+        <div class="dash-kpi-label">관리대상 <span class="dash-kpi-help" title="총 훈련일수의 20%가 최대 허용 결석일수입니다.&#10;&#10;🔴 제적위험: 잔여 허용 결석 15% 이하&#10;🟠 경고: 잔여 허용 결석 30% 이하&#10;🟡 주의: 잔여 허용 결석 60% 이하&#10;&#10;※ 전일자까지의 확정 출결 데이터 기준">ⓘ</span></div>
         <div class="dash-kpi-value">${riskTotal}명</div>
       </div>
       <div class="dash-kpi-footer">
@@ -561,10 +561,10 @@ function renderRiskStudentList(trainees: DashTrainee[]): void {
       <span class="dash-panel-count">${riskStudents.length}명</span>
     </div>
     <div class="dash-risk-guide">
-      <span class="dash-risk-guide-item">🔴 제적위험 <small>잔여 1일 이하</small></span>
-      <span class="dash-risk-guide-item">🟠 경고 <small>잔여 2~3일</small></span>
-      <span class="dash-risk-guide-item">🟡 주의 <small>잔여 4~6일</small></span>
-      <span class="dash-risk-guide-note">※ 총 훈련일수의 20% 기준 · 전일자 확정 데이터</span>
+      <span class="dash-risk-guide-item">🔴 제적위험 <small>잔여 ≤15%</small></span>
+      <span class="dash-risk-guide-item">🟠 경고 <small>잔여 ≤30%</small></span>
+      <span class="dash-risk-guide-item">🟡 주의 <small>잔여 ≤60%</small></span>
+      <span class="dash-risk-guide-note">※ 허용 결석일수(훈련일의 20%) 대비 잔여 비율 기준 · 전일자 확정 데이터</span>
     </div>
     <div class="dash-risk-list">
       ${riskStudents

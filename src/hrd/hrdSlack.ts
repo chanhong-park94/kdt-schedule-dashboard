@@ -189,7 +189,8 @@ export function buildConsolidatedSlackMessage(
       lines.push(`  관리대상 ${totalRisk}명 | 퇴실미체크 ${missing.length}명 | 연속결석 ${consecutiveAbsent.length}명`);
       for (const s of riskStudents) {
         const tag = _getRiskTag(s.riskLevel);
-        const remainText = s.remainingAbsent <= 1 ? "*제적위험*" : `잔여 ${s.remainingAbsent}일`;
+        const remainPct = s.maxAbsent > 0 ? Math.round((s.remainingAbsent / s.maxAbsent) * 100) : 0;
+        const remainText = remainPct <= 15 ? "*제적위험*" : `잔여 ${s.remainingAbsent}일(${remainPct}%)`;
         lines.push(`    ${tag} ${s.name} — 결석 ${s.absentDays}/${s.maxAbsent}일 · ${remainText}`);
       }
     } else if (missing.length > 0 || consecutiveAbsent.length > 0) {

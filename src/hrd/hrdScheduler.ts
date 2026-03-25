@@ -112,9 +112,9 @@ function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   const maxAbsent = Math.floor(totalDays * 0.2);
   if (maxAbsent === 0) return "safe";
   const remainRate = remainingAbsent / maxAbsent;
-  if (remainRate <= 0.1) return "danger";
-  if (remainRate <= 0.25) return "warning";
-  if (remainRate <= 0.5) return "caution";
+  if (remainRate <= 0.15) return "danger";
+  if (remainRate <= 0.30) return "warning";
+  if (remainRate <= 0.60) return "caution";
   return "safe";
 }
 

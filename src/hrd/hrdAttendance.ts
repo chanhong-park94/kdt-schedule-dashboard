@@ -149,9 +149,9 @@ function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   const maxAbsent = Math.floor(totalDays * 0.2);
   if (maxAbsent === 0) return "safe";
   const remainRate = remainingAbsent / maxAbsent;
-  if (remainRate <= 0.1) return "danger"; // 제적위험: 잔여 ≤10% (거의 소진)
-  if (remainRate <= 0.25) return "warning"; // 경고: 잔여 ≤25%
-  if (remainRate <= 0.5) return "caution"; // 주의: 잔여 ≤50%
+  if (remainRate <= 0.15) return "danger"; // 제적위험: 잔여 ≤15%
+  if (remainRate <= 0.30) return "warning"; // 경고: 잔여 ≤30%
+  if (remainRate <= 0.60) return "caution"; // 주의: 잔여 ≤60%
   return "safe";
 }
 
@@ -771,8 +771,8 @@ function openRiskPanel(): void {
   };
 
   renderGroup("attRiskListDanger", danger, "🔴 위험 — 허용 결석일 초과 (제적 대상)", "rg-danger", "risk");
-  renderGroup("attRiskListWarning", warning, "🟠 경고 — 잔여 결석 2~3일", "rg-warning", "risk");
-  renderGroup("attRiskListCaution", caution, "🟡 주의 — 잔여 결석 4~6일", "rg-caution", "risk");
+  renderGroup("attRiskListWarning", warning, "🟠 경고 — 잔여 허용 결석 30% 이하", "rg-warning", "risk");
+  renderGroup("attRiskListCaution", caution, "🟡 주의 — 잔여 허용 결석 60% 이하", "rg-caution", "risk");
   renderGroup("attRiskListMissing", missing, "⚠️ 퇴실 미체크", "rg-missing", "missing");
 
   // Attach click events to open student detail
