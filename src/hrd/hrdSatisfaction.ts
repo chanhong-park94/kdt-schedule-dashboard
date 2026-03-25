@@ -4,24 +4,16 @@
  * 스키마 구글시트 "만족도" 탭의 수기 취합 데이터를
  * Apps Script Web App을 통해 조회/표시합니다.
  */
-import type { SatisfactionRecord, SatisfactionConfig, SatisfactionStats, SatisfactionSummary } from "./hrdSatisfactionTypes";
+import type { SatisfactionRecord, SatisfactionStats, SatisfactionSummary } from "./hrdSatisfactionTypes";
 import {
-  loadSatisfactionConfig,
-  saveSatisfactionConfig,
-  testSatisfactionConnection,
-  fetchSatisfactionRecords,
   calcSatisfactionStats,
   summarizeByCohort,
   extractSatisfactionFilters,
-  loadSatisfactionCache,
-  getSatisfactionCacheTimestamp,
 } from "./hrdSatisfactionApi";
-import { formatCacheAge, classifyApiError } from "./hrdCacheUtils";
 
 // ─── DOM 헬퍼 ───────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
 
-let currentConfig: SatisfactionConfig = { webAppUrl: "" };
 let allRecords: SatisfactionRecord[] = [];
 
 function setStatus(msg: string, type: "success" | "error" | "loading" = "loading"): void {
@@ -53,7 +45,6 @@ function scoreColor(score: number): string {
 function renderStats(stats: SatisfactionStats): void {
   const container = $("satisfactionStats");
   if (!container) return;
-  container.style.display = "";
 
   const npsEl = $("satStatNps");
   if (npsEl) npsEl.innerHTML = `<span class="achv-badge" style="${npsColor(stats.NPS평균)}">${stats.NPS평균}</span>`;
@@ -83,19 +74,15 @@ function renderStats(stats: SatisfactionStats): void {
 // ─── 테이블 렌더링 (과정/기수별 집계) ───────────────────────
 function renderTable(summaries: SatisfactionSummary[]): void {
   const tbody = $("satTableBody");
-  const content = $("satisfactionContent");
-  const empty = $("satisfactionEmpty");
   const count = $("satRecordCount");
-  if (!tbody || !content || !empty) return;
+  if (!tbody) return;
 
   if (summaries.length === 0) {
-    content.style.display = "none";
-    empty.style.display = "";
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px">📝 데이터 입력 버튼을 눌러 만족도를 입력해주세요.</td></tr>';
+    if (count) count.textContent = "";
     return;
   }
 
-  empty.style.display = "none";
-  content.style.display = "";
   if (count) count.textContent = `${summaries.length}개 과정/기수`;
 
   tbody.innerHTML = summaries
@@ -185,63 +172,18 @@ function applyFilterAndRender(): void {
   if (detailEl) detailEl.style.display = "none";
 }
 
-// ─── 설정 탭 초기화 ────────────────────────────────────────
-function initSettingsSatisfaction(): void {
-  const urlInput = $("settingsSatisfactionUrl") as HTMLInputElement | null;
-  if (urlInput && currentConfig.webAppUrl) urlInput.value = currentConfig.webAppUrl;
-
-  $("settingsSatisfactionTestBtn")?.addEventListener("click", async () => {
-    const url = (urlInput?.value ?? "").trim();
-    const statusEl = $("settingsSatisfactionTestStatus");
-    if (!url) {
-      if (statusEl) {
-        statusEl.textContent = "URL을 입력하세요.";
-        statusEl.className = "settings-status-msg error";
-      }
-      return;
-    }
-    if (statusEl) {
-      statusEl.textContent = "테스트 중...";
-      statusEl.className = "settings-status-msg loading";
-    }
-    const result = await testSatisfactionConnection({ webAppUrl: url });
-    if (statusEl) {
-      statusEl.textContent = result.message;
-      statusEl.className = `settings-status-msg ${result.ok ? "success" : "error"}`;
-    }
-  });
-
-  $("settingsSatisfactionSave")?.addEventListener("click", () => {
-    const url = (urlInput?.value ?? "").trim();
-    currentConfig = { webAppUrl: url };
-    saveSatisfactionConfig(currentConfig);
-    const statusEl = $("settingsSatisfactionTestStatus");
-    if (statusEl) {
-      statusEl.textContent = "저장됨 ✓";
-      statusEl.className = "settings-status-msg success";
-    }
-    updateConfigNotice();
-  });
-}
-
-function updateConfigNotice(): void {
-  const noticeEl = $("satisfactionConfigNotice");
-  if (!noticeEl) return;
-  noticeEl.style.display = currentConfig.webAppUrl ? "none" : "";
-}
-
-// ─── 캐시 자동 복원 ────────────────────────────────────────
-function restoreFromCache(): void {
-  const cached = loadSatisfactionCache();
-  if (!cached || cached.length === 0) return;
-  allRecords = cached;
-  populateFilters(allRecords);
-  const stats = calcSatisfactionStats(allRecords);
-  renderStats(stats);
-  applyFilterAndRender();
-  const ts = getSatisfactionCacheTimestamp();
-  const age = ts ? ` · ${formatCacheAge(ts)}` : "";
-  setStatus(`${allRecords.length}건 (캐시${age})`, "success");
+// ─── 수기 데이터 즉시 로드 (대시보드 표시) ──────────────────
+function loadAndRenderManualData(): void {
+  allRecords = loadManualRecords();
+  if (allRecords.length > 0) {
+    populateFilters(allRecords);
+    const stats = calcSatisfactionStats(allRecords);
+    renderStats(stats);
+    applyFilterAndRender();
+    setStatus(`${allRecords.length}건 입력됨`, "success");
+  } else {
+    applyFilterAndRender(); // 빈 테이블 안내 표시
+  }
 }
 
 // ─── 수기 입력 로직 ──────────────────────────────────────────
@@ -453,14 +395,8 @@ function collectAndSave(): void {
   manual.push(...newRecords);
   saveManualRecords(manual);
 
-  // allRecords 갱신
-  allRecords = allRecords.filter((r) => !(r.과정명 === opt.courseName && r.기수 === opt.degr));
-  allRecords.push(...newRecords);
-  populateFilters(allRecords);
-  const stats = calcSatisfactionStats(allRecords);
-  renderStats(stats);
-  applyFilterAndRender();
-  setStatus(`${allRecords.length}건 (${manual.length}건 수기 포함)`, "success");
+  // 대시보드 갱신
+  loadAndRenderManualData();
 
   if (statusEl) {
     statusEl.textContent = `✓ ${opt.label} — ${newRecords.length}건 저장 완료`;
@@ -524,15 +460,11 @@ function initSatInput(): void {
 
 // ─── 초기화 ─────────────────────────────────────────────────
 export function initSatisfaction(): void {
-  currentConfig = loadSatisfactionConfig();
-  initSettingsSatisfaction();
-  updateConfigNotice();
   initSatInput();
 
   $("satFilterCourse")?.addEventListener("change", applyFilterAndRender);
   $("satFilterCohort")?.addEventListener("change", applyFilterAndRender);
 
-  // 필터 초기화
   $("satFilterReset")?.addEventListener("click", () => {
     for (const id of ["satFilterCourse", "satFilterCohort"]) {
       const el = $(id) as HTMLSelectElement | null;
@@ -541,39 +473,6 @@ export function initSatisfaction(): void {
     applyFilterAndRender();
   });
 
-  // 캐시 자동 복원 + 수기 입력 데이터 병합
-  restoreFromCache();
-  const manual = loadManualRecords();
-  if (manual.length > 0) {
-    allRecords = [...allRecords, ...manual];
-    if (allRecords.length > 0) {
-      populateFilters(allRecords);
-      const stats = calcSatisfactionStats(allRecords);
-      renderStats(stats);
-      applyFilterAndRender();
-      setStatus(`${allRecords.length}건 (${manual.length}건 수기 포함)`, "success");
-    }
-  }
-
-  // 조회
-  $("satisfactionFetchBtn")?.addEventListener("click", async () => {
-    currentConfig = loadSatisfactionConfig();
-    if (!currentConfig.webAppUrl) {
-      setStatus("설정 → API 연동에서 Apps Script URL을 입력해주세요.", "error");
-      return;
-    }
-    setStatus("데이터 로딩 중...", "loading");
-    try {
-      const fetched = await fetchSatisfactionRecords(currentConfig);
-      const manual = loadManualRecords();
-      allRecords = [...fetched, ...manual];
-      populateFilters(allRecords);
-      const stats = calcSatisfactionStats(allRecords);
-      renderStats(stats);
-      applyFilterAndRender();
-      setStatus(`${allRecords.length}건 로드 완료 (${manual.length}건 수기 포함)`, "success");
-    } catch (e) {
-      setStatus(classifyApiError(e), "error");
-    }
-  });
+  // 수기입력 데이터 즉시 로드 → 대시보드 표시
+  loadAndRenderManualData();
 }
