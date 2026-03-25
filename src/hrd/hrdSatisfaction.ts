@@ -448,6 +448,7 @@ function initSatInput(): void {
   });
 
   $("satMatrixResetBtn")?.addEventListener("click", () => {
+    if (!confirm("입력한 내용을 초기화하시겠습니까?")) return;
     moduleRows = [];
     projectRows = [];
     renderAllSections();
