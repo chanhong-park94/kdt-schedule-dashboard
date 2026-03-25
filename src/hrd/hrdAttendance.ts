@@ -195,10 +195,23 @@ function buildStudents(
   trainPrId?: string,
   degr?: string,
 ): AttendanceStudent[] {
-  const dayStr = selectedDate.replace(/[^0-9]/g, "");
-  const dayData = dayStr
-    ? dailyRecords.filter((d) => (d.atendDe || "").toString().replace(/[^0-9]/g, "") === dayStr)
-    : dailyRecords;
+  let dayData: HrdRawAttendance[];
+  if (selectedDate.startsWith("week:")) {
+    // 주간 필터: 선택 날짜가 속한 월~금 범위
+    const baseDate = selectedDate.slice(5);
+    const { start, end } = getWeekRange(baseDate);
+    const startNum = start.replace(/-/g, "");
+    const endNum = end.replace(/-/g, "");
+    dayData = dailyRecords.filter((d) => {
+      const de = (d.atendDe || "").toString().replace(/[^0-9]/g, "");
+      return de >= startNum && de <= endNum;
+    });
+  } else {
+    const dayStr = selectedDate.replace(/[^0-9]/g, "");
+    dayData = dayStr
+      ? dailyRecords.filter((d) => (d.atendDe || "").toString().replace(/[^0-9]/g, "") === dayStr)
+      : dailyRecords;
+  }
 
   const dailyMap = new Map<string, HrdRawAttendance>();
   for (const d of dayData) {
@@ -1544,11 +1557,34 @@ function getSelectedCourse(): HrdCourse | undefined {
   return currentConfig.courses.find((c) => c.trainPrId === courseSelect.value);
 }
 
+// ─── Week Range Helper ──────────────────────────────────────
+
+/** 주어진 날짜(YYYY-MM-DD)가 속한 월~금 범위 반환 */
+function getWeekRange(dateStr: string): { start: string; end: string } {
+  const d = new Date(dateStr + "T00:00:00");
+  const day = d.getDay(); // 0=일, 1=월, ..., 6=토
+  const diffToMon = day === 0 ? -6 : 1 - day; // 일요일이면 이전 월요일
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + diffToMon);
+  const fri = new Date(mon);
+  fri.setDate(mon.getDate() + 4);
+  const fmt = (dt: Date) => dt.toISOString().slice(0, 10);
+  return { start: fmt(mon), end: fmt(fri) };
+}
+
+/** 주간 범위 라벨: "3/17 ~ 3/21" */
+function getWeekRangeLabel(dateStr: string): string {
+  const { start, end } = getWeekRange(dateStr);
+  const s = new Date(start + "T00:00:00");
+  const e = new Date(end + "T00:00:00");
+  return `${s.getMonth() + 1}/${s.getDate()} ~ ${e.getMonth() + 1}/${e.getDate()}`;
+}
+
 // ─── View Mode Helper ────────────────────────────────────────
 
-function getViewMode(): "all" | "monthly" | "daily" {
+function getViewMode(): "daily" | "weekly" | "monthly" {
   const active = document.querySelector("[data-att-view].active") as HTMLElement | null;
-  return (active?.dataset.attView as "all" | "monthly" | "daily") || "all";
+  return (active?.dataset.attView as "daily" | "weekly" | "monthly") || "monthly";
 }
 
 /** 뷰 모드 변경 시 자동 재조회 */
@@ -1590,10 +1626,17 @@ async function fetchAndRender(): Promise<void> {
     // Build cumulative records
     allDailyRecords = buildAllDailyRecords(daily);
 
-    // Build students — 뷰 모드에 따라 selectedDate 결정
+    // Build students — 뷰 모드에 따라 필터 범위 결정
     const viewMode = getViewMode();
-    const selectedDate = viewMode === "daily" ? date : ""; // 전체/월별은 일별 필터 없음
-    currentStudents = buildStudents(roster, daily, selectedDate, course, tid, deg);
+    let filterDate = "";
+    if (viewMode === "daily") {
+      filterDate = date; // 선택한 날짜 하루만
+    } else if (viewMode === "weekly") {
+      // 주간: 선택 날짜 기준 월~금 범위 → buildStudents에서 처리
+      filterDate = `week:${date}`;
+    }
+    // monthly: filterDate="" → 해당 월 전체
+    currentStudents = buildStudents(roster, daily, filterDate, course, tid, deg);
 
     // Calculate metrics
     const metrics = calculateMetrics(currentStudents);
@@ -1610,7 +1653,12 @@ async function fetchAndRender(): Promise<void> {
     renderPatternChart(patterns);
     renderPatternInsights(patterns);
 
-    const viewLabel = viewMode === "daily" ? `일별 (${date})` : viewMode === "monthly" ? `월별 (${month.slice(0, 4)}-${month.slice(4)})` : "전체";
+    const viewLabel =
+      viewMode === "daily"
+        ? `일별 (${date})`
+        : viewMode === "weekly"
+          ? `주간 (${getWeekRangeLabel(date)})`
+          : `월별 (${month.slice(0, 4)}-${month.slice(4)})`;
     if (statusEl) statusEl.textContent = `✅ ${roster.length}명 조회 완료 — ${viewLabel}`;
 
     // Update risk management button
@@ -1655,9 +1703,9 @@ export function initAttendanceDashboard(): void {
     }
     const dateInput = $("attFilterDate") as HTMLInputElement | null;
     if (dateInput) dateInput.value = "";
-    // 뷰 모드 → 전체로 복원
+    // 뷰 모드 → 월별로 복원
     document.querySelectorAll("[data-att-view]").forEach((b) => b.classList.remove("active"));
-    document.querySelector("[data-att-view='all']")?.classList.add("active");
+    document.querySelector("[data-att-view='monthly']")?.classList.add("active");
   });
 
   // Query button
@@ -1669,6 +1717,13 @@ export function initAttendanceDashboard(): void {
   searchInput?.addEventListener("input", () => {
     renderTable(currentStudents, searchInput.value);
   });
+
+  // 날짜 변경 시 자동 재조회
+  if (dateInput) {
+    dateInput.addEventListener("change", () => {
+      if (currentStudents.length > 0) fetchAndRender();
+    });
+  }
 
   // View mode buttons — 뷰 전환 시 자동 재조회
   document.querySelectorAll("[data-att-view]").forEach((btn) => {
