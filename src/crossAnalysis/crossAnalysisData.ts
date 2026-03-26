@@ -100,11 +100,25 @@ export function loadCachedAchievementRecords(): UnifiedRecord[] {
 }
 
 /**
- * 만족도 캐시에서 SatisfactionRecord 로드
- * @returns 캐시된 레코드 배열 또는 빈 배열
+ * 만족도 데이터 로드 — Apps Script 캐시 + 수기입력 데이터 병합
+ * @returns 병합된 레코드 배열
  */
 export function loadCachedSatisfactionRecords(): SatisfactionRecord[] {
-  return loadSatisfactionCache() ?? [];
+  const apiCache = loadSatisfactionCache() ?? [];
+  // 수기입력 데이터 병합 (kdt_satisfaction_manual_v1)
+  let manual: SatisfactionRecord[] = [];
+  try {
+    const raw = localStorage.getItem("kdt_satisfaction_manual_v1");
+    if (raw) manual = JSON.parse(raw) as SatisfactionRecord[];
+  } catch {
+    /* ignore */
+  }
+  if (manual.length === 0) return apiCache;
+  if (apiCache.length === 0) return manual;
+  // 중복 제거: 수기입력 우선 (동일 과정·기수·모듈이면 수기입력 데이터 사용)
+  const manualKeys = new Set(manual.map((r) => `${r.과정명}|${r.기수}|${r.모듈명}`));
+  const deduped = apiCache.filter((r) => !manualKeys.has(`${r.과정명}|${r.기수}|${r.모듈명}`));
+  return [...deduped, ...manual];
 }
 
 // ── 학생 단위 매칭 ──────────────────────────────────────────
