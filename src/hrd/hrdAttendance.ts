@@ -1638,20 +1638,11 @@ async function fetchAndRender(): Promise<void> {
     ]);
     await loadGenderData(tid, deg);
 
-    // Build cumulative records
+    // Build cumulative records (월간 누적 — 주간트렌드/요일패턴용)
     allDailyRecords = buildAllDailyRecords(daily);
 
-    // Build students — 뷰 모드에 따라 필터 범위 결정
-    const viewMode = getViewMode();
-    let filterDate = "";
-    if (viewMode === "daily") {
-      filterDate = date; // 선택한 날짜 하루만
-    } else if (viewMode === "weekly") {
-      // 주간: 선택 날짜 기준 월~금 범위 → buildStudents에서 처리
-      filterDate = `week:${date}`;
-    }
-    // monthly: filterDate="" → 해당 월 전체
-    currentStudents = buildStudents(roster, daily, filterDate, course, tid, deg);
+    // 항상 일별 조회 — 선택한 날짜의 출결 상태만 테이블에 표시
+    currentStudents = buildStudents(roster, daily, date, course, tid, deg);
 
     // Calculate metrics
     const metrics = calculateMetrics(currentStudents);
@@ -1661,6 +1652,7 @@ async function fetchAndRender(): Promise<void> {
     renderMetrics(metrics);
     renderTable(currentStudents, ($("attSearch") as HTMLInputElement)?.value || "");
 
+    // 주간 트렌드 + 요일별 패턴 — 월간 누적 데이터 기반 (항상 표시)
     const trends = calculateWeeklyTrends();
     renderTrendChart(trends);
 
@@ -1668,13 +1660,18 @@ async function fetchAndRender(): Promise<void> {
     renderPatternChart(patterns);
     renderPatternInsights(patterns);
 
-    const viewLabel =
-      viewMode === "daily"
-        ? `일별 (${date})`
-        : viewMode === "weekly"
-          ? `주간 (${getWeekRangeLabel(date)})`
-          : `월별 (${month.slice(0, 4)}-${month.slice(4)})`;
-    if (statusEl) statusEl.textContent = `✅ ${roster.length}명 조회 완료 — ${viewLabel}`;
+    // 조회 정보 표시
+    const now = new Date();
+    const queryTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    if (statusEl) statusEl.textContent = `✅ ${roster.length}명 · ${date} 출결 조회 완료 (${queryTime} 조회)`;
+
+    // 테이블 상단 조회 정보 배너
+    const queryInfoEl = $("attQueryInfo");
+    if (queryInfoEl) {
+      const courseName = courseSelect?.selectedOptions[0]?.textContent || "";
+      queryInfoEl.style.display = "";
+      queryInfoEl.innerHTML = `📅 <strong>${date}</strong> 출결 현황 · ${courseName} ${deg}기 · <span class="att-query-time">조회 시각 ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${queryTime}</span>`;
+    }
 
     // Update risk management button
     updateRiskButton();
@@ -1785,9 +1782,8 @@ export function initAttendanceDashboard(): void {
     }
     const dateInput = $("attFilterDate") as HTMLInputElement | null;
     if (dateInput) dateInput.value = "";
-    // 뷰 모드 → 월별로 복원
-    document.querySelectorAll("[data-att-view]").forEach((b) => b.classList.remove("active"));
-    document.querySelector("[data-att-view='monthly']")?.classList.add("active");
+    // 날짜 초기화 → 오늘
+    if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
   });
 
   // Query button
@@ -1806,16 +1802,6 @@ export function initAttendanceDashboard(): void {
       if (currentStudents.length > 0) fetchAndRender();
     });
   }
-
-  // View mode buttons — 뷰 전환 시 자동 재조회
-  document.querySelectorAll("[data-att-view]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("[data-att-view]").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      // 데이터가 이미 로드되어 있으면 뷰 모드만 변경하여 재렌더
-      if (currentStudents.length > 0) reRenderWithViewMode();
-    });
-  });
 
   // Detail modal close
   const closeBtn = $("attDetailClose");

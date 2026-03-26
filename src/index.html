@@ -1075,11 +1075,7 @@
                     <select id="attFilterCourse" class="att-select"></select>
                     <select id="attFilterDegr" class="att-select att-select-sm"></select>
                     <input type="date" id="attFilterDate" class="att-input-date" />
-                    <div class="att-view-modes">
-                      <button class="att-view-btn" data-att-view="daily">일별</button>
-                      <button class="att-view-btn" data-att-view="weekly">주간</button>
-                      <button class="att-view-btn active" data-att-view="monthly">월별</button>
-                    </div>
+                    <!-- 뷰 모드 제거: 항상 일별 조회 + 주간트렌드/요일패턴은 월간 누적 -->
                     <button id="attFilterReset" class="btn-sm btn-ghost" type="button" title="필터 초기화">↺ 초기화</button>
                     <button id="attQueryBtn" class="btn-primary att-query-btn" type="button">조회</button>
                     <button id="attRiskBtn" class="att-risk-btn" type="button" disabled>
@@ -1164,11 +1160,12 @@
                     </div>
                   </div>
 
-                  <!-- Search -->
+                  <!-- Search + 조회 정보 -->
                   <div class="att-search-bar">
                     <input type="text" id="attSearch" class="att-search-input" placeholder="훈련생 이름 검색..." />
                     <span id="attTableMeta" class="att-table-meta"></span>
                   </div>
+                  <div id="attQueryInfo" class="att-query-info" style="display:none"></div>
 
                   <!-- Table -->
                   <div class="att-table-wrap">
