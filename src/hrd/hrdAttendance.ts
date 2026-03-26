@@ -860,6 +860,8 @@ export async function renderHrdSettingsSection(): Promise<void> {
   if (slackInput && isUnlocked) slackInput.value = currentConfig.slackWebhookUrl || "";
   const excusedSlackInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
   if (excusedSlackInput && isUnlocked) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
+  const excusedSheetInput = $("hrdExcusedSheetUrl") as HTMLInputElement | null;
+  if (excusedSheetInput) excusedSheetInput.value = currentConfig.excusedSheetUrl || "";
 
   if (courseList) {
     // Supabase에서 보조강사 코드 비동기 조회
@@ -1164,6 +1166,8 @@ export function setupSettingsHandlers(): void {
       if (slackInput) slackInput.value = currentConfig.slackWebhookUrl || "";
       const excusedSlackInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
       if (excusedSlackInput) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
+      const excusedSheetInput = $("hrdExcusedSheetUrl") as HTMLInputElement | null;
+      if (excusedSheetInput) excusedSheetInput.value = currentConfig.excusedSheetUrl || "";
     } else {
       if (gateError) {
         gateError.style.display = "block";
@@ -1188,10 +1192,12 @@ export function setupSettingsHandlers(): void {
     const proxy = ($("hrdProxy") as HTMLInputElement)?.value?.trim() || "";
     const slackUrl = ($("hrdSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
     const excusedSlackUrl = ($("hrdExcusedSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
+    const excusedSheetUrl = ($("hrdExcusedSheetUrl") as HTMLInputElement)?.value?.trim() || "";
     currentConfig.authKey = key;
     currentConfig.proxy = proxy;
     currentConfig.slackWebhookUrl = slackUrl || undefined;
     currentConfig.excusedSlackWebhookUrl = excusedSlackUrl || undefined;
+    currentConfig.excusedSheetUrl = excusedSheetUrl || undefined;
     saveHrdConfig(currentConfig);
     const status = $("hrdTestStatus");
     if (status) {

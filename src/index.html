@@ -1434,7 +1434,10 @@
               <div class="ea-dashboard">
                 <div class="ea-header">
                   <h3>📋 공결 신청 조회</h3>
-                  <button id="eaLoadBtn" class="btn-primary ea-refresh-btn" type="button">🔄 새로고침</button>
+                  <div style="display:flex;gap:8px">
+                    <a id="eaSheetLink" href="#" target="_blank" class="btn btn--sm" style="display:none;text-decoration:none">📄 응답시트 바로가기</a>
+                    <button id="eaLoadBtn" class="btn-primary ea-refresh-btn" type="button">🔄 새로고침</button>
+                  </div>
                 </div>
                 <p class="muted">Google Form 공가 신청서/증빙자료 제출 내역을 조회하고 승인/거절합니다.</p>
 
@@ -3236,6 +3239,11 @@
                     <button id="hrdExcusedSlackTestBtn" class="btn-sm" type="button">테스트</button>
                   </div>
                   <div id="hrdExcusedSlackTestStatus" class="settings-status-msg u-mt-4"></div>
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>공가신청 응답시트 URL
+                    <span style="font-weight: 400; color: #9ca3af; font-size: 11px">Slack 알림에 바로가기 링크로 포함됩니다</span></label>
+                  <input type="text" id="hrdExcusedSheetUrl" class="hrd-input" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%" />
                 </div>
                 <div class="hrd-field-actions">
                   <button id="hrdSettingsSave" class="btn-primary btn-sm" type="button">저장</button>

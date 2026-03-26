@@ -74,6 +74,7 @@ export interface HrdConfig {
   proxy: string;
   slackWebhookUrl?: string;
   excusedSlackWebhookUrl?: string; // 공결신청 전용 Slack Webhook
+  excusedSheetUrl?: string; // 공가신청 응답시트 URL (Slack 바로가기용)
   slackSchedule?: SlackScheduleConfig;
   courses: HrdCourse[];
 }
