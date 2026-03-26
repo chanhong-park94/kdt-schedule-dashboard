@@ -129,17 +129,14 @@ export function buildConsolidatedSlackMessage(
 
   const lines: string[] = [];
 
-  // ─── 헤더 (1회) ───
-  lines.push(header);
-  lines.push("━━━━━━━━━━━━━━━━━━━");
-
-  // ─── 담당자 태그 (고유 멤버, 1회) ───
-  const allManagerIds = courses.map((c) => c.managerIds ?? "");
-  const uniqueManagers = collectUniqueManagerIds(allManagerIds);
-  if (uniqueManagers.length > 0) {
-    lines.push("담당: " + uniqueManagers.map((id) => `<@${id}>`).join(" "));
+  // ─── 푸터 → 상단 표기 ───
+  if (footer) {
+    lines.push(footer);
   }
 
+  // ─── 헤더 ───
+  lines.push(header);
+  lines.push("━━━━━━━━━━━━━━━━━━━");
   lines.push("");
 
   // ─── 전체 요약 집계용 ───
@@ -213,10 +210,7 @@ export function buildConsolidatedSlackMessage(
     );
   }
 
-  // ─── 푸터 (1회) ───
-  if (footer) {
-    lines.push(`\n${footer}`);
-  }
+  // 푸터는 상단으로 이동됨
 
   return lines.join("\n");
 }
