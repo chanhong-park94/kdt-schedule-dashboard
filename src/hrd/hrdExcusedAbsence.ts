@@ -57,12 +57,48 @@ async function fetchRequests(courseName?: string): Promise<ExcusedAbsenceRow[]> 
   }
 }
 
-async function updateStatus(id: string, status: "approved" | "rejected"): Promise<void> {
+async function updateStatus(id: string, status: "approved" | "rejected", row?: ExcusedAbsenceRow): Promise<void> {
   if (!sbClient) return;
   try {
     await sbClient.from(TABLE).update({ status, reviewed_at: new Date().toISOString() }).eq("id", id);
+    // 승인/거절 결과를 공결 전용 Slack에 알림
+    if (row) void sendExcusedSlackNotification(row, status);
   } catch (e) {
     console.warn("[ExcusedAbsence] Update failed:", e);
+  }
+}
+
+/** 공결 승인/거절 Slack 알림 전송 */
+async function sendExcusedSlackNotification(row: ExcusedAbsenceRow, status: "approved" | "rejected"): Promise<void> {
+  if (!supabaseUrl || !supabaseKey) return;
+  try {
+    const raw = localStorage.getItem("academic_schedule_manager_hrd_config_v1");
+    if (!raw) return;
+    const config = JSON.parse(raw);
+    const webhookUrl = config.excusedSlackWebhookUrl;
+    if (!webhookUrl) return;
+
+    const statusText = status === "approved" ? "✅ 승인" : "❌ 거절";
+    const sourceText = row.source === "evidence" ? "증빙자료 제출" : "공가 신청";
+
+    const lines: string[] = [];
+    lines.push(`${statusText} *[${sourceText}]* ${row.trainee_name}`);
+    lines.push(`과정: ${row.course_name} · 사유: ${row.reason || "-"} · 날짜: ${row.request_date || "-"}`);
+
+    // 응답시트 바로가기 링크 (Slack 형식: <URL|텍스트>)
+    const links: string[] = [];
+    if (config.excusedSheetUrl) links.push(`<${config.excusedSheetUrl}|📄 공가신청 시트>`);
+    if (config.evidenceSheetUrl) links.push(`<${config.evidenceSheetUrl}|📎 증빙자료 시트>`);
+    if (links.length > 0) lines.push(links.join(" · "));
+
+    const edgeFnUrl = `${supabaseUrl.trim()}/functions/v1/slack-proxy`;
+    await fetch(edgeFnUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${supabaseKey}`, apikey: supabaseKey },
+      body: JSON.stringify({ webhookUrl, payload: { text: lines.join("\n") } }),
+    });
+  } catch (e) {
+    console.warn("[ExcusedAbsence] Slack notification failed:", e);
   }
 }
 
@@ -146,13 +182,15 @@ async function loadAndRender(): Promise<void> {
   // 승인/거절 이벤트
   tbody.querySelectorAll<HTMLButtonElement>(".ea-approve-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await updateStatus(btn.dataset.id || "", "approved");
+      const row = rows.find((r) => r.id === btn.dataset.id);
+      await updateStatus(btn.dataset.id || "", "approved", row);
       await loadAndRender();
     });
   });
   tbody.querySelectorAll<HTMLButtonElement>(".ea-reject-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await updateStatus(btn.dataset.id || "", "rejected");
+      const row = rows.find((r) => r.id === btn.dataset.id);
+      await updateStatus(btn.dataset.id || "", "rejected", row);
       await loadAndRender();
     });
   });
