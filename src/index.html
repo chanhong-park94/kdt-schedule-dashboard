@@ -2581,6 +2581,40 @@
                   </table>
                 </div>
               </div>
+
+              <!-- 인구통계 대조분석 -->
+              <div class="cx-section-divider">
+                <h3 class="cx-section-title">👥 인구통계 대조분석</h3>
+                <p class="cx-section-desc">성별·연령대별 출결률, 성취도, 위험군 비율 비교</p>
+              </div>
+
+              <div class="cx-charts-row">
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">성별 대조 비교</div>
+                  <div class="cx-chart-wrap" style="height:200px"><canvas id="crossGenderCanvas"></canvas></div>
+                  <div style="overflow-x:auto;margin-top:8px">
+                    <table class="cx-data-table cx-compact-table">
+                      <thead><tr><th>성별</th><th>인원</th><th>출결률</th><th>성취도</th><th>Green%</th><th>위험군%</th></tr></thead>
+                      <tbody id="crossGenderTable"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">연령대별 대조 비교</div>
+                  <div class="cx-chart-wrap" style="height:200px"><canvas id="crossAgeCanvas"></canvas></div>
+                  <div style="overflow-x:auto;margin-top:8px">
+                    <table class="cx-data-table cx-compact-table">
+                      <thead><tr><th>연령대</th><th>인원</th><th>출결률</th><th>성취도</th><th>Green%</th><th>위험군%</th></tr></thead>
+                      <tbody id="crossAgeTable"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cx-chart-card" style="margin-top:16px">
+                <div class="cx-chart-title">💡 인구통계 기반 인사이트</div>
+                <ul class="cx-insights-list" id="crossDemoInsights"></ul>
+              </div>
             </div>
 
             <!-- ── 기수 교차분석 패널 ── -->

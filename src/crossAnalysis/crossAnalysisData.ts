@@ -18,6 +18,30 @@ import type {
   CohortCrossStats,
 } from "./crossAnalysisTypes";
 
+// ── Helpers ──────────────────────────────────────────────────
+
+/** 생년월일 문자열에서 나이 계산 */
+function calculateAgeFromBirth(birth: string): number {
+  if (!birth || birth === "-") return 0;
+  const digits = birth.replace(/[^0-9]/g, "");
+  let year: number;
+  if (digits.length >= 8) {
+    year = parseInt(digits.slice(0, 4), 10);
+  } else if (digits.length >= 6) {
+    const yy = parseInt(digits.slice(0, 2), 10);
+    year = yy >= 50 ? 1900 + yy : 2000 + yy;
+  } else {
+    return 0;
+  }
+  const now = new Date();
+  const monthDay = digits.length >= 8 ? digits.slice(4, 8) : digits.slice(2, 6);
+  const month = parseInt(monthDay.slice(0, 2), 10);
+  const day = parseInt(monthDay.slice(2, 4), 10);
+  let age = now.getFullYear() - year;
+  if (now.getMonth() + 1 < month || (now.getMonth() + 1 === month && now.getDate() < day)) age--;
+  return age > 0 ? age : 0;
+}
+
 // ── Constants ───────────────────────────────────────────────
 
 const ATTENDANCE_BRACKETS = [
@@ -137,6 +161,8 @@ export function matchStudentData(
       훈련상태: ach.훈련상태,
       absentDays: att.absentDays,
       totalDays: att.totalDays,
+      gender: att.gender || "",
+      age: calculateAgeFromBirth(att.birth),
     });
   }
 
@@ -349,6 +375,12 @@ export function generateInsights(
     insights.push(`출결률·성취도 모두 저조한 기수: ${names} (집중 관리 필요)`);
   }
 
+  // 6. 인구통계 인사이트 통합
+  const genderData = buildGenderAnalysis(students);
+  const ageData = buildAgeGroupAnalysis(students);
+  const demoInsights = generateDemographicInsights(genderData, ageData, students);
+  insights.push(...demoInsights);
+
   return insights;
 }
 
@@ -435,4 +467,144 @@ export function buildCategoryComparison(cohorts: CohortCrossData[]): {
   const avgGreen = all.reduce((s, c) => s + c.greenRate, 0) / all.length;
   const avgNPS = all.reduce((s, c) => s + c.NPS, 0) / all.length;
   return [{ category: "전체", avgAttendance: Math.round(avgAtt * 10) / 10, avgGreenRate: Math.round(avgGreen * 10) / 10, avgNPS: Math.round(avgNPS * 10) / 10, count: all.length }];
+}
+
+// ── 인구통계 대조분석 ─────────────────────────────────────
+
+/** 성별 대조분석 */
+export function buildGenderAnalysis(students: StudentCrossData[]): {
+  gender: string;
+  count: number;
+  avgAttendance: number;
+  avgScore: number;
+  greenRate: number;
+  dropoutRate: number;
+  dangerRate: number;
+}[] {
+  const genders = ["남", "여"];
+  return genders
+    .map((g) => {
+      const group = students.filter((s) => s.gender === g);
+      const n = group.length;
+      if (n === 0) return { gender: g, count: 0, avgAttendance: 0, avgScore: 0, greenRate: 0, dropoutRate: 0, dangerRate: 0 };
+      const avgAtt = group.reduce((s, st) => s + st.attendanceRate, 0) / n;
+      const avgScore = group.reduce((s, st) => s + st.compositeScore, 0) / n;
+      const greenCount = group.filter((s) => s.신호등 === "green").length;
+      const dropoutCount = group.filter((s) => s.훈련상태?.includes("중도탈락") || s.훈련상태?.includes("수료포기")).length;
+      const dangerCount = group.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length;
+      return {
+        gender: g,
+        count: n,
+        avgAttendance: Math.round(avgAtt * 10) / 10,
+        avgScore: Math.round(avgScore * 10) / 10,
+        greenRate: Math.round((greenCount / n) * 100 * 10) / 10,
+        dropoutRate: Math.round((dropoutCount / n) * 100 * 10) / 10,
+        dangerRate: Math.round((dangerCount / n) * 100 * 10) / 10,
+      };
+    })
+    .filter((g) => g.count > 0);
+}
+
+/** 연령대 대조분석 */
+export function buildAgeGroupAnalysis(students: StudentCrossData[]): {
+  ageGroup: string;
+  count: number;
+  avgAttendance: number;
+  avgScore: number;
+  greenRate: number;
+  dropoutRate: number;
+  dangerRate: number;
+}[] {
+  const brackets = [
+    { label: "10대", min: 10, max: 20 },
+    { label: "20대", min: 20, max: 30 },
+    { label: "30대", min: 30, max: 40 },
+    { label: "40대", min: 40, max: 50 },
+    { label: "50대+", min: 50, max: 200 },
+  ];
+  return brackets
+    .map((b) => {
+      const group = students.filter((s) => s.age >= b.min && s.age < b.max);
+      const n = group.length;
+      if (n === 0)
+        return { ageGroup: b.label, count: 0, avgAttendance: 0, avgScore: 0, greenRate: 0, dropoutRate: 0, dangerRate: 0 };
+      const avgAtt = group.reduce((s, st) => s + st.attendanceRate, 0) / n;
+      const avgScore = group.reduce((s, st) => s + st.compositeScore, 0) / n;
+      const greenCount = group.filter((s) => s.신호등 === "green").length;
+      const dropoutCount = group.filter((s) => s.훈련상태?.includes("중도탈락") || s.훈련상태?.includes("수료포기")).length;
+      const dangerCount = group.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length;
+      return {
+        ageGroup: b.label,
+        count: n,
+        avgAttendance: Math.round(avgAtt * 10) / 10,
+        avgScore: Math.round(avgScore * 10) / 10,
+        greenRate: Math.round((greenCount / n) * 100 * 10) / 10,
+        dropoutRate: Math.round((dropoutCount / n) * 100 * 10) / 10,
+        dangerRate: Math.round((dangerCount / n) * 100 * 10) / 10,
+      };
+    })
+    .filter((g) => g.count > 0);
+}
+
+/** 인구통계 기반 인사이트 생성 */
+export function generateDemographicInsights(
+  genderData: ReturnType<typeof buildGenderAnalysis>,
+  ageData: ReturnType<typeof buildAgeGroupAnalysis>,
+  students: StudentCrossData[],
+): string[] {
+  const insights: string[] = [];
+
+  // 성별 인사이트
+  if (genderData.length === 2) {
+    const [a, b] = genderData;
+    const attDiff = Math.abs(a.avgAttendance - b.avgAttendance);
+    if (attDiff > 3) {
+      const higher = a.avgAttendance > b.avgAttendance ? a : b;
+      insights.push(`${higher.gender}성의 평균 출결률(${higher.avgAttendance}%)이 ${attDiff.toFixed(1)}%p 더 높습니다`);
+    }
+    const scoreDiff = Math.abs(a.avgScore - b.avgScore);
+    if (scoreDiff > 5) {
+      const higher = a.avgScore > b.avgScore ? a : b;
+      insights.push(`${higher.gender}성의 평균 성취도(${higher.avgScore}점)가 ${scoreDiff.toFixed(1)}점 더 높습니다`);
+    }
+    const dangerDiffPct = Math.abs(a.dangerRate - b.dangerRate);
+    if (dangerDiffPct > 5) {
+      const higher = a.dangerRate > b.dangerRate ? a : b;
+      insights.push(`${higher.gender}성 위험군 비율(${higher.dangerRate}%)이 상대적으로 높아 관리 필요`);
+    }
+  }
+
+  // 연령대 인사이트
+  if (ageData.length >= 2) {
+    const bestAtt = [...ageData].sort((a, b) => b.avgAttendance - a.avgAttendance)[0];
+    const worstAtt = [...ageData].sort((a, b) => a.avgAttendance - b.avgAttendance)[0];
+    if (bestAtt.avgAttendance - worstAtt.avgAttendance > 3) {
+      insights.push(
+        `출결률 최고 연령대: ${bestAtt.ageGroup}(${bestAtt.avgAttendance}%) — 최저: ${worstAtt.ageGroup}(${worstAtt.avgAttendance}%)`,
+      );
+    }
+
+    const bestScore = [...ageData].sort((a, b) => b.avgScore - a.avgScore)[0];
+    insights.push(`성취도 최고 연령대: ${bestScore.ageGroup}(${bestScore.avgScore}점, ${bestScore.count}명)`);
+
+    const highDanger = ageData.filter((a) => a.dangerRate > 15);
+    if (highDanger.length > 0) {
+      insights.push(`위험군 비율 높은 연령대: ${highDanger.map((a) => `${a.ageGroup}(${a.dangerRate}%)`).join(", ")}`);
+    }
+  }
+
+  // 성별x연령 교차
+  const youngMale = students.filter((s) => s.gender === "남" && s.age >= 20 && s.age < 30);
+  const youngFemale = students.filter((s) => s.gender === "여" && s.age >= 20 && s.age < 30);
+  if (youngMale.length >= 5 && youngFemale.length >= 5) {
+    const mAtt = youngMale.reduce((s, st) => s + st.attendanceRate, 0) / youngMale.length;
+    const fAtt = youngFemale.reduce((s, st) => s + st.attendanceRate, 0) / youngFemale.length;
+    const diff = Math.abs(mAtt - fAtt);
+    if (diff > 3) {
+      const higher = mAtt > fAtt ? "남" : "여";
+      insights.push(`20대 ${higher}성 출결률이 ${diff.toFixed(1)}%p 높음 (남 ${mAtt.toFixed(1)}% vs 여 ${fAtt.toFixed(1)}%)`);
+    }
+  }
+
+  return insights;
 }

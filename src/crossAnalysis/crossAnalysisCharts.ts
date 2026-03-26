@@ -360,7 +360,71 @@ export function renderRiskDonutChart(
   });
 }
 
-// ─── 7. Bubble Chart: 방어율 vs NPS ─────────────────────────
+// ─── 7. Gender Comparison Chart ──────────────────────────────
+
+/** 성별 대조 가로 막대 차트 */
+export function renderGenderComparisonChart(
+  canvas: HTMLCanvasElement,
+  data: { gender: string; avgAttendance: number; avgScore: number; greenRate: number; dangerRate: number }[],
+): Chart {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  return new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.map((d) => d.gender + "성"),
+      datasets: [
+        { label: "출결률", data: data.map((d) => d.avgAttendance), backgroundColor: "#6366f199", borderColor: "#6366f1", borderWidth: 1, borderRadius: 4 },
+        { label: "성취도", data: data.map((d) => d.avgScore), backgroundColor: "#10b98199", borderColor: "#10b981", borderWidth: 1, borderRadius: 4 },
+        { label: "Green%", data: data.map((d) => d.greenRate), backgroundColor: "#22c55e99", borderColor: "#22c55e", borderWidth: 1, borderRadius: 4 },
+        { label: "위험군%", data: data.map((d) => d.dangerRate), backgroundColor: "#ef444499", borderColor: "#ef4444", borderWidth: 1, borderRadius: 4 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: "y",
+      scales: {
+        x: { min: 0, max: 100, ticks: { color: "#6b7280", callback: (v) => v + "%" }, grid: { color: "rgba(0,0,0,0.06)" } },
+        y: { ticks: { color: "#6b7280", font: { size: 13, weight: "bold" as const } }, grid: { display: false } },
+      },
+      plugins: { legend: { position: "bottom", labels: { color: "#6b7280", usePointStyle: true, font: { size: 11 } } } },
+    },
+  });
+}
+
+// ─── 8. Age Group Chart ─────────────────────────────────────
+
+/** 연령대별 대조 막대 차트 */
+export function renderAgeGroupChart(
+  canvas: HTMLCanvasElement,
+  data: { ageGroup: string; count: number; avgAttendance: number; avgScore: number; dangerRate: number }[],
+): Chart {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  return new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.map((d) => `${d.ageGroup} (${d.count}명)`),
+      datasets: [
+        { label: "출결률", data: data.map((d) => d.avgAttendance), backgroundColor: "#6366f1cc", borderRadius: 4 },
+        { label: "성취도", data: data.map((d) => d.avgScore), backgroundColor: "#10b981cc", borderRadius: 4 },
+        { label: "위험군%", data: data.map((d) => d.dangerRate), backgroundColor: "#ef4444cc", borderRadius: 4 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: "#6b7280", font: { size: 11 } }, grid: { display: false } },
+        y: { min: 0, max: 100, ticks: { color: "#6b7280", callback: (v) => v + "%" }, grid: { color: "rgba(0,0,0,0.06)" } },
+      },
+      plugins: { legend: { position: "bottom", labels: { color: "#6b7280", usePointStyle: true, font: { size: 11 } } } },
+    },
+  });
+}
+
+// ─── 9. Bubble Chart: 방어율 vs NPS ─────────────────────────
 
 /** 기수별 방어율 vs NPS 버블차트 */
 export function renderBubbleChart(

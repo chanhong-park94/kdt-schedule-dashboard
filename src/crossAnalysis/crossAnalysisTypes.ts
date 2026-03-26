@@ -19,6 +19,8 @@ export interface StudentCrossData {
   훈련상태: string;
   absentDays: number;
   totalDays: number;
+  gender: string; // "남" | "여" | ""
+  age: number; // 생년월일 기반 나이 (0 = 미확인)
 }
 
 // ── 기수 단위 교차분석 ──────────────────────────────────────

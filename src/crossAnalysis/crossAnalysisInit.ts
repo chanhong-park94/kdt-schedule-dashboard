@@ -20,6 +20,9 @@ import {
   buildAttendanceDistribution,
   buildRiskDistribution,
   buildQuadrantAnalysis,
+  buildGenderAnalysis,
+  buildAgeGroupAnalysis,
+  generateDemographicInsights,
 } from "./crossAnalysisData";
 import {
   renderScatterChart,
@@ -29,6 +32,8 @@ import {
   renderHistogramChart,
   renderRiskDonutChart,
   renderBubbleChart,
+  renderGenderComparisonChart,
+  renderAgeGroupChart,
 } from "./crossAnalysisCharts";
 import type { StudentCrossData, CohortCrossData, HeatmapCell } from "./crossAnalysisTypes";
 
@@ -50,6 +55,8 @@ let radarChart: Chart | null = null;
 let histogramChart: Chart | null = null;
 let riskDonutChart: Chart | null = null;
 let bubbleChart: Chart | null = null;
+let genderChart: Chart | null = null;
+let ageGroupChart: Chart | null = null;
 let currentStudentData: StudentCrossData[] = [];
 let currentCohortData: CohortCrossData[] = [];
 
@@ -229,6 +236,55 @@ function renderStudentAnalysis(students: StudentCrossData[]): void {
   const medianEl = $("crossMedianInfo");
   if (medianEl) {
     medianEl.textContent = `중앙값 — 출결 ${quadrant.medianAttendance}% · 성취 ${quadrant.medianScore}점`;
+  }
+
+  // 성별 대조분석
+  destroyChart(genderChart);
+  const genderCanvas = $("crossGenderCanvas") as HTMLCanvasElement | null;
+  const genderData = buildGenderAnalysis(students);
+  if (genderCanvas && genderData.length > 0) {
+    genderChart = renderGenderComparisonChart(genderCanvas, genderData);
+  }
+  const genderTableEl = $("crossGenderTable");
+  if (genderTableEl && genderData.length > 0) {
+    genderTableEl.innerHTML = genderData
+      .map(
+        (g) =>
+          `<tr><td><strong>${g.gender}성</strong></td><td>${g.count}명</td><td>${g.avgAttendance}%</td><td>${g.avgScore}점</td><td>${g.greenRate}%</td><td>${g.dangerRate}%</td></tr>`,
+      )
+      .join("");
+  } else if (genderTableEl) {
+    genderTableEl.innerHTML =
+      '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">성별 데이터 없음 (설정 → 훈련생 성별 지정 필요)</td></tr>';
+  }
+
+  // 연령대 대조분석
+  destroyChart(ageGroupChart);
+  const ageCanvas = $("crossAgeCanvas") as HTMLCanvasElement | null;
+  const ageData = buildAgeGroupAnalysis(students);
+  if (ageCanvas && ageData.length > 0) {
+    ageGroupChart = renderAgeGroupChart(ageCanvas, ageData);
+  }
+  const ageTableEl = $("crossAgeTable");
+  if (ageTableEl && ageData.length > 0) {
+    ageTableEl.innerHTML = ageData
+      .map(
+        (a) =>
+          `<tr><td><strong>${a.ageGroup}</strong></td><td>${a.count}명</td><td>${a.avgAttendance}%</td><td>${a.avgScore}점</td><td>${a.greenRate}%</td><td>${a.dangerRate}%</td></tr>`,
+      )
+      .join("");
+  } else if (ageTableEl) {
+    ageTableEl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">연령 데이터 없음</td></tr>';
+  }
+
+  // 인구통계 인사이트
+  const demoInsights = generateDemographicInsights(genderData, ageData, students);
+  const demoInsightEl = $("crossDemoInsights");
+  if (demoInsightEl) {
+    demoInsightEl.innerHTML =
+      demoInsights.length > 0
+        ? demoInsights.map((t) => `<li>📊 ${esc(t)}</li>`).join("")
+        : '<li style="color:var(--text-muted)">인구통계 데이터가 부족하여 인사이트를 생성할 수 없습니다.</li>';
   }
 }
 
