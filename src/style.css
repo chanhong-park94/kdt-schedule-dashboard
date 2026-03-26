@@ -4090,9 +4090,18 @@ tbody tr:hover {
   color: #991b1b;
 }
 .att-risk-ended {
-  background: #f3f4f6;
-  color: var(--text-muted);
+  background: #fef2f2;
+  color: #991b1b;
   font-weight: 600;
+}
+.att-risk-graduated {
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
+}
+.att-chip-graduated {
+  background: #dcfce7;
+  color: #166534;
 }
 
 /* Gender Toggle */

@@ -137,13 +137,17 @@ export function isExcusedStatus(status: string): boolean {
 
 export type TraineeGender = "" | "남" | "여";
 
+/** 훈련생 상태: 훈련중 / 수료 / 하차(중도탈락·수료포기·조기취업) */
+export type TraineeStatus = "훈련중" | "수료" | "하차";
+
 export interface AttendanceStudent {
   name: string;
   birth: string;
   status: AttendanceStatus;
   inTime: string;
   outTime: string;
-  dropout: boolean;
+  dropout: boolean; // 하차 여부 (하차자만 true, 수료자는 false)
+  traineeStatus: TraineeStatus; // 훈련중/수료/하차 세분화
   riskLevel: RiskLevel;
   totalDays: number; // 총 훈련일수 (과정 설정)
   attendedDays: number; // 출석 인정일수 (출석+지각+조퇴+외출+복합)

@@ -111,21 +111,29 @@ function normalizeName(raw: string): string {
   return (raw || "").replace(/\s+/g, "").trim();
 }
 
-function normalizeTrainee(raw: HrdRawTrainee): { name: string; birth: string; dropout: boolean } {
+function normalizeTrainee(raw: HrdRawTrainee): {
+  name: string;
+  birth: string;
+  dropout: boolean;
+  traineeStatus: import("./hrdTypes").TraineeStatus;
+} {
   const nm = raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-";
   const br = (raw.lifyeaMd || raw.trneBrdt || raw.trneRrno || "").toString().replace(/[^0-9]/g, "");
   let birth = "-";
   if (br.length >= 8) birth = `${br.slice(0, 4)}.${br.slice(4, 6)}.${br.slice(6, 8)}`;
   else if (br.length >= 6) birth = `${br.slice(0, 2)}.${br.slice(2, 4)}.${br.slice(4, 6)}`;
   const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
+
+  // 수료 상태 (하차가 아님)
+  const graduated =
+    stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
+  // 하차 상태
   const dropout =
-    stNm.includes("중도탈락") ||
-    stNm.includes("수료포기") ||
-    stNm.includes("조기취업") ||
-    stNm.includes("80%이상수료") ||
-    stNm.includes("정상수료") ||
-    stNm.includes("수료후취업");
-  return { name: nm.trim(), birth, dropout };
+    stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
+
+  const traineeStatus = graduated ? "수료" as const : dropout ? "하차" as const : "훈련중" as const;
+
+  return { name: nm.trim(), birth, dropout, traineeStatus };
 }
 
 function resolveStatus(raw: HrdRawAttendance): AttendanceStatus {
@@ -227,7 +235,13 @@ function buildStudents(
     const key = normalizeName(t.name);
     const daily = dailyMap.get(key);
 
-    const status: AttendanceStatus = daily ? resolveStatus(daily) : t.dropout ? "중도탈락" : "-";
+    const status: AttendanceStatus = daily
+      ? resolveStatus(daily)
+      : t.traineeStatus === "하차"
+        ? "중도탈락"
+        : t.traineeStatus === "수료"
+          ? "수료"
+          : "-";
     const inTime = daily ? formatTime(daily.lpsilTime || daily.atendTmIn) : "";
     const outTime = daily ? formatTime(daily.levromTime || daily.atendTmOut) : "";
 
@@ -251,6 +265,7 @@ function buildStudents(
       inTime,
       outTime,
       dropout: t.dropout,
+      traineeStatus: t.traineeStatus,
       riskLevel: getRiskLevel(remainingAbsent, totalDays),
       totalDays,
       attendedDays,
@@ -416,6 +431,7 @@ function getStatusChipClass(status: AttendanceStatus): string {
   if (status.includes("조퇴") || status.includes("외출")) return "att-chip-early";
   if (isExcusedStatus(status)) return "att-chip-excused";
   if (status.includes("중도탈락")) return "att-chip-dropout";
+  if (status === "수료") return "att-chip-graduated";
   return "att-chip-default";
 }
 
@@ -429,12 +445,16 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
     filtered = students.filter((s) => s.name.toLowerCase().includes(term));
   }
 
-  // Sort: active first (by risk), dropout last
+  // Sort: 훈련중 (위험도순) → 수료 → 하차
+  const statusOrder: Record<string, number> = { "훈련중": 0, "수료": 1, "하차": 2 };
   filtered.sort((a, b) => {
-    if (a.dropout !== b.dropout) return a.dropout ? 1 : -1;
-    const riskOrder: Record<RiskLevel, number> = { danger: 0, warning: 1, caution: 2, safe: 3 };
-    const diff = riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
-    if (diff !== 0) return diff;
+    const stDiff = (statusOrder[a.traineeStatus] ?? 0) - (statusOrder[b.traineeStatus] ?? 0);
+    if (stDiff !== 0) return stDiff;
+    if (a.traineeStatus === "훈련중") {
+      const riskOrder: Record<RiskLevel, number> = { danger: 0, warning: 1, caution: 2, safe: 3 };
+      const diff = riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
+      if (diff !== 0) return diff;
+    }
     return a.name.localeCompare(b.name);
   });
 
@@ -452,7 +472,7 @@ function renderTable(students: AttendanceStudent[], searchTerm: string): void {
     <td class="att-td-time">${s.inTime || "-"}</td>
     <td class="att-td-time">${s.outTime || "-"}</td>
     <td>${s.totalDays > 0 ? `${s.absentDays}/${s.maxAbsent}일` : `${s.attendanceRate.toFixed(1)}%`}</td>
-    <td>${s.dropout ? `<span class="att-risk-badge att-risk-ended">종료</span>` : `<span class="att-risk-badge att-risk-${s.riskLevel}">${getRiskEmoji(s.riskLevel)} ${getRiskLabel(s.riskLevel)}${s.totalDays > 0 && s.remainingAbsent > 0 ? ` (${s.remainingAbsent}일)` : ""}</span>`}</td>
+    <td>${s.traineeStatus === "하차" ? `<span class="att-risk-badge att-risk-ended">하차</span>` : s.traineeStatus === "수료" ? `<span class="att-risk-badge att-risk-graduated">수료</span>` : `<span class="att-risk-badge att-risk-${s.riskLevel}">${getRiskEmoji(s.riskLevel)} ${getRiskLabel(s.riskLevel)}${s.totalDays > 0 && s.remainingAbsent > 0 ? ` (${s.remainingAbsent}일)` : ""}</span>`}</td>
   </tr>`,
     )
     .join("");
@@ -636,9 +656,12 @@ function openStudentDetail(name: string): void {
   if (birthEl) birthEl.textContent = student?.birth || "-";
   if (rateEl) rateEl.textContent = student ? `${student.attendanceRate.toFixed(1)}%` : "-";
   if (riskEl && student) {
-    if (student.dropout) {
-      riskEl.textContent = "종료";
+    if (student.traineeStatus === "하차") {
+      riskEl.textContent = "하차";
       riskEl.className = "att-detail-risk att-risk-ended";
+    } else if (student.traineeStatus === "수료") {
+      riskEl.textContent = "수료";
+      riskEl.className = "att-detail-risk att-risk-graduated";
     } else {
       riskEl.textContent = `${getRiskEmoji(student.riskLevel)} ${getRiskLabel(student.riskLevel)}`;
       riskEl.className = `att-detail-risk att-risk-${student.riskLevel}`;

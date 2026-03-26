@@ -166,10 +166,13 @@ async function fetchAttendanceForReport(
     const nm = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").trim();
     const key = normalizeName(nm);
     const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
+    const graduated =
+      stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
     const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
+    const traineeStatus = graduated ? "수료" as const : dropout ? "하차" as const : "훈련중" as const;
 
     const todayData = todayMap.get(key);
-    const status = todayData ? resolveStatus(todayData) : dropout ? "중도탈락" : "-";
+    const status = todayData ? resolveStatus(todayData) : dropout ? "중도탈락" : graduated ? "수료" : "-";
     const inTime = todayData ? formatTime(todayData.lpsilTime || todayData.atendTmIn) : "";
     const outTime = todayData ? formatTime(todayData.levromTime || todayData.atendTmOut) : "";
 
@@ -206,6 +209,7 @@ async function fetchAttendanceForReport(
       inTime,
       outTime,
       dropout,
+      traineeStatus,
       riskLevel: getRiskLevel(remainingAbsent, totalDays),
       totalDays,
       attendedDays,
@@ -215,6 +219,7 @@ async function fetchAttendanceForReport(
       remainingAbsent,
       attendanceRate,
       missingCheckout,
+      gender: "",
     } as AttendanceStudent;
   });
 }
