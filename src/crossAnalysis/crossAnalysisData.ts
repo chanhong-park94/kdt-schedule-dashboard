@@ -546,6 +546,160 @@ export function buildAgeGroupAnalysis(students: StudentCrossData[]): {
     .filter((g) => g.count > 0);
 }
 
+/** 결석일수 구간별 하차 확률 분석 */
+export function buildAbsentDropoutCorrelation(students: StudentCrossData[]): {
+  bracket: string;
+  totalCount: number;
+  dropoutCount: number;
+  dropoutRate: number;
+}[] {
+  const brackets = [
+    { label: "0~2일", min: 0, max: 3 },
+    { label: "3~5일", min: 3, max: 6 },
+    { label: "6~9일", min: 6, max: 10 },
+    { label: "10~14일", min: 10, max: 15 },
+    { label: "15일+", min: 15, max: 999 },
+  ];
+  return brackets
+    .map((b) => {
+      const group = students.filter((s) => s.absentDays >= b.min && s.absentDays < b.max);
+      const dropouts = group.filter((s) => s.훈련상태?.includes("중도탈락") || s.훈련상태?.includes("수료포기"));
+      return {
+        bracket: b.label,
+        totalCount: group.length,
+        dropoutCount: dropouts.length,
+        dropoutRate: group.length > 0 ? Math.round((dropouts.length / group.length) * 100 * 10) / 10 : 0,
+      };
+    })
+    .filter((b) => b.totalCount > 0);
+}
+
+/** 성별×연령 교차표 (2차원 매트릭스) */
+export function buildGenderAgeMatrix(students: StudentCrossData[]): {
+  rows: {
+    ageGroup: string;
+    male: { count: number; avgAtt: number; avgScore: number };
+    female: { count: number; avgAtt: number; avgScore: number };
+  }[];
+} {
+  const ageGroups = [
+    { label: "20대", min: 20, max: 30 },
+    { label: "30대", min: 30, max: 40 },
+    { label: "40대+", min: 40, max: 200 },
+  ];
+  const calc = (group: StudentCrossData[]) => ({
+    count: group.length,
+    avgAtt:
+      group.length > 0
+        ? Math.round((group.reduce((s, st) => s + st.attendanceRate, 0) / group.length) * 10) / 10
+        : 0,
+    avgScore:
+      group.length > 0
+        ? Math.round((group.reduce((s, st) => s + st.compositeScore, 0) / group.length) * 10) / 10
+        : 0,
+  });
+  const rows = ageGroups
+    .map((ag) => {
+      const inAge = students.filter((s) => s.age >= ag.min && s.age < ag.max);
+      return {
+        ageGroup: ag.label,
+        male: calc(inAge.filter((s) => s.gender === "남")),
+        female: calc(inAge.filter((s) => s.gender === "여")),
+      };
+    })
+    .filter((r) => r.male.count > 0 || r.female.count > 0);
+  return { rows };
+}
+
+/** 이탈 위험 요인 순위 (각 요인별 이탈자 비율 비교) */
+export function buildDropoutRiskFactors(students: StudentCrossData[]): {
+  factor: string;
+  description: string;
+  riskRate: number;
+  safeRate: number;
+  impactScore: number;
+}[] {
+  const dropouts = students.filter(
+    (s) => s.훈련상태?.includes("중도탈락") || s.훈련상태?.includes("수료포기"),
+  );
+  const active = students.filter(
+    (s) => !s.훈련상태?.includes("중도탈락") && !s.훈련상태?.includes("수료포기"),
+  );
+  if (dropouts.length === 0 || active.length === 0) return [];
+
+  const factors: { factor: string; description: string; riskRate: number; safeRate: number }[] = [];
+
+  // 1. 저출결 (80% 미만)
+  const lowAttDropout = (dropouts.filter((s) => s.attendanceRate < 80).length / dropouts.length) * 100;
+  const lowAttActive = (active.filter((s) => s.attendanceRate < 80).length / active.length) * 100;
+  factors.push({
+    factor: "저출결 (<80%)",
+    description: "출결률 80% 미만",
+    riskRate: Math.round(lowAttDropout * 10) / 10,
+    safeRate: Math.round(lowAttActive * 10) / 10,
+  });
+
+  // 2. 저성취 (red 신호등)
+  const redDropout = (dropouts.filter((s) => s.신호등 === "red").length / dropouts.length) * 100;
+  const redActive = (active.filter((s) => s.신호등 === "red").length / active.length) * 100;
+  factors.push({
+    factor: "저성취 (red)",
+    description: "신호등 red 등급",
+    riskRate: Math.round(redDropout * 10) / 10,
+    safeRate: Math.round(redActive * 10) / 10,
+  });
+
+  // 3. 고결석 (10일+)
+  const highAbsDropout = (dropouts.filter((s) => s.absentDays >= 10).length / dropouts.length) * 100;
+  const highAbsActive = (active.filter((s) => s.absentDays >= 10).length / active.length) * 100;
+  factors.push({
+    factor: "고결석 (10일+)",
+    description: "결석 10일 이상",
+    riskRate: Math.round(highAbsDropout * 10) / 10,
+    safeRate: Math.round(highAbsActive * 10) / 10,
+  });
+
+  // 4. 위험등급 (warning/danger)
+  const riskDropout =
+    (dropouts.filter((s) => s.riskLevel === "warning" || s.riskLevel === "danger").length / dropouts.length) * 100;
+  const riskActive =
+    (active.filter((s) => s.riskLevel === "warning" || s.riskLevel === "danger").length / active.length) * 100;
+  factors.push({
+    factor: "위험등급",
+    description: "경고/제적위험",
+    riskRate: Math.round(riskDropout * 10) / 10,
+    safeRate: Math.round(riskActive * 10) / 10,
+  });
+
+  // Impact score = risk/safe ratio (higher = more predictive)
+  return factors
+    .map((f) => ({
+      ...f,
+      impactScore: f.safeRate > 0 ? Math.round((f.riskRate / f.safeRate) * 10) / 10 : f.riskRate > 0 ? 99 : 0,
+    }))
+    .sort((a, b) => b.impactScore - a.impactScore);
+}
+
+/** NPS vs 출결률 상관 (기수 단위) */
+export function calcNPSAttendanceCorrelation(cohorts: CohortCrossData[]): { r: number; description: string } {
+  const valid = cohorts.filter((c) => c.NPS !== 0);
+  if (valid.length < 3) return { r: 0, description: "데이터 부족" };
+  const xs = valid.map((c) => c.NPS);
+  const ys = valid.map((c) => c.avgAttendanceRate);
+  const r = Math.round(pearsonR(xs, ys) * 1000) / 1000;
+  return { r, description: describeCorrelation(r) };
+}
+
+/** 강사만족도 vs 성취도 상관 (기수 단위) */
+export function calcInstructorScoreCorrelation(cohorts: CohortCrossData[]): { r: number; description: string } {
+  const valid = cohorts.filter((c) => c.강사만족도 > 0);
+  if (valid.length < 3) return { r: 0, description: "데이터 부족" };
+  const xs = valid.map((c) => c.강사만족도);
+  const ys = valid.map((c) => c.greenRate);
+  const r = Math.round(pearsonR(xs, ys) * 1000) / 1000;
+  return { r, description: describeCorrelation(r) };
+}
+
 /** 인구통계 기반 인사이트 생성 */
 export function generateDemographicInsights(
   genderData: ReturnType<typeof buildGenderAnalysis>,

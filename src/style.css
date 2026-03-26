@@ -8412,6 +8412,23 @@ dialog {
   padding: 5px 8px;
   font-size: 12px;
 }
+.cx-corr-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 16px 0;
+}
+.cx-corr-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--primary, #6366f1);
+  font-family: "Inter", monospace;
+}
+.cx-corr-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
 
 /* ─── 필터 초기화 버튼 ──────────────────────────────────────── */
 .btn-ghost {

@@ -2615,6 +2615,46 @@
                 <div class="cx-chart-title">💡 인구통계 기반 인사이트</div>
                 <ul class="cx-insights-list" id="crossDemoInsights"></ul>
               </div>
+
+              <!-- 이탈 예측 분석 -->
+              <div class="cx-section-divider">
+                <h3 class="cx-section-title">⚠️ 이탈 예측 분석</h3>
+                <p class="cx-section-desc">결석 패턴과 이탈 확률의 상관관계, 위험 요인 순위</p>
+              </div>
+
+              <div class="cx-charts-row">
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">결석일수별 이탈 확률</div>
+                  <div class="cx-chart-wrap" style="height:240px"><canvas id="crossAbsentDropoutCanvas"></canvas></div>
+                </div>
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">이탈 위험 요인 순위</div>
+                  <div class="cx-chart-subtitle">이탈자 vs 재적자 — 각 요인 보유 비율 비교 (×배수 = 예측력)</div>
+                  <div class="cx-chart-wrap" style="height:220px"><canvas id="crossRiskFactorsCanvas"></canvas></div>
+                </div>
+              </div>
+
+              <!-- 성별×연령 교차표 -->
+              <div class="cx-chart-card" style="margin-top:16px">
+                <div class="cx-chart-title">성별 × 연령대 교차표</div>
+                <div class="cx-chart-subtitle">성별·연령 조합별 인원수, 출결률, 성취도 비교</div>
+                <div style="overflow-x:auto">
+                  <table class="cx-data-table">
+                    <thead>
+                      <tr>
+                        <th rowspan="2">연령대</th>
+                        <th colspan="3" style="text-align:center;border-bottom:1px solid var(--border)">남성</th>
+                        <th colspan="3" style="text-align:center;border-bottom:1px solid var(--border)">여성</th>
+                      </tr>
+                      <tr>
+                        <th>인원</th><th>출결률</th><th>성취도</th>
+                        <th>인원</th><th>출결률</th><th>성취도</th>
+                      </tr>
+                    </thead>
+                    <tbody id="crossGenderAgeMatrix"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <!-- ── 기수 교차분석 패널 ── -->
@@ -2647,6 +2687,20 @@
                     <thead><tr><th>과정</th><th>기수</th><th>인원</th><th>출결률</th><th>성취도</th><th>NPS</th><th>강사만족도</th><th>종합점수</th></tr></thead>
                     <tbody id="crossCohortTableBody"></tbody>
                   </table>
+                </div>
+              </div>
+
+              <!-- 상관관계 지표 -->
+              <div class="cx-charts-row" style="margin-top:16px">
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">NPS × 출결률 상관</div>
+                  <div class="cx-chart-subtitle">기수별 NPS와 평균 출결률의 상관관계</div>
+                  <div class="cx-corr-display" id="crossNpsAttCorrelation">-</div>
+                </div>
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">강사만족도 × 성취도 상관</div>
+                  <div class="cx-chart-subtitle">기수별 강사만족도와 Green 비율의 상관관계</div>
+                  <div class="cx-corr-display" id="crossInstrCorrelation">-</div>
                 </div>
               </div>
 

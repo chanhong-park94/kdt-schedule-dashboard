@@ -424,7 +424,119 @@ export function renderAgeGroupChart(
   });
 }
 
-// ─── 9. Bubble Chart: 방어율 vs NPS ─────────────────────────
+// ─── 9. Absent-Dropout Bar+Line Chart ────────────────────────
+
+/** 결석일수별 하차 확률 막대+라인 복합 차트 */
+export function renderAbsentDropoutChart(
+  canvas: HTMLCanvasElement,
+  data: { bracket: string; totalCount: number; dropoutCount: number; dropoutRate: number }[],
+): Chart {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  return new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.map((d) => d.bracket),
+      datasets: [
+        {
+          label: "전체 인원",
+          data: data.map((d) => d.totalCount),
+          backgroundColor: "#6366f166",
+          borderColor: "#6366f1",
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: "y",
+        },
+        {
+          label: "이탈 인원",
+          data: data.map((d) => d.dropoutCount),
+          backgroundColor: "#ef444466",
+          borderColor: "#ef4444",
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: "y",
+        },
+        {
+          label: "이탈률(%)",
+          data: data.map((d) => d.dropoutRate),
+          type: "line" as const,
+          borderColor: "#f97316",
+          backgroundColor: "#f9731633",
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: "#f97316",
+          fill: true,
+          yAxisID: "y1",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: "#6b7280" }, grid: { display: false } },
+        y: {
+          position: "left",
+          beginAtZero: true,
+          ticks: { color: "#6b7280" },
+          grid: { color: "rgba(0,0,0,0.06)" },
+          title: { display: true, text: "인원", color: "#6b7280" },
+        },
+        y1: {
+          position: "right",
+          beginAtZero: true,
+          max: 100,
+          ticks: { color: "#f97316", callback: (v) => v + "%" },
+          grid: { display: false },
+          title: { display: true, text: "이탈률", color: "#f97316" },
+        },
+      },
+      plugins: {
+        legend: { position: "bottom", labels: { color: "#6b7280", usePointStyle: true, font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+// ─── 10. Risk Factors Horizontal Bar ─────────────────────────
+
+/** 이탈 위험 요인 순위 수평 막대 (이탈자 vs 재적자 비율 비교) */
+export function renderRiskFactorsChart(
+  canvas: HTMLCanvasElement,
+  data: { factor: string; riskRate: number; safeRate: number; impactScore: number }[],
+): Chart {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  return new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.map((d) => `${d.factor} (×${d.impactScore})`),
+      datasets: [
+        { label: "이탈자 비율", data: data.map((d) => d.riskRate), backgroundColor: "#ef4444cc", borderRadius: 4 },
+        { label: "재적자 비율", data: data.map((d) => d.safeRate), backgroundColor: "#10b981cc", borderRadius: 4 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: "y",
+      scales: {
+        x: {
+          min: 0,
+          max: 100,
+          ticks: { color: "#6b7280", callback: (v) => v + "%" },
+          grid: { color: "rgba(0,0,0,0.06)" },
+        },
+        y: { ticks: { color: "#6b7280", font: { size: 11 } }, grid: { display: false } },
+      },
+      plugins: {
+        legend: { position: "bottom", labels: { color: "#6b7280", usePointStyle: true, font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+// ─── 11. Bubble Chart: 방어율 vs NPS ─────────────────────────
 
 /** 기수별 방어율 vs NPS 버블차트 */
 export function renderBubbleChart(

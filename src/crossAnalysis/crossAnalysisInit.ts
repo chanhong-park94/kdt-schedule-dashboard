@@ -23,6 +23,11 @@ import {
   buildGenderAnalysis,
   buildAgeGroupAnalysis,
   generateDemographicInsights,
+  buildAbsentDropoutCorrelation,
+  buildGenderAgeMatrix,
+  buildDropoutRiskFactors,
+  calcNPSAttendanceCorrelation,
+  calcInstructorScoreCorrelation,
 } from "./crossAnalysisData";
 import {
   renderScatterChart,
@@ -34,6 +39,8 @@ import {
   renderBubbleChart,
   renderGenderComparisonChart,
   renderAgeGroupChart,
+  renderAbsentDropoutChart,
+  renderRiskFactorsChart,
 } from "./crossAnalysisCharts";
 import type { StudentCrossData, CohortCrossData, HeatmapCell } from "./crossAnalysisTypes";
 
@@ -57,6 +64,8 @@ let riskDonutChart: Chart | null = null;
 let bubbleChart: Chart | null = null;
 let genderChart: Chart | null = null;
 let ageGroupChart: Chart | null = null;
+let absentDropoutChart: Chart | null = null;
+let riskFactorsChart: Chart | null = null;
 let currentStudentData: StudentCrossData[] = [];
 let currentCohortData: CohortCrossData[] = [];
 
@@ -286,6 +295,45 @@ function renderStudentAnalysis(students: StudentCrossData[]): void {
         ? demoInsights.map((t) => `<li>📊 ${esc(t)}</li>`).join("")
         : '<li style="color:var(--text-muted)">인구통계 데이터가 부족하여 인사이트를 생성할 수 없습니다.</li>';
   }
+
+  // 결석일수별 하차 확률
+  destroyChart(absentDropoutChart);
+  const adCanvas = $("crossAbsentDropoutCanvas") as HTMLCanvasElement | null;
+  if (adCanvas) {
+    const adData = buildAbsentDropoutCorrelation(students);
+    if (adData.length > 0) {
+      absentDropoutChart = renderAbsentDropoutChart(adCanvas, adData);
+    }
+  }
+
+  // 성별×연령 교차표
+  const gaMatrix = buildGenderAgeMatrix(students);
+  const gaTableEl = $("crossGenderAgeMatrix");
+  if (gaTableEl && gaMatrix.rows.length > 0) {
+    gaTableEl.innerHTML = gaMatrix.rows
+      .map(
+        (r) =>
+          `<tr>
+      <td><strong>${r.ageGroup}</strong></td>
+      <td>${r.male.count}명</td><td>${r.male.avgAtt}%</td><td>${r.male.avgScore}점</td>
+      <td>${r.female.count}명</td><td>${r.female.avgAtt}%</td><td>${r.female.avgScore}점</td>
+    </tr>`,
+      )
+      .join("");
+  } else if (gaTableEl) {
+    gaTableEl.innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">성별·연령 데이터 부족</td></tr>';
+  }
+
+  // 이탈 위험 요인 순위
+  destroyChart(riskFactorsChart);
+  const rfCanvas = $("crossRiskFactorsCanvas") as HTMLCanvasElement | null;
+  if (rfCanvas) {
+    const rfData = buildDropoutRiskFactors(students);
+    if (rfData.length > 0) {
+      riskFactorsChart = renderRiskFactorsChart(rfCanvas, rfData);
+    }
+  }
 }
 
 // ── 기수 교차분석 렌더링 ──────────────────────────────────
@@ -345,6 +393,22 @@ function renderCohortAnalysis(cohorts: CohortCrossData[], students: StudentCross
       인원: c.인원,
     }));
     bubbleChart = renderBubbleChart(bubbleCanvas, bubbleData);
+  }
+
+  // NPS vs 출결률 상관
+  const npsAttCorr = calcNPSAttendanceCorrelation(cohorts);
+  const npsAttEl = $("crossNpsAttCorrelation");
+  if (npsAttEl) {
+    const rText = npsAttCorr.r >= 0 ? `+${npsAttCorr.r}` : `${npsAttCorr.r}`;
+    npsAttEl.innerHTML = `<span class="cx-corr-value">${rText}</span><span class="cx-corr-desc">${npsAttCorr.description}</span>`;
+  }
+
+  // 강사만족도 vs 성취도 상관
+  const instrCorr = calcInstructorScoreCorrelation(cohorts);
+  const instrEl = $("crossInstrCorrelation");
+  if (instrEl) {
+    const rText = instrCorr.r >= 0 ? `+${instrCorr.r}` : `${instrCorr.r}`;
+    instrEl.innerHTML = `<span class="cx-corr-value">${rText}</span><span class="cx-corr-desc">${instrCorr.description}</span>`;
   }
 
   // 인사이트
