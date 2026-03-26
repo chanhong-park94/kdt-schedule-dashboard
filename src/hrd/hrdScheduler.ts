@@ -284,9 +284,26 @@ async function checkAndSend(): Promise<void> {
 
     for (const degr of course.degrs) {
       try {
+        // 먼저 명단 조회 → 훈련상태로 종강 기수 필터
+        const roster = await fetchRoster(config, course.trainPrId, degr);
+        if (roster.length === 0) {
+          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 명단 없음`);
+          continue;
+        }
+
+        // HRD 명단 훈련상태로 훈련중 기수 판별
+        const hasTraining = roster.some((r) => {
+          const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString().trim();
+          return st === "" || st.includes("훈련중") || st.includes("참여중");
+        });
+        if (!hasTraining) {
+          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 종강/수료 기수`);
+          continue;
+        }
+
         const students = await fetchAttendanceForReport(config, course, degr, reportDate);
         if (students.length === 0) {
-          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 명단 없음`);
+          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 출결 데이터 없음`);
           continue;
         }
         const activeStudents = students.filter((s) => !s.dropout);
