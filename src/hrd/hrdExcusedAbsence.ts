@@ -189,21 +189,22 @@ function setupExcusedTab(): void {
 // ─── 응답시트 바로가기 링크 ───────────────────────────────────
 
 function updateSheetLink(): void {
-  const link = $("eaSheetLink") as HTMLAnchorElement | null;
-  if (!link) return;
   try {
     const raw = localStorage.getItem("academic_schedule_manager_hrd_config_v1");
-    if (raw) {
-      const config = JSON.parse(raw);
-      const url = config.excusedSheetUrl;
-      if (url) {
-        link.href = url;
-        link.style.display = "";
-        return;
-      }
+    const config = raw ? JSON.parse(raw) : {};
+
+    const link = $("eaSheetLink") as HTMLAnchorElement | null;
+    if (link) {
+      if (config.excusedSheetUrl) { link.href = config.excusedSheetUrl; link.style.display = ""; }
+      else { link.style.display = "none"; }
+    }
+
+    const evLink = $("eaEvidenceLink") as HTMLAnchorElement | null;
+    if (evLink) {
+      if (config.evidenceSheetUrl) { evLink.href = config.evidenceSheetUrl; evLink.style.display = ""; }
+      else { evLink.style.display = "none"; }
     }
   } catch { /* */ }
-  link.style.display = "none";
 }
 
 // ─── Init ───────────────────────────────────────────────────

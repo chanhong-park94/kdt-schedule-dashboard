@@ -862,6 +862,8 @@ export async function renderHrdSettingsSection(): Promise<void> {
   if (excusedSlackInput && isUnlocked) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
   const excusedSheetInput = $("hrdExcusedSheetUrl") as HTMLInputElement | null;
   if (excusedSheetInput) excusedSheetInput.value = currentConfig.excusedSheetUrl || "";
+  const evidenceSheetInput = $("hrdEvidenceSheetUrl") as HTMLInputElement | null;
+  if (evidenceSheetInput) evidenceSheetInput.value = currentConfig.evidenceSheetUrl || "";
 
   if (courseList) {
     // Supabase에서 보조강사 코드 비동기 조회
@@ -1168,6 +1170,8 @@ export function setupSettingsHandlers(): void {
       if (excusedSlackInput) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
       const excusedSheetInput = $("hrdExcusedSheetUrl") as HTMLInputElement | null;
       if (excusedSheetInput) excusedSheetInput.value = currentConfig.excusedSheetUrl || "";
+      const evidenceSheetInput = $("hrdEvidenceSheetUrl") as HTMLInputElement | null;
+      if (evidenceSheetInput) evidenceSheetInput.value = currentConfig.evidenceSheetUrl || "";
     } else {
       if (gateError) {
         gateError.style.display = "block";
@@ -1193,11 +1197,13 @@ export function setupSettingsHandlers(): void {
     const slackUrl = ($("hrdSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
     const excusedSlackUrl = ($("hrdExcusedSlackWebhook") as HTMLInputElement)?.value?.trim() || "";
     const excusedSheetUrl = ($("hrdExcusedSheetUrl") as HTMLInputElement)?.value?.trim() || "";
+    const evidenceSheetUrl = ($("hrdEvidenceSheetUrl") as HTMLInputElement)?.value?.trim() || "";
     currentConfig.authKey = key;
     currentConfig.proxy = proxy;
     currentConfig.slackWebhookUrl = slackUrl || undefined;
     currentConfig.excusedSlackWebhookUrl = excusedSlackUrl || undefined;
     currentConfig.excusedSheetUrl = excusedSheetUrl || undefined;
+    currentConfig.evidenceSheetUrl = evidenceSheetUrl || undefined;
     saveHrdConfig(currentConfig);
     const status = $("hrdTestStatus");
     if (status) {
