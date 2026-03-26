@@ -351,3 +351,88 @@ export function generateInsights(
 
   return insights;
 }
+
+/** 출결률 분포 (10% 구간 히스토그램 데이터) */
+export function buildAttendanceDistribution(students: StudentCrossData[]): { label: string; count: number }[] {
+  const brackets = [
+    { label: "0~60%", min: 0, max: 60 },
+    { label: "60~70%", min: 60, max: 70 },
+    { label: "70~80%", min: 70, max: 80 },
+    { label: "80~85%", min: 80, max: 85 },
+    { label: "85~90%", min: 85, max: 90 },
+    { label: "90~95%", min: 90, max: 95 },
+    { label: "95~100%", min: 95, max: 101 },
+  ];
+  return brackets.map((b) => ({
+    label: b.label,
+    count: students.filter((s) => s.attendanceRate >= b.min && s.attendanceRate < b.max).length,
+  }));
+}
+
+/** 위험등급 분포 */
+export function buildRiskDistribution(students: StudentCrossData[]): { level: string; count: number; color: string }[] {
+  const levels = [
+    { level: "safe", label: "안전", color: "#10b981" },
+    { level: "caution", label: "주의", color: "#f59e0b" },
+    { level: "warning", label: "경고", color: "#f97316" },
+    { level: "danger", label: "위험", color: "#ef4444" },
+  ];
+  return levels.map((l) => ({
+    level: l.label,
+    count: students.filter((s) => s.riskLevel === l.level).length,
+    color: l.color,
+  }));
+}
+
+/** 사분면 분석 (median 기준) */
+export function buildQuadrantAnalysis(students: StudentCrossData[]): {
+  medianAttendance: number;
+  medianScore: number;
+  quadrants: { label: string; emoji: string; count: number; students: StudentCrossData[] }[];
+} {
+  const sorted = (arr: number[]) => [...arr].sort((a, b) => a - b);
+  const median = (arr: number[]) => {
+    const s = sorted(arr);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  };
+  const attRates = students.map((s) => s.attendanceRate);
+  const scores = students.map((s) => s.compositeScore);
+  const medAtt = attRates.length > 0 ? median(attRates) : 80;
+  const medScore = scores.length > 0 ? median(scores) : 50;
+
+  const q1 = students.filter((s) => s.attendanceRate >= medAtt && s.compositeScore >= medScore);
+  const q2 = students.filter((s) => s.attendanceRate < medAtt && s.compositeScore >= medScore);
+  const q3 = students.filter((s) => s.attendanceRate < medAtt && s.compositeScore < medScore);
+  const q4 = students.filter((s) => s.attendanceRate >= medAtt && s.compositeScore < medScore);
+
+  return {
+    medianAttendance: Math.round(medAtt * 10) / 10,
+    medianScore: Math.round(medScore * 10) / 10,
+    quadrants: [
+      { label: "우수군 (고출결·고성취)", emoji: "🌟", count: q1.length, students: q1 },
+      { label: "잠재력 (저출결·고성취)", emoji: "💎", count: q2.length, students: q2 },
+      { label: "위험군 (저출결·저성취)", emoji: "🚨", count: q3.length, students: q3 },
+      { label: "관리필요 (고출결·저성취)", emoji: "📋", count: q4.length, students: q4 },
+    ],
+  };
+}
+
+/** 과정 유형별(재직자/실업자) 비교 집계 */
+export function buildCategoryComparison(cohorts: CohortCrossData[]): {
+  category: string;
+  avgAttendance: number;
+  avgGreenRate: number;
+  avgNPS: number;
+  count: number;
+}[] {
+  // CohortCrossData에는 category가 없으므로 과정명으로 판별
+  // 이 함수는 cohort 데이터만으로는 정확한 분류가 어려우므로
+  // 모든 기수의 평균을 반환
+  const all = cohorts;
+  if (all.length === 0) return [];
+  const avgAtt = all.reduce((s, c) => s + c.avgAttendanceRate, 0) / all.length;
+  const avgGreen = all.reduce((s, c) => s + c.greenRate, 0) / all.length;
+  const avgNPS = all.reduce((s, c) => s + c.NPS, 0) / all.length;
+  return [{ category: "전체", avgAttendance: Math.round(avgAtt * 10) / 10, avgGreenRate: Math.round(avgGreen * 10) / 10, avgNPS: Math.round(avgNPS * 10) / 10, count: all.length }];
+}

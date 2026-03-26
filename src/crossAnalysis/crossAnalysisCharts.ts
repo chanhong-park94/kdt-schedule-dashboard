@@ -299,3 +299,95 @@ export function destroyChart(chart: Chart | null): void {
     chart.destroy();
   }
 }
+
+// ─── 5. Histogram Chart: 출결률 분포 ────────────────────────
+
+/** 출결률 분포 히스토그램 */
+export function renderHistogramChart(
+  canvas: HTMLCanvasElement,
+  data: { label: string; count: number }[],
+): Chart {
+  const colors = data.map((_, i) => {
+    const ratio = i / (data.length - 1);
+    if (ratio < 0.3) return "#ef4444";
+    if (ratio < 0.5) return "#f97316";
+    if (ratio < 0.7) return "#f59e0b";
+    return "#10b981";
+  });
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  return new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.map((d) => d.label),
+      datasets: [{ label: "학생 수", data: data.map((d) => d.count), backgroundColor: colors, borderRadius: 4 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: "#6b7280", font: { size: 10 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: "#6b7280", stepSize: 1 }, grid: { color: "rgba(0,0,0,0.06)" } },
+      },
+    },
+  });
+}
+
+// ─── 6. Risk Donut Chart: 위험등급 분포 ─────────────────────
+
+/** 위험등급 도넛 차트 */
+export function renderRiskDonutChart(
+  canvas: HTMLCanvasElement,
+  data: { level: string; count: number; color: string }[],
+): Chart {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  return new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: data.map((d) => `${d.level} (${d.count}명)`),
+      datasets: [{ data: data.map((d) => d.count), backgroundColor: data.map((d) => d.color), borderWidth: 2, borderColor: "#ffffff" }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: "60%",
+      plugins: {
+        legend: { position: "bottom", labels: { color: "#6b7280", padding: 10, usePointStyle: true, font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+// ─── 7. Bubble Chart: 방어율 vs NPS ─────────────────────────
+
+/** 기수별 방어율 vs NPS 버블차트 */
+export function renderBubbleChart(
+  canvas: HTMLCanvasElement,
+  cohorts: { 과정명: string; 기수: string; NPS: number; defenseRate: number; 인원: number }[],
+): Chart {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null as unknown as Chart;
+  const colors = ["#a855f7", "#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#f97316", "#ef4444", "#ec4899"];
+  const datasets = cohorts.map((c, i) => ({
+    label: `${c.과정명} ${c.기수}`,
+    data: [{ x: c.NPS, y: c.defenseRate, r: Math.max(5, Math.min(20, c.인원 / 3)) }],
+    backgroundColor: colors[i % colors.length] + "99",
+    borderColor: colors[i % colors.length],
+    borderWidth: 1,
+  }));
+  return new Chart(ctx, {
+    type: "bubble",
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: "NPS", color: "#6b7280" }, ticks: { color: "#6b7280" }, grid: { color: "rgba(0,0,0,0.06)" } },
+        y: { title: { display: true, text: "방어율 (%)", color: "#6b7280" }, min: 50, max: 105, ticks: { color: "#6b7280" }, grid: { color: "rgba(0,0,0,0.06)" } },
+      },
+      plugins: { legend: { display: true, position: "bottom", labels: { color: "#6b7280", usePointStyle: true, font: { size: 10 } } } },
+    },
+  });
+}

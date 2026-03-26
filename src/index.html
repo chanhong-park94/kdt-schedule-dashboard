@@ -2530,62 +2530,53 @@
             <!-- ── 학생 교차분석 패널 ── -->
             <div id="crossPanelStudent" class="sub-tab-panel">
               <!-- 필터 -->
-              <div class="filter-bar">
-                <select id="crossFilterCourse"><option value="">전체 과정</option></select>
-                <select id="crossFilterCohort"><option value="">전체 기수</option></select>
-                <button class="btn btn-primary" id="crossAnalyzeBtn">분석 실행</button>
-                <span class="badge" id="crossMatchCount">0명 매칭</span>
+              <div class="cx-filter-bar">
+                <select id="crossFilterCourse" class="cx-select"><option value="">전체 과정</option></select>
+                <select id="crossFilterCohort" class="cx-select"><option value="">전체 기수</option></select>
+                <button class="btn btn-primary btn--sm" id="crossAnalyzeBtn">분석 실행</button>
+                <span class="cx-badge" id="crossMatchCount">0명 매칭</span>
               </div>
 
               <!-- 통계 카드 -->
-              <div class="stat-cards" id="crossStudentStats">
-                <div class="stat-card">
-                  <div class="stat-label">매칭 학생</div>
-                  <div class="stat-value" id="crossStatMatched">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">상관계수 (r)</div>
-                  <div class="stat-value" id="crossStatCorrelation">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">고위험군</div>
-                  <div class="stat-value" id="crossStatHighRisk">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">우수군</div>
-                  <div class="stat-value" id="crossStatExcellent">-</div>
-                </div>
+              <div class="cx-stats-grid">
+                <div class="cx-stat-card cx-stat-primary"><div class="cx-stat-icon">👥</div><div class="cx-stat-body"><div class="cx-stat-label">매칭 학생</div><div class="cx-stat-value" id="crossStatMatched">-</div></div></div>
+                <div class="cx-stat-card cx-stat-indigo"><div class="cx-stat-icon">📊</div><div class="cx-stat-body"><div class="cx-stat-label">상관계수 (r)</div><div class="cx-stat-value" id="crossStatCorrelation">-</div></div></div>
+                <div class="cx-stat-card cx-stat-danger"><div class="cx-stat-icon">🚨</div><div class="cx-stat-body"><div class="cx-stat-label">고위험군</div><div class="cx-stat-value" id="crossStatHighRisk">-</div></div></div>
+                <div class="cx-stat-card cx-stat-success"><div class="cx-stat-icon">🌟</div><div class="cx-stat-body"><div class="cx-stat-label">우수군</div><div class="cx-stat-value" id="crossStatExcellent">-</div></div></div>
+                <div class="cx-stat-card"><div class="cx-stat-icon">📈</div><div class="cx-stat-body"><div class="cx-stat-label">평균 출결률</div><div class="cx-stat-value" id="crossStatAvgAtt">-</div></div></div>
+                <div class="cx-stat-card"><div class="cx-stat-icon">🎯</div><div class="cx-stat-body"><div class="cx-stat-label">평균 성취도</div><div class="cx-stat-value" id="crossStatAvgScore">-</div></div></div>
               </div>
 
-              <!-- 차트 영역 -->
-              <div class="cross-charts-grid">
-                <div class="card">
-                  <h3 class="card-title">출결률 × 성취도 산점도</h3>
-                  <div class="chart-container" style="height:400px">
-                    <canvas id="crossScatterCanvas"></canvas>
-                  </div>
+              <!-- 차트 2열 그리드 -->
+              <div class="cx-charts-row">
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">출결률 × 성취도 산점도 (사분면 분석)</div>
+                  <div class="cx-chart-subtitle" id="crossMedianInfo"></div>
+                  <div class="cx-chart-wrap"><canvas id="crossScatterCanvas"></canvas></div>
+                  <div class="cx-quadrant-grid" id="crossQuadrantInfo"></div>
                 </div>
-                <div class="card">
-                  <h3 class="card-title">출결구간 × 신호등 히트맵</h3>
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">출결률 분포</div>
+                  <div class="cx-chart-wrap" style="height:220px"><canvas id="crossHistogramCanvas"></canvas></div>
+                </div>
+              </div>
+              <div class="cx-charts-row">
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">출결구간 × 신호등 히트맵</div>
                   <div id="crossHeatmapContainer"></div>
                 </div>
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">위험등급 분포</div>
+                  <div class="cx-chart-wrap" style="max-width:280px;margin:0 auto"><canvas id="crossRiskDonutCanvas"></canvas></div>
+                </div>
               </div>
 
-              <!-- 학생 목록 테이블 -->
-              <div class="card" id="crossStudentListCard" style="display:none">
-                <h3 class="card-title" id="crossStudentListTitle">학생 목록</h3>
-                <div class="table-responsive">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>이름</th>
-                        <th>기수</th>
-                        <th>출결률</th>
-                        <th>성취도</th>
-                        <th>신호등</th>
-                        <th>위험도</th>
-                      </tr>
-                    </thead>
+              <!-- 학생 상세 목록 (히트맵 셀 클릭 시) -->
+              <div id="crossStudentListCard" class="cx-chart-card" style="display:none;margin-top:16px">
+                <div class="cx-chart-title" id="crossStudentListTitle">학생 목록</div>
+                <div style="overflow-x:auto">
+                  <table class="cx-data-table">
+                    <thead><tr><th>이름</th><th>기수</th><th>출결률</th><th>성취도</th><th>신호등</th><th>위험도</th></tr></thead>
                     <tbody id="crossStudentTableBody"></tbody>
                   </table>
                 </div>
@@ -2594,61 +2585,40 @@
 
             <!-- ── 기수 교차분석 패널 ── -->
             <div id="crossPanelCohort" class="sub-tab-panel" style="display:none">
-              <!-- 필터 -->
-              <div class="filter-bar">
-                <select id="crossCohortFilterCourse"><option value="">전체 과정</option></select>
+              <div class="cx-filter-bar">
+                <select id="crossCohortFilterCourse" class="cx-select"><option value="">전체 과정</option></select>
               </div>
 
-              <!-- 통계 카드 -->
-              <div class="stat-cards" id="crossCohortStats">
-                <div class="stat-card">
-                  <div class="stat-label">매칭 기수</div>
-                  <div class="stat-value" id="crossStatCohorts">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">최고 종합 기수</div>
-                  <div class="stat-value" id="crossStatBestCohort">-</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">개선 필요</div>
-                  <div class="stat-value" id="crossStatNeedsImprovement">-</div>
-                </div>
+              <div class="cx-stats-grid">
+                <div class="cx-stat-card cx-stat-primary"><div class="cx-stat-icon">🏫</div><div class="cx-stat-body"><div class="cx-stat-label">매칭 기수</div><div class="cx-stat-value" id="crossStatCohorts">-</div></div></div>
+                <div class="cx-stat-card cx-stat-success"><div class="cx-stat-icon">🏆</div><div class="cx-stat-body"><div class="cx-stat-label">최고 종합 기수</div><div class="cx-stat-value" id="crossStatBestCohort">-</div></div></div>
+                <div class="cx-stat-card cx-stat-danger"><div class="cx-stat-icon">📉</div><div class="cx-stat-body"><div class="cx-stat-label">개선 필요</div><div class="cx-stat-value" id="crossStatNeedsImprovement">-</div></div></div>
               </div>
 
-              <!-- 레이더 차트 -->
-              <div class="card">
-                <h3 class="card-title">기수별 3축 비교 (출결 / 성취도 / NPS)</h3>
-                <div class="chart-container" style="height:450px">
-                  <canvas id="crossRadarCanvas"></canvas>
+              <div class="cx-charts-row">
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">기수별 종합 비교 (Top 5)</div>
+                  <div class="cx-chart-wrap"><canvas id="crossRadarCanvas"></canvas></div>
+                </div>
+                <div class="cx-chart-card">
+                  <div class="cx-chart-title">방어율 × NPS 버블차트</div>
+                  <div class="cx-chart-wrap" style="height:280px"><canvas id="crossBubbleCanvas"></canvas></div>
                 </div>
               </div>
 
-              <!-- 비교 테이블 -->
-              <div class="card">
-                <h3 class="card-title">기수별 교차분석 비교</h3>
-                <div class="table-responsive">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>과정</th>
-                        <th>기수</th>
-                        <th>인원</th>
-                        <th>평균출결률</th>
-                        <th>성취도(Green%)</th>
-                        <th>NPS</th>
-                        <th>강사만족도</th>
-                        <th>종합점수</th>
-                      </tr>
-                    </thead>
+              <div class="cx-chart-card" style="margin-top:16px">
+                <div class="cx-chart-title">기수별 비교 테이블</div>
+                <div style="overflow-x:auto">
+                  <table class="cx-data-table">
+                    <thead><tr><th>과정</th><th>기수</th><th>인원</th><th>출결률</th><th>성취도</th><th>NPS</th><th>강사만족도</th><th>종합점수</th></tr></thead>
                     <tbody id="crossCohortTableBody"></tbody>
                   </table>
                 </div>
               </div>
 
-              <!-- 인사이트 -->
-              <div class="card" id="crossInsightsCard">
-                <h3 class="card-title">💡 자동 인사이트</h3>
-                <ul id="crossInsightsList" class="insights-list"></ul>
+              <div class="cx-chart-card" style="margin-top:16px">
+                <div class="cx-chart-title">💡 분석 인사이트</div>
+                <ul class="cx-insights-list" id="crossInsightsList"></ul>
               </div>
             </div>
             <!-- ── 운영 회고 리포트 패널 ── -->

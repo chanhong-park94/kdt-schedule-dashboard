@@ -17,8 +17,19 @@ import {
   calcCohortStats,
   generateInsights,
   describeCorrelation,
+  buildAttendanceDistribution,
+  buildRiskDistribution,
+  buildQuadrantAnalysis,
 } from "./crossAnalysisData";
-import { renderScatterChart, renderHeatmapTable, renderRadarChart, destroyChart } from "./crossAnalysisCharts";
+import {
+  renderScatterChart,
+  renderHeatmapTable,
+  renderRadarChart,
+  destroyChart,
+  renderHistogramChart,
+  renderRiskDonutChart,
+  renderBubbleChart,
+} from "./crossAnalysisCharts";
 import type { StudentCrossData, CohortCrossData, HeatmapCell } from "./crossAnalysisTypes";
 
 // ── DOM refs ───────────────────────────────────────────────
@@ -36,6 +47,9 @@ function esc(str: string): string {
 
 let scatterChart: Chart | null = null;
 let radarChart: Chart | null = null;
+let histogramChart: Chart | null = null;
+let riskDonutChart: Chart | null = null;
+let bubbleChart: Chart | null = null;
 let currentStudentData: StudentCrossData[] = [];
 let currentCohortData: CohortCrossData[] = [];
 
@@ -179,6 +193,43 @@ function renderStudentAnalysis(students: StudentCrossData[]): void {
     const cells = buildHeatmap(students);
     renderHeatmapTable(heatmapContainer, cells, onHeatmapCellClick);
   }
+
+  // 평균 통계
+  const avgAtt = students.length > 0 ? students.reduce((s, st) => s + st.attendanceRate, 0) / students.length : 0;
+  const avgScore = students.length > 0 ? students.reduce((s, st) => s + st.compositeScore, 0) / students.length : 0;
+  const elAvgAtt = $("crossStatAvgAtt");
+  const elAvgScore = $("crossStatAvgScore");
+  if (elAvgAtt) elAvgAtt.textContent = `${avgAtt.toFixed(1)}%`;
+  if (elAvgScore) elAvgScore.textContent = `${avgScore.toFixed(1)}점`;
+
+  // 출결률 분포 히스토그램
+  destroyChart(histogramChart);
+  const histCanvas = $("crossHistogramCanvas") as HTMLCanvasElement | null;
+  if (histCanvas) {
+    const distData = buildAttendanceDistribution(students);
+    histogramChart = renderHistogramChart(histCanvas, distData);
+  }
+
+  // 위험등급 분포 도넛
+  destroyChart(riskDonutChart);
+  const riskCanvas = $("crossRiskDonutCanvas") as HTMLCanvasElement | null;
+  if (riskCanvas) {
+    const riskData = buildRiskDistribution(students);
+    riskDonutChart = renderRiskDonutChart(riskCanvas, riskData);
+  }
+
+  // 사분면 분석
+  const quadrant = buildQuadrantAnalysis(students);
+  const quadrantEl = $("crossQuadrantInfo");
+  if (quadrantEl) {
+    quadrantEl.innerHTML = quadrant.quadrants
+      .map((q) => `<div class="cx-quadrant-item"><span class="cx-quadrant-emoji">${q.emoji}</span><div><div class="cx-quadrant-label">${q.label}</div><div class="cx-quadrant-count">${q.count}명</div></div></div>`)
+      .join("");
+  }
+  const medianEl = $("crossMedianInfo");
+  if (medianEl) {
+    medianEl.textContent = `중앙값 — 출결 ${quadrant.medianAttendance}% · 성취 ${quadrant.medianScore}점`;
+  }
 }
 
 // ── 기수 교차분석 렌더링 ──────────────────────────────────
@@ -224,6 +275,20 @@ function renderCohortAnalysis(cohorts: CohortCrossData[], students: StudentCross
         </tr>`,
       )
       .join("");
+  }
+
+  // 버블차트 (방어율 vs NPS)
+  destroyChart(bubbleChart);
+  const bubbleCanvas = $("crossBubbleCanvas") as HTMLCanvasElement | null;
+  if (bubbleCanvas && cohorts.length > 0) {
+    const bubbleData = cohorts.map((c) => ({
+      과정명: c.과정명,
+      기수: c.기수,
+      NPS: c.NPS,
+      defenseRate: c.인원 > 0 ? c.avgAttendanceRate : 0,
+      인원: c.인원,
+    }));
+    bubbleChart = renderBubbleChart(bubbleCanvas, bubbleData);
   }
 
   // 인사이트

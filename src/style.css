@@ -8239,6 +8239,159 @@ dialog {
   border-bottom: none;
 }
 
+/* — Cross Analysis Professional Dashboard — */
+.cx-filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.cx-select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--card-bg);
+  color: var(--text);
+}
+.cx-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: var(--surface-hover);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.cx-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.cx-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+.cx-stat-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.cx-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.cx-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.cx-stat-primary { border-left: 3px solid #6366f1; }
+.cx-stat-success { border-left: 3px solid #10b981; }
+.cx-stat-danger { border-left: 3px solid #ef4444; }
+.cx-stat-indigo { border-left: 3px solid #8b5cf6; }
+.cx-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 900px) {
+  .cx-charts-row { grid-template-columns: 1fr; }
+}
+.cx-chart-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.cx-chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.cx-chart-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.cx-chart-wrap {
+  position: relative;
+  min-height: 260px;
+}
+.cx-chart-wrap canvas {
+  width: 100% !important;
+}
+.cx-quadrant-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.cx-quadrant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-hover);
+}
+.cx-quadrant-emoji {
+  font-size: 20px;
+}
+.cx-quadrant-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.cx-quadrant-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.cx-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cx-data-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+}
+.cx-data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.cx-data-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+.cx-insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cx-insights-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.cx-insights-list li:last-child {
+  border-bottom: none;
+}
+
 /* ─── 필터 초기화 버튼 ──────────────────────────────────────── */
 .btn-ghost {
   background: transparent;
