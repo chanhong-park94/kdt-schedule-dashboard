@@ -137,7 +137,7 @@ export function isExcusedStatus(status: string): boolean {
 
 export type TraineeGender = "" | "남" | "여";
 
-/** 훈련생 상태: 훈련중 / 수료 / 하차(중도탈락·수료포기·조기취업) */
+/** 훈련생 상태: 훈련중 / 수료(정상수료·조기취업) / 하차(중도탈락·수료포기) */
 export type TraineeStatus = "훈련중" | "수료" | "하차";
 
 export interface AttendanceStudent {

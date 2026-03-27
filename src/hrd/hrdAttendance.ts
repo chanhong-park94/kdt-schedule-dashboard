@@ -124,12 +124,12 @@ function normalizeTrainee(raw: HrdRawTrainee): {
   else if (br.length >= 6) birth = `${br.slice(0, 2)}.${br.slice(2, 4)}.${br.slice(4, 6)}`;
   const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
 
-  // 수료 상태 (하차가 아님)
+  // 수료 상태 (조기취업 = 취업으로 인한 조기 수료, 긍정적 이탈)
   const graduated =
-    stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
-  // 하차 상태
+    stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업") || stNm.includes("조기취업");
+  // 하차 상태 (부정적 이탈만)
   const dropout =
-    stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
+    stNm.includes("중도탈락") || stNm.includes("수료포기");
 
   const traineeStatus = graduated ? "수료" as const : dropout ? "하차" as const : "훈련중" as const;
 

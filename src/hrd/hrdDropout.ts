@@ -133,7 +133,7 @@ function getISOWeek(date: Date): { year: number; week: number } {
 
 export function isDropout(raw: HrdRawTrainee): boolean {
   const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
-  return stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
+  return stNm.includes("중도탈락") || stNm.includes("수료포기");
 }
 
 function isTraining(raw: HrdRawTrainee): boolean {

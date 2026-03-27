@@ -167,8 +167,8 @@ async function fetchAttendanceForReport(
     const key = normalizeName(nm);
     const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
     const graduated =
-      stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
-    const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기") || stNm.includes("조기취업");
+      stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업") || stNm.includes("조기취업");
+    const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
     const traineeStatus = graduated ? "수료" as const : dropout ? "하차" as const : "훈련중" as const;
 
     const todayData = todayMap.get(key);
