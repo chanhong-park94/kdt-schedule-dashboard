@@ -25,7 +25,7 @@ import type { KpiAllData, FormativeSummary, AchievementSummary, FieldAppSummary 
 function makeStudent(overrides: Partial<AttendanceStudent> = {}): AttendanceStudent {
   return {
     name: "학생A", birth: "20000101", status: "출석",
-    inTime: "09:00", outTime: "18:00", dropout: false, traineeStatus: "훈련중",
+    inTime: "09:00", outTime: "18:00", dropout: false, traineeStatus: "훈련중", hrdStatusRaw: "훈련중",
     riskLevel: "safe", totalDays: 100, attendedDays: 90, absentDays: 10,
     excusedDays: 0, maxAbsent: 20, remainingAbsent: 10,
     attendanceRate: 90, missingCheckout: false,

@@ -166,13 +166,16 @@ async function fetchAttendanceForReport(
     const nm = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").trim();
     const key = normalizeName(nm);
     const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
+    const hrdStatusRaw = stNm.trim() || "훈련중";
+    const isEarlyEmployment = stNm.includes("조기취업");
     const graduated =
-      stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업") || stNm.includes("조기취업");
-    const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
-    const traineeStatus = graduated ? "수료" as const : dropout ? "하차" as const : "훈련중" as const;
+      stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
+    const isDropoutStatus = stNm.includes("중도탈락") || stNm.includes("수료포기");
+    let traineeStatus: "훈련중" | "수료" | "조기취업" | "하차" = isEarlyEmployment ? "조기취업" : graduated ? "수료" : isDropoutStatus ? "하차" : "훈련중";
+    let dropout = isDropoutStatus;
 
     const todayData = todayMap.get(key);
-    const status = todayData ? resolveStatus(todayData) : dropout ? "중도탈락" : graduated ? "수료" : "-";
+    const status = todayData ? resolveStatus(todayData) : (traineeStatus !== "훈련중") ? hrdStatusRaw : "-";
     const inTime = todayData ? formatTime(todayData.lpsilTime || todayData.atendTmIn) : "";
     const outTime = todayData ? formatTime(todayData.levromTime || todayData.atendTmOut) : "";
 
@@ -185,6 +188,11 @@ async function fetchAttendanceForReport(
     const remainingAbsent = maxAbsent - absentDays;
     const effectiveDays = totalDays > 0 ? totalDays - excusedDays : records.length || 1;
     const attendanceRate = effectiveDays > 0 ? (attendedDays / effectiveDays) * 100 : totalDays === 0 ? 100 : 0;
+
+    // 조기취업 분기: 출석률 70% 이상 → 수료, 미만 → 하차
+    if (isEarlyEmployment) {
+      dropout = attendanceRate < 70;
+    }
 
     // 퇴실 미체크 판단
     const missingCheckout = !!(
@@ -210,6 +218,7 @@ async function fetchAttendanceForReport(
       outTime,
       dropout,
       traineeStatus,
+      hrdStatusRaw,
       riskLevel: getRiskLevel(remainingAbsent, totalDays),
       totalDays,
       attendedDays,
