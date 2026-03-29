@@ -1592,6 +1592,7 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
     .map(
       (d, i) => `<tr>
     <td><a href="#" class="ana-trainee-link" data-idx="${i}" style="color:var(--primary);cursor:pointer;text-decoration:underline">${d.name}</a></td>
+    <td>${d.gender === "남" ? '<span style="color:var(--primary)">♂ 남</span>' : d.gender === "여" ? '<span style="color:#e74c8b">♀ 여</span>' : "-"}</td>
     <td>${d.courseName.length > 12 ? d.courseName.slice(0, 12) + "…" : d.courseName}</td>
     <td>${d.degr}기</td>
     <td>${d.age > 0 ? d.age + "세" : "-"}</td>
@@ -1898,9 +1899,10 @@ export function initAnalytics(): void {
       alert("내보낼 위험군 학생이 없습니다.");
       return;
     }
-    const columns = ["이름", "과정", "기수", "출결률(%)", "결석일수", "지각일수", "연속결석", "경보사유"] as const;
+    const columns = ["이름", "성별", "과정", "기수", "출결률(%)", "결석일수", "지각일수", "연속결석", "경보사유"] as const;
     const rows = riskStudents.map((d) => [
       d.name,
+      d.gender || "-",
       d.courseName,
       d.degr,
       d.attendanceRate < 0 ? "N/A" : d.attendanceRate.toFixed(1),

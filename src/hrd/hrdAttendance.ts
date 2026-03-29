@@ -1777,6 +1777,9 @@ export async function fetchAllAttendanceData(
           fetchDailyAttendance(config, course.trainPrId, degr, month),
         ]);
 
+        // 성별 데이터 로딩 (교차분석용)
+        await loadGenderData(course.trainPrId, degr);
+
         if (roster.length === 0) continue;
 
         // 누적 일별 기록 구축
