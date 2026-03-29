@@ -5,6 +5,9 @@ import {
   getAssistantSession,
   setAssistantSession,
   clearAssistantSession,
+  signInWithGoogle,
+  handleAuthCallback,
+  signOutGoogle,
 } from "./auth/assistantAuth";
 import { initAssistantCheck } from "./hrd/hrdAssistantCheck";
 import { initContacts } from "./hrd/hrdContactsUI";
@@ -367,18 +370,7 @@ async function bootstrapAppAfterAuthLogin(): Promise<void> {
 async function submitAuthCode(): Promise<void> {
   const code = authCodeInput.value.trim();
 
-  // 1) 관리자 코드 (운영매니저)
-  if (code === AUTH_CODE_V2) {
-    sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
-    clearAssistantSession();
-    applyAuthGate(true);
-    // 운영매니저도 수기체크 탭 접근 가능
-    window.dispatchEvent(new CustomEvent("assistantLogin"));
-    void bootstrapAppAfterAuthLogin();
-    return;
-  }
-
-  // 2) 보조강사 코드 (Supabase 조회)
+  // 보조강사 코드 (Supabase 조회)
   try {
     const assistant = await findAssistantCode(code);
     if (assistant) {
@@ -396,7 +388,6 @@ async function submitAuthCode(): Promise<void> {
       return;
     }
   } catch {
-    // Supabase 연결 실패 시 에러 표시
     authStatus.textContent = "서버 연결에 실패했습니다. 잠시 후 다시 시도하세요.";
     authCodeInput.select();
     return;
@@ -404,6 +395,36 @@ async function submitAuthCode(): Promise<void> {
 
   authStatus.textContent = "인증코드가 올바르지 않습니다.";
   authCodeInput.select();
+}
+
+/** Google Workspace 로그인 버튼 핸들러 */
+async function handleGoogleLogin(): Promise<void> {
+  try {
+    authStatus.textContent = "";
+    await signInWithGoogle();
+    // 리다이렉트 발생 → 이후 handleAuthCallback에서 처리
+  } catch {
+    authStatus.textContent = "Google 로그인에 실패했습니다. 잠시 후 다시 시도하세요.";
+  }
+}
+
+/** OAuth 콜백 확인 (앱 시작 시 호출) */
+async function checkGoogleAuthCallback(): Promise<boolean> {
+  try {
+    const user = await handleAuthCallback();
+    if (user) {
+      sessionStorage.setItem(AUTH_SESSION_KEY, "verified");
+      sessionStorage.setItem("kdt_auth_email", user.email);
+      clearAssistantSession();
+      applyAuthGate(true);
+      window.dispatchEvent(new CustomEvent("assistantLogin"));
+      void bootstrapAppAfterAuthLogin();
+      return true;
+    }
+  } catch {
+    // OAuth 콜백 아님 → 무시
+  }
+  return false;
 }
 
 function applyAssistantMode(courseName: string, degr: string): void {
@@ -441,7 +462,9 @@ function applyAssistantMode(courseName: string, degr: string): void {
 
 function handleLogout(): void {
   sessionStorage.removeItem(AUTH_SESSION_KEY);
+  sessionStorage.removeItem("kdt_auth_email");
   clearAssistantSession();
+  void signOutGoogle(); // Google OAuth 세션도 정리
   document.body.classList.remove("assistant-mode");
   applyAuthGate(false);
   location.reload();
@@ -2570,7 +2593,23 @@ for (const row of Array.from(dayTemplateTable.querySelectorAll<HTMLTableRowEleme
   }
 }
 
-const hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
+// Google 로그인 버튼 바인딩
+document.getElementById("googleLoginBtn")?.addEventListener("click", () => void handleGoogleLogin());
+
+// OAuth 콜백 확인 → 세션 체크
+let hasAuthSession = sessionStorage.getItem(AUTH_SESSION_KEY) === "verified";
+
+// 앱 시작 시 Google OAuth 콜백 확인 (리다이렉트 후 복귀 시)
+void (async () => {
+  if (!hasAuthSession) {
+    const googleOk = await checkGoogleAuthCallback();
+    if (googleOk) {
+      hasAuthSession = true;
+      return; // checkGoogleAuthCallback 내에서 bootstrapApp 호출됨
+    }
+  }
+})();
+
 applyAuthGate(hasAuthSession);
 if (hasAuthSession) {
   const assistantSession = getAssistantSession();

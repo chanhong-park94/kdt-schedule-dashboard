@@ -8647,6 +8647,63 @@ dialog {
   }
 }
 
+/* ═══ Google 로그인 ═══ */
+.auth-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+.auth-section {
+  margin-bottom: 4px;
+}
+.auth-section-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.google-login-btn {
+  width: 100%;
+  padding: 12px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.google-login-btn:hover {
+  background: var(--surface-hover);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.google-login-btn svg {
+  flex-shrink: 0;
+}
+.auth-divider {
+  text-align: center;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  position: relative;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--border);
+}
+.auth-divider::before { left: 0; }
+.auth-divider::after { right: 0; }
+
 /* ═══ 매출 탭 ═══ */
 .rev-kpi-row {
   display: grid;
