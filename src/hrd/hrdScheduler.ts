@@ -11,6 +11,7 @@ import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { fetchPublicHolidaysKR } from "../core/holidays";
 import type { AttendanceStudent, HrdCourse, HrdConfig, HrdRawTrainee, HrdRawAttendance, RiskLevel } from "./hrdTypes";
 import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
+import { COST_PER_PERSON_HOUR } from "./hrdRevenue";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
@@ -335,6 +336,13 @@ async function checkAndSend(): Promise<void> {
         // 매니저 ID 조회
         const managerIds = schedule.courseManagers ? (schedule.courseManagers[course.trainPrId] ?? "") : "";
 
+        // 일매출 계산
+        const hoursPerDay = course.trainingHoursPerDay || 8;
+        const todayAttended = students.filter(
+          (s) => !s.dropout && (isAttendedStatus(s.status) || isExcusedStatus(s.status)),
+        );
+        const dailyRevenue = todayAttended.length * hoursPerDay * COST_PER_PERSON_HOUR;
+
         reportEntries.push({
           courseName: course.name,
           degr,
@@ -342,6 +350,8 @@ async function checkAndSend(): Promise<void> {
           students,
           defenseRate,
           managerIds,
+          dailyRevenue,
+          hoursPerDay,
         });
         console.warn(
           `[Scheduler] Collected ${course.name} ${degr}기 (${reportDate}, ${course.category || "실업자"})`,
@@ -367,6 +377,50 @@ async function checkAndSend(): Promise<void> {
     }
   }
 
+  // ─── 자동 SMS 에스컬레이션 ───
+  let smsSentCount = 0;
+  if (schedule.autoSmsEnabled && reportEntries.length > 0) {
+    try {
+      const { renderTemplate, loadNotifyTemplates, sendNotification } = await import("./hrdNotify");
+      const { getContact } = await import("./hrdContacts");
+      const templates = loadNotifyTemplates();
+      const targetLevel = schedule.autoSmsRiskLevel || "danger";
+
+      for (const entry of reportEntries) {
+        const riskStudents = entry.students.filter((s) => {
+          if (s.dropout) return false;
+          if (targetLevel === "danger") return s.riskLevel === "danger";
+          return s.riskLevel === "danger" || s.riskLevel === "warning";
+        });
+
+        const smsFrom = config.courses.find((c) => c.trainPrId === entry.students[0]?.hrdStatusRaw)?.smsFrom
+          || config.courses.find((c) => c.name === entry.courseName)?.smsFrom || "";
+
+        for (const student of riskStudents) {
+          const contact = getContact(student.name);
+          if (!contact?.phone) continue;
+          const tpl = student.riskLevel === "danger" ? templates.danger : templates.warning;
+          const message = renderTemplate(tpl, student);
+          try {
+            await sendNotification(
+              { student, phone: contact.phone, email: "", message },
+              "sms",
+              smsFrom,
+            );
+            smsSentCount++;
+          } catch {
+            // SMS 실패는 무시 (Slack은 이미 전송됨)
+          }
+        }
+      }
+      if (smsSentCount > 0) {
+        console.warn(`[Scheduler] Auto-SMS sent to ${smsSentCount} risk students`);
+      }
+    } catch (e) {
+      console.warn("[Scheduler] Auto-SMS failed:", e);
+    }
+  }
+
   // 전송 완료 기록
   schedule.lastSentDate = today;
   config.slackSchedule = schedule;
@@ -374,10 +428,11 @@ async function checkAndSend(): Promise<void> {
 
   // 마지막 전송 시간 업데이트
   const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  const smsInfo = smsSentCount > 0 ? ` · SMS ${smsSentCount}건` : "";
   if (failCount === 0 && sentCount > 0) {
-    emitStatus(`✅ ${today} ${timeStr} — ${sentCount}개 기수 전송 완료`, "success");
+    emitStatus(`✅ ${today} ${timeStr} — ${sentCount}개 기수 전송 완료${smsInfo}`, "success");
   } else if (sentCount > 0) {
-    emitStatus(`⚠️ ${today} ${timeStr} — 성공 ${sentCount} / 실패 ${failCount}`, "error");
+    emitStatus(`⚠️ ${today} ${timeStr} — 성공 ${sentCount} / 실패 ${failCount}${smsInfo}`, "error");
   } else {
     emitStatus(`ℹ️ ${today} ${timeStr} — 전송할 데이터 없음`, "info");
   }

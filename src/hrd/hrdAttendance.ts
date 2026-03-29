@@ -1103,6 +1103,13 @@ function renderSlackScheduleUI(config: HrdConfig): void {
   const weekdaySel = $("slackScheduleWeekdays") as HTMLSelectElement | null;
   if (weekdaySel) weekdaySel.value = schedule.weekdaysOnly ? "weekdays" : "daily";
 
+  // 자동 SMS 설정 복원
+  const autoSmsCheck = $("autoSmsEnabled") as HTMLInputElement | null;
+  if (autoSmsCheck) autoSmsCheck.checked = schedule.autoSmsEnabled || false;
+  const autoSmsLevel = schedule.autoSmsRiskLevel || "danger";
+  const autoSmsRadio = document.querySelector<HTMLInputElement>(`input[name='autoSmsLevel'][value='${autoSmsLevel}']`);
+  if (autoSmsRadio) autoSmsRadio.checked = true;
+
   // 대상 과정 + 담당 매니저 — 운영중인 과정만 표시, 최근 개강순
   const coursesContainer = $("slackScheduleCourses");
   if (coursesContainer) {
@@ -1492,6 +1499,10 @@ export function setupSettingsHandlers(): void {
       });
     }
 
+    // 자동 SMS 설정
+    const autoSmsCheck = $("autoSmsEnabled") as HTMLInputElement | null;
+    const autoSmsLevel = document.querySelector<HTMLInputElement>("input[name='autoSmsLevel']:checked");
+
     const schedule: SlackScheduleConfig = {
       enabled: toggle?.checked || false,
       hour: parseInt(hourSel?.value || "10"),
@@ -1502,6 +1513,8 @@ export function setupSettingsHandlers(): void {
       footerText: footerInput?.value?.trim() || DEFAULT_SLACK_SCHEDULE.footerText,
       lastSentDate: config.slackSchedule?.lastSentDate,
       courseManagers,
+      autoSmsEnabled: autoSmsCheck?.checked || false,
+      autoSmsRiskLevel: (autoSmsLevel?.value as "danger" | "warning") || "danger",
     };
 
     config.slackSchedule = schedule;

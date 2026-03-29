@@ -3222,8 +3222,24 @@
                   </div>
                 </div>
 
+                <!-- 자동 SMS 에스컬레이션 -->
+                <div style="margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-hover)">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px">
+                    <input type="checkbox" id="autoSmsEnabled" style="width: 16px; height: 16px" />
+                    <label for="autoSmsEnabled" style="font-size: 13px; font-weight: 600; cursor: pointer">📱 위험 학생 자동 SMS 발송</label>
+                  </div>
+                  <div style="display: flex; gap: 16px; align-items: center; font-size: 12px; color: var(--text-secondary); margin-left: 24px">
+                    <span>발송 대상:</span>
+                    <label style="cursor: pointer"><input type="radio" name="autoSmsLevel" value="danger" checked /> 위험(danger)만</label>
+                    <label style="cursor: pointer"><input type="radio" name="autoSmsLevel" value="warning" /> 위험+경고</label>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; margin-left: 24px">
+                    Slack 리포트 전송 후 대상 학생에게 자동 SMS 발송 (연락처 미등록 시 건너뜀)
+                  </div>
+                </div>
+
                 <!-- 저장 + 상태 -->
-                <div style="display: flex; align-items: center; gap: 8px">
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px">
                   <button id="slackScheduleSave" class="btn-primary btn-sm" type="button">알림 설정 저장</button>
                   <button
                     id="slackScheduleTestSend"
