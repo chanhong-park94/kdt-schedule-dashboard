@@ -45,6 +45,7 @@ export interface HrdCourse {
   endTime: string; // 수업 종료시간 HH:MM (퇴실 미체크 판단용)
   category?: CourseCategory; // 재직자/실업자 구분
   smsFrom?: string; // 과정별 SMS 발신번호 (운영매니저 법인폰)
+  trainingHoursPerDay?: number; // 1일 훈련시간 (매출 산정용, 기본 8)
 }
 
 export interface SlackScheduleConfig {

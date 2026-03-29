@@ -15,6 +15,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 60,
     endTime: "18:00",
     category: "재직자",
+    trainingHoursPerDay: 8,
   },
   {
     name: "AI 활용 서비스 기획/개발",
@@ -24,6 +25,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 60,
     endTime: "18:00",
     category: "재직자",
+    trainingHoursPerDay: 8,
   },
   {
     name: "데이터 기반 의사결정",
@@ -33,6 +35,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 45,
     endTime: "18:00",
     category: "재직자",
+    trainingHoursPerDay: 8,
   },
   // ─── 실업자 과정 ───
   {
@@ -43,6 +46,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 120,
     endTime: "18:00",
     category: "실업자",
+    trainingHoursPerDay: 8,
   },
   {
     name: "데이터분석",
@@ -52,6 +56,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 120,
     endTime: "18:00",
     category: "실업자",
+    trainingHoursPerDay: 8,
   },
   {
     name: "[아이펠]딥러닝 개발자 도약 과정",
@@ -61,6 +66,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 120,
     endTime: "18:00",
     category: "실업자",
+    trainingHoursPerDay: 8,
   },
   {
     name: "AI 기반 지능형 서비스 개발 전문가 과정",
@@ -70,6 +76,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     totalDays: 120,
     endTime: "18:00",
     category: "실업자",
+    trainingHoursPerDay: 8,
   },
 ];
 
@@ -94,6 +101,10 @@ export function loadHrdConfig(): HrdConfig {
           }
           if (!course.category && def.category) {
             course.category = def.category;
+            updated = true;
+          }
+          if (!course.trainingHoursPerDay && def.trainingHoursPerDay) {
+            course.trainingHoursPerDay = def.trainingHoursPerDay;
             updated = true;
           }
         }

@@ -188,6 +188,18 @@
             <span class="jibble-nav-label">종합 분석 리포트</span>
           </button>
 
+          <button
+            class="jibble-nav-item"
+            type="button"
+            data-scroll-target="sectionRevenue"
+            data-nav-key="revenue"
+            data-nav-icon="dollar"
+            data-default-label="매출"
+          >
+            <span class="jibble-nav-emoji" aria-hidden="true">💰</span>
+            <span class="jibble-nav-label">매출</span>
+          </button>
+
           <div class="nav-spacer" aria-hidden="true"></div>
           <button
             class="jibble-nav-item jibble-nav-settings"
@@ -2973,6 +2985,51 @@
             <!-- /settings-section-body -->
           </div>
           <!-- /instructorDrawer -->
+
+          <!-- ═══ 매출 현황 ═══ -->
+          <section id="sectionRevenue" class="card card-span-12 u-mt-14" data-page-group="revenue">
+            <div class="card-header">
+              <div class="card-header-left">
+                <h2 class="card-title">💰 매출 현황</h2>
+                <span class="card-subtitle" id="revDataScope"></span>
+              </div>
+              <div class="card-header-right">
+                <button id="revQueryBtn" class="btn btn-primary btn-sm" type="button">📊 매출 조회</button>
+              </div>
+            </div>
+            <div id="revLoadingStatus" class="att-status u-mt-8"></div>
+            <!-- KPI Cards -->
+            <div id="revKpiCards" class="rev-kpi-row u-mt-14" style="display:none"></div>
+            <!-- Course Table -->
+            <div id="revCohortSection" class="u-mt-14" style="display:none">
+              <h3 class="section-title">과정/기수별 매출</h3>
+              <div class="table-responsive u-mt-8">
+                <table class="table att-table" id="revCohortTable">
+                  <thead>
+                    <tr>
+                      <th>과정</th>
+                      <th>기수</th>
+                      <th>구분</th>
+                      <th>훈련생</th>
+                      <th>출석률</th>
+                      <th>총 매출</th>
+                      <th>손실 매출</th>
+                      <th>하차 손실</th>
+                    </tr>
+                  </thead>
+                  <tbody id="revCohortBody"></tbody>
+                  <tfoot id="revCohortFoot"></tfoot>
+                </table>
+              </div>
+            </div>
+            <!-- Trend Chart -->
+            <div id="revChartSection" class="u-mt-14" style="display:none">
+              <h3 class="section-title">단위기간별 매출 추이</h3>
+              <div style="max-height:400px;position:relative" class="u-mt-8">
+                <canvas id="revTrendCanvas"></canvas>
+              </div>
+            </div>
+          </section>
 
           <!-- HRD API 설정 -->
           <!-- 설정 카드 A: 과정 등록 (가장 자주 사용 — 기본 펼침) -->

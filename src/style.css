@@ -8646,3 +8646,41 @@ dialog {
     page-break-inside: avoid;
   }
 }
+
+/* ═══ 매출 탭 ═══ */
+.rev-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.rev-kpi-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.rev-kpi-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.rev-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.rev-kpi-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+@media (max-width: 768px) {
+  .rev-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .rev-kpi-value {
+    font-size: 18px;
+  }
+}
