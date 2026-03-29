@@ -16,6 +16,24 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.1.0",
+    date: "2026-03-29",
+    items: [
+      { tag: "feat", text: "매출 탭 신설 — 출결 기반 훈련비 자동 산정 (수기 일매출 작성 자동화)" },
+      { tag: "feat", text: "매출 KPI 카드 — 총 매출 / 일매출 / 손실 매출 / 하차 손실" },
+      { tag: "feat", text: "단위기간별 매출 추이 차트 — 실매출 vs 손실 스택 바 차트" },
+      { tag: "feat", text: "과정·기수별 매출 테이블 — 훈련생수, 출석률, 매출, 손실, 합계" },
+      { tag: "feat", text: "훈련생분석 위험등급 통합 — 대시보드와 동일 기준 (잔여결석일 비율)" },
+      { tag: "feat", text: "훈련생분석 테이블 확장 — 성별·지각·조퇴·위험등급 컬럼 추가" },
+      { tag: "fix", text: "누적 조퇴/지각 결석 환산 — HRD-Net 기준 지각3회=결석1일, 조퇴3회=결석1일" },
+      { tag: "fix", text: "조기취업 출석률 70% 분기 — ≥70% 수료, <70% 미수료 하차" },
+      { tag: "fix", text: "상태 배지 HRD 원본 표시 — 정상수료/80%이상수료/중도탈락 등 그대로 표시" },
+      { tag: "fix", text: "성별 데이터 교차분석 연결 — fetchAllAttendanceData 성별 로딩 누락 수정" },
+      { tag: "improve", text: "위험군 CSV에 성별·조퇴·위험등급 컬럼 추가" },
+      { tag: "improve", text: "과정별 훈련시간 설정 — trainingHoursPerDay (기본 8시간)" },
+    ],
+  },
+  {
     version: "v3.0.0",
     date: "2026-03-24",
     items: [
