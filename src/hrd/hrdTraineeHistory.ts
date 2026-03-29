@@ -2,7 +2,7 @@
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
-import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
+import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 import type { HrdRawAttendance } from "./hrdTypes";
 
 const $ = (id: string) => document.getElementById(id);
@@ -232,7 +232,8 @@ async function showTraineeDetail(
     // 출결 통계 계산
     const statuses = myRecords.map(resolveStatusStr);
     const attendedDays = statuses.filter(isAttendedStatus).length;
-    const absentDays = statuses.filter(isAbsentStatus).length;
+    // HRD-Net 기준: 순수결석 + 지각3회=1결석 + 조퇴3회=1결석
+    const absentDays = calcAbsentDays(statuses.map((s) => ({ status: s })));
     const lateDays = statuses.filter(isLateStatus).length;
     const excusedDays = statuses.filter(isExcusedStatus).length;
     const maxAbsent = Math.floor(totalDays * 0.2);

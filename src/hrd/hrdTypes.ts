@@ -133,6 +133,35 @@ export function isExcusedStatus(status: string): boolean {
   return false;
 }
 
+/** 지각/조퇴 상태인지 (누적 결석 환산용) */
+export function isLateStatus(status: string): boolean {
+  if (!status) return false;
+  return status.includes("지각");
+}
+
+export function isEarlyLeaveStatus(status: string): boolean {
+  if (!status) return false;
+  return status.includes("조퇴");
+}
+
+/**
+ * 누적 결석일수 계산 (HRD-Net 기준)
+ * - 순수 결석: 1일 = 1결석
+ * - 지각 3회 = 결석 1일 (소수점 버림)
+ * - 조퇴 3회 = 결석 1일 (소수점 버림)
+ */
+export function calcAbsentDays(records: { status: string }[]): number {
+  let pureAbsent = 0;
+  let lateCount = 0;
+  let earlyLeaveCount = 0;
+  for (const r of records) {
+    if (isAbsentStatus(r.status)) pureAbsent++;
+    if (isLateStatus(r.status)) lateCount++;
+    if (isEarlyLeaveStatus(r.status)) earlyLeaveCount++;
+  }
+  return pureAbsent + Math.floor(lateCount / 3) + Math.floor(earlyLeaveCount / 3);
+}
+
 // ─── 내부 데이터 모델 ────────────────────────────────────────
 
 export type TraineeGender = "" | "남" | "여";

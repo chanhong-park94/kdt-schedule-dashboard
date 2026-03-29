@@ -10,7 +10,7 @@ import type { CourseReportData } from "./hrdSlack";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { fetchPublicHolidaysKR } from "../core/holidays";
 import type { AttendanceStudent, HrdCourse, HrdConfig, HrdRawTrainee, HrdRawAttendance, RiskLevel } from "./hrdTypes";
-import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
+import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
@@ -182,7 +182,8 @@ async function fetchAttendanceForReport(
     const records = recordsMap.get(key) || [];
     const totalDays = course.totalDays || 0;
     const attendedDays = records.filter((r) => isAttendedStatus(r.status)).length;
-    const absentDays = records.filter((r) => isAbsentStatus(r.status)).length;
+    // HRD-Net 기준: 순수결석 + 지각3회=1결석 + 조퇴3회=1결석
+    const absentDays = calcAbsentDays(records);
     const excusedDays = records.filter((r) => isExcusedStatus(r.status)).length;
     const maxAbsent = totalDays > 0 ? Math.floor(totalDays * 0.2) : 0;
     const remainingAbsent = maxAbsent - absentDays;

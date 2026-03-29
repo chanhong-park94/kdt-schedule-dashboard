@@ -4,7 +4,7 @@ import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
 import { loadSatisfactionCache, summarizeByCohort } from "./hrdSatisfactionApi";
-import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
+import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 import type { HrdConfig, HrdRawAttendance, CourseCategory } from "./hrdTypes";
 
 Chart.register(...registerables);
@@ -244,7 +244,8 @@ async function fetchDashboardData(
 
             const statuses = myRecords.map(resolveStatusStr);
             const attendedDays = statuses.filter(isAttendedStatus).length;
-            const absentDays = statuses.filter(isAbsentStatus).length;
+            // HRD-Net 기준: 순수결석 + 지각3회=1결석 + 조퇴3회=1결석
+            const absentDays = calcAbsentDays(statuses.map((s) => ({ status: s })));
             const excusedDays = statuses.filter(isExcusedStatus).length;
             const td = course.totalDays || 0;
             const effectiveDays = td > 0 ? td - excusedDays : myRecords.length || 1;

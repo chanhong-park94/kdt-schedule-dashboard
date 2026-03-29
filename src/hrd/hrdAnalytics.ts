@@ -12,7 +12,7 @@ import { classifyApiError } from "./hrdCacheUtils";
 import { downloadCsvFile } from "../ui/utils/csv";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse, TraineeGender } from "./hrdTypes";
-import { isAbsentStatus, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
+import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 import type { TraineeAnalysis, AnalyticsSummary, InsightCard } from "./hrdAnalyticsTypes";
 import { getAgeGroup } from "./hrdAnalyticsTypes";
 
@@ -187,7 +187,8 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
 
           const statuses = myRecords.map((r) => resolveStatusStr(r));
           const attendedDays = statuses.filter((s) => isAttendedStatus(s)).length;
-          const absentDays = statuses.filter((s) => isAbsentStatus(s)).length;
+          // HRD-Net 기준: 순수결석 + 지각3회=1결석 + 조퇴3회=1결석
+          const absentDays = calcAbsentDays(statuses.map((s) => ({ status: s })));
           const lateDays = statuses.filter((s) => isLateStatus(s)).length;
           const excusedDays = statuses.filter((s) => isExcusedStatus(s)).length;
           const totalDays = course.totalDays || 0;
