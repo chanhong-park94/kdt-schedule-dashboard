@@ -19,6 +19,7 @@ const PATCH_NOTES: PatchNote[] = [
     version: "v3.1.0",
     date: "2026-03-29",
     items: [
+      { tag: "feat", text: "Google Workspace 로그인 — @modulabs.co.kr 계정으로 운영매니저 로그인 (보조강사 인증코드 유지)" },
       { tag: "feat", text: "매출 탭 신설 — 출결 기반 훈련비 자동 산정 (수기 일매출 작성 자동화)" },
       { tag: "feat", text: "매출 KPI 카드 — 총 매출 / 일매출 / 손실 매출 / 하차 손실" },
       { tag: "feat", text: "단위기간별 매출 추이 차트 — 실매출 vs 손실 스택 바 차트" },
