@@ -11,9 +11,13 @@ export interface TraineeAnalysis {
   attendanceRate: number; // 출석률 %
   absentDays: number;
   lateDays: number;
+  earlyLeaveDays: number;
   excusedDays: number;
   attendedDays: number;
   totalDays: number;
+  maxAbsent: number;
+  remainingAbsent: number;
+  riskLevel: "safe" | "caution" | "warning" | "danger";
   dropout: boolean;
   /** 출결 데이터 존재 여부 (false면 출석률 N/A) */
   hasAttendanceData: boolean;

@@ -12,7 +12,7 @@ import { classifyApiError } from "./hrdCacheUtils";
 import { downloadCsvFile } from "../ui/utils/csv";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse, TraineeGender } from "./hrdTypes";
-import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
+import { isAbsentStatus, isAttendedStatus, isExcusedStatus, isEarlyLeaveStatus, calcAbsentDays } from "./hrdTypes";
 import type { TraineeAnalysis, AnalyticsSummary, InsightCard } from "./hrdAnalyticsTypes";
 import { getAgeGroup } from "./hrdAnalyticsTypes";
 
@@ -190,8 +190,11 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
           // HRD-Net 기준: 순수결석 + 지각3회=1결석 + 조퇴3회=1결석
           const absentDays = calcAbsentDays(statuses.map((s) => ({ status: s })));
           const lateDays = statuses.filter((s) => isLateStatus(s)).length;
+          const earlyLeaveDays = statuses.filter((s) => isEarlyLeaveStatus(s)).length;
           const excusedDays = statuses.filter((s) => isExcusedStatus(s)).length;
           const totalDays = course.totalDays || 0;
+          const maxAbsent = totalDays > 0 ? Math.floor(totalDays * 0.2) : 0;
+          const remainingAbsent = maxAbsent - absentDays;
           const hasAttendanceData = myRecords.length > 0;
           const effectiveDays = totalDays > 0 ? totalDays - excusedDays : myRecords.length || 1;
           const attendanceRate = !hasAttendanceData
@@ -292,6 +295,17 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
             if (prev2 - recent2 >= 10) alertReasons.push("출석률 급락");
           }
 
+          // 위험등급: 대시보드와 동일 기준 (잔여결석일 비율)
+          const riskLevel: "safe" | "caution" | "warning" | "danger" = (() => {
+            if (totalDays === 0) return "safe";
+            if (maxAbsent === 0) return "safe";
+            const remainRate = remainingAbsent / maxAbsent;
+            if (remainRate <= 0.15) return "danger";
+            if (remainRate <= 0.30) return "warning";
+            if (remainRate <= 0.60) return "caution";
+            return "safe";
+          })();
+
           results.push({
             name,
             birth: birthStr,
@@ -303,9 +317,13 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
             attendanceRate,
             absentDays,
             lateDays,
+            earlyLeaveDays,
             excusedDays,
             attendedDays,
             totalDays,
+            maxAbsent,
+            remainingAbsent,
+            riskLevel,
             dropout,
             hasAttendanceData,
             absentByWeekday,
@@ -1572,9 +1590,13 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
       case "absent":
         cmp = a.absentDays - b.absentDays;
         break;
-      case "status":
-        cmp = (a.dropout ? 1 : 0) - (b.dropout ? 1 : 0);
+      case "status": {
+        const riskOrder: Record<string, number> = { danger: 0, warning: 1, caution: 2, safe: 3 };
+        const aVal = a.dropout ? -1 : (riskOrder[a.riskLevel] ?? 3);
+        const bVal = b.dropout ? -1 : (riskOrder[b.riskLevel] ?? 3);
+        cmp = aVal - bVal;
         break;
+      }
     }
     return sortAsc ? cmp : -cmp;
   });
@@ -1599,7 +1621,9 @@ function applyFiltersAndRender(data: TraineeAnalysis[]): void {
     <td>${d.category}</td>
     <td>${fmtRate(d.attendanceRate)}</td>
     <td>${d.absentDays}</td>
-    <td><span class="ana-status-chip ${d.dropout ? "ana-status-dropout" : "ana-status-active"}">${d.dropout ? "탈락" : "재학"}</span></td>
+    <td>${d.lateDays}</td>
+    <td>${d.earlyLeaveDays}</td>
+    <td>${d.dropout ? '<span class="ana-status-chip ana-status-dropout">탈락</span>' : `<span class="att-risk-badge att-risk-${d.riskLevel}" style="font-size:12px;padding:2px 8px">${d.riskLevel === "danger" ? "🔴 위험" : d.riskLevel === "warning" ? "🟡 경고" : d.riskLevel === "caution" ? "🟠 주의" : "🟢 안전"}</span>`}</td>
   </tr>`,
     )
     .join("");
@@ -1631,9 +1655,9 @@ function openTraineeModal(t: TraineeAnalysis): void {
       t.attendanceRate >= 90 ? "color:#22c55e" : t.attendanceRate >= 80 ? "color:#f59e0b" : "color:#ef4444";
     info.innerHTML = `
       <div class="stat-card"><div class="stat-label">출석률</div><div class="stat-value" style="${rateClass}">${fmtRate(t.attendanceRate)}</div></div>
-      <div class="stat-card"><div class="stat-label">결석/지각</div><div class="stat-value">${t.absentDays}일 / ${t.lateDays}일</div></div>
+      <div class="stat-card"><div class="stat-label">결석 / 지각 / 조퇴</div><div class="stat-value">${t.absentDays} / ${t.lateDays} / ${t.earlyLeaveDays}일</div></div>
       <div class="stat-card"><div class="stat-label">연속결석</div><div class="stat-value">${t.currentConsecutiveAbsent}일 (최대 ${t.maxConsecutiveAbsent}일)</div></div>
-      <div class="stat-card"><div class="stat-label">상태</div><div class="stat-value">${t.dropout ? "탈락" : t.completionStatus || "훈련중"}</div></div>
+      <div class="stat-card"><div class="stat-label">위험등급</div><div class="stat-value">${t.dropout ? "탈락" : t.riskLevel === "danger" ? "🔴 위험" : t.riskLevel === "warning" ? "🟡 경고" : t.riskLevel === "caution" ? "🟠 주의" : "🟢 안전"}</div></div>
     `;
   }
 
@@ -1899,7 +1923,7 @@ export function initAnalytics(): void {
       alert("내보낼 위험군 학생이 없습니다.");
       return;
     }
-    const columns = ["이름", "성별", "과정", "기수", "출결률(%)", "결석일수", "지각일수", "연속결석", "경보사유"] as const;
+    const columns = ["이름", "성별", "과정", "기수", "출결률(%)", "결석일수", "지각일수", "조퇴일수", "위험등급", "연속결석", "경보사유"] as const;
     const rows = riskStudents.map((d) => [
       d.name,
       d.gender || "-",
@@ -1908,6 +1932,8 @@ export function initAnalytics(): void {
       d.attendanceRate < 0 ? "N/A" : d.attendanceRate.toFixed(1),
       String(d.absentDays),
       String(d.lateDays),
+      String(d.earlyLeaveDays),
+      d.riskLevel === "danger" ? "위험" : d.riskLevel === "warning" ? "경고" : d.riskLevel === "caution" ? "주의" : "안전",
       String(d.currentConsecutiveAbsent),
       d.alertReasons.join(", "),
     ]);
