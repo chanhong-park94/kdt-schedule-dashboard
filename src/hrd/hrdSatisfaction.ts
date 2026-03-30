@@ -214,6 +214,24 @@ interface CourseOption {
 let moduleRows: string[] = [];
 let projectRows: string[] = [];
 
+// 현재 입력된 값을 임시 보관 (행 추가/삭제 시 보존용)
+let moduleInputCache: Map<number, { label: string; values: number[] }> = new Map();
+let projectInputCache: Map<number, { label: string; values: number[] }> = new Map();
+
+/** 현재 DOM에 입력된 값을 캐시에 저장 */
+function captureCurrentInputs(container: HTMLElement | null, cache: Map<number, { label: string; values: number[] }>): void {
+  if (!container) return;
+  cache.clear();
+  const labelInputs = container.querySelectorAll<HTMLInputElement>(".sat-mx-label");
+  labelInputs.forEach((input) => {
+    const idx = Number(input.dataset.row);
+    const label = input.value;
+    const valInputs = container.querySelectorAll<HTMLInputElement>(`.sat-mx-val[data-row="${idx}"]`);
+    const values = Array.from(valInputs).map((v) => parseFloat(v.value) || 0);
+    cache.set(idx, { label, values });
+  });
+}
+
 function buildCourseOptions(): CourseOption[] {
   const options: CourseOption[] = [];
   try {
@@ -244,18 +262,24 @@ function renderSectionTable(
   colKeys: string[],
   existingMap: Map<string, SatisfactionRecord>,
   prefix: string,
+  inputCache?: Map<number, { label: string; values: number[] }>,
 ): void {
   const tableRows = rows
     .map((label, i) => {
+      const cached = inputCache?.get(i);
       const r = existingMap.get(label);
+      const displayLabel = cached?.label || label;
       const cells = colKeys
-        .map((key) => {
-          const val = r ? (r as unknown as Record<string, number>)[key] : "";
+        .map((key, ki) => {
+          // 우선순위: 캐시된 입력값 → 저장된 데이터 → 빈값
+          const cachedVal = cached?.values[ki];
+          const savedVal = r ? (r as unknown as Record<string, number>)[key] : "";
+          const val = cachedVal && cachedVal !== 0 ? cachedVal : savedVal;
           return `<td><input class="sat-input sat-mx-val sat-mx-${key}" data-row="${i}" type="number" step="0.1" placeholder="-" value="${val || ""}" /></td>`;
         })
         .join("");
       return `<tr>
-        <td class="sat-mx-label-cell"><input class="sat-input sat-mx-label" data-row="${i}" value="${esc(label)}" /></td>
+        <td class="sat-mx-label-cell"><input class="sat-input sat-mx-label" data-row="${i}" value="${esc(displayLabel)}" /></td>
         ${cells}
         <td class="sat-mx-del-cell"><button class="sat-mx-del" data-row="${i}" data-prefix="${prefix}" type="button" title="삭제">✕</button></td>
       </tr>`;
@@ -268,15 +292,39 @@ function renderSectionTable(
       <tbody>${tableRows}</tbody>
     </table>`;
 
-  // 삭제 핸들러
+  // 삭제 핸들러 — 현재 입력값을 캐시 후 재렌더
   container.querySelectorAll<HTMLButtonElement>(".sat-mx-del").forEach((btn) => {
     btn.addEventListener("click", () => {
+      captureAllInputs();
       const idx = Number(btn.dataset.row);
       const p = btn.dataset.prefix;
-      if (p === "module") { moduleRows.splice(idx, 1); } else { projectRows.splice(idx, 1); }
+      if (p === "module") {
+        moduleRows.splice(idx, 1);
+        rebuildCache(moduleInputCache, idx);
+      } else {
+        projectRows.splice(idx, 1);
+        rebuildCache(projectInputCache, idx);
+      }
       renderAllSections();
     });
   });
+}
+
+/** 캐시에서 삭제된 인덱스를 제거하고 리인덱싱 */
+function rebuildCache(cache: Map<number, { label: string; values: number[] }>, removedIdx: number): void {
+  const newCache = new Map<number, { label: string; values: number[] }>();
+  for (const [idx, val] of cache) {
+    if (idx < removedIdx) newCache.set(idx, val);
+    else if (idx > removedIdx) newCache.set(idx - 1, val);
+  }
+  cache.clear();
+  for (const [k, v] of newCache) cache.set(k, v);
+}
+
+/** 모듈+프로젝트 현재 입력값 캐시 수집 */
+function captureAllInputs(): void {
+  captureCurrentInputs($("satModuleContainer"), moduleInputCache);
+  captureCurrentInputs($("satProjectContainer"), projectInputCache);
 }
 
 function renderAllSections(): void {
@@ -306,7 +354,7 @@ function renderAllSections(): void {
     if (moduleRows.length === 0) {
       moduleRows = existing.length > 0 ? existing.map((r) => r.모듈명) : ["프로젝트1", "프로젝트2", "프로젝트3", "프로젝트4"];
     }
-    renderSectionTable(moduleContainer, moduleRows, ["과정 NPS", "강사만족도"], ["NPS", "강사만족도"], existingMap, "module");
+    renderSectionTable(moduleContainer, moduleRows, ["과정 NPS", "강사만족도"], ["NPS", "강사만족도"], existingMap, "module", moduleInputCache);
     if (projectSection) projectSection.style.display = "none";
   } else {
     // 실업자: 모듈1~12 (과정NPS + 강사만족도)
@@ -316,7 +364,7 @@ function renderAllSections(): void {
     if (moduleRows.length === 0) {
       moduleRows = existing.length > 0 ? existing.map((r) => r.모듈명) : Array.from({ length: 12 }, (_, i) => `모듈${i + 1}`);
     }
-    renderSectionTable(moduleContainer, moduleRows, ["과정 NPS", "강사만족도"], ["NPS", "강사만족도"], existingMap, "module");
+    renderSectionTable(moduleContainer, moduleRows, ["과정 NPS", "강사만족도"], ["NPS", "강사만족도"], existingMap, "module", moduleInputCache);
 
     // 실업자 프로젝트 (과정NPS + 퍼실NPS)
     if (projectSection && projectContainer) {
@@ -328,7 +376,7 @@ function renderAllSections(): void {
           ? projExisting.map((r) => r.모듈명.replace(" (퍼실)", ""))
           : ["프로젝트"];
       }
-      renderSectionTable(projectContainer, projectRows, ["과정 NPS", "퍼실 NPS"], ["NPS", "강사만족도"], projMap, "project");
+      renderSectionTable(projectContainer, projectRows, ["과정 NPS", "퍼실 NPS"], ["NPS", "강사만족도"], projMap, "project", projectInputCache);
     }
   }
 
@@ -437,12 +485,14 @@ function initSatInput(): void {
   $("satModuleAddBtn")?.addEventListener("click", () => {
     const opt = getSelectedCourseOpt();
     if (!opt) return;
+    captureAllInputs();
     const prefix = opt.category === "재직자" ? "프로젝트" : "모듈";
     moduleRows.push(`${prefix}${moduleRows.length + 1}`);
     renderAllSections();
   });
 
   $("satProjectAddBtn")?.addEventListener("click", () => {
+    captureAllInputs();
     projectRows.push(`프로젝트${projectRows.length + 1}`);
     renderAllSections();
   });
