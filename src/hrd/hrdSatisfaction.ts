@@ -58,9 +58,6 @@ function renderStats(stats: SatisfactionStats): void {
   const finalEl = $("satStatFinal");
   if (finalEl) finalEl.innerHTML = `<span class="achv-badge" style="${scoreColor(stats.최종만족도평균)}">${stats.최종만족도평균}</span>`;
 
-  const totalEl = $("satStatTotal");
-  if (totalEl) totalEl.textContent = `${stats.총응답수}건`;
-
   // 과정별 NPS 칩
   const courseNpsEl = $("satStatCourseNps");
   if (courseNpsEl) {
@@ -91,7 +88,6 @@ function renderTable(summaries: SatisfactionSummary[]): void {
     <tr data-sat-idx="${i}" style="cursor:pointer">
       <td style="font-weight:600">${esc(s.과정명)}</td>
       <td>${esc(s.기수)}</td>
-      <td>${s.응답수}명</td>
       <td><span class="achv-badge" style="${npsColor(s.NPS평균)}">${s.NPS평균}</span></td>
       <td><span class="achv-badge" style="${scoreColor(s.강사만족도평균)}">${s.강사만족도평균 || "-"}</span></td>
       <td><span class="achv-badge" style="${scoreColor(s.중간만족도평균)}">${s.중간만족도평균 || "-"}</span></td>
@@ -128,7 +124,7 @@ function showModuleDetail(summary: SatisfactionSummary): void {
   bodyEl.innerHTML = `
     <div style="overflow-x:auto">
       <table class="hrd-table" style="font-size:13px">
-        <thead><tr><th>모듈명</th><th>NPS 평균</th><th>응답수</th></tr></thead>
+        <thead><tr><th>모듈명</th><th>NPS 평균</th></tr></thead>
         <tbody>
           ${sorted
             .map(
@@ -136,7 +132,6 @@ function showModuleDetail(summary: SatisfactionSummary): void {
             <tr>
               <td>${esc(m.모듈명)}</td>
               <td><span class="achv-badge" style="${npsColor(m.NPS평균)}">${m.NPS평균}</span></td>
-              <td>${m.응답수}명</td>
             </tr>`,
             )
             .join("")}
