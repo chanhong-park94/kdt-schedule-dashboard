@@ -285,7 +285,7 @@ async function generateReport(): Promise<void> {
 // ── Section Renderers ────────────────────────────────────────
 
 function renderAttendanceSection(data: AttendanceSectionData): void {
-  const section = $("retroAttendanceSection");
+  const section = $("retroSectionAttendance");
   if (section) section.removeAttribute("data-empty");
 
   // KPI cards
@@ -346,7 +346,7 @@ function renderAttendanceSection(data: AttendanceSectionData): void {
 }
 
 function renderAchievementSection(data: AchievementSectionData): void {
-  const section = $("retroAchievementSection");
+  const section = $("retroSectionAchievement");
   if (section) section.removeAttribute("data-empty");
 
   const statsEl = $("retroAchievementStats");
@@ -404,7 +404,7 @@ function renderAchievementSection(data: AchievementSectionData): void {
 }
 
 function renderSatisfactionSection(data: SatisfactionSectionData): void {
-  const section = $("retroSatisfactionSection");
+  const section = $("retroSectionSatisfaction");
   if (section) section.removeAttribute("data-empty");
 
   const statsEl = $("retroSatisfactionStats");
@@ -442,7 +442,7 @@ function renderSatisfactionSection(data: SatisfactionSectionData): void {
 }
 
 function renderInquirySection(data: InquirySectionData): void {
-  const section = $("retroInquirySection");
+  const section = $("retroSectionInquiry");
   if (section) section.removeAttribute("data-empty");
 
   const statsEl = $("retroInquiryStats");
@@ -478,7 +478,7 @@ function renderInquirySection(data: InquirySectionData): void {
 }
 
 function renderDropoutSection(data: DropoutSectionData): void {
-  const section = $("retroDropoutSection");
+  const section = $("retroSectionDropout");
   if (section) section.removeAttribute("data-empty");
 
   const statsEl = $("retroDropoutStats");
@@ -579,11 +579,11 @@ function renderEmptySection(sectionId: string): void {
 
 function renderSectionInsights(sectionKey: string, insights: SectionInsight[]): void {
   const sectionMap: Record<string, string> = {
-    attendance: "retroAttendanceSection",
-    achievement: "retroAchievementSection",
-    satisfaction: "retroSatisfactionSection",
-    inquiry: "retroInquirySection",
-    dropout: "retroDropoutSection",
+    attendance: "retroSectionAttendance",
+    achievement: "retroSectionAchievement",
+    satisfaction: "retroSectionSatisfaction",
+    inquiry: "retroSectionInquiry",
+    dropout: "retroSectionDropout",
   };
 
   const sectionId = sectionMap[sectionKey];

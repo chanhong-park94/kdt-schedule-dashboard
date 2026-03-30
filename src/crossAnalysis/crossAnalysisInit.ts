@@ -68,6 +68,7 @@ let absentDropoutChart: Chart | null = null;
 let riskFactorsChart: Chart | null = null;
 let currentStudentData: StudentCrossData[] = [];
 let currentCohortData: CohortCrossData[] = [];
+let allCohortData: CohortCrossData[] = []; // 필터 전 전체 기수 데이터
 
 // ── 출결 데이터 조회 ──────────────────────────────────────
 
@@ -493,10 +494,10 @@ async function runAnalysis(): Promise<void> {
   if (cohortFilter) studentData = studentData.filter((s) => s.기수 === cohortFilter);
   currentStudentData = studentData;
 
-  // 기수 매칭
+  // 기수 매칭 — 전체 데이터 보관 후 필터 적용
+  allCohortData = matchCohortData(studentData, satisfactionRecords);
   const cohortCourseFilter = ($("crossCohortFilterCourse") as HTMLSelectElement | null)?.value ?? "";
-  let cohortData = matchCohortData(studentData, satisfactionRecords);
-  if (cohortCourseFilter) cohortData = cohortData.filter((c) => c.과정명 === cohortCourseFilter);
+  const cohortData = cohortCourseFilter ? allCohortData.filter((c) => c.과정명 === cohortCourseFilter) : allCohortData;
   currentCohortData = cohortData;
 
   // 렌더링
@@ -537,7 +538,8 @@ function setupEvents(): void {
   if (cohortCourseFilter) {
     cohortCourseFilter.addEventListener("change", () => {
       const filter = (cohortCourseFilter as HTMLSelectElement).value;
-      const filtered = filter ? currentCohortData.filter((c) => c.과정명 === filter) : currentCohortData;
+      const filtered = filter ? allCohortData.filter((c) => c.과정명 === filter) : allCohortData;
+      currentCohortData = filtered;
       renderCohortAnalysis(filtered, currentStudentData);
     });
   }
