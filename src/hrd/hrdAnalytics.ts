@@ -160,14 +160,20 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
         // 월별 출결 — 개강월부터 현재월까지
         const attendanceRecords = await fetchAllMonthlyAttendance(config, course, degr);
 
-        // courseStatus 결정: startDate 기반 → 없으면 명단 훈련상태로 판단
+        // courseStatus 결정: startDate 기반 → 없으면 명단 훈련상태 비율로 판단
         let courseStatus: "진행중" | "종강" = courseStatusFromDate ?? "진행중";
         if (!courseStatusFromDate && roster.length > 0) {
-          const hasTraining = roster.some((r) => {
-            const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString();
+          // 명단에서 훈련중/참여중 상태인 학생 비율로 판정
+          const trainingCount = roster.filter((r) => {
+            const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString().trim();
             return st.includes("훈련중") || st.includes("참여중") || st === "";
-          });
-          courseStatus = hasTraining ? "진행중" : "종강";
+          }).length;
+          const completedCount = roster.filter((r) => {
+            const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString().trim();
+            return st.includes("수료") || st.includes("중도탈락") || st.includes("수료포기") || st.includes("조기취업");
+          }).length;
+          // 수료/탈락 상태가 전체의 50% 이상이면 종강
+          courseStatus = completedCount > trainingCount ? "종강" : "진행중";
         }
 
         for (const raw of roster) {
