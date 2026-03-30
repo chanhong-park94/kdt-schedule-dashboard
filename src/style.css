@@ -8304,96 +8304,146 @@ dialog {
 }
 
 /* — Cross Analysis Professional Dashboard — */
+
+/* Sub-Tab Navigation */
+.sub-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface-hover);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.sub-tab {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sub-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.5);
+}
+.sub-tab.active {
+  background: var(--card-bg);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Filter Bar */
 .cx-filter-bar {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 .cx-select {
-  padding: 6px 12px;
+  padding: 7px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
   background: var(--card-bg);
   color: var(--text);
 }
 .cx-badge {
   font-size: 12px;
-  padding: 3px 10px;
-  background: var(--surface-hover);
-  border-radius: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
+  padding: 4px 12px;
+  background: var(--primary-light);
+  border-radius: 20px;
+  color: var(--primary);
+  font-weight: 600;
 }
+
+/* Stats Grid */
 .cx-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 10px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 .cx-stat-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
   background: var(--card-bg);
   border: 1px solid var(--border);
+  transition: box-shadow 0.15s;
+}
+.cx-stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .cx-stat-icon {
-  font-size: 22px;
+  font-size: 24px;
   flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--surface-hover);
 }
 .cx-stat-label {
   font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .cx-stat-value {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
 }
-.cx-stat-primary { border-left: 3px solid #6366f1; }
-.cx-stat-success { border-left: 3px solid #10b981; }
-.cx-stat-danger { border-left: 3px solid #ef4444; }
+.cx-stat-primary { border-left: 3px solid var(--primary); }
+.cx-stat-success { border-left: 3px solid var(--success); }
+.cx-stat-danger { border-left: 3px solid var(--danger); }
 .cx-stat-indigo { border-left: 3px solid #8b5cf6; }
+
+/* Chart Layout */
 .cx-charts-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 16px;
-}
-@media (max-width: 900px) {
-  .cx-charts-row { grid-template-columns: 1fr; }
+  margin-bottom: 20px;
 }
 .cx-chart-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 20px;
 }
 .cx-chart-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
 }
 .cx-chart-subtitle {
   font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 .cx-chart-wrap {
   position: relative;
-  min-height: 260px;
+  height: 280px;
 }
 .cx-chart-wrap canvas {
   width: 100% !important;
 }
+
+/* Quadrant Grid */
 .cx-quadrant-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -8403,23 +8453,20 @@ dialog {
 .cx-quadrant-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: var(--surface-hover);
+  transition: background 0.15s;
 }
-.cx-quadrant-emoji {
-  font-size: 20px;
+.cx-quadrant-item:hover {
+  background: var(--surface-active);
 }
-.cx-quadrant-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.cx-quadrant-count {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
+.cx-quadrant-emoji { font-size: 20px; }
+.cx-quadrant-label { font-size: 12px; color: var(--text-secondary); }
+.cx-quadrant-count { font-size: 18px; font-weight: 700; color: var(--text); }
+
+/* Data Tables */
 .cx-data-table {
   width: 100%;
   border-collapse: collapse;
@@ -8427,71 +8474,107 @@ dialog {
 }
 .cx-data-table th {
   text-align: left;
-  padding: 8px 10px;
+  padding: 10px 12px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   border-bottom: 2px solid var(--border);
+  background: var(--surface-hover);
 }
 .cx-data-table td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
 }
 .cx-data-table tbody tr:hover {
   background: var(--surface-hover);
 }
+
+/* Insights List */
 .cx-insights-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 .cx-insights-list li {
-  padding: 8px 0;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--text);
+  border-radius: 6px;
+  margin-bottom: 2px;
+}
+.cx-insights-list li:hover {
+  background: var(--surface-hover);
 }
 .cx-insights-list li:last-child {
   border-bottom: none;
 }
+
+/* Section Dividers */
 .cx-section-divider {
-  margin: 28px 0 16px;
-  padding-top: 20px;
-  border-top: 2px solid var(--border);
+  margin: 32px 0 20px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
 }
 .cx-section-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--text);
   margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .cx-section-desc {
   font-size: 13px;
   color: var(--text-secondary);
-  margin: 0;
+  margin: 0 0 16px;
 }
+
+/* Compact Table */
 .cx-compact-table th,
 .cx-compact-table td {
-  padding: 5px 8px;
+  padding: 6px 10px;
   font-size: 12px;
 }
+
+/* Correlation Display */
 .cx-corr-display {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 16px 0;
+  gap: 10px;
+  padding: 20px 0;
 }
 .cx-corr-value {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 800;
-  color: var(--primary, #6366f1);
+  color: var(--primary);
   font-family: "Inter", monospace;
+  letter-spacing: -0.02em;
 }
 .cx-corr-desc {
   font-size: 14px;
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .cx-charts-row { grid-template-columns: 1fr; }
+  .cx-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .sub-tab-bar { width: 100%; }
+  .sub-tab { flex: 1; text-align: center; padding: 8px 10px; font-size: 12px; }
+}
+@media (max-width: 600px) {
+  .cx-stats-grid { grid-template-columns: 1fr; gap: 8px; }
+  .cx-chart-card { padding: 14px; }
+  .cx-chart-wrap { height: 220px; }
+  .cx-stat-value { font-size: 16px; }
+  .cx-corr-value { font-size: 28px; }
+  .cx-quadrant-grid { grid-template-columns: 1fr; }
 }
 
 /* ─── 필터 초기화 버튼 ──────────────────────────────────────── */
