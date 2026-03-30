@@ -98,9 +98,13 @@ export function buildPage3Data(
     };
   }
 
-  const activeStudents = students.filter((s) => !s.dropout);
+  // 진행중 학생만 필터 (수료/하차 제외)
+  const activeStudents = students.filter((s) => s.traineeStatus === "훈련중" || s.traineeStatus === "조기취업");
+  const totalTraining = activeStudents.length;
+  const totalGraduated = students.filter((s) => s.traineeStatus === "수료").length;
+  const totalDropout = students.filter((s) => s.traineeStatus === "하차" || s.dropout).length;
   const courseCount = hrdConfig.courses.length;
-  const dataScope = `캐시된 조회 데이터 기준 (${courseCount}개 과정, ${activeStudents.length}명 재학생)`;
+  const dataScope = `진행중 ${totalTraining}명 · 수료 ${totalGraduated}명 · 하차 ${totalDropout}명 (${courseCount}개 과정)`;
 
   const metrics = buildPage3Metrics(activeStudents);
   const courseSummaries = buildCourseSummaries(activeStudents, hrdConfig);
