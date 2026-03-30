@@ -11,7 +11,6 @@ import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { fetchPublicHolidaysKR } from "../core/holidays";
 import type { AttendanceStudent, HrdCourse, HrdConfig, HrdRawTrainee, HrdRawAttendance, RiskLevel } from "./hrdTypes";
 import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
-import { COST_PER_PERSON_HOUR } from "./hrdRevenue";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
@@ -336,13 +335,6 @@ async function checkAndSend(): Promise<void> {
         // 매니저 ID 조회
         const managerIds = schedule.courseManagers ? (schedule.courseManagers[course.trainPrId] ?? "") : "";
 
-        // 일매출 계산
-        const hoursPerDay = course.trainingHoursPerDay || 8;
-        const todayAttended = students.filter(
-          (s) => !s.dropout && (isAttendedStatus(s.status) || isExcusedStatus(s.status)),
-        );
-        const dailyRevenue = todayAttended.length * hoursPerDay * COST_PER_PERSON_HOUR;
-
         reportEntries.push({
           courseName: course.name,
           degr,
@@ -350,8 +342,6 @@ async function checkAndSend(): Promise<void> {
           students,
           defenseRate,
           managerIds,
-          dailyRevenue,
-          hoursPerDay,
         });
         console.warn(
           `[Scheduler] Collected ${course.name} ${degr}기 (${reportDate}, ${course.category || "실업자"})`,

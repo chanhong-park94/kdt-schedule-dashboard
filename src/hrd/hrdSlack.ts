@@ -2,8 +2,7 @@
 import { loadHrdConfig } from "./hrdConfig";
 import { readClientEnv } from "../core/env";
 import type { AttendanceStudent, RiskLevel } from "./hrdTypes";
-import { DEFAULT_SLACK_SCHEDULE, isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import { COST_PER_PERSON_HOUR, formatRevenue } from "./hrdRevenue";
+import { DEFAULT_SLACK_SCHEDULE } from "./hrdTypes";
 
 // Supabase Edge Function 기반 Slack 프록시
 const _sbUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
@@ -175,12 +174,6 @@ export function buildConsolidatedSlackMessage(
       `  전체 ${total}명 · 현재 ${active.length}명 (하차 ${dropouts}명) · 하차방어율 ${defRate.toFixed(1)}%`,
     );
 
-    // 일매출 표시
-    if (c.dailyRevenue != null && c.dailyRevenue > 0) {
-      const todayCount = active.filter((s) => isAttendedStatus(s.status) || isExcusedStatus(s.status)).length;
-      lines.push(`  💰 일매출 ${formatRevenue(c.dailyRevenue)} (출석 ${todayCount}명 × ${c.hoursPerDay || 8}h × ₩${COST_PER_PERSON_HOUR.toLocaleString()})`);
-    }
-
     // 관리대상 없으면 정상 표시
     if (totalRisk === 0 && missing.length === 0 && consecutiveAbsent.length === 0) {
       lines.push("  ✅ 관리대상 없음 — 정상 운영 중");
@@ -212,15 +205,11 @@ export function buildConsolidatedSlackMessage(
 
   // ─── 전체 요약 (1회) ───
   if (courses.length > 1) {
-    const grandTotalRevenue = courses.reduce((sum, c) => sum + (c.dailyRevenue || 0), 0);
     lines.push("");
     lines.push("─────────────────────");
     lines.push(
       `전체 요약 | 관리대상 ${grandTotalRisk}명 · 퇴실미체크 ${grandTotalMissing}명 · 연속결석 ${grandTotalConsec}명`,
     );
-    if (grandTotalRevenue > 0) {
-      lines.push(`💰 총 일매출 ${formatRevenue(grandTotalRevenue)}`);
-    }
   }
 
   // 푸터는 상단으로 이동됨
