@@ -235,6 +235,9 @@ async function fetchDashboardData(
             const name = (raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "-").toString().trim();
             const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
             const dropout = isDropout(raw);
+            // 수료/조기취업 학생도 비활동 처리 (관리대상에서 제외)
+            const graduated =
+              stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업") || stNm.includes("조기취업");
 
             const nameKey = name.replace(/\s+/g, "");
             const myRecords = confirmedAttendance.filter((r) => {
@@ -261,13 +264,13 @@ async function fetchDashboardData(
               degr,
               category: course.category || "실업자",
               status: stNm.trim() || "훈련중",
-              isDropout: dropout,
+              isDropout: dropout || graduated,
               attendanceRate,
               absentDays,
               totalDays: td,
               maxAbsent,
               remainingAbsent,
-              riskLevel: getRiskLevel(remainingAbsent, td),
+              riskLevel: (dropout || graduated) ? "safe" as const : getRiskLevel(remainingAbsent, td),
             });
           }
         } catch (err) {
