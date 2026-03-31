@@ -182,7 +182,9 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
           const age = calcAge(birthStr);
           const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
           const completionStatus = stNm.trim() || "훈련중";
-          const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
+          const isEarlyEmployment = stNm.includes("조기취업");
+          const isGraduated = stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
+          let dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
 
           // 이 훈련생의 출결 레코드 필터
           const nameKey = name.replace(/\s+/g, "");
@@ -208,6 +210,11 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
             : effectiveDays > 0
               ? (attendedDays / effectiveDays) * 100
               : 100;
+
+          // 조기취업: 출석률 70% 미만이면 하차 처리 (hrdAttendance.ts와 동일)
+          if (isEarlyEmployment && attendanceRate >= 0 && attendanceRate < 70) {
+            dropout = true;
+          }
 
           // 요일별 결석
           const absentByWeekday = [0, 0, 0, 0, 0, 0, 0];

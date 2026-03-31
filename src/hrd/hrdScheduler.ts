@@ -383,8 +383,7 @@ async function checkAndSend(): Promise<void> {
           return s.riskLevel === "danger" || s.riskLevel === "warning";
         });
 
-        const smsFrom = config.courses.find((c) => c.trainPrId === entry.students[0]?.hrdStatusRaw)?.smsFrom
-          || config.courses.find((c) => c.name === entry.courseName)?.smsFrom || "";
+        const smsFrom = config.courses.find((c) => c.name === entry.courseName)?.smsFrom || "";
 
         for (const student of riskStudents) {
           const contact = getContact(student.name);

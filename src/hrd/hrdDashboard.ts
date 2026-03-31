@@ -3,7 +3,7 @@ import { Chart, registerables } from "chart.js";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
-import { loadSatisfactionCache, summarizeByCohort } from "./hrdSatisfactionApi";
+import { summarizeByCohort } from "./hrdSatisfactionApi";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 import type { HrdConfig, HrdRawAttendance, CourseCategory } from "./hrdTypes";
 import { loadCachedAchievementRecords, loadCachedSatisfactionRecords } from "../crossAnalysis/crossAnalysisData";
@@ -760,7 +760,7 @@ function renderCompletedCourseResults(courseData: DashCourseData[]): void {
   }
 
   // 만족도 캐시 로드 + 기수별 집계
-  const satRecords = loadSatisfactionCache() ?? [];
+  const satRecords = loadCachedSatisfactionRecords();
   const satSummaries = summarizeByCohort(satRecords, "", "");
   const satMap = new Map<string, { NPS: number; 강사만족도: number; 중간만족도: number; 최종만족도: number }>();
   for (const s of satSummaries) {
@@ -982,7 +982,7 @@ function calcCourseHealthScores(courseData: DashCourseData[], trainees: DashTrai
     const satMatch = satSummaries.find(
       (s) => s.과정명 === course.courseName && s.기수 === course.degr,
     );
-    if (satMatch && satMatch.NPS평균 !== 0) {
+    if (satMatch != null) {
       nps = (satMatch.NPS평균 + 100) / 2; // -100~100 → 0~100
     }
 
