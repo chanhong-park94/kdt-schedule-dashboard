@@ -6,6 +6,9 @@ import { isDropout } from "./hrdDropout";
 import { loadSatisfactionCache, summarizeByCohort } from "./hrdSatisfactionApi";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 import type { HrdConfig, HrdRawAttendance, CourseCategory } from "./hrdTypes";
+import { loadCachedAchievementRecords, loadCachedSatisfactionRecords } from "../crossAnalysis/crossAnalysisData";
+import { summarizeByTrainee } from "./hrdAchievementApi";
+import { summarizeByCohort as satSummarizeByCohort } from "./hrdSatisfactionApi";
 
 Chart.register(...registerables);
 
@@ -848,6 +851,7 @@ async function loadAndRender(): Promise<void> {
 
     destroyCharts();
     renderKpiCards(courseData, trainees);
+    renderHealthScorePanel(courseData, trainees);
     renderDonutChart(courseData);
     renderStatsPanel(courseData, trainees);
     renderProgressChart(courseData, filterCoursesByYear(config.courses, currentYearFilter));
@@ -889,6 +893,223 @@ function setupYearFilter(): void {
       void loadAndRender();
     });
   });
+}
+
+// ─── Course Health Score ───────────────────────────────────
+
+interface CourseHealthScore {
+  courseName: string;
+  degr: string;
+  category: string;
+  score: number;
+  defenseRate: number;
+  avgAttendance: number;
+  greenRate: number;
+  nps: number;
+  safeRate: number;
+  level: "excellent" | "good" | "caution" | "danger";
+  missing: string[];
+}
+
+function getHealthLevel(score: number): "excellent" | "good" | "caution" | "danger" {
+  if (score >= 80) return "excellent";
+  if (score >= 60) return "good";
+  if (score >= 40) return "caution";
+  return "danger";
+}
+
+function getHealthEmoji(level: string): string {
+  switch (level) {
+    case "excellent": return "🟢";
+    case "good": return "🟡";
+    case "caution": return "🟠";
+    case "danger": return "🔴";
+    default: return "⚪";
+  }
+}
+
+function getHealthLabel(level: string): string {
+  switch (level) {
+    case "excellent": return "우수";
+    case "good": return "양호";
+    case "caution": return "주의";
+    case "danger": return "위험";
+    default: return "-";
+  }
+}
+
+function calcCourseHealthScores(courseData: DashCourseData[], trainees: DashTrainee[]): CourseHealthScore[] {
+  // 성취도 데이터
+  const achievementRecords = loadCachedAchievementRecords();
+  const achievementByTrainee = achievementRecords.length > 0 ? summarizeByTrainee(achievementRecords) : [];
+
+  // 만족도 데이터
+  const satisfactionRecords = loadCachedSatisfactionRecords();
+  const satSummaries = satisfactionRecords.length > 0 ? satSummarizeByCohort(satisfactionRecords, "", "") : [];
+
+  const scores: CourseHealthScore[] = [];
+
+  for (const course of courseData) {
+    if (course.isCompleted) continue; // 종강 과정 제외
+
+    const courseTrainees = trainees.filter(
+      (t) => t.courseName === course.courseName && t.degr === course.degr && !t.isDropout,
+    );
+    if (courseTrainees.length === 0) continue;
+
+    // 1. 하차방어율 (0~100)
+    const defenseRate = course.defenseRate;
+
+    // 2. 평균 출석률 (0~100)
+    const validAtt = courseTrainees.filter((t) => t.attendanceRate >= 0);
+    const avgAttendance = validAtt.length > 0
+      ? validAtt.reduce((s, t) => s + t.attendanceRate, 0) / validAtt.length
+      : 0;
+
+    // 3. 성취도 Green 비율
+    let greenRate = -1; // -1 = 데이터 없음
+    if (achievementByTrainee.length > 0) {
+      const names = new Set(courseTrainees.map((t) => t.name.replace(/\s+/g, "")));
+      const matched = achievementByTrainee.filter((a) => names.has(a.이름.replace(/\s+/g, "")));
+      if (matched.length > 0) {
+        const greenCount = matched.filter((a) => a.신호등 === "green").length;
+        greenRate = (greenCount / matched.length) * 100;
+      }
+    }
+
+    // 4. NPS 정규화 (0~100)
+    let nps = -1;
+    const satMatch = satSummaries.find(
+      (s) => s.과정명 === course.courseName && s.기수 === course.degr,
+    );
+    if (satMatch && satMatch.NPS평균 !== 0) {
+      nps = (satMatch.NPS평균 + 100) / 2; // -100~100 → 0~100
+    }
+
+    // 5. 안전학생 비율
+    const safeCount = courseTrainees.filter((t) => t.riskLevel === "safe").length;
+    const safeRate = courseTrainees.length > 0 ? (safeCount / courseTrainees.length) * 100 : 100;
+
+    // 가중 평균 (데이터 없는 지표 제외 후 재분배)
+    const weights: { value: number; weight: number }[] = [];
+    const missing: string[] = [];
+
+    weights.push({ value: defenseRate, weight: 30 });
+    weights.push({ value: avgAttendance, weight: 25 });
+
+    if (greenRate >= 0) {
+      weights.push({ value: greenRate, weight: 20 });
+    } else {
+      missing.push("성취도");
+    }
+
+    if (nps >= 0) {
+      weights.push({ value: nps, weight: 15 });
+    } else {
+      missing.push("NPS");
+    }
+
+    weights.push({ value: safeRate, weight: 10 });
+
+    const totalWeight = weights.reduce((s, w) => s + w.weight, 0);
+    const score = totalWeight > 0
+      ? Math.round(weights.reduce((s, w) => s + w.value * (w.weight / totalWeight), 0) * 10) / 10
+      : 0;
+
+    scores.push({
+      courseName: course.courseName,
+      degr: course.degr,
+      category: course.category,
+      score,
+      defenseRate: Math.round(defenseRate * 10) / 10,
+      avgAttendance: Math.round(avgAttendance * 10) / 10,
+      greenRate: greenRate >= 0 ? Math.round(greenRate * 10) / 10 : -1,
+      nps: nps >= 0 ? Math.round(nps * 10) / 10 : -1,
+      safeRate: Math.round(safeRate * 10) / 10,
+      level: getHealthLevel(score),
+      missing,
+    });
+  }
+
+  return scores.sort((a, b) => a.score - b.score); // 낮은 점수(위험)가 위로
+}
+
+function renderHealthScorePanel(courseData: DashCourseData[], trainees: DashTrainee[]): void {
+  const container = $("dashboardHealthScore");
+  if (!container) return;
+
+  const scores = calcCourseHealthScores(courseData, trainees);
+  if (scores.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+  container.style.display = "";
+
+  // 전체 평균
+  const avgScore = Math.round(scores.reduce((s, h) => s + h.score, 0) / scores.length * 10) / 10;
+  const avgLevel = getHealthLevel(avgScore);
+
+  // 미니 프로그레스 바 헬퍼
+  const miniBar = (value: number, max: number = 100) => {
+    if (value < 0) return '<span style="color:var(--text-muted);font-size:11px">-</span>';
+    const pct = Math.min(value / max * 100, 100);
+    const color = pct >= 80 ? "var(--success)" : pct >= 60 ? "#f59e0b" : pct >= 40 ? "#f97316" : "var(--danger)";
+    return `<div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:12px;font-weight:600;min-width:38px">${value.toFixed(0)}${max === 100 ? "%" : ""}</span>
+      <div class="health-bar-bg"><div class="health-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  };
+
+  // 자동 인사이트
+  const insights: string[] = [];
+  const worst = scores[0];
+  const best = scores[scores.length - 1];
+  if (worst && worst.level === "danger") {
+    insights.push(`🔴 즉시 개입: ${worst.courseName} ${worst.degr}기 — 건강도 ${worst.score}점`);
+  } else if (worst && worst.level === "caution") {
+    insights.push(`🟠 관찰 필요: ${worst.courseName} ${worst.degr}기 — 건강도 ${worst.score}점`);
+  }
+  if (best && best.level === "excellent") {
+    insights.push(`🟢 우수 운영: ${best.courseName} ${best.degr}기 — 건강도 ${best.score}점`);
+  }
+
+  const rows = scores.map((h) => `
+    <tr>
+      <td style="font-weight:600">${h.courseName.length > 12 ? h.courseName.slice(0, 12) + "…" : h.courseName}</td>
+      <td>${h.degr}기</td>
+      <td><span class="health-badge health-${h.level}">${getHealthEmoji(h.level)} ${h.score}</span></td>
+      <td>${miniBar(h.defenseRate)}</td>
+      <td>${miniBar(h.avgAttendance)}</td>
+      <td>${miniBar(h.greenRate)}</td>
+      <td>${miniBar(h.nps)}</td>
+      <td>${miniBar(h.safeRate)}</td>
+    </tr>
+  `).join("");
+
+  container.innerHTML = `
+    <div class="health-header">
+      <div class="health-header-left">
+        <h3 class="dash-panel-title">과정 건강도</h3>
+        <span style="font-size:12px;color:var(--text-secondary)">${scores.length}개 과정/기수</span>
+      </div>
+      <div class="health-gauge-wrap">
+        <span class="health-gauge health-${avgLevel}">${avgScore}</span>
+        <span class="health-gauge-label">${getHealthLabel(avgLevel)}</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="health-table">
+        <thead>
+          <tr>
+            <th>과정</th><th>기수</th><th>건강도</th>
+            <th>방어율</th><th>출석률</th><th>성취도</th><th>NPS</th><th>안전비율</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${insights.length > 0 ? `<div class="health-insights">${insights.map((i) => `<div class="health-insight-item">${i}</div>`).join("")}</div>` : ""}
+  `;
 }
 
 export async function initDashboard(): Promise<void> {

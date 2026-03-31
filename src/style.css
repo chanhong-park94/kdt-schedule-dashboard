@@ -8874,3 +8874,101 @@ dialog {
     font-size: 18px;
   }
 }
+
+/* ═══ 과정 건강도 ═══ */
+.health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.health-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.health-gauge-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.health-gauge {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-family: "Inter", monospace;
+}
+.health-gauge-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.health-excellent { color: var(--success); }
+.health-good { color: #f59e0b; }
+.health-caution { color: #f97316; }
+.health-danger { color: var(--danger); }
+
+.health-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.health-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--border);
+  background: var(--surface-hover);
+}
+.health-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.health-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.health-badge.health-excellent { background: #ecfdf5; color: #065f46; }
+.health-badge.health-good { background: #fefce8; color: #854d0e; }
+.health-badge.health-caution { background: #fff7ed; color: #9a3412; }
+.health-badge.health-danger { background: #fef2f2; color: #991b1b; }
+
+.health-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: var(--surface-hover);
+  border-radius: 3px;
+  min-width: 60px;
+}
+.health-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.health-insights {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--surface-hover);
+  border-radius: 10px;
+}
+.health-insight-item {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+@media (max-width: 600px) {
+  .health-gauge { font-size: 28px; }
+  .health-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
