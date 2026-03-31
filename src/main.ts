@@ -2631,6 +2631,17 @@ if (headerLogoutBtn) {
 initAssistantCheck();
 initContacts();
 initExcusedAbsence();
+
+// 데이터 신선도 모니터링 — 캐시 소스 등록 + 시작
+import { registerCacheSource, startCacheFreshnessMonitor } from "./hrd/hrdCacheUtils";
+import { getAchievementCacheTimestamp } from "./hrd/hrdAchievementApi";
+import { getSatisfactionCacheTimestamp } from "./hrd/hrdSatisfactionApi";
+import { getInquiryCacheTimestamp } from "./hrd/hrdInquiryApi";
+registerCacheSource("학업성취도", getAchievementCacheTimestamp);
+registerCacheSource("만족도", getSatisfactionCacheTimestamp);
+registerCacheSource("문의응대", getInquiryCacheTimestamp);
+startCacheFreshnessMonitor();
+
 // Lazy-load modal UI modules
 void import("./ui/patchNotes").then(({ initPatchNotes }) => initPatchNotes());
 void import("./ui/aiTeam").then(({ initAiTeam }) => initAiTeam());

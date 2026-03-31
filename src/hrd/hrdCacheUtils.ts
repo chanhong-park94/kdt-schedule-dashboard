@@ -93,3 +93,53 @@ export function showToast(message: string, type: "success" | "error" | "info" | 
   container.appendChild(el);
   setTimeout(() => el.remove(), 3_000);
 }
+
+// ─── 데이터 신선도 모니터링 ─────────────────────────────────
+
+const STALE_TTL = 24 * 60 * 60 * 1000; // 24시간
+const MONITOR_INTERVAL = 30 * 60 * 1000; // 30분마다 체크
+const STALE_NOTIFIED_KEY = "kdt_stale_notified_date";
+let monitorTimer: ReturnType<typeof setInterval> | null = null;
+
+interface CacheSource {
+  name: string;
+  getTimestamp: () => number | null;
+}
+
+/** 등록된 캐시 소스 목록 — 앱 부팅 시 동적으로 등록 */
+const cacheSources: CacheSource[] = [];
+
+/** 캐시 소스 등록 */
+export function registerCacheSource(name: string, getTimestamp: () => number | null): void {
+  if (!cacheSources.find((s) => s.name === name)) {
+    cacheSources.push({ name, getTimestamp });
+  }
+}
+
+/** 24시간 초과된 캐시 감지 → 토스트 알림 (하루 1회) */
+function checkCacheFreshness(): void {
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem(STALE_NOTIFIED_KEY) === today) return;
+
+  const staleItems: string[] = [];
+  for (const src of cacheSources) {
+    const ts = src.getTimestamp();
+    if (ts && Date.now() - ts > STALE_TTL) {
+      staleItems.push(`${src.name} (${formatCacheAge(ts)})`);
+    }
+  }
+
+  if (staleItems.length > 0) {
+    showToast(`⚠️ 오래된 데이터: ${staleItems.join(", ")} — 새로고침 필요`, "warning");
+    localStorage.setItem(STALE_NOTIFIED_KEY, today);
+  }
+}
+
+/** 데이터 신선도 모니터링 시작 (앱 부팅 시 1회 호출) */
+export function startCacheFreshnessMonitor(): void {
+  if (monitorTimer) return;
+  // 앱 시작 10초 후 첫 체크 (부팅 완료 대기)
+  setTimeout(checkCacheFreshness, 10_000);
+  // 이후 30분마다 체크
+  monitorTimer = setInterval(checkCacheFreshness, MONITOR_INTERVAL);
+}
