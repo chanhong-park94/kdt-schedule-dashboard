@@ -7,7 +7,8 @@
  */
 
 import { loadAchievementCache, loadAchievementConfig, fetchUnified, summarizeByTrainee } from "../hrd/hrdAchievementApi";
-import { loadSatisfactionCache, loadSatisfactionConfig, fetchSatisfactionRecords, summarizeByCohort } from "../hrd/hrdSatisfactionApi";
+import { loadSatisfactionConfig, fetchSatisfactionRecords, summarizeByCohort } from "../hrd/hrdSatisfactionApi";
+import { loadCachedSatisfactionRecords } from "./crossAnalysisData";
 import { loadInquiryCache, loadInquiryConfig, fetchInquiryRecords, calcInquiryStats } from "../hrd/hrdInquiryApi";
 import type { UnifiedRecord } from "../hrd/hrdAchievementTypes";
 import type { SatisfactionRecord } from "../hrd/hrdSatisfactionTypes";
@@ -457,12 +458,15 @@ async function loadOrFetchAchievement(onStatus?: (msg: string) => void): Promise
 }
 
 /**
- * 캐시 또는 API에서 만족도 데이터 로드.
+ * 캐시 + 수기입력 병합 만족도 데이터 로드.
+ * 수기입력 데이터를 우선으로, API 캐시와 병합합니다.
  */
 async function loadOrFetchSatisfaction(onStatus?: (msg: string) => void): Promise<SatisfactionRecord[]> {
-  const cached = loadSatisfactionCache();
-  if (cached && cached.length > 0) return cached;
+  // 수기입력 + API 캐시 병합 (crossAnalysisData와 동일 소스)
+  const merged = loadCachedSatisfactionRecords();
+  if (merged.length > 0) return merged;
 
+  // 캐시 없으면 API에서 fetch 시도
   const config = loadSatisfactionConfig();
   if (!config.webAppUrl) return [];
 
