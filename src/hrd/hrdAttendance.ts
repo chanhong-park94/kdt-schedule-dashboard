@@ -1702,9 +1702,16 @@ async function fetchAndRender(): Promise<void> {
     // 개강월부터 현재월까지 전체 출결 데이터 조회
     const now = new Date();
     const months: string[] = [];
-    const startMonth = course?.startDate
-      ? new Date(course.startDate)
-      : new Date(now.getFullYear(), now.getMonth(), 1); // startDate 없으면 현재월만
+    let startMonth: Date;
+    if (course?.startDate) {
+      startMonth = new Date(course.startDate);
+    } else {
+      // startDate 미설정 → totalDays 기반 역산 (수업일수 ÷ 5 × 7 = 캘린더일)
+      const td = course?.totalDays || 120;
+      const calendarDays = Math.ceil(td / 5) * 7;
+      startMonth = new Date(now);
+      startMonth.setDate(startMonth.getDate() - calendarDays);
+    }
     const cursor = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
     while (cursor <= now) {
       months.push(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`);
@@ -1804,9 +1811,15 @@ export async function fetchAllAttendanceData(
 
         // 개강월부터 현재월까지 전체 출결 조회
         const fetchMonths: string[] = [];
-        const startM = course.startDate
-          ? new Date(course.startDate)
-          : new Date(now.getFullYear(), now.getMonth(), 1);
+        let startM: Date;
+        if (course.startDate) {
+          startM = new Date(course.startDate);
+        } else {
+          const td = course.totalDays || 120;
+          const calendarDays = Math.ceil(td / 5) * 7;
+          startM = new Date(now);
+          startM.setDate(startM.getDate() - calendarDays);
+        }
         const cur = new Date(startM.getFullYear(), startM.getMonth(), 1);
         while (cur <= now) {
           fetchMonths.push(`${cur.getFullYear()}${String(cur.getMonth() + 1).padStart(2, "0")}`);

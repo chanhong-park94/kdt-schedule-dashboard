@@ -186,9 +186,16 @@ async function fetchDashboardData(
 
           // 출결 데이터 조회 — 개강월부터 현재월까지 전체
           const months: string[] = [];
-          const startMonth = course.startDate
-            ? new Date(course.startDate)
-            : new Date(now.getFullYear(), now.getMonth() - 2, 1); // startDate 없으면 3개월 fallback
+          let startMonth: Date;
+          if (course.startDate) {
+            startMonth = new Date(course.startDate);
+          } else {
+            // startDate 미설정 → totalDays 기반 역산
+            const td = course.totalDays || 120;
+            const calendarDays = Math.ceil(td / 5) * 7;
+            startMonth = new Date(now);
+            startMonth.setDate(startMonth.getDate() - calendarDays);
+          }
           const cursor = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
           while (cursor <= now) {
             months.push(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`);
