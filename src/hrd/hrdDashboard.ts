@@ -184,15 +184,15 @@ async function fetchDashboardData(
           const totalCount = roster.length;
           const now = new Date();
 
-          // 출결 데이터 조회 — 개강월부터 현재월까지 전체
+          // 출결 데이터 조회 — 전체 훈련기간 누적 (개강~종강)
           const months: string[] = [];
           let startMonth: Date;
           if (course.startDate) {
             startMonth = new Date(course.startDate);
           } else {
-            // startDate 미설정 → totalDays 기반 역산
+            // totalDays 역산 + 여유 2개월
             const td = course.totalDays || 120;
-            const calendarDays = Math.ceil(td / 5) * 7;
+            const calendarDays = Math.ceil(td / 5) * 7 + 60;
             startMonth = new Date(now);
             startMonth.setDate(startMonth.getDate() - calendarDays);
           }
@@ -207,8 +207,8 @@ async function fetchDashboardData(
             try {
               const records = await fetchDailyAttendance(config, course.trainPrId, degr, month);
               allAttendance.push(...records);
-            } catch (err) {
-              console.warn(`[Dashboard] ${month} 출결 조회 실패:`, err);
+            } catch {
+              // 해당 월에 데이터 없으면 무시
             }
           }
 

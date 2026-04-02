@@ -98,6 +98,51 @@ let allDailyRecords: Map<string, AttendanceDayRecord[]> = new Map(); // name →
 let chartInstances: Chart[] = [];
 let currentConfig: HrdConfig = loadHrdConfig();
 
+// ─── 전체 훈련기간 출결 조회 (개강~종강 누적) ────────────────
+
+/**
+ * 과정/기수의 전체 훈련기간 출결 데이터를 조회합니다.
+ * startDate가 있으면 개강월부터, 없으면 totalDays 역산으로 추정.
+ * 종강 기수도 정확한 누적 결석을 계산할 수 있습니다.
+ */
+async function fetchFullPeriodAttendance(
+  config: HrdConfig,
+  trainPrId: string,
+  degr: string,
+  course: HrdCourse | undefined,
+): Promise<HrdRawAttendance[]> {
+  const now = new Date();
+  const months: string[] = [];
+
+  let startMonth: Date;
+  if (course?.startDate) {
+    startMonth = new Date(course.startDate);
+  } else {
+    // totalDays 역산: 수업일수 ÷ 5 × 7 = 캘린더일 + 여유 2개월
+    const td = course?.totalDays || 120;
+    const calendarDays = Math.ceil(td / 5) * 7 + 60; // 여유 2개월 추가
+    startMonth = new Date(now);
+    startMonth.setDate(startMonth.getDate() - calendarDays);
+  }
+
+  const cursor = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
+  while (cursor <= now) {
+    months.push(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  const allDaily: HrdRawAttendance[] = [];
+  for (const m of months) {
+    try {
+      const records = await fetchDailyAttendance(config, trainPrId, degr, m);
+      allDaily.push(...records);
+    } catch {
+      // 개별 월 실패 무시 (해당 월에 데이터 없을 수 있음)
+    }
+  }
+  return allDaily;
+}
+
 // ─── DOM Helpers ────────────────────────────────────────────
 const $ = (id: string) => document.getElementById(id);
 
@@ -1699,38 +1744,14 @@ async function fetchAndRender(): Promise<void> {
   try {
     currentConfig = loadHrdConfig();
 
-    // 개강월부터 현재월까지 전체 출결 데이터 조회
+    // 전체 훈련기간 출결 데이터 조회 — 개강~종강 누적 결석 정확 측정
     const now = new Date();
-    const months: string[] = [];
-    let startMonth: Date;
-    if (course?.startDate) {
-      startMonth = new Date(course.startDate);
-    } else {
-      // startDate 미설정 → totalDays 기반 역산 (수업일수 ÷ 5 × 7 = 캘린더일)
-      const td = course?.totalDays || 120;
-      const calendarDays = Math.ceil(td / 5) * 7;
-      startMonth = new Date(now);
-      startMonth.setDate(startMonth.getDate() - calendarDays);
-    }
-    const cursor = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
-    while (cursor <= now) {
-      months.push(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`);
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
 
     const [roster] = await Promise.all([fetchRoster(currentConfig, tid, deg)]);
     await loadGenderData(tid, deg);
 
-    // 전체 월 출결 데이터 수집
-    const allDaily: HrdRawAttendance[] = [];
-    for (const m of months) {
-      try {
-        const records = await fetchDailyAttendance(currentConfig, tid, deg, m);
-        allDaily.push(...records);
-      } catch {
-        // 개별 월 실패는 무시
-      }
-    }
+    // 전체 월 출결 데이터 수집 — 충분한 범위 조회 후 첫 출석일 자동 감지
+    const allDaily = await fetchFullPeriodAttendance(currentConfig, tid, deg, course);
 
     // Build cumulative records (전체 기간 누적 — 결석일수/주간트렌드/요일패턴용)
     allDailyRecords = buildAllDailyRecords(allDaily);
@@ -1807,33 +1828,8 @@ export async function fetchAllAttendanceData(
       onProgress?.(`${done}/${totalJobs} 조회 중... (${course.name} ${degr}기)`);
 
       try {
-        const now = new Date();
-
-        // 개강월부터 현재월까지 전체 출결 조회
-        const fetchMonths: string[] = [];
-        let startM: Date;
-        if (course.startDate) {
-          startM = new Date(course.startDate);
-        } else {
-          const td = course.totalDays || 120;
-          const calendarDays = Math.ceil(td / 5) * 7;
-          startM = new Date(now);
-          startM.setDate(startM.getDate() - calendarDays);
-        }
-        const cur = new Date(startM.getFullYear(), startM.getMonth(), 1);
-        while (cur <= now) {
-          fetchMonths.push(`${cur.getFullYear()}${String(cur.getMonth() + 1).padStart(2, "0")}`);
-          cur.setMonth(cur.getMonth() + 1);
-        }
-
         const roster = await fetchRoster(config, course.trainPrId, degr);
-        const daily: HrdRawAttendance[] = [];
-        for (const m of fetchMonths) {
-          try {
-            const records = await fetchDailyAttendance(config, course.trainPrId, degr, m);
-            daily.push(...records);
-          } catch { /* 개별 월 실패 무시 */ }
-        }
+        const daily = await fetchFullPeriodAttendance(config, course.trainPrId, degr, course);
 
         // 성별 데이터 로딩 (교차분석용)
         await loadGenderData(course.trainPrId, degr);
