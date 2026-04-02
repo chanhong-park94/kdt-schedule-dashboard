@@ -41,7 +41,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "데이터사이언티스트",
     trainPrId: "AIG20230000455611",
-    degrs: ["1", "2", "3"],
+    degrs: ["1", "2", "3", "4", "5", "6", "7", "8"],
     startDate: "",
     totalDays: 120,
     endTime: "18:00",
@@ -51,7 +51,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "데이터분석",
     trainPrId: "AIG20240000498265",
-    degrs: ["1", "2", "3"],
+    degrs: ["1", "2", "3", "4", "5"],
     startDate: "",
     totalDays: 120,
     endTime: "18:00",
@@ -61,7 +61,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "[아이펠]딥러닝 개발자 도약 과정",
     trainPrId: "AIG20240000459187",
-    degrs: ["1", "2", "3", "4"],
+    degrs: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
     startDate: "",
     totalDays: 120,
     endTime: "18:00",
