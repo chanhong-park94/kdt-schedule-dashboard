@@ -184,11 +184,15 @@ async function fetchDashboardData(
           const totalCount = roster.length;
           const now = new Date();
 
-          // 출결 데이터 조회 (진행률 계산에도 사용)
+          // 출결 데이터 조회 — 개강월부터 현재월까지 전체
           const months: string[] = [];
-          for (let m = 2; m >= 0; m--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
-            months.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`);
+          const startMonth = course.startDate
+            ? new Date(course.startDate)
+            : new Date(now.getFullYear(), now.getMonth() - 2, 1); // startDate 없으면 3개월 fallback
+          const cursor = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
+          while (cursor <= now) {
+            months.push(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+            cursor.setMonth(cursor.getMonth() + 1);
           }
 
           const allAttendance: HrdRawAttendance[] = [];

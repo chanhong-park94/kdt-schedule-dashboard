@@ -1692,7 +1692,6 @@ async function fetchAndRender(): Promise<void> {
   const tid = courseSelect.value;
   const deg = degrSelect.value;
   const date = dateInput?.value || new Date().toISOString().slice(0, 10);
-  const month = date.replace(/-/g, "").slice(0, 6);
   const course = getSelectedCourse();
 
   if (statusEl) statusEl.textContent = "데이터 조회 중...";
@@ -1700,18 +1699,37 @@ async function fetchAndRender(): Promise<void> {
   try {
     currentConfig = loadHrdConfig();
 
-    // Fetch roster + daily data + gender in parallel
-    const [roster, daily] = await Promise.all([
-      fetchRoster(currentConfig, tid, deg),
-      fetchDailyAttendance(currentConfig, tid, deg, month),
-    ]);
+    // 개강월부터 현재월까지 전체 출결 데이터 조회
+    const now = new Date();
+    const months: string[] = [];
+    const startMonth = course?.startDate
+      ? new Date(course.startDate)
+      : new Date(now.getFullYear(), now.getMonth(), 1); // startDate 없으면 현재월만
+    const cursor = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
+    while (cursor <= now) {
+      months.push(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    const [roster] = await Promise.all([fetchRoster(currentConfig, tid, deg)]);
     await loadGenderData(tid, deg);
 
-    // Build cumulative records (월간 누적 — 주간트렌드/요일패턴용)
-    allDailyRecords = buildAllDailyRecords(daily);
+    // 전체 월 출결 데이터 수집
+    const allDaily: HrdRawAttendance[] = [];
+    for (const m of months) {
+      try {
+        const records = await fetchDailyAttendance(currentConfig, tid, deg, m);
+        allDaily.push(...records);
+      } catch {
+        // 개별 월 실패는 무시
+      }
+    }
+
+    // Build cumulative records (전체 기간 누적 — 결석일수/주간트렌드/요일패턴용)
+    allDailyRecords = buildAllDailyRecords(allDaily);
 
     // 항상 일별 조회 — 선택한 날짜의 출결 상태만 테이블에 표시
-    currentStudents = buildStudents(roster, daily, date, course, tid, deg);
+    currentStudents = buildStudents(roster, allDaily, date, course, tid, deg);
 
     // Calculate metrics
     const metrics = calculateMetrics(currentStudents);
@@ -1730,8 +1748,8 @@ async function fetchAndRender(): Promise<void> {
     renderPatternInsights(patterns);
 
     // 조회 정보 표시
-    const now = new Date();
-    const queryTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const queryNow = new Date();
+    const queryTime = `${String(queryNow.getHours()).padStart(2, "0")}:${String(queryNow.getMinutes()).padStart(2, "0")}`;
     if (statusEl) statusEl.textContent = `✅ ${roster.length}명 · ${date} 출결 조회 완료 (${queryTime} 조회)`;
 
     // 테이블 상단 조회 정보 배너
@@ -1783,12 +1801,26 @@ export async function fetchAllAttendanceData(
 
       try {
         const now = new Date();
-        const month = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-        const [roster, daily] = await Promise.all([
-          fetchRoster(config, course.trainPrId, degr),
-          fetchDailyAttendance(config, course.trainPrId, degr, month),
-        ]);
+        // 개강월부터 현재월까지 전체 출결 조회
+        const fetchMonths: string[] = [];
+        const startM = course.startDate
+          ? new Date(course.startDate)
+          : new Date(now.getFullYear(), now.getMonth(), 1);
+        const cur = new Date(startM.getFullYear(), startM.getMonth(), 1);
+        while (cur <= now) {
+          fetchMonths.push(`${cur.getFullYear()}${String(cur.getMonth() + 1).padStart(2, "0")}`);
+          cur.setMonth(cur.getMonth() + 1);
+        }
+
+        const roster = await fetchRoster(config, course.trainPrId, degr);
+        const daily: HrdRawAttendance[] = [];
+        for (const m of fetchMonths) {
+          try {
+            const records = await fetchDailyAttendance(config, course.trainPrId, degr, m);
+            daily.push(...records);
+          } catch { /* 개별 월 실패 무시 */ }
+        }
 
         // 성별 데이터 로딩 (교차분석용)
         await loadGenderData(course.trainPrId, degr);
