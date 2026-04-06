@@ -55,8 +55,19 @@ function esc(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// ── Debounce 유틸 ─────────────────────────────────────────
+
+function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return ((...args: unknown[]) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  }) as T;
+}
+
 // ── State ──────────────────────────────────────────────────
 
+let isAnalyzing = false;
 let scatterChart: Chart | null = null;
 let radarChart: Chart | null = null;
 let histogramChart: Chart | null = null;
@@ -459,6 +470,9 @@ function onHeatmapCellClick(cell: HeatmapCell): void {
 // ── 분석 실행 ─────────────────────────────────────────────
 
 async function runAnalysis(): Promise<void> {
+  if (isAnalyzing) return;
+  isAnalyzing = true;
+
   const statusEl = $("crossAnalysisStatus");
   if (statusEl) statusEl.textContent = "데이터 로딩 중...";
 
@@ -475,6 +489,7 @@ async function runAnalysis(): Promise<void> {
 
   if (missing.length === 3) {
     if (statusEl) statusEl.textContent = "⚠️ 데이터가 없습니다. 먼저 출결현황, 학업성취도, 만족도 탭에서 데이터를 조회해주세요.";
+    isAnalyzing = false;
     return;
   }
 
@@ -494,8 +509,8 @@ async function runAnalysis(): Promise<void> {
   if (cohortFilter) studentData = studentData.filter((s) => s.기수 === cohortFilter);
   currentStudentData = studentData;
 
-  // 기수 매칭 — 전체 데이터 보관 후 필터 적용
-  allCohortData = matchCohortData(studentData, satisfactionRecords);
+  // 기수 매칭 — 필터 전 전체 학생으로 생성 (기수 탭에서 독립 필터 사용)
+  allCohortData = matchCohortData(allStudentData, satisfactionRecords);
   const cohortCourseFilter = ($("crossCohortFilterCourse") as HTMLSelectElement | null)?.value ?? "";
   const cohortData = cohortCourseFilter ? allCohortData.filter((c) => c.과정명 === cohortCourseFilter) : allCohortData;
   currentCohortData = cohortData;
@@ -510,6 +525,8 @@ async function runAnalysis(): Promise<void> {
   } else {
     if (statusEl) statusEl.textContent = `✅ 분석 완료 (${studentData.length}명 매칭)`;
   }
+
+  isAnalyzing = false;
 }
 
 // ── 이벤트 바인딩 ─────────────────────────────────────────
@@ -527,11 +544,12 @@ function setupEvents(): void {
     analyzeBtn.addEventListener("click", () => void runAnalysis());
   }
 
-  // 학생 필터 변경 → 재분석
+  // 학생 필터 변경 → 재분석 (debounce로 연속 변경 시 마지막만 실행)
+  const debouncedAnalysis = debounce(() => void runAnalysis(), 300);
   const courseFilter = $("crossFilterCourse");
   const cohortFilter = $("crossFilterCohort");
-  if (courseFilter) courseFilter.addEventListener("change", () => void runAnalysis());
-  if (cohortFilter) cohortFilter.addEventListener("change", () => void runAnalysis());
+  if (courseFilter) courseFilter.addEventListener("change", debouncedAnalysis);
+  if (cohortFilter) cohortFilter.addEventListener("change", debouncedAnalysis);
 
   // 기수 필터 변경 → 기수 분석만 재실행
   const cohortCourseFilter = $("crossCohortFilterCourse");

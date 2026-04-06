@@ -29,8 +29,15 @@ export function saveAchievementConfig(config: AchievementConfig): void {
   localStorage.setItem(ACHIEVEMENT_CONFIG_KEY, JSON.stringify(config));
 }
 
-// ── 캐시 ────────────────────────────────────────────────────
+// ── 캐시 (2-tier: 인메모리 전체 + localStorage 요약) ──────
 interface AchievementCache {
+  timestamp: number;
+  unified: UnifiedRecord[];
+  sheetList: string[];
+}
+
+/** localStorage 요약 캐시 (quota-safe, ~50KB) */
+interface AchievementLightCache {
   timestamp: number;
   unified: UnifiedRecord[];
   sheetList: string[];
@@ -38,22 +45,33 @@ interface AchievementCache {
 
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
+/** 인메모리 캐시 — 세션 내 45K+ 레코드 유지 */
+let _memoryCache: AchievementCache | null = null;
+
 export function loadAchievementCache(): UnifiedRecord[] | null {
-  const c = _loadCache();
-  return c ? c.unified : null;
+  // 1순위: 인메모리 (전체 레코드)
+  if (_memoryCache && Date.now() - _memoryCache.timestamp <= CACHE_TTL) {
+    return _memoryCache.unified;
+  }
+  // 2순위: localStorage (요약 레코드 — quota-safe)
+  const lsCache = _loadLsCache();
+  return lsCache ? lsCache.unified : null;
 }
 
 /** 캐시 저장 시점(ms) 반환. 캐시 없거나 만료면 null */
 export function getAchievementCacheTimestamp(): number | null {
-  const c = _loadCache();
-  return c ? c.timestamp : null;
+  if (_memoryCache && Date.now() - _memoryCache.timestamp <= CACHE_TTL) {
+    return _memoryCache.timestamp;
+  }
+  const lsCache = _loadLsCache();
+  return lsCache ? lsCache.timestamp : null;
 }
 
-function _loadCache(): AchievementCache | null {
+function _loadLsCache(): AchievementLightCache | null {
   try {
     const raw = localStorage.getItem(ACHIEVEMENT_CACHE_KEY);
     if (!raw) return null;
-    const cache = JSON.parse(raw) as AchievementCache;
+    const cache = JSON.parse(raw) as AchievementLightCache;
     if (Date.now() - cache.timestamp > CACHE_TTL) return null;
     return cache;
   } catch {
@@ -61,11 +79,27 @@ function _loadCache(): AchievementCache | null {
   }
 }
 
+/** 인메모리에 전체 레코드 저장 + localStorage에 compact 버전 저장 */
 function saveCache(data: AchievementCache): void {
+  // 인메모리: 전체 레코드 (45K+건, 세션 내 유지)
+  _memoryCache = data;
+
+  // localStorage: 훈련생별 대표 1행만 저장 (이름+과정+기수+훈련상태+신호등 판단용)
+  // 45,574건 → ~689명 대표 레코드 → ~200KB 이하
+  const seen = new Map<string, UnifiedRecord>();
+  for (const r of data.unified) {
+    const key = `${r.이름}|${r.과정}|${r.기수}`;
+    if (!seen.has(key)) seen.set(key, r);
+  }
+  const compact: AchievementLightCache = {
+    timestamp: data.timestamp,
+    unified: [...seen.values()],
+    sheetList: data.sheetList,
+  };
   try {
-    localStorage.setItem(ACHIEVEMENT_CACHE_KEY, JSON.stringify(data));
-  } catch {
-    /* quota exceeded 등 무시 */
+    localStorage.setItem(ACHIEVEMENT_CACHE_KEY, JSON.stringify(compact));
+  } catch (e) {
+    console.warn("[achievement] localStorage 캐시 저장 실패 (quota?):", (e as Error).message);
   }
 }
 
@@ -82,8 +116,10 @@ async function fetchAction(baseUrl: string, params: Record<string, string>): Pro
 
 /** 통합시트 전체 로드 */
 export async function fetchUnified(config: AchievementConfig): Promise<UnifiedRecord[]> {
-  const cached = _loadCache();
-  if (cached) return cached.unified;
+  // 인메모리 전체 레코드 우선 (localStorage에는 요약만 있으므로)
+  if (_memoryCache && Date.now() - _memoryCache.timestamp <= CACHE_TTL) {
+    return _memoryCache.unified;
+  }
 
   const json = (await fetchAction(config.webAppUrl, { action: "unified" })) as {
     headers: string[];
@@ -113,16 +149,25 @@ export async function fetchUnified(config: AchievementConfig): Promise<UnifiedRe
     퀘스트실행여부: row[17] === true || row[17] === "true",
   }));
 
-  // 시트 목록도 함께 캐시
-  const sheetsJson = (await fetchAction(config.webAppUrl, { action: "sheets" })) as { sheets: string[] };
-  saveCache({ timestamp: Date.now(), unified: records, sheetList: sheetsJson.sheets });
+  // 시트 목록도 함께 캐시 — sheets 실패 시에도 데이터 캐시는 저장
+  let sheetList: string[] = [];
+  try {
+    const sheetsJson = (await fetchAction(config.webAppUrl, { action: "sheets" })) as { sheets: string[] };
+    sheetList = sheetsJson.sheets ?? [];
+  } catch {
+    /* sheets 조회 실패해도 데이터 캐시는 저장 */
+  }
+  saveCache({ timestamp: Date.now(), unified: records, sheetList });
   return records;
 }
 
 /** 사용 가능한 시트 목록 */
 export async function fetchSheetList(config: AchievementConfig): Promise<string[]> {
-  const cached = _loadCache();
-  if (cached) return cached.sheetList;
+  if (_memoryCache && Date.now() - _memoryCache.timestamp <= CACHE_TTL) {
+    return _memoryCache.sheetList;
+  }
+  const lsCache = _loadLsCache();
+  if (lsCache && lsCache.sheetList.length > 0) return lsCache.sheetList;
   const json = (await fetchAction(config.webAppUrl, { action: "sheets" })) as { sheets: string[] };
   return json.sheets;
 }

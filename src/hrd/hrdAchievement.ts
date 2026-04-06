@@ -477,35 +477,46 @@ export function initAchievement(): void {
   restoreFromCache();
   restoreEmpCache();
 
-  // 조회 (현재 활성 탭에 따라 분기)
-  $("achievementFetchBtn")?.addEventListener("click", async () => {
+  // 조회 (현재 활성 탭에 따라 분기) — 중복 클릭 방어
+  let isFetching = false;
+  const fetchBtn = $("achievementFetchBtn") as HTMLButtonElement | null;
+  fetchBtn?.addEventListener("click", async () => {
+    if (isFetching) return;
+    isFetching = true;
+    if (fetchBtn) fetchBtn.disabled = true;
+
     currentConfig = loadAchievementConfig();
     if (!currentConfig.webAppUrl) {
       setStatus("설정 → API 연동에서 Apps Script URL을 입력해주세요.", "error");
+      isFetching = false;
+      if (fetchBtn) fetchBtn.disabled = false;
       return;
     }
 
-    if (activeSubTab === "unemployed") {
-      setStatus("실업자 데이터 로딩 중...", "loading");
-      try {
+    try {
+      if (activeSubTab === "unemployed") {
+        setStatus("실업자 데이터 로딩 중...", "loading");
         allRecords = await fetchUnified(currentConfig);
         const { courses, cohorts } = extractFilters(allRecords);
         populateFilters(courses, cohorts);
         applyFilterAndRender();
         setStatus(`${allRecords.length.toLocaleString()}건 로드 완료`, "success");
-      } catch (e) {
-        setStatus(classifyApiError(e), "error");
-      }
-    } else {
-      setEmpStatus("재직자 데이터 로딩 중...", "loading");
-      try {
+      } else {
+        setEmpStatus("재직자 데이터 로딩 중...", "loading");
         empRecords = await fetchEmployedRecords();
         populateEmpFilters(empRecords);
         applyEmpFilterAndRender();
         setEmpStatus(`${empRecords.length}명 로드 완료`, "success");
-      } catch (e) {
+      }
+    } catch (e) {
+      if (activeSubTab === "unemployed") {
+        setStatus(classifyApiError(e), "error");
+      } else {
         setEmpStatus(classifyApiError(e), "error");
       }
+    } finally {
+      isFetching = false;
+      if (fetchBtn) fetchBtn.disabled = false;
     }
   });
 
