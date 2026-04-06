@@ -7,7 +7,6 @@
  */
 import type { EmployedRecord, EmployedSummary, EmployedCache, EmployedConfig } from "./hrdEmployedTypes";
 import { EMPLOYED_CACHE_KEY, EMPLOYED_CONFIG_KEY } from "./hrdEmployedTypes";
-import { loadAchievementConfig } from "./hrdAchievementApi";
 import { fetchWithTimeout } from "./hrdCacheUtils";
 
 const CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -70,6 +69,19 @@ export function loadEmployedCache(): EmployedRecord[] | null {
   }
 }
 
+/** 재직자 캐시 저장 시점(ms) 반환 */
+export function getEmployedCacheTimestamp(): number | null {
+  try {
+    const raw = localStorage.getItem(EMPLOYED_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as EmployedCache;
+    if (Date.now() - cache.timestamp > CACHE_TTL) return null;
+    return cache.timestamp;
+  } catch {
+    return null;
+  }
+}
+
 function saveCache(records: EmployedRecord[]): void {
   try {
     localStorage.setItem(EMPLOYED_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), records }));
@@ -89,13 +101,11 @@ async function fetchAction(baseUrl: string, params: Record<string, string>): Pro
   return r.json();
 }
 
-/** 재직자 전용 URL → 학업성취도 공용 URL 순으로 확인 */
+/** 재직자 전용 URL 확인 — 실업자 URL fallback 제거 (스키마 불일치 방지) */
 function resolveEmployedUrl(): string {
   const empConfig = loadEmployedConfig();
   if (empConfig.webAppUrl) return empConfig.webAppUrl;
-  const achConfig = loadAchievementConfig();
-  if (achConfig.webAppUrl) return achConfig.webAppUrl;
-  throw new Error("재직자 유닛리포트 Apps Script URL이 설정되지 않았습니다. 설정 탭에서 입력하세요.");
+  throw new Error("재직자 유닛리포트 Apps Script URL이 설정되지 않았습니다. 설정 → API 연동에서 입력하세요.");
 }
 
 // ── 데이터 로드 ─────────────────────────────────────────────
@@ -114,6 +124,17 @@ export async function fetchEmployedRecords(): Promise<EmployedRecord[]> {
 
   const headers = json.headers.map(String);
   const idx = (name: string) => headers.indexOf(name);
+
+  // 필수 헤더 검증 — 스키마 변경 시 조기 감지
+  const nameIdx = idx("성명") >= 0 ? idx("성명") : idx("이름");
+  if (nameIdx < 0) throw new Error("재직자 시트에 '성명' 또는 '이름' 컬럼이 없습니다. 시트 헤더를 확인하세요.");
+  if (idx("기수") < 0) throw new Error("재직자 시트에 '기수' 컬럼이 없습니다. 시트 헤더를 확인하세요.");
+
+  // 유닛 컬럼 존재 여부 확인
+  const unitCount = headers.filter((h) => h.match(/^유닛\d+_강사진단$/)).length;
+  if (unitCount === 0) {
+    console.warn("[employed] '유닛N_강사진단' 컬럼 미발견 — 헤더:", headers.join(", "));
+  }
 
   const records: EmployedRecord[] = json.rows
     .filter((row) => {

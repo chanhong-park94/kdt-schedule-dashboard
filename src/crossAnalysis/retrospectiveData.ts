@@ -511,12 +511,17 @@ export async function collectRetrospectiveData(
   onStatus?.("데이터 로딩 중...");
 
   // 5개 소스 병렬 로드 — 캐시 우선, 없으면 API fetch
+  const loadErrors: string[] = [];
   const [attendanceStudents, achievementRecords, satisfactionRecords, inquiryRecords] = await Promise.all([
-    loadAttendanceStudents().catch(() => [] as AttendanceStudent[]),
-    loadOrFetchAchievement(onStatus).catch(() => [] as UnifiedRecord[]),
-    loadOrFetchSatisfaction(onStatus).catch(() => [] as SatisfactionRecord[]),
-    loadOrFetchInquiry(onStatus).catch(() => [] as InquiryRecord[]),
+    loadAttendanceStudents().catch((e) => { loadErrors.push(`출결: ${(e as Error).message}`); return [] as AttendanceStudent[]; }),
+    loadOrFetchAchievement(onStatus).catch((e) => { loadErrors.push(`학업성취도: ${(e as Error).message}`); return [] as UnifiedRecord[]; }),
+    loadOrFetchSatisfaction(onStatus).catch((e) => { loadErrors.push(`만족도: ${(e as Error).message}`); return [] as SatisfactionRecord[]; }),
+    loadOrFetchInquiry(onStatus).catch((e) => { loadErrors.push(`문의응대: ${(e as Error).message}`); return [] as InquiryRecord[]; }),
   ]);
+  if (loadErrors.length > 0) {
+    console.warn("[retrospective] 데이터 로드 실패:", loadErrors);
+    onStatus?.(`⚠️ 일부 데이터 로드 실패: ${loadErrors.map((e) => e.split(":")[0]).join(", ")}`);
+  }
 
   // 데이터 가용성 판별
   const availability: DataAvailability = {

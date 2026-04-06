@@ -37,6 +37,9 @@ function calculateAgeFromBirth(birth: string): number {
   const monthDay = digits.length >= 8 ? digits.slice(4, 8) : digits.slice(2, 6);
   const month = parseInt(monthDay.slice(0, 2), 10);
   const day = parseInt(monthDay.slice(2, 4), 10);
+  // 월/일 유효성 검사
+  if (month < 1 || month > 12 || day < 1 || day > 31) return 0;
+  if (year < 1930 || year > now.getFullYear()) return 0;
   let age = now.getFullYear() - year;
   if (now.getMonth() + 1 < month || (now.getMonth() + 1 === month && now.getDate() < day)) age--;
   return age > 0 ? age : 0;

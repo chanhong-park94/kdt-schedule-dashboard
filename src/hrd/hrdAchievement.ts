@@ -24,6 +24,7 @@ import {
   summarizeEmployed,
   extractEmployedFilters,
   loadEmployedCache,
+  getEmployedCacheTimestamp,
   loadEmployedConfig,
   saveEmployedConfig,
   testEmployedConnection,
@@ -425,7 +426,9 @@ function restoreEmpCache(): void {
   empRecords = cached;
   populateEmpFilters(empRecords);
   applyEmpFilterAndRender();
-  setEmpStatus(`${empRecords.length}명 (캐시)`, "success"); // 재직자는 별도 캐시 타임스탬프 없음
+  const empTs = getEmployedCacheTimestamp();
+  const empAge = empTs ? ` · ${formatCacheAge(empTs)}` : "";
+  setEmpStatus(`${empRecords.length}명 (캐시${empAge})`, "success");
 }
 
 // ─── 초기화 ─────────────────────────────────────────────────
@@ -520,15 +523,15 @@ export function initAchievement(): void {
     }
   });
 
-  // Excel 다운로드
+  // Excel 다운로드 — 현재 필터 적용된 데이터 내보내기
   $("achievementExcelBtn")?.addEventListener("click", async () => {
-    if (allRecords.length === 0) {
+    if (lastFilteredSummaries.length === 0) {
       showToast("데이터가 없습니다. 먼저 조회해주세요.", "warning");
       return;
     }
     try {
       const XLSX = await import("xlsx");
-      const summaries = summarizeByTrainee(allRecords, "", "");
+      const summaries = lastFilteredSummaries;
       const wsData = summaries.map((s) => ({
         이름: s.이름,
         과정: s.과정,
@@ -542,8 +545,9 @@ export function initAchievement(): void {
       const ws = XLSX.utils.json_to_sheet(wsData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "학업성취도");
-      XLSX.writeFile(wb, `학업성취도_${new Date().toISOString().slice(0, 10)}.xlsx`);
-      showToast("Excel 다운로드 완료", "success");
+      const filterHint = summaries.length < allRecords.length ? `_필터${summaries.length}명` : "";
+      XLSX.writeFile(wb, `학업성취도_${new Date().toISOString().slice(0, 10)}${filterHint}.xlsx`);
+      showToast(`Excel 다운로드 완료 (${summaries.length}명)`, "success");
     } catch (e) {
       showToast(`Excel 생성 실패: ${(e as Error).message}`, "error");
     }
