@@ -95,3 +95,92 @@ export function loadDocConfig(): DocConfig {
 export function saveDocConfig(config: DocConfig): void {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
 }
+
+// ── 공결 신청 조회 설정 ──────────────────────────────
+const EXCUSE_API_CONFIG_KEY = "kdt_doc_excuse_api_config_v1";
+
+export interface ExcuseApiConfig {
+  applicationUrl: string; // 공가 신청서 Apps Script URL
+  evidenceUrl: string; // 증빙자료 Apps Script URL
+}
+
+export interface ExcuseApplication {
+  timestamp: string;
+  courseName: string;
+  traineeName: string;
+  birthDate: string;
+  reason: string;
+  requestDates: string; // "2026-03-24, 2026-03-25" (multiple possible)
+  source: "application";
+}
+
+export interface EvidenceSubmission {
+  timestamp: string;
+  courseName: string;
+  traineeName: string;
+  evidenceUrls: string;
+  source: "evidence";
+}
+
+export type ExcuseEntry = ExcuseApplication | EvidenceSubmission;
+
+export function loadExcuseApiConfig(): ExcuseApiConfig {
+  try {
+    const raw = localStorage.getItem(EXCUSE_API_CONFIG_KEY);
+    if (raw) return JSON.parse(raw) as ExcuseApiConfig;
+  } catch {
+    /* */
+  }
+  return { applicationUrl: "", evidenceUrl: "" };
+}
+
+export function saveExcuseApiConfig(config: ExcuseApiConfig): void {
+  localStorage.setItem(EXCUSE_API_CONFIG_KEY, JSON.stringify(config));
+}
+
+/** Test patterns for filtering out test data */
+const TEST_PATTERNS = /테스트|test/i;
+
+function isTestEntry(name: string): boolean {
+  return TEST_PATTERNS.test(name);
+}
+
+/** Fetch excuse applications from Apps Script */
+export async function fetchExcuseApplications(url: string): Promise<ExcuseApplication[]> {
+  if (!url) return [];
+  const sep = url.includes("?") ? "&" : "?";
+  const r = await fetch(`${url}${sep}action=all`, { signal: AbortSignal.timeout(30000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const json = (await r.json()) as { headers: string[]; rows: unknown[][] };
+
+  return json.rows
+    .map((row) => ({
+      timestamp: String(row[0] ?? ""),
+      courseName: String(row[2] ?? ""),
+      traineeName: String(row[3] ?? ""),
+      birthDate: String(row[4] ?? ""),
+      reason: String(row[5] ?? ""),
+      requestDates: String(row[6] ?? ""),
+      source: "application" as const,
+    }))
+    .filter((r) => r.traineeName && !isTestEntry(r.traineeName));
+}
+
+/** Fetch evidence submissions from Apps Script */
+export async function fetchEvidenceSubmissions(url: string): Promise<EvidenceSubmission[]> {
+  if (!url) return [];
+  const sep = url.includes("?") ? "&" : "?";
+  const r = await fetch(`${url}${sep}action=all`, { signal: AbortSignal.timeout(30000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const json = (await r.json()) as { headers: string[]; rows: unknown[][] };
+
+  return json.rows
+    .map((row) => ({
+      timestamp: String(row[0] ?? ""),
+      courseName: String(row[2] ?? ""),
+      traineeName: String(row[3] ?? ""),
+      evidenceUrls: String(row[4] ?? ""),
+      source: "evidence" as const,
+    }))
+    .filter((r) => r.traineeName && !isTestEntry(r.traineeName));
+}

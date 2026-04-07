@@ -2873,6 +2873,75 @@
                 <span id="docConfigStatus" style="margin-left: 12px; font-size: 13px; color: var(--text-secondary);"></span>
               </div>
 
+              <!-- 공결 신청 조회 -->
+              <div style="margin-top: 24px; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <h3 style="font-size: 15px; font-weight: 600;">📨 공결 신청 조회</h3>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn btn--sm" id="docExcuseFetchBtn">🔄 조회</button>
+                    <button type="button" class="btn btn--sm btn--primary" id="docExcuseRegisterBtn" disabled>✅ 선택 항목 등록</button>
+                  </div>
+                </div>
+
+                <!-- API 설정 (접이식) -->
+                <details id="docExcuseApiDetails" style="margin-bottom: 12px;">
+                  <summary style="font-size: 13px; color: var(--text-secondary); cursor: pointer;">⚙️ Apps Script URL 설정</summary>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div>
+                      <label class="doc-label">공결 신청서 Apps Script URL</label>
+                      <input type="text" id="docExcuseAppUrl" class="doc-input" placeholder="https://script.google.com/..." />
+                    </div>
+                    <div>
+                      <label class="doc-label">증빙자료 제출 Apps Script URL</label>
+                      <input type="text" id="docExcuseEvidenceUrl" class="doc-input" placeholder="https://script.google.com/..." />
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn--sm" id="docExcuseApiSaveBtn" style="margin-top: 8px;">URL 저장</button>
+                  <span id="docExcuseApiStatus" style="margin-left: 8px; font-size: 12px; color: var(--text-secondary);"></span>
+                </details>
+
+                <!-- 필터 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+                  <input type="text" id="docExcuseSearch" class="doc-input" placeholder="이름 검색..." style="width: 160px;" />
+                  <select id="docExcuseFilterCourse" class="doc-input" style="width: 200px;">
+                    <option value="">전체 과정</option>
+                  </select>
+                  <select id="docExcuseFilterSource" class="doc-input" style="width: 140px;">
+                    <option value="">전체 유형</option>
+                    <option value="application">공결 신청</option>
+                    <option value="evidence">증빙자료</option>
+                  </select>
+                  <label style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
+                    <input type="checkbox" id="docExcuseShowTest" /> 테스트 포함
+                  </label>
+                  <span id="docExcuseCount" style="font-size: 12px; color: var(--text-secondary); margin-left: auto;"></span>
+                </div>
+
+                <!-- 조회 결과 테이블 -->
+                <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                  <table class="hrd-table" id="docExcuseTable" style="display: none;">
+                    <thead style="position: sticky; top: 0; z-index: 1;">
+                      <tr>
+                        <th style="width: 36px;"><input type="checkbox" id="docExcuseCheckAll" /></th>
+                        <th>유형</th>
+                        <th>제출일시</th>
+                        <th>과정명</th>
+                        <th>이름</th>
+                        <th>사유/증빙</th>
+                        <th>신청 날짜</th>
+                      </tr>
+                    </thead>
+                    <tbody id="docExcuseBody"></tbody>
+                  </table>
+                </div>
+                <div id="docExcuseEmpty" style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                  <p>Apps Script URL을 설정하고 [🔄 조회] 버튼을 클릭하세요.</p>
+                </div>
+                <div id="docExcuseLoading" style="text-align: center; padding: 20px; display: none;">
+                  <p style="color: var(--text-secondary);">⏳ 데이터 조회 중...</p>
+                </div>
+              </div>
+
               <!-- 공결 기록 테이블 -->
               <div style="margin-top: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">

@@ -11,7 +11,15 @@ import {
   updateExcuseRecord,
   loadDocConfig,
   saveDocConfig,
+  loadExcuseApiConfig,
+  saveExcuseApiConfig,
+  fetchExcuseApplications,
+  fetchEvidenceSubmissions,
   type ExcuseRecord,
+  type ExcuseApiConfig,
+  type ExcuseApplication,
+  type EvidenceSubmission,
+  type ExcuseEntry,
 } from "./docAutomationApi";
 import { loadSignatureFromFile, renderSignaturePreview, showSignatureModal } from "./signatureManager";
 
@@ -83,6 +91,229 @@ function renderRecordTable(): void {
       }
     });
   });
+}
+
+// ── 공결 신청 조회 ───────────────────────────────────
+let allExcuseEntries: ExcuseEntry[] = [];
+
+const TEST_PATTERNS_UI = /테스트|test/i;
+
+function escExcuse(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderExcuseTable(): void {
+  const tbody = $("docExcuseBody");
+  const table = $("docExcuseTable");
+  const empty = $("docExcuseEmpty");
+  const loading = $("docExcuseLoading");
+  const countEl = $("docExcuseCount");
+  if (!tbody) return;
+  if (loading) loading.style.display = "none";
+
+  // Filters
+  const search = ($("docExcuseSearch") as HTMLInputElement)?.value?.toLowerCase() ?? "";
+  const courseFilter = ($("docExcuseFilterCourse") as HTMLSelectElement)?.value ?? "";
+  const sourceFilter = ($("docExcuseFilterSource") as HTMLSelectElement)?.value ?? "";
+  const showTest = ($("docExcuseShowTest") as HTMLInputElement)?.checked ?? false;
+
+  let filtered = allExcuseEntries;
+  if (!showTest) filtered = filtered.filter((e) => !TEST_PATTERNS_UI.test(e.traineeName));
+  if (search) filtered = filtered.filter((e) => e.traineeName.toLowerCase().includes(search));
+  if (courseFilter) filtered = filtered.filter((e) => e.courseName.includes(courseFilter));
+  if (sourceFilter) filtered = filtered.filter((e) => e.source === sourceFilter);
+
+  if (filtered.length === 0) {
+    if (table) table.style.display = "none";
+    if (empty) {
+      empty.style.display = "";
+      empty.textContent =
+        allExcuseEntries.length === 0 ? "조회된 데이터가 없습니다." : "필터 조건에 맞는 항목이 없습니다.";
+    }
+    if (countEl) countEl.textContent = "";
+    return;
+  }
+
+  if (table) table.style.display = "";
+  if (empty) empty.style.display = "none";
+  if (countEl) countEl.textContent = `${filtered.length}건`;
+
+  tbody.innerHTML = filtered
+    .map((e, i) => {
+      const isApp = e.source === "application";
+      const typeBadge = isApp
+        ? '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:4px;font-size:11px;">신청</span>'
+        : '<span style="background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;">증빙</span>';
+      const detail = isApp
+        ? `${escExcuse((e as ExcuseApplication).reason)}`
+        : `<a href="${escExcuse((e as EvidenceSubmission).evidenceUrls.split(",")[0].trim())}" target="_blank" rel="noopener" style="color:#6366f1;text-decoration:underline;">증빙 보기</a>`;
+      const dates = isApp ? escExcuse((e as ExcuseApplication).requestDates) : "-";
+      return `<tr>
+        <td style="text-align:center;"><input type="checkbox" class="doc-excuse-check" data-idx="${i}" /></td>
+        <td>${typeBadge}</td>
+        <td style="font-size:12px;white-space:nowrap;">${escExcuse(e.timestamp.replace(/\.\s*/g, "-").slice(0, 16))}</td>
+        <td style="font-size:12px;">${escExcuse(e.courseName)}</td>
+        <td style="font-weight:600;">${escExcuse(e.traineeName)}</td>
+        <td style="font-size:12px;">${detail}</td>
+        <td style="font-size:12px;">${dates}</td>
+      </tr>`;
+    })
+    .join("");
+
+  // Store filtered for checkbox reference
+  (tbody as any).__filtered = filtered;
+
+  // Update register button state
+  updateRegisterBtnState();
+}
+
+function updateRegisterBtnState(): void {
+  const checked = document.querySelectorAll<HTMLInputElement>(".doc-excuse-check:checked");
+  const btn = $("docExcuseRegisterBtn") as HTMLButtonElement | null;
+  if (btn) {
+    btn.disabled = checked.length === 0;
+    btn.textContent = checked.length > 0 ? `✅ ${checked.length}건 등록` : "✅ 선택 항목 등록";
+  }
+}
+
+function registerCheckedExcuses(): void {
+  const tbody = $("docExcuseBody");
+  const filtered: ExcuseEntry[] = (tbody as any)?.__filtered ?? [];
+  const checked = document.querySelectorAll<HTMLInputElement>(".doc-excuse-check:checked");
+  if (checked.length === 0) return;
+
+  const config = loadDocConfig();
+  let addedCount = 0;
+
+  checked.forEach((cb) => {
+    const idx = Number(cb.dataset.idx);
+    const entry = filtered[idx];
+    if (!entry) return;
+
+    if (entry.source === "application") {
+      const app = entry as ExcuseApplication;
+      // Multiple dates possible (comma separated)
+      const dates = app.requestDates
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean);
+      for (const date of dates) {
+        addExcuseRecord({
+          courseName: config.courseName || app.courseName,
+          cohort: config.cohort,
+          occurrenceDate: date,
+          applicationDate: date,
+          traineeName: app.traineeName,
+          reason: app.reason,
+          checkinTime: "-",
+          checkoutTime: "-",
+        });
+        addedCount++;
+      }
+    } else {
+      const ev = entry as EvidenceSubmission;
+      addExcuseRecord({
+        courseName: config.courseName || ev.courseName,
+        cohort: config.cohort,
+        occurrenceDate: "",
+        applicationDate: new Date().toISOString().slice(0, 10),
+        traineeName: ev.traineeName,
+        reason: "증빙자료 제출",
+        checkinTime: "-",
+        checkoutTime: "-",
+      });
+      addedCount++;
+    }
+  });
+
+  alert(`${addedCount}건이 출석입력요청 기록에 등록되었습니다.`);
+  renderRecordTable();
+}
+
+function setupExcuseLookup(): void {
+  // Restore API config
+  const apiConfig = loadExcuseApiConfig();
+  const appUrlInput = $("docExcuseAppUrl") as HTMLInputElement | null;
+  const evidenceUrlInput = $("docExcuseEvidenceUrl") as HTMLInputElement | null;
+  if (appUrlInput && apiConfig.applicationUrl) appUrlInput.value = apiConfig.applicationUrl;
+  if (evidenceUrlInput && apiConfig.evidenceUrl) evidenceUrlInput.value = apiConfig.evidenceUrl;
+
+  // Save API config
+  $("docExcuseApiSaveBtn")?.addEventListener("click", () => {
+    const cfg: ExcuseApiConfig = {
+      applicationUrl: (appUrlInput?.value ?? "").trim(),
+      evidenceUrl: (evidenceUrlInput?.value ?? "").trim(),
+    };
+    saveExcuseApiConfig(cfg);
+    const st = $("docExcuseApiStatus");
+    if (st) {
+      st.textContent = "✅ 저장됨";
+      setTimeout(() => {
+        st.textContent = "";
+      }, 2000);
+    }
+  });
+
+  // Fetch button
+  $("docExcuseFetchBtn")?.addEventListener("click", async () => {
+    const cfg = loadExcuseApiConfig();
+    if (!cfg.applicationUrl && !cfg.evidenceUrl) {
+      alert("Apps Script URL을 먼저 설정해주세요.");
+      return;
+    }
+    const loading = $("docExcuseLoading");
+    const fetchBtn = $("docExcuseFetchBtn") as HTMLButtonElement | null;
+    if (loading) loading.style.display = "";
+    if (fetchBtn) fetchBtn.disabled = true;
+
+    try {
+      const [apps, evs] = await Promise.all([
+        fetchExcuseApplications(cfg.applicationUrl).catch(() => [] as ExcuseApplication[]),
+        fetchEvidenceSubmissions(cfg.evidenceUrl).catch(() => [] as EvidenceSubmission[]),
+      ]);
+      allExcuseEntries = [...apps, ...evs].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+      // Populate course filter
+      const courses = [...new Set(allExcuseEntries.map((e) => e.courseName))].sort();
+      const courseSelect = $("docExcuseFilterCourse") as HTMLSelectElement | null;
+      if (courseSelect) {
+        courseSelect.innerHTML =
+          '<option value="">전체 과정</option>' +
+          courses.map((c) => `<option value="${escExcuse(c)}">${escExcuse(c)}</option>`).join("");
+      }
+
+      renderExcuseTable();
+    } catch (e) {
+      alert(`조회 실패: ${(e as Error).message}`);
+    } finally {
+      if (fetchBtn) fetchBtn.disabled = false;
+    }
+  });
+
+  // Filters
+  $("docExcuseSearch")?.addEventListener("input", renderExcuseTable);
+  $("docExcuseFilterCourse")?.addEventListener("change", renderExcuseTable);
+  $("docExcuseFilterSource")?.addEventListener("change", renderExcuseTable);
+  $("docExcuseShowTest")?.addEventListener("change", renderExcuseTable);
+
+  // Check all
+  $("docExcuseCheckAll")?.addEventListener("change", (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    document.querySelectorAll<HTMLInputElement>(".doc-excuse-check").forEach((cb) => {
+      cb.checked = checked;
+    });
+    updateRegisterBtnState();
+  });
+
+  // Individual checkbox changes
+  document.addEventListener("change", (e) => {
+    if ((e.target as HTMLElement).classList.contains("doc-excuse-check")) {
+      updateRegisterBtnState();
+    }
+  });
+
+  // Register button
+  $("docExcuseRegisterBtn")?.addEventListener("click", registerCheckedExcuses);
 }
 
 // ── 설정 폼 복원 ────────────────────────────────────
@@ -235,4 +466,7 @@ export function initDocAutomation(): void {
       alert(`Excel 생성 실패: ${(err as Error).message}`);
     }
   });
+
+  // 공결 신청 조회 기능 초기화
+  setupExcuseLookup();
 }
