@@ -208,6 +208,10 @@
             <span class="jibble-nav-emoji" aria-hidden="true">📊</span>
             <span class="jibble-nav-label">종합 분석 리포트</span>
           </button>
+          <button class="jibble-nav-item" type="button" data-scroll-target="sectionDocAutomation" data-nav-key="docAutomation" data-nav-icon="doc-automation" data-default-label="문서자동화">
+            <span class="jibble-nav-emoji" aria-hidden="true">📋</span>
+            <span class="jibble-nav-label">문서자동화</span>
+          </button>
 
           <button
             class="jibble-nav-item"
@@ -2811,6 +2815,95 @@
                   <h3 class="card-title">📊 종합 요약</h3>
                   <div style="max-width:500px;margin:0 auto"><canvas id="retroSummaryRadar" height="350"></canvas></div>
                   <div id="retroInsightsList" class="retro-insights-list"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ═══════════ 문서자동화 ═══════════ -->
+          <section id="sectionDocAutomation" class="tab-section">
+            <div class="card" style="padding: 28px;">
+              <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;">📋 문서자동화</h2>
+
+              <!-- 과정 설정 카드 -->
+              <div class="doc-config-card" id="docConfigCard">
+                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 14px;">과정 설정</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div>
+                    <label class="doc-label">훈련과정명</label>
+                    <input type="text" id="docCourseName" class="doc-input" placeholder="AI 기반 지능형 서비스 개발 전문가 과정" />
+                  </div>
+                  <div>
+                    <label class="doc-label">회차 (기수)</label>
+                    <input type="text" id="docCohort" class="doc-input" placeholder="2회차" />
+                  </div>
+                  <div>
+                    <label class="doc-label">훈련기간</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <input type="date" id="docPeriodStart" class="doc-input" />
+                      <span>~</span>
+                      <input type="date" id="docPeriodEnd" class="doc-input" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="doc-label">훈련시간</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <input type="time" id="docTimeStart" class="doc-input" value="10:00" />
+                      <span>~</span>
+                      <input type="time" id="docTimeEnd" class="doc-input" value="18:00" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="doc-label">대장관리자</label>
+                    <input type="text" id="docManagerName" class="doc-input" placeholder="관리자 이름" />
+                  </div>
+                  <div>
+                    <label class="doc-label">관리자 서명</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <canvas id="docSignatureCanvas" width="120" height="50" style="border: 1px dashed var(--border); border-radius: 8px; background: #fff; cursor: pointer;"></canvas>
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <button type="button" class="btn btn--sm" id="docSignatureGenBtn">✍️ 사인 생성</button>
+                        <button type="button" class="btn btn--sm" id="docSignatureUploadBtn">📁 이미지</button>
+                        <input type="file" id="docSignatureFile" accept="image/*" style="display: none;" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn--primary" id="docConfigSaveBtn" style="margin-top: 14px;">설정 저장</button>
+                <span id="docConfigStatus" style="margin-left: 12px; font-size: 13px; color: var(--text-secondary);"></span>
+              </div>
+
+              <!-- 공결 기록 테이블 -->
+              <div style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h3 style="font-size: 15px; font-weight: 600;">출석입력요청 기록</h3>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn--sm btn--primary" id="docAddRecordBtn">+ 공결 추가</button>
+                    <button type="button" class="btn btn--sm" id="docExcelBtn">📊 Excel</button>
+                    <button type="button" class="btn btn--sm btn--primary" id="docHwpxBtn">📥 HWPX 다운로드</button>
+                  </div>
+                </div>
+                <div id="docRecordCount" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;"></div>
+                <div style="overflow-x: auto;">
+                  <table class="hrd-table" id="docRecordTable">
+                    <thead>
+                      <tr>
+                        <th style="width: 40px;">번호</th>
+                        <th>발생일</th>
+                        <th>신청일</th>
+                        <th>훈련생 성명</th>
+                        <th>사유</th>
+                        <th>입실시간</th>
+                        <th>퇴실시간</th>
+                        <th style="width: 50px;">삭제</th>
+                      </tr>
+                    </thead>
+                    <tbody id="docRecordBody"></tbody>
+                  </table>
+                </div>
+                <div id="docEmptyState" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                  <p style="font-size: 32px; margin-bottom: 8px;">📋</p>
+                  <p>공결 기록이 없습니다. [+ 공결 추가] 버튼을 클릭하세요.</p>
                 </div>
               </div>
             </div>

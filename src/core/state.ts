@@ -26,6 +26,7 @@ export type AppSidebarNavKey =
   | "satisfaction"
   | "crossAnalysis"
   | "revenue"
+  | "docAutomation"
   | "settings";
 
 export type AppSidebarMenuConfig = {
@@ -180,6 +181,7 @@ function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
     value === "satisfaction" ||
     value === "crossAnalysis" ||
     value === "revenue" ||
+    value === "docAutomation" ||
     value === "settings"
   );
 }
@@ -219,6 +221,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "satisfaction",
     "crossAnalysis",
     "revenue",
+    "docAutomation",
     "settings",
   ];
 

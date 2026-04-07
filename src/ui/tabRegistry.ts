@@ -46,6 +46,10 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
     const { initRevenue } = await import("../hrd/hrdRevenueInit");
     initRevenue();
   }),
+  docAutomation: createTabLoader(async () => {
+    const { initDocAutomation } = await import("../docAutomation/docAutomationInit");
+    initDocAutomation();
+  }),
   settings: createTabLoader(async () => {
     const { initSettings } = await import("../hrd/settingsInit");
     await initSettings();
