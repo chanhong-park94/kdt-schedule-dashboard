@@ -16,6 +16,25 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.2.0",
+    date: "2026-04-07",
+    items: [
+      { tag: "feat", text: "문서자동화 탭 신설 — 출석입력요청대장(별지 제14호) HWPX 자동 생성" },
+      { tag: "feat", text: "공결 신청 조회 — Google Form 응답 시트 2종 연동 (신청서 + 증빙자료)" },
+      { tag: "feat", text: "관리자 서명 — 이름 입력 Canvas 사인 생성 + 이미지 업로드" },
+      { tag: "feat", text: "공결 체크 등록 — 전체 목록 조회 → 체크박스 선택 → 일괄 등록" },
+      { tag: "feat", text: "HWPX 생성 엔진 — 15행/페이지 자동 페이징, 서명 이미지 삽입" },
+      { tag: "improve", text: "테스트 데이터 자동 필터링 (테스트/test/Test 제외, 토글 가능)" },
+      { tag: "improve", text: "학업성취도 2-tier 캐시 — 5MB quota 초과 해결 (교차분석 0명 매칭 수정)" },
+      { tag: "fix", text: "학업성취도 조회 버튼 중복 클릭 방어 (isFetching + disabled)" },
+      { tag: "fix", text: "교차분석 코호트 데이터 필터 범위 수정 (기수 누락 해소)" },
+      { tag: "fix", text: "교차분석 필터 debounce 300ms + race condition 방지" },
+      { tag: "fix", text: "재직자 시트 헤더 검증 + URL fallback 제거 (스키마 불일치 방지)" },
+      { tag: "fix", text: "Excel 내보내기 현재 필터 적용 (전체→필터 데이터)" },
+      { tag: "fix", text: "회고 리포트 데이터 로드 실패 시 경고 표시" },
+    ],
+  },
+  {
     version: "v3.1.0",
     date: "2026-03-29",
     items: [
