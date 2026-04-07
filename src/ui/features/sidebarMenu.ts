@@ -30,6 +30,8 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "inquiry",
   "satisfaction",
   "crossAnalysis",
+  "revenue",
+  "docAutomation",
   "settings",
 ];
 
@@ -46,6 +48,8 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   inquiry: "문의응대",
   satisfaction: "만족도",
   crossAnalysis: "교차분석",
+  revenue: "매출",
+  docAutomation: "문서자동화",
   settings: "설정",
 };
 
@@ -62,6 +66,8 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   inquiry: "chat",
   satisfaction: "heart",
   crossAnalysis: "compare",
+  revenue: "coin",
+  docAutomation: "document",
   settings: "settings",
 };
 
