@@ -16,6 +16,8 @@
  */
 import JSZip from "jszip";
 import type { ExcuseRecord, DocConfig } from "./docAutomationApi";
+// 원본 header.xml을 Vite raw import로 번들 (144KB)
+import HEADER_XML_RAW from "./template/header.xml?raw";
 
 // ── 상수 ──────────────────────────────────────────────
 const ROWS_PER_PAGE = 15;
@@ -44,105 +46,6 @@ const NS = {
 const XMLNS_ATTRS = Object.entries(NS)
   .map(([k, v]) => `xmlns:${k}="${v}"`)
   .join(" ");
-
-// ── header.xml (gzip + base64 인코딩) ──────────────────
-// 원본 한컴오피스 HWPX의 전체 header.xml을 gzip 압축 후 base64 인코딩
-// charPr, paraPr, borderFill, fontface 등 모든 스타일 정의 포함
-const HEADER_XML_GZ_B64 =
-  "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";
 
 // ── version.xml ────────────────────────────────────────
 const VERSION_XML =
@@ -978,40 +881,6 @@ const SETTINGS_XML =
   '<ha:caretPosition list="0" para="0" pos="0"/>' +
   "</ha:HWPApplicationSetting>";
 
-// ── base64 디코딩 + gzip 풀기 ──────────────────────────
-async function decodeGzipBase64(b64: string): Promise<string> {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  // DecompressionStream API (모든 최신 브라우저 지원)
-  const ds = new DecompressionStream("gzip");
-  const writer = ds.writable.getWriter();
-  const reader = ds.readable.getReader();
-
-  writer.write(bytes);
-  writer.close();
-
-  const chunks: Uint8Array[] = [];
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-  }
-
-  const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return new TextDecoder("utf-8").decode(result);
-}
-
 // ── PNG base64 DataURL -> Uint8Array ───────────────────
 function dataUrlToUint8Array(dataUrl: string): Uint8Array {
   const base64 = dataUrl.split(",")[1];
@@ -1053,7 +922,7 @@ export async function generateHwpx(
   const imageId = "image1";
 
   // header.xml 디코딩 (gzip base64 -> XML 문자열)
-  const headerXml = await decodeGzipBase64(HEADER_XML_GZ_B64);
+  const headerXml = HEADER_XML_RAW;
 
   // section0.xml 동적 생성
   const sectionXml = buildSectionXml(config, records, hasSignatureImage, imageId);
@@ -1101,7 +970,7 @@ export async function generateHwpxBlob(
   const hasSignatureImage = !!config.signatureData;
   const imageId = "image1";
 
-  const headerXml = await decodeGzipBase64(HEADER_XML_GZ_B64);
+  const headerXml = HEADER_XML_RAW;
   const sectionXml = buildSectionXml(config, records, hasSignatureImage, imageId);
   const contentHpf = buildContentHpf(hasSignatureImage, imageId);
 
