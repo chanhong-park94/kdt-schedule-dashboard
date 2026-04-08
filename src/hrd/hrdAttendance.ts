@@ -1213,7 +1213,10 @@ function renderSlackScheduleUI(config: HrdConfig): void {
   if (footerInput) footerInput.value = schedule.footerText || DEFAULT_SLACK_SCHEDULE.footerText;
 }
 
-const HRD_KEY_GATE_PASSWORD = "admin";
+/** Google Workspace 로그인(admin-mode) 상태로 API 키 섹션 접근 제어 */
+function isAdminMode(): boolean {
+  return document.body.classList.contains("admin-mode");
+}
 
 export function setupSettingsHandlers(): void {
   // ─── 접이식 섹션 토글 (settingsInit.ts에서도 바인딩, 중복 방지) ───
@@ -1244,58 +1247,57 @@ export function setupSettingsHandlers(): void {
   };
   updateSlackBadge(currentConfig.slackSchedule?.enabled ?? false);
 
-  // API Key 잠금 해제 게이트
+  // API Key 잠금 해제 게이트 — Google Workspace 로그인(admin-mode)으로 자동 해제
   const gateUnlockBtn = $("hrdKeyGateUnlock");
   const gatePasswordInput = $("hrdKeyGatePassword") as HTMLInputElement | null;
   const gateError = $("hrdKeyGateError");
 
   const unlockKeySection = () => {
-    const pw = gatePasswordInput?.value?.trim() || "";
-    if (pw === HRD_KEY_GATE_PASSWORD) {
-      const gate = $("hrdKeyGate");
-      const section = $("hrdKeySection");
-      if (gate) gate.style.display = "none";
-      if (section) section.style.display = "flex";
-      if (gateError) gateError.style.display = "none";
-      // 학업성취도 + 재직자 + 문의응대 섹션도 표시
-      const achievementSection = $("achievementApiSection");
-      if (achievementSection) achievementSection.style.display = "flex";
-      const employedSection = $("employedApiSection");
-      if (employedSection) employedSection.style.display = "flex";
-      const inquirySection = $("inquiryApiSection");
-      if (inquirySection) inquirySection.style.display = "flex";
-      // Auth key, Proxy, Slack Webhook 복원
-      const keyInput = $("hrdAuthKey") as HTMLInputElement | null;
-      if (keyInput) {
-        keyInput.type = "text";
-        keyInput.value = currentConfig.authKey;
-      }
-      const proxyInput = $("hrdProxy") as HTMLInputElement | null;
-      if (proxyInput) proxyInput.value = currentConfig.proxy || "";
-      const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
-      if (slackInput) slackInput.value = currentConfig.slackWebhookUrl || "";
-      const excusedSlackInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
-      if (excusedSlackInput) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
-      const excusedSheetInput = $("hrdExcusedSheetUrl") as HTMLInputElement | null;
-      if (excusedSheetInput) excusedSheetInput.value = currentConfig.excusedSheetUrl || "";
-      const evidenceSheetInput = $("hrdEvidenceSheetUrl") as HTMLInputElement | null;
-      if (evidenceSheetInput) evidenceSheetInput.value = currentConfig.evidenceSheetUrl || "";
-    } else {
+    if (!isAdminMode()) {
       if (gateError) {
         gateError.style.display = "block";
-        gateError.textContent = "비밀번호가 올바르지 않습니다";
+        gateError.textContent = "Google Workspace(@modulabs.co.kr) 로그인이 필요합니다";
       }
-      if (gatePasswordInput) {
-        gatePasswordInput.value = "";
-        gatePasswordInput.focus();
-      }
+      return;
     }
+    const gate = $("hrdKeyGate");
+    const section = $("hrdKeySection");
+    if (gate) gate.style.display = "none";
+    if (section) section.style.display = "flex";
+    if (gateError) gateError.style.display = "none";
+    // 학업성취도 + 재직자 + 문의응대 섹션도 표시
+    const achievementSection = $("achievementApiSection");
+    if (achievementSection) achievementSection.style.display = "flex";
+    const employedSection = $("employedApiSection");
+    if (employedSection) employedSection.style.display = "flex";
+    const inquirySection = $("inquiryApiSection");
+    if (inquirySection) inquirySection.style.display = "flex";
+    // Auth key, Proxy, Slack Webhook 복원
+    const keyInput = $("hrdAuthKey") as HTMLInputElement | null;
+    if (keyInput) {
+      keyInput.type = "text";
+      keyInput.value = currentConfig.authKey;
+    }
+    const proxyInput = $("hrdProxy") as HTMLInputElement | null;
+    if (proxyInput) proxyInput.value = currentConfig.proxy || "";
+    const slackInput = $("hrdSlackWebhook") as HTMLInputElement | null;
+    if (slackInput) slackInput.value = currentConfig.slackWebhookUrl || "";
+    const excusedSlackInput = $("hrdExcusedSlackWebhook") as HTMLInputElement | null;
+    if (excusedSlackInput) excusedSlackInput.value = currentConfig.excusedSlackWebhookUrl || "";
+    const excusedSheetInput = $("hrdExcusedSheetUrl") as HTMLInputElement | null;
+    if (excusedSheetInput) excusedSheetInput.value = currentConfig.excusedSheetUrl || "";
+    const evidenceSheetInput = $("hrdEvidenceSheetUrl") as HTMLInputElement | null;
+    if (evidenceSheetInput) evidenceSheetInput.value = currentConfig.evidenceSheetUrl || "";
   };
 
   gateUnlockBtn?.addEventListener("click", unlockKeySection);
+  // Enter 키 호환성 유지 (비밀번호 입력 없이 바로 동작)
   gatePasswordInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") unlockKeySection();
   });
+
+  // Google 로그인 상태면 자동 잠금 해제
+  if (isAdminMode()) unlockKeySection();
 
   // Save HRD settings
   const saveBtn = $("hrdSettingsSave");

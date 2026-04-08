@@ -145,6 +145,12 @@ function isTestEntry(name: string): boolean {
   return TEST_PATTERNS.test(name);
 }
 
+/** 생년월일 마스킹 — 940402 → 94**** (PII 보호) */
+function maskBirthDate(birth: string): string {
+  if (!birth || birth.length < 4) return birth;
+  return birth.slice(0, 2) + "****";
+}
+
 /** Fetch excuse applications from Apps Script */
 export async function fetchExcuseApplications(url: string): Promise<ExcuseApplication[]> {
   if (!url) return [];
@@ -158,7 +164,7 @@ export async function fetchExcuseApplications(url: string): Promise<ExcuseApplic
       timestamp: String(row[0] ?? ""),
       courseName: String(row[2] ?? ""),
       traineeName: String(row[3] ?? ""),
-      birthDate: String(row[4] ?? ""),
+      birthDate: maskBirthDate(String(row[4] ?? "")),
       reason: String(row[5] ?? ""),
       requestDates: String(row[6] ?? ""),
       source: "application" as const,
