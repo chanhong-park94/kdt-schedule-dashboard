@@ -881,6 +881,39 @@ const SETTINGS_XML =
   '<ha:caretPosition list="0" para="0" pos="0"/>' +
   "</ha:HWPApplicationSetting>";
 
+// ── META-INF (HWPX 필수 메타데이터) ───────────────────
+const CONTAINER_XML =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' +
+  '<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container"' +
+  ' xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf">' +
+  "<ocf:rootfiles>" +
+  '<ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/>' +
+  '<ocf:rootfile full-path="META-INF/container.rdf" media-type="application/rdf+xml"/>' +
+  "</ocf:rootfiles></ocf:container>";
+
+const CONTAINER_RDF =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' +
+  '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">' +
+  '<rdf:Description rdf:about="">' +
+  '<ns0:hasPart xmlns:ns0="http://www.hancom.co.kr/hwpml/2016/meta/pkg#" rdf:resource="Contents/header.xml"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="Contents/header.xml">' +
+  '<rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#HeaderFile"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="">' +
+  '<ns0:hasPart xmlns:ns0="http://www.hancom.co.kr/hwpml/2016/meta/pkg#" rdf:resource="Contents/section0.xml"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="Contents/section0.xml">' +
+  '<rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#SectionFile"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="">' +
+  '<rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#Document"/>' +
+  "</rdf:Description></rdf:RDF>";
+
+const MANIFEST_XML =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' +
+  '<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"/>';
+
 // ── PNG base64 DataURL -> Uint8Array ───────────────────
 function dataUrlToUint8Array(dataUrl: string): Uint8Array {
   const base64 = dataUrl.split(",")[1];
@@ -938,6 +971,9 @@ export async function generateHwpx(
   zip.file("Contents/header.xml", headerXml);
   zip.file("Contents/section0.xml", sectionXml);
   zip.file("settings.xml", SETTINGS_XML);
+  zip.file("META-INF/container.xml", CONTAINER_XML);
+  zip.file("META-INF/container.rdf", CONTAINER_RDF);
+  zip.file("META-INF/manifest.xml", MANIFEST_XML);
 
   // 서명 이미지 추가
   if (hasSignatureImage) {
@@ -981,6 +1017,9 @@ export async function generateHwpxBlob(
   zip.file("Contents/header.xml", headerXml);
   zip.file("Contents/section0.xml", sectionXml);
   zip.file("settings.xml", SETTINGS_XML);
+  zip.file("META-INF/container.xml", CONTAINER_XML);
+  zip.file("META-INF/container.rdf", CONTAINER_RDF);
+  zip.file("META-INF/manifest.xml", MANIFEST_XML);
 
   if (hasSignatureImage) {
     const sigBytes = dataUrlToUint8Array(config.signatureData);

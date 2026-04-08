@@ -241,6 +241,39 @@ function buildContentHpf(): string {
   );
 }
 
+// ── META-INF (HWPX/HWTX 필수 메타데이터) ─────────
+const CONTAINER_XML =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' +
+  '<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container"' +
+  ' xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf">' +
+  "<ocf:rootfiles>" +
+  '<ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/>' +
+  '<ocf:rootfile full-path="META-INF/container.rdf" media-type="application/rdf+xml"/>' +
+  "</ocf:rootfiles></ocf:container>";
+
+const CONTAINER_RDF =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' +
+  '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">' +
+  '<rdf:Description rdf:about="">' +
+  '<ns0:hasPart xmlns:ns0="http://www.hancom.co.kr/hwpml/2016/meta/pkg#" rdf:resource="Contents/header.xml"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="Contents/header.xml">' +
+  '<rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#HeaderFile"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="">' +
+  '<ns0:hasPart xmlns:ns0="http://www.hancom.co.kr/hwpml/2016/meta/pkg#" rdf:resource="Contents/section0.xml"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="Contents/section0.xml">' +
+  '<rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#SectionFile"/>' +
+  "</rdf:Description>" +
+  '<rdf:Description rdf:about="">' +
+  '<rdf:type rdf:resource="http://www.hancom.co.kr/hwpml/2016/meta/pkg#Document"/>' +
+  "</rdf:Description></rdf:RDF>";
+
+const MANIFEST_XML =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' +
+  '<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"/>';
+
 // ── 다운로드 ──────────────────────────────────────
 function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -269,6 +302,9 @@ export async function generateIncentiveHwtx(
   zip.file("Contents/header.xml", INCENTIVE_HEADER_RAW);
   zip.file("Contents/section0.xml", sectionXml);
   zip.file("settings.xml", SETTINGS_XML);
+  zip.file("META-INF/container.xml", CONTAINER_XML);
+  zip.file("META-INF/container.rdf", CONTAINER_RDF);
+  zip.file("META-INF/manifest.xml", MANIFEST_XML);
 
   const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
   const fname = filename || `장려금확인서_${new Date().toISOString().slice(0, 10)}.hwtx`;
