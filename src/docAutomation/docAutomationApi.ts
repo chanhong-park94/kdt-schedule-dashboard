@@ -172,6 +172,112 @@ export async function fetchExcuseApplications(url: string): Promise<ExcuseApplic
     .filter((r) => r.traineeName && !isTestEntry(r.traineeName));
 }
 
+// ── 장려금 확인서 ─────────────────────────────
+const INCENTIVE_RECORDS_KEY = "kdt_doc_incentive_records_v1";
+const INCENTIVE_CONFIG_KEY = "kdt_doc_incentive_config_v1";
+
+export interface IncentiveRecord {
+  id: string;
+  name: string;
+  birthDate: string;
+  nationalJobSeeking: string;
+  employed: string;
+  unemploymentBenefit: string;
+  youthAllowance: string;
+  businessRegistered: string;
+  incentiveAmount: number;
+  signature: string;
+  note: string;
+}
+
+export interface IncentiveConfig {
+  courseName: string;
+  trainingPeriod: string;
+  unitPeriod: string;
+  docDate: string;
+}
+
+export function loadIncentiveRecords(): IncentiveRecord[] {
+  try {
+    const raw = localStorage.getItem(INCENTIVE_RECORDS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as IncentiveRecord[];
+  } catch { return []; }
+}
+
+export function saveIncentiveRecords(records: IncentiveRecord[]): void {
+  localStorage.setItem(INCENTIVE_RECORDS_KEY, JSON.stringify(records));
+}
+
+export function deleteIncentiveRecord(id: string): void {
+  const records = loadIncentiveRecords().filter((r) => r.id !== id);
+  saveIncentiveRecords(records);
+}
+
+export function updateIncentiveRecord(id: string, updates: Partial<IncentiveRecord>): void {
+  const records = loadIncentiveRecords();
+  const idx = records.findIndex((r) => r.id === id);
+  if (idx >= 0) {
+    records[idx] = { ...records[idx], ...updates };
+    saveIncentiveRecords(records);
+  }
+}
+
+export function loadIncentiveConfig(): IncentiveConfig {
+  try {
+    const raw = localStorage.getItem(INCENTIVE_CONFIG_KEY);
+    if (raw) return JSON.parse(raw) as IncentiveConfig;
+  } catch { /* */ }
+  return { courseName: "", trainingPeriod: "", unitPeriod: "", docDate: new Date().toISOString().slice(0, 10) };
+}
+
+export function saveIncentiveConfig(config: IncentiveConfig): void {
+  localStorage.setItem(INCENTIVE_CONFIG_KEY, JSON.stringify(config));
+}
+
+/** HRD 장려금 지급내역 엑셀 파싱 */
+export async function parseIncentiveExcel(file: File): Promise<IncentiveRecord[]> {
+  const XLSX = await import("xlsx");
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 }) as unknown[][];
+
+  // row[0]: 헤더, row[1]: 서브헤더, row[2]: 합계, row[3+]: 데이터
+  const records: IncentiveRecord[] = [];
+  for (let i = 3; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[1]) continue; // 이름 없으면 스킵
+    const name = String(row[1] ?? "").trim();
+    if (!name) continue;
+
+    // 주민번호 앞 7자리 (YYMMDD-N)
+    const rawSsn = String(row[2] ?? "");
+    const birthDate = rawSsn.length >= 8 ? rawSsn.slice(0, 8) : rawSsn;
+
+    // 신청액-훈련장려금 (col index 17)
+    const amount = Number(row[17]) || 0;
+
+    // 취업여부 등은 엑셀 col 기반 (Y/N → O/-)
+    const mapYN = (val: unknown): string => String(val ?? "").trim().toUpperCase() === "Y" ? "O" : "-";
+
+    records.push({
+      id: crypto.randomUUID(),
+      name,
+      birthDate,
+      nationalJobSeeking: "-",
+      employed: mapYN(row[24]), // 취/창업 col
+      unemploymentBenefit: mapYN(row[27]), // 구직급여 col
+      youthAllowance: "-",
+      businessRegistered: mapYN(row[25]), // 사업자등록 col
+      incentiveAmount: amount,
+      signature: "비대면훈련",
+      note: "",
+    });
+  }
+  return records;
+}
+
 /** Fetch evidence submissions from Apps Script */
 export async function fetchEvidenceSubmissions(url: string): Promise<EvidenceSubmission[]> {
   if (!url) return [];

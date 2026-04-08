@@ -15,11 +15,19 @@ import {
   saveExcuseApiConfig,
   fetchExcuseApplications,
   fetchEvidenceSubmissions,
+  loadIncentiveRecords,
+  saveIncentiveRecords,
+  deleteIncentiveRecord,
+  updateIncentiveRecord,
+  loadIncentiveConfig,
+  saveIncentiveConfig,
+  parseIncentiveExcel,
   type ExcuseRecord,
   type ExcuseApiConfig,
   type ExcuseApplication,
   type EvidenceSubmission,
   type ExcuseEntry,
+  type IncentiveRecord,
 } from "./docAutomationApi";
 import { loadSignatureFromFile, renderSignaturePreview, showSignatureModal } from "./signatureManager";
 
@@ -316,6 +324,213 @@ function setupExcuseLookup(): void {
   $("docExcuseRegisterBtn")?.addEventListener("click", registerCheckedExcuses);
 }
 
+// ── 서브탭 전환 ─────────────────────────────────────
+function switchDocTab(tab: "excuse" | "incentive"): void {
+  const excuseTab = $("docTabExcuse");
+  const incentiveTab = $("docTabIncentive");
+  const excusePanel = $("docPanelExcuse");
+  const incentivePanel = $("docPanelIncentive");
+
+  if (excuseTab) excuseTab.classList.toggle("active", tab === "excuse");
+  if (incentiveTab) incentiveTab.classList.toggle("active", tab === "incentive");
+  if (excusePanel) excusePanel.style.display = tab === "excuse" ? "" : "none";
+  if (incentivePanel) incentivePanel.style.display = tab === "incentive" ? "" : "none";
+}
+
+// ── 장려금 테이블 렌더링 ────────────────────────────
+function renderIncentiveTable(): void {
+  const tbody = $("incRecordBody");
+  const table = $("incRecordTable");
+  const empty = $("incEmptyState");
+  const countEl = $("incRecordCount");
+  if (!tbody) return;
+
+  const records = loadIncentiveRecords();
+  if (records.length === 0) {
+    if (table) table.style.display = "none";
+    if (empty) empty.style.display = "";
+    if (countEl) countEl.textContent = "";
+    return;
+  }
+
+  if (table) table.style.display = "";
+  if (empty) empty.style.display = "none";
+  const totalAmount = records.reduce((s, r) => s + r.incentiveAmount, 0);
+  if (countEl) countEl.textContent = `총 ${records.length}명 · 장려금 합계 ${totalAmount.toLocaleString()}원`;
+
+  function ynSelect(field: string, value: string): string {
+    const dash = value === "-" ? " selected" : "";
+    const o = value === "O" ? " selected" : "";
+    return `<select class="inc-field" data-field="${field}"><option value="-"${dash}>-</option><option value="O"${o}>O</option></select>`;
+  }
+
+  tbody.innerHTML = records
+    .map(
+      (r, i) => `<tr data-inc-id="${r.id}">
+      <td style="text-align:center;"><input type="checkbox" class="inc-check" /></td>
+      <td style="text-align:center;font-weight:600;">${i + 1}</td>
+      <td><input type="text" class="doc-input inc-field" data-field="name" value="${esc(r.name)}" style="width:80px" /></td>
+      <td><input type="text" class="doc-input inc-field" data-field="birthDate" value="${esc(r.birthDate)}" style="width:85px" /></td>
+      <td>${ynSelect("nationalJobSeeking", r.nationalJobSeeking)}</td>
+      <td>${ynSelect("employed", r.employed)}</td>
+      <td>${ynSelect("unemploymentBenefit", r.unemploymentBenefit)}</td>
+      <td>${ynSelect("youthAllowance", r.youthAllowance)}</td>
+      <td>${ynSelect("businessRegistered", r.businessRegistered)}</td>
+      <td><input type="number" class="doc-input inc-field" data-field="incentiveAmount" value="${r.incentiveAmount}" /></td>
+      <td><input type="text" class="doc-input inc-field" data-field="note" value="${esc(r.note)}" style="width:100px" /></td>
+      <td style="text-align:center;"><button type="button" class="doc-delete-btn" data-inc-delete="${r.id}">🗑️</button></td>
+    </tr>`,
+    )
+    .join("");
+
+  // Inline edit
+  tbody.querySelectorAll<HTMLInputElement | HTMLSelectElement>(".inc-field").forEach((el) => {
+    el.addEventListener("change", () => {
+      const row = el.closest("tr");
+      const id = row?.getAttribute("data-inc-id");
+      const field = el.getAttribute("data-field");
+      if (id && field) {
+        const value = field === "incentiveAmount" ? Number(el.value) : el.value;
+        updateIncentiveRecord(id, { [field]: value } as Partial<IncentiveRecord>);
+        // Update total
+        const recs = loadIncentiveRecords();
+        const total = recs.reduce((s, r) => s + r.incentiveAmount, 0);
+        if (countEl) countEl.textContent = `총 ${recs.length}명 · 장려금 합계 ${total.toLocaleString()}원`;
+      }
+    });
+  });
+
+  // Delete
+  tbody.querySelectorAll<HTMLButtonElement>("[data-inc-delete]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-inc-delete");
+      if (id && confirm("이 행을 삭제하시겠습니까?")) {
+        deleteIncentiveRecord(id);
+        renderIncentiveTable();
+      }
+    });
+  });
+}
+
+// ── 장려금 패널 설정 ────────────────────────────────
+function setupIncentivePanel(): void {
+  // Restore config
+  const config = loadIncentiveConfig();
+  const set = (id: string, val: string) => {
+    const el = $(id) as HTMLInputElement | null;
+    if (el && val) el.value = val;
+  };
+  set("incCourseName", config.courseName);
+  set("incTrainingPeriod", config.trainingPeriod);
+  set("incUnitPeriod", config.unitPeriod);
+  set("incDate", config.docDate);
+
+  // Save config
+  $("incConfigSaveBtn")?.addEventListener("click", () => {
+    const val = (id: string) => ($(id) as HTMLInputElement | null)?.value?.trim() ?? "";
+    saveIncentiveConfig({
+      courseName: val("incCourseName"),
+      trainingPeriod: val("incTrainingPeriod"),
+      unitPeriod: val("incUnitPeriod"),
+      docDate: val("incDate"),
+    });
+    const st = $("incConfigStatus");
+    if (st) {
+      st.textContent = "✅ 저장됨";
+      setTimeout(() => {
+        st.textContent = "";
+      }, 2000);
+    }
+  });
+
+  // Excel upload (click + drag)
+  const dropZone = $("incExcelDropZone");
+  const fileInput = $("incExcelFile") as HTMLInputElement | null;
+
+  dropZone?.addEventListener("click", () => fileInput?.click());
+  dropZone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("drag-over");
+  });
+  dropZone?.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+  dropZone?.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("drag-over");
+    const file = (e as DragEvent).dataTransfer?.files[0];
+    if (file) await handleExcelUpload(file);
+  });
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    if (file) await handleExcelUpload(file);
+  });
+
+  async function handleExcelUpload(file: File): Promise<void> {
+    try {
+      const records = await parseIncentiveExcel(file);
+      if (records.length === 0) {
+        alert("유효한 데이터가 없습니다. 엑셀 형식을 확인해주세요.");
+        return;
+      }
+      saveIncentiveRecords(records);
+      renderIncentiveTable();
+      alert(`${records.length}명 데이터가 로드되었습니다.`);
+    } catch (err) {
+      alert(`엑셀 파싱 실패: ${(err as Error).message}`);
+    }
+  }
+
+  // Add row manually
+  $("incAddRowBtn")?.addEventListener("click", () => {
+    const records = loadIncentiveRecords();
+    records.push({
+      id: crypto.randomUUID(),
+      name: "",
+      birthDate: "",
+      nationalJobSeeking: "-",
+      employed: "-",
+      unemploymentBenefit: "-",
+      youthAllowance: "-",
+      businessRegistered: "-",
+      incentiveAmount: 0,
+      signature: "비대면훈련",
+      note: "",
+    });
+    saveIncentiveRecords(records);
+    renderIncentiveTable();
+  });
+
+  // HWTX download
+  $("incHwtxBtn")?.addEventListener("click", async () => {
+    const records = loadIncentiveRecords();
+    if (records.length === 0) {
+      alert("데이터가 없습니다. 엑셀을 먼저 업로드해주세요.");
+      return;
+    }
+    const cfg = loadIncentiveConfig();
+    if (!cfg.courseName) {
+      alert("과정 설정을 먼저 입력해주세요.");
+      return;
+    }
+    try {
+      const { generateIncentiveHwtx } = await import("./incentiveHwtxGenerator");
+      await generateIncentiveHwtx(cfg, records);
+    } catch (err) {
+      alert(`HWTX 생성 실패: ${(err as Error).message}`);
+    }
+  });
+
+  // Check all
+  $("incCheckAll")?.addEventListener("change", (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    document.querySelectorAll<HTMLInputElement>(".inc-check").forEach((cb) => {
+      cb.checked = checked;
+    });
+  });
+
+  // Restore records if any
+  renderIncentiveTable();
+}
+
 // ── 설정 폼 복원 ────────────────────────────────────
 function restoreConfig(): void {
   const config = loadDocConfig();
@@ -469,4 +684,11 @@ export function initDocAutomation(): void {
 
   // 공결 신청 조회 기능 초기화
   setupExcuseLookup();
+
+  // 서브탭 전환
+  $("docTabExcuse")?.addEventListener("click", () => switchDocTab("excuse"));
+  $("docTabIncentive")?.addEventListener("click", () => switchDocTab("incentive"));
+
+  // 장려금 확인서 패널
+  setupIncentivePanel();
 }
