@@ -59,7 +59,7 @@ export async function loadContacts(trainPrId: string, degr: string): Promise<Map
   if (!sbClient) return contactCache;
 
   try {
-    const { data, error } = await sbClient.from(TABLE).select("*").eq("train_pr_id", trainPrId).eq("degr", degr);
+    const { data, error } = await sbClient.from(TABLE).select("id,train_pr_id,degr,trainee_name,phone,email").eq("train_pr_id", trainPrId).eq("degr", degr);
 
     if (error) {
       console.warn("[Contacts] Load error:", error.message);

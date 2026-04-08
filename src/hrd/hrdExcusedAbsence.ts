@@ -41,7 +41,7 @@ function $(id: string): HTMLElement | null {
 async function fetchRequests(courseName?: string): Promise<ExcusedAbsenceRow[]> {
   if (!sbClient) return [];
   try {
-    let query = sbClient.from(TABLE).select("*").order("submitted_at", { ascending: false }).limit(100);
+    let query = sbClient.from(TABLE).select("id,source,course_name,trainee_name,reason,request_date,file_link,submitted_at,status,reviewed_by,reviewed_at").order("submitted_at", { ascending: false }).limit(100);
     if (courseName) {
       query = query.ilike("course_name", `%${courseName}%`);
     }

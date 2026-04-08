@@ -66,7 +66,7 @@ async function fetchChecks(trainPrId: string, degr: string, date: string): Promi
   const supabase = getClient();
   const { data, error } = await supabase
     .from(TABLE)
-    .select("*")
+    .select("id,train_pr_id,degr,check_date,trainee_name,zoom_checked,zep_checked,memo,checked_by")
     .eq("train_pr_id", trainPrId)
     .eq("degr", degr)
     .eq("check_date", date);
@@ -92,7 +92,7 @@ async function fetchChecksRange(
   const supabase = getClient();
   const { data, error } = await supabase
     .from(TABLE)
-    .select("*")
+    .select("id,train_pr_id,degr,check_date,trainee_name,zoom_checked,zep_checked,memo,checked_by")
     .eq("train_pr_id", trainPrId)
     .eq("degr", degr)
     .gte("check_date", startDate)
