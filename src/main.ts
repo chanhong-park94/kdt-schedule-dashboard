@@ -358,6 +358,17 @@ async function bootstrapAppAfterAuthLogin(): Promise<void> {
   renderScheduleTemplateOptions();
   scheduleTemplateStatus.textContent = "템플릿 준비 완료";
 
+  // Slack 스케줄러 조기 시작 — 출결현황 탭을 열지 않아도 예약 발송 동작
+  // 관리자 모드(Google 로그인)에서만 시작. 보조강사 모드는 제외.
+  if (document.body.classList.contains("admin-mode")) {
+    try {
+      const { startScheduler } = await import("./hrd/hrdScheduler");
+      startScheduler();
+    } catch (e) {
+      console.warn("[main] 스케줄러 조기 시작 실패:", e);
+    }
+  }
+
   if (localStorage.getItem(STORAGE_KEY)) {
     await loadProjectStateFromLocalStorage();
     return;

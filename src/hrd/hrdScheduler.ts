@@ -14,6 +14,7 @@ import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStat
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
+let visibilityHandlerRegistered = false;
 
 /** NaN-safe hour/minute from schedule config */
 function safeHour(h: number): number {
@@ -86,6 +87,21 @@ async function findLastClassDay(category?: string): Promise<string | null> {
 function nowHHMM(): { hour: number; minute: number } {
   const d = new Date();
   return { hour: d.getHours(), minute: d.getMinutes() };
+}
+
+/**
+ * 현재 시각이 예약 시각 이후인지 판정.
+ * 브라우저가 예약 시각에 정확히 실행되지 못한 경우(백그라운드/탭 닫힘)에도
+ * 이후 실행 시점에 보상 발송할 수 있도록 "이상" 비교로 동작.
+ * 같은 날 이미 발송했다면 false 반환(상위에서 lastSentDate로 차단됨).
+ */
+function isScheduledTimeReached(schedule: { hour: number; minute: number }): boolean {
+  const { hour, minute } = nowHHMM();
+  const targetHour = safeHour(schedule.hour);
+  const targetMinute = safeMinute(schedule.minute);
+  if (hour > targetHour) return true;
+  if (hour === targetHour && minute >= targetMinute) return true;
+  return false;
 }
 
 // ─── 출결 데이터 자체 처리 (hrdAttendance.ts에서 독립) ──────
@@ -247,17 +263,25 @@ async function checkAndSend(): Promise<void> {
   // 평일 체크
   if (schedule.weekdaysOnly && !isWeekday()) return;
 
-  // 시간 체크
-  const { hour, minute } = nowHHMM();
-  if (hour !== safeHour(schedule.hour) || minute !== safeMinute(schedule.minute)) return;
-
-  // 오늘 이미 전송 완료
+  // 오늘 이미 전송 완료 — 중복 발송 방지
   const today = todayStr();
   if (schedule.lastSentDate === today) return;
 
+  // 시간 체크 — 예약 시각 "이상"이면 발송 (놓친 시간 보상 발송)
+  // 예: 10:00 예약인데 브라우저가 10:15에 복귀해도 발송됨
+  if (!isScheduledTimeReached(schedule)) return;
+
+  const { hour, minute } = nowHHMM();
+
   // ─── 자동 전송 시작 ─────
-  emitStatus("⏳ 자동 알림 전송 중...", "info");
-  console.warn(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}`);
+  const targetHour = safeHour(schedule.hour);
+  const targetMinute = safeMinute(schedule.minute);
+  const isDelayed = hour > targetHour || (hour === targetHour && minute > targetMinute);
+  const delayMsg = isDelayed
+    ? ` (예약 ${String(targetHour).padStart(2, "0")}:${String(targetMinute).padStart(2, "0")} 지연 발송)`
+    : "";
+  emitStatus(`⏳ 자동 알림 전송 중...${delayMsg}`, "info");
+  console.warn(`[Scheduler] Auto-send triggered at ${hour}:${String(minute).padStart(2, "0")}${delayMsg}`);
 
   // 대상 과정 결정 — 운영중인 과정만 필터 + 최근 개강순 정렬
   const allCourses = config.courses.filter((c) => {
@@ -468,12 +492,36 @@ export function startScheduler(onStatus?: (msg: string, type: "info" | "success"
     });
   }, 60_000);
 
+  // 탭 가시성 복귀 시 즉시 체크 — 백그라운드 throttling/슬립 대응
+  if (!visibilityHandlerRegistered) {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        checkAndSend().catch((e) => {
+          console.error("[Scheduler] Visibility check error:", e);
+        });
+      }
+    });
+    // 네트워크 복귀 시에도 체크 (오프라인 → 온라인)
+    window.addEventListener("online", () => {
+      checkAndSend().catch((e) => {
+        console.error("[Scheduler] Online check error:", e);
+      });
+    });
+    // 윈도우 포커스 복귀 (다른 앱에서 돌아옴)
+    window.addEventListener("focus", () => {
+      checkAndSend().catch((e) => {
+        console.error("[Scheduler] Focus check error:", e);
+      });
+    });
+    visibilityHandlerRegistered = true;
+  }
+
   // 시작 직후 1회 체크
   checkAndSend().catch((e) => {
     console.error("[Scheduler] Initial check error:", e);
   });
 
-  console.warn("[Scheduler] Started — checking every 60s");
+  console.warn("[Scheduler] Started — checking every 60s + visibility/online/focus events");
 }
 
 /**
