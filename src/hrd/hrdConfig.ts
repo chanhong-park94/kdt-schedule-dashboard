@@ -1,14 +1,13 @@
 /** HRD 설정 관리 (localStorage) */
 import type { HrdConfig, HrdCourse } from "./hrdTypes";
-import { readClientEnv } from "../core/env";
 
 const STORAGE_KEY = "academic_schedule_manager_hrd_config_v1";
-// HRD-Net authKey 우선순위:
-//   1. 설정 탭 수기 입력 (localStorage)
-//   2. 환경변수 VITE_HRD_AUTH_KEY (배포 빌드 시 주입)
-//   3. 빈 값 (사용자에게 입력 유도)
-// 🔒 이전에 소스에 하드코딩됐던 기본값은 2026-04-16 보안 감사에서 제거됨
-const DEFAULT_KEY = readClientEnv(["VITE_HRD_AUTH_KEY"]);
+
+// 🔒 HRD-Net authKey는 더 이상 클라이언트에 저장되지 않습니다.
+// Supabase Edge Function(hrd-proxy)가 Deno.env('HRD_AUTH_KEY')로 대신 호출합니다.
+// - authKey 필드는 하위호환을 위해 타입에만 유지됨 (빈 문자열)
+// - 기존 사용자 localStorage에 값이 남아있어도 무시됨 (hrdApi.ts에서 사용 안 함)
+const DEFAULT_KEY = "";
 
 /** 기본 운영 과정 목록 (API 확인 완료) */
 export const DEFAULT_COURSES: HrdCourse[] = [

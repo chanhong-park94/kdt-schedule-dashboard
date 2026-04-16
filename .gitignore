@@ -15,3 +15,6 @@ Thumbs.db
 .env
 .env.local
 backup/
+
+# Supabase CLI cache
+supabase/.temp/

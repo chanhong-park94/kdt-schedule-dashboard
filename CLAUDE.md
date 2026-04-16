@@ -116,12 +116,19 @@ src/
 - 스킬 6개: ux-review, data-analyst, hwpx, security-audit, perf-optimizer, frontend-design
 - 코드 스플리팅: 탭별 동적 import (777KB → 531KB, 18개 청크), tabLoader + tabRegistry 패턴
 
-### 🔒 보안 감사 (2026-04-16) — Phase A 완료
-- 🔑 HRD-Net authKey 하드코딩 제거 → 환경변수(`VITE_HRD_AUTH_KEY`) + localStorage 폴백
+### 🔒 보안 감사 (2026-04-16) — Phase A + Edge Function 프록시 완료
+- 🔑 HRD-Net authKey **Edge Function 프록시로 완전 이전**
+  - `supabase/functions/hrd-proxy/index.ts` 신규 (Deno.env로 authKey 관리)
+  - `hrdApi.ts` 리팩토링: HRD-Net 직접 호출 → Supabase Edge Function 호출
+  - `hrdConfig.ts`의 authKey 기본값 `""` (필드는 타입 하위호환 위해 유지)
+  - 설정 UI의 authKey 입력칸 숨김 처리 (안내 메시지로 대체)
+  - **빌드 번들에서 authKey 완전 제거 확인** (grep 0회)
 - 🛡️ `src/core/escape.ts` escapeHtml 유틸 추가, 신규 `hrdRevenueTemplate.ts` 적용
 - 🔐 SQL: `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단
-  - ⚠️ **사용자 직접 적용 필요**: Supabase Dashboard → SQL Editor에서 실행
-  - ⚠️ **HRD-Net authKey 재발급 필요**: 공개 저장소에 노출됐으므로 기존 키 폐기
+- ⚠️ **사용자 직접 배포 필요**:
+  - `supabase/functions/hrd-proxy/DEPLOY.md` 참고
+  - Supabase Dashboard에서 함수 배포 + `HRD_AUTH_KEY` Secret 등록
+  - `007_security_phase_a.sql`을 SQL Editor에서 실행
 
 ### 🔜 다음 작업 (Phase B 보안 강화 포함)
 1. **[보안 Phase B] Supabase 클라이언트 세션 통합** — 현재 10+곳의 `createClient` 중복 + `persistSession:false` → OAuth 로그인해도 익명 롤로 작동. 싱글톤으로 통합 후 `trainee_contacts`, `trainee_gender`, `instructors` 테이블 RLS 강화 (authenticated만 조회/쓰기)

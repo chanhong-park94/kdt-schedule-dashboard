@@ -3679,14 +3679,18 @@
               </div>
               <!-- Auth Key (잠금 해제 시 노출) -->
               <div id="hrdKeySection" class="hrd-settings-row" style="display: none">
-                <div class="hrd-field">
-                  <label>Auth Key</label>
-                  <input type="password" id="hrdAuthKey" class="hrd-input" placeholder="HRD-Net API 인증키" />
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label style="color: var(--success, #059669); font-weight: 600">
+                    🔒 HRD-Net 인증키는 Supabase Edge Function에서 관리됩니다
+                  </label>
+                  <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; line-height: 1.5">
+                    2026-04-16 보안 강화 이후, authKey는 Supabase 서버 환경변수에만 저장되어 브라우저/번들에 노출되지 않습니다.
+                    변경이 필요하면 Supabase Dashboard → Edge Functions → hrd-proxy → Secrets에서 <code>HRD_AUTH_KEY</code>를 수정하세요.
+                  </div>
                 </div>
-                <div class="hrd-field">
-                  <label>CORS 프록시 (선택)</label>
-                  <input type="text" id="hrdProxy" class="hrd-input" placeholder="비워두면 자동 폴백" />
-                </div>
+                <!-- 기존 입력칸은 하위호환을 위해 hidden 처리 (localStorage 값 보존) -->
+                <input type="hidden" id="hrdAuthKey" />
+                <input type="hidden" id="hrdProxy" />
                 <div class="hrd-field" style="flex-basis: 100%">
                   <label
                     >Slack Webhook URL
