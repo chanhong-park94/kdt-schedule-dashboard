@@ -116,12 +116,22 @@ src/
 - 스킬 6개: ux-review, data-analyst, hwpx, security-audit, perf-optimizer, frontend-design
 - 코드 스플리팅: 탭별 동적 import (777KB → 531KB, 18개 청크), tabLoader + tabRegistry 패턴
 
-### 🔜 다음 작업
-1. **main.ts 추가 분리** — 531KB → 500KB 이하 (generator 로직 모듈화)
-2. **HWPX 내보내기** — 한글 공문서 (훈련 보고서, 훈련일지)
-3. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
-4. **이메일 발송** — Google SMTP 계정 확보 후 연동
-5. **CI 타입 체크 수정** — 기존 코드 tsc --noEmit 에러 정리
+### 🔒 보안 감사 (2026-04-16) — Phase A 완료
+- 🔑 HRD-Net authKey 하드코딩 제거 → 환경변수(`VITE_HRD_AUTH_KEY`) + localStorage 폴백
+- 🛡️ `src/core/escape.ts` escapeHtml 유틸 추가, 신규 `hrdRevenueTemplate.ts` 적용
+- 🔐 SQL: `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단
+  - ⚠️ **사용자 직접 적용 필요**: Supabase Dashboard → SQL Editor에서 실행
+  - ⚠️ **HRD-Net authKey 재발급 필요**: 공개 저장소에 노출됐으므로 기존 키 폐기
+
+### 🔜 다음 작업 (Phase B 보안 강화 포함)
+1. **[보안 Phase B] Supabase 클라이언트 세션 통합** — 현재 10+곳의 `createClient` 중복 + `persistSession:false` → OAuth 로그인해도 익명 롤로 작동. 싱글톤으로 통합 후 `trainee_contacts`, `trainee_gender`, `instructors` 테이블 RLS 강화 (authenticated만 조회/쓰기)
+2. **[보안 Phase B] Apps Script INSERT를 Service Role Key로 전환** → anon INSERT 정책 완전 차단
+3. **[보안] 218개 innerHTML 사용처에 escapeHtml 일괄 적용** — 학생 이름 등 PII 노출 경로 차단
+4. **main.ts 추가 분리** — 531KB → 500KB 이하 (generator 로직 모듈화)
+5. **HWPX 내보내기** — 한글 공문서 (훈련 보고서, 훈련일지)
+6. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
+7. **이메일 발송** — Google SMTP 계정 확보 후 연동
+8. **CI 타입 체크 수정** — 기존 코드 tsc --noEmit 에러 정리
 
 ### 📌 주요 URL
 - 배포: https://chanhong-park94.github.io/kdt-schedule-dashboard/

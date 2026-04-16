@@ -9,14 +9,9 @@
  * - 토요일 일단가 = 시간당훈련비 × 토요일시간 × 인원
  * - 실일매출은 수기 입력 가능 (추후 HRD-Net 자동 연동 예정)
  */
+import { escapeHtml } from "../core/escape";
 
 const STORAGE_KEY = "kdt_revenue_template_config_v1";
-
-interface DailyRow {
-  date: string; // YYYY-MM-DD
-  expected: number;
-  actual: number | null;
-}
 
 interface TemplateConfig {
   courseName: string;
@@ -237,6 +232,8 @@ function renderDailyTable(days: Date[]): number {
     const isWeekend = dow === 6 ? " rev-template-row-saturday" : "";
     const diffClass = diff === null ? "" : diff < 0 ? "rev-template-diff-neg" : diff > 0 ? "rev-template-diff-pos" : "";
 
+    // dateStr/dowLabel/diffClass는 내부 생성값이라 이스케이프 불필요
+    // writer는 사용자 입력이라 반드시 이스케이프 (XSS 방어)
     return `<tr class="rev-template-daily-row${isWeekend}" data-date="${dateStr}">
       <td>${dateStr}</td>
       <td>${dowLabel}</td>
@@ -253,7 +250,7 @@ function renderDailyTable(days: Date[]): number {
       </td>
       <td class="rev-template-amt ${diffClass}">${diff === null ? "-" : fmtWon(diff)}</td>
       <td>${config.activeCount || "-"}</td>
-      <td>${config.writer || "-"}</td>
+      <td>${config.writer ? escapeHtml(config.writer) : "-"}</td>
     </tr>`;
   });
 

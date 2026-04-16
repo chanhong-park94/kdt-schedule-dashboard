@@ -1,8 +1,14 @@
 /** HRD 설정 관리 (localStorage) */
 import type { HrdConfig, HrdCourse } from "./hrdTypes";
+import { readClientEnv } from "../core/env";
 
 const STORAGE_KEY = "academic_schedule_manager_hrd_config_v1";
-const DEFAULT_KEY = "gL1rEteJnyrvfy3KmafcvPfrhT2E7rgz";
+// HRD-Net authKey 우선순위:
+//   1. 설정 탭 수기 입력 (localStorage)
+//   2. 환경변수 VITE_HRD_AUTH_KEY (배포 빌드 시 주입)
+//   3. 빈 값 (사용자에게 입력 유도)
+// 🔒 이전에 소스에 하드코딩됐던 기본값은 2026-04-16 보안 감사에서 제거됨
+const DEFAULT_KEY = readClientEnv(["VITE_HRD_AUTH_KEY"]);
 
 /** 기본 운영 과정 목록 (API 확인 완료) */
 export const DEFAULT_COURSES: HrdCourse[] = [
