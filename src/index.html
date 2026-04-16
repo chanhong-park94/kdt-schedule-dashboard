@@ -3289,6 +3289,155 @@
                 <canvas id="revTrendCanvas"></canvas>
               </div>
             </div>
+
+            <!-- ═══ 매출상세표 양식 (엑셀 템플릿 대응) ═══ -->
+            <div id="revTemplateSection" class="rev-template-section u-mt-14">
+              <div class="rev-template-header">
+                <h3 class="section-title">📋 매출상세표</h3>
+                <p class="rev-template-subtitle">
+                  교육사업관리 통합템플릿(01_매출관리 + 02_매출상세) 양식에 맞춰 자동 산정됩니다.
+                  <strong>수기 입력값</strong>은 자동 저장되며, 실일매출 칸은 직접 입력하거나 HRD 데이터와 연동할 수 있습니다.
+                </p>
+              </div>
+
+              <!-- 기본 정보 (수기 입력) -->
+              <div class="rev-template-meta">
+                <div class="rev-template-meta-field">
+                  <label for="revTplCourseName">과정명</label>
+                  <input type="text" id="revTplCourseName" class="hrd-input" placeholder="예: 재직자_[아이펠]ELLM 6기" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplCourseCode">과정코드</label>
+                  <input type="text" id="revTplCourseCode" class="hrd-input" placeholder="예: ELLM" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplFiscalMonth">회계월</label>
+                  <input type="number" id="revTplFiscalMonth" class="hrd-input" min="1" max="12" placeholder="4" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplStartDate">훈련기간 시작</label>
+                  <input type="date" id="revTplStartDate" class="hrd-input" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplEndDate">훈련기간 종료</label>
+                  <input type="date" id="revTplEndDate" class="hrd-input" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplHourlyFee">시간당 훈련비 (원)</label>
+                  <input type="number" id="revTplHourlyFee" class="hrd-input" placeholder="18150" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplWeekdayHours">평일 훈련시간 (시간)</label>
+                  <input type="number" id="revTplWeekdayHours" class="hrd-input" step="0.5" placeholder="2.5" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplSaturdayHours">토요일 훈련시간 (시간)</label>
+                  <input type="number" id="revTplSaturdayHours" class="hrd-input" step="0.5" placeholder="7" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplActiveCount">액티브 인원 (명)</label>
+                  <input type="number" id="revTplActiveCount" class="hrd-input" min="0" placeholder="56" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplDropoutCount">하차 인원 (명)</label>
+                  <input type="number" id="revTplDropoutCount" class="hrd-input" min="0" placeholder="0" />
+                </div>
+                <div class="rev-template-meta-field">
+                  <label for="revTplWriter">작성자</label>
+                  <input type="text" id="revTplWriter" class="hrd-input" placeholder="예: 김한샘" />
+                </div>
+              </div>
+
+              <!-- 자동 계산 요약 -->
+              <div class="rev-template-summary-row u-mt-14">
+                <div class="rev-template-summary-item">
+                  <span class="rev-template-summary-label">평일 일 단가</span>
+                  <span class="rev-template-summary-value" id="revTplWeekdayUnit">-</span>
+                </div>
+                <div class="rev-template-summary-item">
+                  <span class="rev-template-summary-label">토요일 일 단가</span>
+                  <span class="rev-template-summary-value" id="revTplSaturdayUnit">-</span>
+                </div>
+                <div class="rev-template-summary-item">
+                  <span class="rev-template-summary-label">회계월 훈련일수</span>
+                  <span class="rev-template-summary-value" id="revTplTrainingDays">-</span>
+                </div>
+                <div class="rev-template-summary-item">
+                  <span class="rev-template-summary-label">토요일 수</span>
+                  <span class="rev-template-summary-value" id="revTplSaturdayCount">-</span>
+                </div>
+              </div>
+
+              <!-- 01_매출관리 테이블 -->
+              <div class="u-mt-14">
+                <h4 class="rev-template-subtable-title">01 매출관리 (회계월 요약 + 시나리오 예측)</h4>
+                <div class="table-responsive u-mt-8">
+                  <table class="table att-table rev-template-table" id="revTplMonthlyTable">
+                    <thead>
+                      <tr>
+                        <th>회계월</th>
+                        <th>훈련일수</th>
+                        <th>시작인원(액티브)</th>
+                        <th>하차수</th>
+                        <th>예상매출 (100%)</th>
+                        <th>예상매출 (80%)</th>
+                        <th>예상매출 (75%)</th>
+                        <th>예상매출 (70%)</th>
+                        <th>실매출</th>
+                      </tr>
+                    </thead>
+                    <tbody id="revTplMonthlyBody">
+                      <tr>
+                        <td id="revTplCellMonth">-</td>
+                        <td id="revTplCellDays">-</td>
+                        <td id="revTplCellActive">-</td>
+                        <td id="revTplCellDropout">-</td>
+                        <td id="revTplCell100" class="rev-template-amt">-</td>
+                        <td id="revTplCell80" class="rev-template-amt">-</td>
+                        <td id="revTplCell75" class="rev-template-amt">-</td>
+                        <td id="revTplCell70" class="rev-template-amt">-</td>
+                        <td id="revTplCellActual" class="rev-template-amt">-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 02_매출상세 일별 테이블 -->
+              <div class="u-mt-14">
+                <div class="rev-template-subtable-header">
+                  <h4 class="rev-template-subtable-title">02 매출상세 (일별)</h4>
+                  <div class="rev-template-subtable-actions">
+                    <button id="revTplRegenBtn" class="btn-secondary btn-sm" type="button">🔄 일별 재생성</button>
+                    <button id="revTplClearActualBtn" class="btn-secondary btn-sm" type="button">🧹 실일매출 초기화</button>
+                  </div>
+                </div>
+                <div class="table-responsive u-mt-8">
+                  <table class="table att-table rev-template-table" id="revTplDailyTable">
+                    <thead>
+                      <tr>
+                        <th>일자</th>
+                        <th>요일</th>
+                        <th>예상일매출</th>
+                        <th>실일매출</th>
+                        <th>차액</th>
+                        <th>액티브인원</th>
+                        <th>작성자</th>
+                      </tr>
+                    </thead>
+                    <tbody id="revTplDailyBody">
+                      <tr>
+                        <td colspan="7" class="u-text-muted u-text-center u-py-8">
+                          상단 기본 정보를 입력하면 회계월 범위의 일별 예상매출이 자동 생성됩니다.
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot id="revTplDailyFoot"></tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <!-- /revTemplateSection -->
           </section>
 
           <!-- HRD API 설정 -->

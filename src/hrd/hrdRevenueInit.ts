@@ -16,6 +16,7 @@ import {
   calcTraineeUnitRevenue,
   formatRevenue,
 } from "./hrdRevenue";
+import { initRevenueTemplate } from "./hrdRevenueTemplate";
 
 Chart.register(...registerables);
 
@@ -68,6 +69,9 @@ export function initRevenue(): void {
 
   const queryBtn = $("revQueryBtn");
   queryBtn?.addEventListener("click", () => void loadRevenueData());
+
+  // 매출상세표 양식 초기화 (엑셀 통합템플릿 대응)
+  initRevenueTemplate();
 }
 
 async function loadRevenueData(): Promise<void> {
