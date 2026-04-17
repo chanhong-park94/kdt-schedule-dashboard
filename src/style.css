@@ -8883,6 +8883,30 @@ dialog {
 .rev-template-header {
   margin-bottom: 12px;
 }
+.rev-template-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rev-template-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rev-template-cohort-select {
+  min-width: 200px;
+  max-width: 350px;
+}
+.rev-template-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
 .rev-template-subtitle {
   margin: 6px 0 0;
   font-size: 13px;

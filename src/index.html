@@ -3293,10 +3293,22 @@
             <!-- ═══ 매출상세표 양식 (엑셀 템플릿 대응) ═══ -->
             <div id="revTemplateSection" class="rev-template-section u-mt-14">
               <div class="rev-template-header">
-                <h3 class="section-title">📋 매출상세표</h3>
+                <div class="rev-template-header-top">
+                  <h3 class="section-title">📋 매출상세표</h3>
+                  <div class="rev-template-header-actions">
+                    <select id="revTplCohortSelect" class="hrd-input rev-template-cohort-select">
+                      <option value="__new__">새 과정/기수 (수기 입력)</option>
+                    </select>
+                    <label class="btn-secondary btn-sm rev-template-upload-btn">
+                      📤 엑셀 업로드
+                      <input type="file" id="revTplUploadInput" accept=".xlsx,.xls" style="display:none" />
+                    </label>
+                    <button id="revTplDeleteCohortBtn" class="btn-secondary btn-sm" type="button" style="display:none">🗑️ 삭제</button>
+                  </div>
+                </div>
                 <p class="rev-template-subtitle">
-                  교육사업관리 통합템플릿(01_매출관리 + 02_매출상세) 양식에 맞춰 자동 산정됩니다.
-                  <strong>수기 입력값</strong>은 자동 저장되며, 실일매출 칸은 직접 입력하거나 HRD 데이터와 연동할 수 있습니다.
+                  교육사업관리 통합템플릿 엑셀을 업로드하면 일별 매출이 자동으로 채워집니다.
+                  과정/기수별로 저장되며 드롭다운에서 전환할 수 있습니다.
                 </p>
               </div>
 
