@@ -176,12 +176,12 @@ async function fetchHrd(
       return parseResponse(data);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
+      // 어떤 에러든 Edge Function 사용 불가로 판정 → 세션 중 재시도 안 함
+      edgeFunctionAvailable = false;
       if (msg === "EDGE_UNAVAILABLE") {
-        edgeFunctionAvailable = false;
         console.warn(`[HRD ${label}] Edge Function 미배포 → 직접 호출 폴백`);
       } else {
-        // Edge Function 배포돼있지만 다른 에러 → 재시도하지 않고 직접 호출 폴백
-        console.warn(`[HRD ${label}] Edge Function 에러: ${msg} → 직접 호출 폴백`);
+        console.warn(`[HRD ${label}] Edge Function 에러: ${msg} → 직접 호출 폴백 (세션 중 재시도 안 함)`);
       }
     }
   }

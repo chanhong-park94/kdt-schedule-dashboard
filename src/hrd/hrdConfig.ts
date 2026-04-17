@@ -6,8 +6,8 @@ const STORAGE_KEY = "academic_schedule_manager_hrd_config_v1";
 // HRD-Net authKey 관리 전략:
 // - Edge Function(hrd-proxy) 배포 시: Deno.env('HRD_AUTH_KEY')로 서버에서 관리 (클라이언트 미사용)
 // - Edge Function 미배포 시: localStorage의 authKey로 직접 CORS 프록시 경유 (폴백)
-// - 기본값은 Edge Function 배포 후 제거 예정
-const DEFAULT_KEY = "";
+// ⚠️ Edge Function 배포 완료 후 이 기본값을 ""로 변경할 것
+const DEFAULT_KEY = "gL1rEteJnyrvfy3KmafcvPfrhT2E7rgz";
 
 /** 기본 운영 과정 목록 (API 확인 완료) */
 export const DEFAULT_COURSES: HrdCourse[] = [
