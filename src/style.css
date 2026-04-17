@@ -8976,10 +8976,64 @@ dialog {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-.rev-template-actual-input:focus {
+.rev-template-actual-input:focus,
+.rev-template-expected-input:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+.rev-template-expected-input {
+  width: 100%;
+  max-width: 140px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.rev-template-expected-input:hover {
+  border-color: var(--border);
+  background: var(--card-bg);
+}
+.rev-template-override .rev-template-expected-input {
+  color: var(--primary);
+  font-weight: 600;
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.04);
+}
+.rev-template-meta-field--wide {
+  grid-column: 1 / -1;
+}
+.rev-template-dow-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 6px;
+}
+.rev-template-dow-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.rev-template-dow-item input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--primary);
+}
+.rev-template-dow-hours {
+  width: 52px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 12px;
+  text-align: right;
 }
 .rev-template-daily-total {
   font-weight: 700;

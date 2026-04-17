@@ -3326,13 +3326,16 @@
                   <label for="revTplHourlyFee">시간당 훈련비 (원)</label>
                   <input type="number" id="revTplHourlyFee" class="hrd-input" placeholder="18150" />
                 </div>
-                <div class="rev-template-meta-field">
-                  <label for="revTplWeekdayHours">평일 훈련시간 (시간)</label>
-                  <input type="number" id="revTplWeekdayHours" class="hrd-input" step="0.5" placeholder="2.5" />
-                </div>
-                <div class="rev-template-meta-field">
-                  <label for="revTplSaturdayHours">토요일 훈련시간 (시간)</label>
-                  <input type="number" id="revTplSaturdayHours" class="hrd-input" step="0.5" placeholder="7" />
+                <div class="rev-template-meta-field rev-template-meta-field--wide">
+                  <label>훈련 요일 &amp; 시간</label>
+                  <div class="rev-template-dow-grid">
+                    <label class="rev-template-dow-item"><input type="checkbox" id="revTplDowMon" checked /> 월 <input type="number" id="revTplHoursMon" class="rev-template-dow-hours" step="0.5" value="2.5" />h</label>
+                    <label class="rev-template-dow-item"><input type="checkbox" id="revTplDowTue" checked /> 화 <input type="number" id="revTplHoursTue" class="rev-template-dow-hours" step="0.5" value="2.5" />h</label>
+                    <label class="rev-template-dow-item"><input type="checkbox" id="revTplDowWed" checked /> 수 <input type="number" id="revTplHoursWed" class="rev-template-dow-hours" step="0.5" value="2.5" />h</label>
+                    <label class="rev-template-dow-item"><input type="checkbox" id="revTplDowThu" checked /> 목 <input type="number" id="revTplHoursThu" class="rev-template-dow-hours" step="0.5" value="2.5" />h</label>
+                    <label class="rev-template-dow-item"><input type="checkbox" id="revTplDowFri" checked /> 금 <input type="number" id="revTplHoursFri" class="rev-template-dow-hours" step="0.5" value="2.5" />h</label>
+                    <label class="rev-template-dow-item"><input type="checkbox" id="revTplDowSat" checked /> 토 <input type="number" id="revTplHoursSat" class="rev-template-dow-hours" step="0.5" value="7" />h</label>
+                  </div>
                 </div>
                 <div class="rev-template-meta-field">
                   <label for="revTplActiveCount">액티브 인원 (명)</label>
@@ -3409,7 +3412,6 @@
                   <h4 class="rev-template-subtable-title">02 매출상세 (일별)</h4>
                   <div class="rev-template-subtable-actions">
                     <button id="revTplRegenBtn" class="btn-secondary btn-sm" type="button">🔄 일별 재생성</button>
-                    <button id="revTplClearActualBtn" class="btn-secondary btn-sm" type="button">🧹 실일매출 초기화</button>
                   </div>
                 </div>
                 <div class="table-responsive u-mt-8">
