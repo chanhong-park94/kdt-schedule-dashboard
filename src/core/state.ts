@@ -27,6 +27,10 @@ export type AppSidebarNavKey =
   | "crossAnalysis"
   | "revenue"
   | "docAutomation"
+  | "projectEval"
+  | "projectReward"
+  | "operationDiag"
+  | "instructorDiag"
   | "settings";
 
 export type AppSidebarMenuConfig = {
@@ -259,6 +263,12 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       inquiry: toSidebarLabel(labelsSource.inquiry, "문의응대"),
       satisfaction: toSidebarLabel(labelsSource.satisfaction, "만족도"),
       crossAnalysis: toSidebarLabel(labelsSource.crossAnalysis, "교차분석"),
+      revenue: toSidebarLabel(labelsSource.revenue, "매출"),
+      docAutomation: toSidebarLabel(labelsSource.docAutomation, "문서자동화"),
+      projectEval: toSidebarLabel(labelsSource.projectEval, "프로젝트 평가"),
+      projectReward: toSidebarLabel(labelsSource.projectReward, "프로젝트 보상"),
+      operationDiag: toSidebarLabel(labelsSource.operationDiag, "운영 진단"),
+      instructorDiag: toSidebarLabel(labelsSource.instructorDiag, "교강사 진단"),
       settings: toSidebarLabel(labelsSource.settings, "설정"),
     },
     icons: {
@@ -274,6 +284,12 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       inquiry: toSidebarIcon(iconsSource.inquiry, "💬"),
       satisfaction: toSidebarIcon(iconsSource.satisfaction, "❤️"),
       crossAnalysis: toSidebarIcon(iconsSource.crossAnalysis, "📊"),
+      revenue: toSidebarIcon(iconsSource.revenue, "💰"),
+      docAutomation: toSidebarIcon(iconsSource.docAutomation, "📋"),
+      projectEval: toSidebarIcon(iconsSource.projectEval, "🎯"),
+      projectReward: toSidebarIcon(iconsSource.projectReward, "🏆"),
+      operationDiag: toSidebarIcon(iconsSource.operationDiag, "📋"),
+      instructorDiag: toSidebarIcon(iconsSource.instructorDiag, "👨‍🏫"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️"),
     },
   };

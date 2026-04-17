@@ -50,6 +50,22 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
     const { initDocAutomation } = await import("../docAutomation/docAutomationInit");
     initDocAutomation();
   }),
+  projectEval: createTabLoader(async () => {
+    const { initProjectEval } = await import("../instructor/projectEvalInit");
+    initProjectEval();
+  }),
+  projectReward: createTabLoader(async () => {
+    const { initProjectReward } = await import("../instructor/projectRewardInit");
+    initProjectReward();
+  }),
+  operationDiag: createTabLoader(async () => {
+    const { initOperationDiag } = await import("../instructor/operationDiagInit");
+    initOperationDiag();
+  }),
+  instructorDiag: createTabLoader(async () => {
+    const { initInstructorDiag } = await import("../instructor/instructorDiagInit");
+    initInstructorDiag();
+  }),
   settings: createTabLoader(async () => {
     const { initSettings } = await import("../hrd/settingsInit");
     await initSettings();

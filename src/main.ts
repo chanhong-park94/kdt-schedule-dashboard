@@ -444,12 +444,12 @@ function applyAssistantMode(courseName: string, degr: string): void {
   // 헤더에 보조강사 안내 표시
   const headerEl = document.querySelector(".app-header-title");
   if (headerEl) {
-    headerEl.textContent = `📋 ${courseName} ${degr}기 출결현황 (보조강사)`;
+    headerEl.textContent = `📋 ${courseName} ${degr}기 — 강사 대시보드`;
   }
 
   // 로그아웃 바 라벨
   const modeLabel = document.getElementById("assistantModeLabel");
-  if (modeLabel) modeLabel.textContent = `📋 ${courseName} ${degr}기 — 보조강사 모드`;
+  if (modeLabel) modeLabel.textContent = `📋 ${courseName} ${degr}기 — 강사 모드`;
 
   // 출결현황 탭으로 강제 이동
   const attNavBtn = document.querySelector('[data-nav-key="attendance"]') as HTMLElement | null;

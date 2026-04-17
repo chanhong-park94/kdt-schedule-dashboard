@@ -5916,10 +5916,10 @@ tbody tr:hover {
 }
 
 /* ── Assistant Mode ── */
-.assistant-mode .jibble-nav-item:not([data-nav-key="attendance"]) {
+.assistant-mode .jibble-nav-item:not([data-nav-key="attendance"]):not([data-nav-key="projectEval"]):not([data-nav-key="operationDiag"]):not([data-nav-key="instructorDiag"]) {
   display: none !important;
 }
-.assistant-mode .mobile-bottom-nav button:not([data-nav-key="attendance"]) {
+.assistant-mode .mobile-bottom-nav button:not([data-nav-key="attendance"]):not([data-nav-key="projectEval"]):not([data-nav-key="operationDiag"]):not([data-nav-key="instructorDiag"]) {
   display: none !important;
 }
 .assistant-mode .jibble-logo {

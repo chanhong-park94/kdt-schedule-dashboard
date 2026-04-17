@@ -213,6 +213,23 @@
             <span class="jibble-nav-label">문서자동화</span>
           </button>
 
+          <button class="jibble-nav-item" type="button" data-scroll-target="sectionProjectEval" data-nav-key="projectEval" data-nav-icon="project" data-default-label="프로젝트 평가">
+            <span class="jibble-nav-emoji" aria-hidden="true">🎯</span>
+            <span class="jibble-nav-label">프로젝트 평가</span>
+          </button>
+          <button class="jibble-nav-item" type="button" data-scroll-target="sectionProjectReward" data-nav-key="projectReward" data-nav-icon="reward" data-default-label="프로젝트 보상">
+            <span class="jibble-nav-emoji" aria-hidden="true">🏆</span>
+            <span class="jibble-nav-label">프로젝트 보상</span>
+          </button>
+          <button class="jibble-nav-item" type="button" data-scroll-target="sectionOperationDiag" data-nav-key="operationDiag" data-nav-icon="diagnosis" data-default-label="운영 진단">
+            <span class="jibble-nav-emoji" aria-hidden="true">📋</span>
+            <span class="jibble-nav-label">운영 진단</span>
+          </button>
+          <button class="jibble-nav-item" type="button" data-scroll-target="sectionInstructorDiag" data-nav-key="instructorDiag" data-nav-icon="teacher" data-default-label="교강사 진단">
+            <span class="jibble-nav-emoji" aria-hidden="true">👨‍🏫</span>
+            <span class="jibble-nav-label">교강사 진단</span>
+          </button>
+
           <button
             class="jibble-nav-item"
             type="button"
@@ -3245,6 +3262,56 @@
             <!-- /settings-section-body -->
           </div>
           <!-- /instructorDrawer -->
+
+          <!-- ═══ 프로젝트 평가 ═══ -->
+          <section id="sectionProjectEval" class="card card-span-12 u-mt-14" data-page-group="projectEval">
+            <div class="card-header">
+              <div class="card-header-left">
+                <h2 class="card-title">🎯 프로젝트 평가</h2>
+                <span class="card-subtitle" id="projEvalScope"></span>
+              </div>
+            </div>
+            <div id="projEvalStatus" class="att-status u-mt-8"></div>
+            <div id="projEvalContent"></div>
+          </section>
+
+          <!-- ═══ 프로젝트 보상 (운매 전용) ═══ -->
+          <section id="sectionProjectReward" class="card card-span-12 u-mt-14" data-page-group="projectReward">
+            <div class="card-header">
+              <div class="card-header-left">
+                <h2 class="card-title">🏆 프로젝트 보상</h2>
+                <span class="card-subtitle" id="projRewardScope"></span>
+              </div>
+              <div class="card-header-right">
+                <button id="projRewardCsvBtn" class="btn btn-primary btn-sm" type="button">📥 CSV 다운로드</button>
+              </div>
+            </div>
+            <div id="projRewardContent"></div>
+          </section>
+
+          <!-- ═══ 운영 진단 ═══ -->
+          <section id="sectionOperationDiag" class="card card-span-12 u-mt-14" data-page-group="operationDiag">
+            <div class="card-header">
+              <div class="card-header-left">
+                <h2 class="card-title">📋 운영 진단</h2>
+                <span class="card-subtitle" id="opDiagScope"></span>
+              </div>
+            </div>
+            <div id="opDiagStatus" class="att-status u-mt-8"></div>
+            <div id="opDiagContent"></div>
+          </section>
+
+          <!-- ═══ 교강사 진단 ═══ -->
+          <section id="sectionInstructorDiag" class="card card-span-12 u-mt-14" data-page-group="instructorDiag">
+            <div class="card-header">
+              <div class="card-header-left">
+                <h2 class="card-title">👨‍🏫 교강사 진단</h2>
+                <span class="card-subtitle" id="instrDiagScope"></span>
+              </div>
+            </div>
+            <div id="instrDiagStatus" class="att-status u-mt-8"></div>
+            <div id="instrDiagContent"></div>
+          </section>
 
           <!-- ═══ 매출 현황 ═══ -->
           <section id="sectionRevenue" class="card card-span-12 u-mt-14" data-page-group="revenue">
