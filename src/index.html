@@ -3334,7 +3334,44 @@
                 <button id="projRewardCsvBtn" class="btn btn-primary btn-sm" type="button">📥 CSV 다운로드</button>
               </div>
             </div>
-            <div id="projRewardContent"></div>
+            <div id="projRewardContent">
+              <div id="projRewardFilter" class="proj-eval-filters u-mt-8">
+                <select id="projRewardCourse" class="hrd-input" style="max-width:250px"></select>
+                <select id="projRewardDegr" class="hrd-input" style="max-width:100px"></select>
+                <button id="projRewardLoadBtn" class="btn btn-primary btn-sm" type="button">📊 조회</button>
+              </div>
+              <div id="projRewardStatus" class="att-status u-mt-8"></div>
+              <div id="projRewardTableSection" class="u-mt-14" style="display:none">
+                <div class="table-responsive">
+                  <table class="table att-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>이름</th>
+                        <th>상태</th>
+                        <th>P1 (1만)<br><small>80점,상위30%</small></th>
+                        <th>달성</th>
+                        <th>집행일</th>
+                        <th>P2 (3만)<br><small>75점,상위20%</small></th>
+                        <th>달성</th>
+                        <th>집행일</th>
+                        <th>P3 (5만)<br><small>70점,상위10%</small></th>
+                        <th>달성</th>
+                        <th>집행일</th>
+                        <th>P4 (8만)<br><small>70점,상위5%</small></th>
+                        <th>달성</th>
+                        <th>집행일</th>
+                      </tr>
+                    </thead>
+                    <tbody id="projRewardBody"></tbody>
+                  </table>
+                </div>
+                <div class="proj-eval-actions u-mt-8">
+                  <button id="projRewardSaveBtn" class="btn btn-primary btn-sm" type="button">💾 집행일 저장</button>
+                  <span id="projRewardSaveStatus" class="att-status"></span>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- ═══ 운영 진단 ═══ -->
