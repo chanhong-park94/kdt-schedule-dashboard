@@ -36,6 +36,11 @@ src/
 │   ├── hrdInquiry*.ts        # 문의응대 (Airtable API)
 │   ├── hrdSatisfaction*.ts   # 만족도 (Apps Script)
 │   └── hrd*.ts               # 출결, 분석, 이탈, Slack 알림 등
+├── instructor/    # 강사 대시보드 (재직자 교육관리)
+│   ├── projectEvalInit.ts    # 프로젝트 평가 (lazy-load)
+│   ├── projectRewardInit.ts  # 프로젝트 보상 (운매 전용)
+│   ├── operationDiagInit.ts  # 운영 진단
+│   └── instructorDiagInit.ts # 교강사 진단
 ├── kpi/           # KPI 리포트 + PDF
 │   └── kpiInit.ts            # KPI 탭 초기화 (lazy-load 진입점)
 ├── ui/            # UI 레이어 (domRefs, events, appState, features/)
@@ -90,51 +95,58 @@ src/
 
 ---
 
-## 🔄 작업 현황 (마지막 업데이트: 2026-03-22)
+## 🔄 작업 현황 (마지막 업데이트: 2026-04-17)
 
-### ✅ 완료 (v2.9.0)
-- 운영 UX 개선 18항목: 토스트 알림, 필터 초기화, 캐시 관리, API 타임아웃, 에러 분류 통일
-- 캐시 시점 표시 ("82건 (캐시 · 3시간 전)"), 키보드 단축키 Alt+1~9, 오프라인 감지
-- 학업성취도 Excel 내보내기, Skeleton 로딩, 모바일 탭 11px, 인쇄 컬러 강제
-- 공통 유틸: `src/hrd/hrdCacheUtils.ts` (6개 함수)
-- 스킬 6개 에러 핸들링 가이드 + 버전/날짜 관리 원칙 추가
+### ✅ 완료 (v3.4.0) — 강사 대시보드
+- 보조강사/교강사 모드에 4개 탭 추가: 프로젝트 평가, 프로젝트 보상, 운영 진단, 교강사 진단
+- **프로젝트 평가**: 프로젝트 1~4 점수(100점)+피드백, 루브릭 표시, 중도탈락 회색 처리
+- **프로젝트 보상** (운매 전용): 달성 자동 판정(점수+PERCENTRANK), 집행일 입력, CSV 다운로드
+- **운영 진단**: 유닛 1~12 일자별 출석/태도/소통(0/5/10점), 주계·환산 자동 계산, 진단 기준표
+- **교강사 진단**: 유닛 1~12 1차/2차 진단(5점 척도), 평균·환산 자동 계산, 페이지 전환
+- Supabase 4개 테이블: `project_evaluations`, `project_rewards`, `operation_diagnosis`, `instructor_diagnosis`
+- DB 스키마: `spec/sql/008_create_instructor_dashboard.sql` (⚠️ Supabase SQL Editor에서 실행 필요)
+- 상단+하단 저장 버튼, 미저장 페이지 이동 경고(beforeunload)
+- 강사 모드 명칭: "보조강사" → "강사 대시보드"
+- 설계서: `docs/plans/2026-04-17-instructor-dashboard-design.md`
+
+### ✅ 완료 (v3.3.0) — 매출 탭 강화
+- 매출상세표: 엑셀 통합템플릿(01_매출관리+02_매출상세) 양식 대응
+- 엑셀 업로드: 기존 교육사업관리 엑셀 → 일별 매출 자동 파싱 (SheetJS)
+- 과정/기수 멀티 관리: 드롭다운 전환, localStorage 저장
+- 요일별 훈련시간: 월~토 개별 체크+시간, 공휴일 자동 제외 (2025~2027)
+- 시나리오 예측: 100/80/75/70% 자동 산출
+- 예상/실일매출 수정 가능, v1→v2 마이그레이션
+
+### ✅ 완료 (v2.9.0~v3.2.0)
+- 운영 UX 개선 18항목, 캐시 시점 표시, Alt+1~9 단축키, 오프라인 감지
+- 학업성취도 Excel 내보내기, Skeleton 로딩, 모바일 탭 11px
+- 문서자동화 탭 (출석입력요청대장 HWPX), 공결 신청 조회, 관리자 서명
+- Google Workspace 로그인 (@modulabs.co.kr), 매출 탭 신설
+- 코드 스플리팅: 탭별 동적 import, tabLoader + tabRegistry 패턴
 
 ### ✅ 완료 (v2.7.0~v2.8.0)
-- 학업성취도(실업자): 689명/45,574건, 신호등 정렬, 훈련상태/신호등 필터, 50명 페이지네이션
-- 학업성취도(재직자): 서브탭 분리, 유닛1~12 강사/운영진단, 등급 A~D, 기수 코드 매핑
-- 문의응대: Airtable API (3테이블 매핑), 82건, 통계카드+필터+검색
-- 만족도: 수기 입력 폼 + Apps Script 조회, NPS/강사/HRD 중간·최종
-- 하차방어율: 훈련중만 필터, 히트맵+이탈위험 Top10, 기수별 추이 차트 확대
-- 출결현황: 뷰 모드(전체/월별/일별) 실제 필터 연결
-- 훈련생분석: 진행중/종강 분류 (명단 훈련상태 기반)
-- 훈련생이력: 2열 레이아웃, CSS 바 차트, 1주차부터 표시
-- SMS 발송: 솔라피 API + Supabase Edge Function
-- 보안: CORS 도메인 제한, XSS 이스케이프, PAT 난독화
-- UI: 패치노트, 업무 가이드 📖, AI 팀소개 🤖 (14명), 로그아웃 버튼
-- CSS: data-theme light, text-secondary AA 충족, 하드코딩 100건 변수 교체
-- 모바일: 네비 그룹핑 (5개+더보기), 터치 타겟 44px
-- 스킬 6개: ux-review, data-analyst, hwpx, security-audit, perf-optimizer, frontend-design
-- 코드 스플리팅: 탭별 동적 import (777KB → 531KB, 18개 청크), tabLoader + tabRegistry 패턴
+- 학업성취도(실업자/재직자), 문의응대(Airtable), 만족도, 하차방어율
+- 출결현황, 훈련생분석, 훈련생이력, SMS 발송
+- 보안(CORS, XSS, PAT 난독화), 패치노트, 업무 가이드, AI 팀소개
 
-### 🔒 보안 감사 (2026-04-16) — Phase A + Edge Function 프록시 완료
-- 🔑 HRD-Net authKey **Edge Function 프록시로 완전 이전**
-  - `supabase/functions/hrd-proxy/index.ts` 신규 (Deno.env로 authKey 관리)
-  - `hrdApi.ts` 리팩토링: HRD-Net 직접 호출 → Supabase Edge Function 호출
-  - `hrdConfig.ts`의 authKey 기본값 `""` (필드는 타입 하위호환 위해 유지)
-  - 설정 UI의 authKey 입력칸 숨김 처리 (안내 메시지로 대체)
-  - **빌드 번들에서 authKey 완전 제거 확인** (grep 0회)
-- 🛡️ `src/core/escape.ts` escapeHtml 유틸 추가, 신규 `hrdRevenueTemplate.ts` 적용
-- 🔐 SQL: `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단
-- ⚠️ **사용자 직접 배포 필요**:
-  - `supabase/functions/hrd-proxy/DEPLOY.md` 참고
-  - Supabase Dashboard에서 함수 배포 + `HRD_AUTH_KEY` Secret 등록
-  - `007_security_phase_a.sql`을 SQL Editor에서 실행
+### 🔒 보안 감사 (2026-04-16~17)
+- HRD-Net API 이중 경로: Edge Function 프록시 우선 → CORS 프록시 폴백
+  - `supabase/functions/hrd-proxy/index.ts` (Deno.env로 authKey 관리)
+  - Edge Function 미배포 시 `cors.eu.org` 경유 자동 폴백
+  - `edgeFunctionAvailable` 캐시: 세션 중 1회만 시도 후 결정
+  - ⚠️ `corsproxy.io` 유료 전환됨 (2순위 프록시 사용 불가)
+- `src/core/escape.ts` escapeHtml 유틸 추가
+- `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단
+- ⚠️ **사용자 미완료 조치**:
+  - Edge Function 배포: `supabase/functions/hrd-proxy/DEPLOY.md` 참고
+  - `007_security_phase_a.sql` SQL Editor 실행
+  - `008_create_instructor_dashboard.sql` SQL Editor 실행
 
-### 🔜 다음 작업 (Phase B 보안 강화 포함)
-1. **[보안 Phase B] Supabase 클라이언트 세션 통합** — 현재 10+곳의 `createClient` 중복 + `persistSession:false` → OAuth 로그인해도 익명 롤로 작동. 싱글톤으로 통합 후 `trainee_contacts`, `trainee_gender`, `instructors` 테이블 RLS 강화 (authenticated만 조회/쓰기)
-2. **[보안 Phase B] Apps Script INSERT를 Service Role Key로 전환** → anon INSERT 정책 완전 차단
-3. **[보안] 218개 innerHTML 사용처에 escapeHtml 일괄 적용** — 학생 이름 등 PII 노출 경로 차단
-4. **main.ts 추가 분리** — 531KB → 500KB 이하 (generator 로직 모듈화)
+### 🔜 다음 작업
+1. **강사 대시보드 Phase 6** — 종합 진단 (기술60%+운영40% 합산, 경험치) 자동 조회 탭
+2. **[보안 Phase B] Supabase 클라이언트 세션 통합** — 10+곳 `createClient` 중복 → 싱글톤, RLS 강화
+3. **[보안] 218개 innerHTML에 escapeHtml 일괄 적용**
+4. **main.ts 추가 분리** — 700KB → 500KB 이하
 5. **HWPX 내보내기** — 한글 공문서 (훈련 보고서, 훈련일지)
 6. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
 7. **이메일 발송** — Google SMTP 계정 확보 후 연동
