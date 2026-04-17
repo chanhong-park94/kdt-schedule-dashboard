@@ -9113,6 +9113,57 @@ dialog {
   align-items: center;
 }
 
+/* ═══ 진단 공통 ═══ */
+.diag-criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.diag-criteria-card {
+  padding: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.diag-criteria-card strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.diag-criteria-card div {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.diag-score-select {
+  width: 50px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 12px;
+  text-align: center;
+}
+.diag-summary-row {
+  display: flex;
+  gap: 12px;
+}
+.instr-diag-input {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 4px;
+}
+.diag-page-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ═══ 과정 건강도 ═══ */
 .health-header {
   display: flex;

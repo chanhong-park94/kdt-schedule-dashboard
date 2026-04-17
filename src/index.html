@@ -3383,7 +3383,62 @@
               </div>
             </div>
             <div id="opDiagStatus" class="att-status u-mt-8"></div>
-            <div id="opDiagContent"></div>
+            <div id="opDiagContent">
+              <div id="opDiagFilter" class="proj-eval-filters u-mt-8">
+                <select id="opDiagCourse" class="hrd-input" style="max-width:250px"></select>
+                <select id="opDiagDegr" class="hrd-input" style="max-width:100px"></select>
+                <select id="opDiagUnit" class="hrd-input" style="max-width:150px">
+                  <option value="1">유닛 1</option><option value="2">유닛 2</option><option value="3">유닛 3</option>
+                  <option value="4">유닛 4</option><option value="5">유닛 5</option><option value="6">유닛 6</option>
+                  <option value="7">유닛 7</option><option value="8">유닛 8</option><option value="9">유닛 9</option>
+                  <option value="10">유닛 10</option><option value="11">유닛 11</option><option value="12">유닛 12</option>
+                </select>
+                <button id="opDiagLoadBtn" class="btn btn-primary btn-sm" type="button">📊 조회</button>
+              </div>
+
+              <!-- 진단 기준표 -->
+              <div class="proj-eval-rubric u-mt-14">
+                <h4 class="section-title">운영 진단 기준표</h4>
+                <div class="diag-criteria-grid u-mt-8">
+                  <div class="diag-criteria-card">
+                    <strong>1. 출석 및 접속 시간 (10점)</strong>
+                    <div>10점: 정시 출석, 전체 접속 유지</div>
+                    <div>5점: 지각/조퇴, 80% 이상 접속</div>
+                    <div>0점: 결석, 80% 미만 접속</div>
+                  </div>
+                  <div class="diag-criteria-card">
+                    <strong>2. 학습 태도 및 열정 (10점)</strong>
+                    <div>10점: 캠 ON, 적극 참여</div>
+                    <div>5점: 캠 ON, 간헐적 이탈</div>
+                    <div>0점: 캠 OFF, 소극적 참여</div>
+                  </div>
+                  <div class="diag-criteria-card">
+                    <strong>3. 의사소통 방식 (10점)</strong>
+                    <div>10점: 적절한 의사소통</div>
+                    <div>5점: 다소 부적절한 소통</div>
+                    <div>0점: 소통에 어려움</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="opDiagTableSection" class="u-mt-14" style="display:none">
+                <h4 class="section-title" id="opDiagTableTitle">유닛 진단</h4>
+                <div class="diag-summary-row u-mt-8">
+                  <div class="rev-template-summary-item"><span class="rev-template-summary-label">주계</span><span class="rev-template-summary-value" id="opDiagWeekTotal">-</span></div>
+                  <div class="rev-template-summary-item"><span class="rev-template-summary-label">환산점수</span><span class="rev-template-summary-value" id="opDiagConverted">-</span></div>
+                </div>
+                <div class="table-responsive u-mt-8">
+                  <table class="table att-table">
+                    <thead id="opDiagThead"></thead>
+                    <tbody id="opDiagBody"></tbody>
+                  </table>
+                </div>
+                <div class="proj-eval-actions u-mt-8">
+                  <button id="opDiagSaveBtn" class="btn btn-primary btn-sm" type="button">💾 저장</button>
+                  <span id="opDiagSaveStatus" class="att-status"></span>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- ═══ 교강사 진단 ═══ -->
@@ -3395,7 +3450,43 @@
               </div>
             </div>
             <div id="instrDiagStatus" class="att-status u-mt-8"></div>
-            <div id="instrDiagContent"></div>
+            <div id="instrDiagContent">
+              <div id="instrDiagFilter" class="proj-eval-filters u-mt-8">
+                <select id="instrDiagCourse" class="hrd-input" style="max-width:250px"></select>
+                <select id="instrDiagDegr" class="hrd-input" style="max-width:100px"></select>
+                <button id="instrDiagLoadBtn" class="btn btn-primary btn-sm" type="button">📊 조회</button>
+              </div>
+
+              <!-- 진단 기준 -->
+              <div class="proj-eval-rubric u-mt-14">
+                <h4 class="section-title">교강사 진단 기준</h4>
+                <div class="diag-criteria-grid u-mt-8">
+                  <div class="diag-criteria-card"><strong>5점 (매우 우수)</strong><div>모든 영역에서 탁월한 성과</div></div>
+                  <div class="diag-criteria-card"><strong>4점 (우수)</strong><div>대부분 영역에서 우수한 성과</div></div>
+                  <div class="diag-criteria-card"><strong>3점 (보통)</strong><div>기본적인 수준의 성과 달성</div></div>
+                  <div class="diag-criteria-card"><strong>2점 (미흡)</strong><div>일부 영역에서 개선 필요</div></div>
+                  <div class="diag-criteria-card"><strong>1점 (매우 미흡)</strong><div>대부분 영역에서 개선 필요</div></div>
+                </div>
+              </div>
+
+              <div id="instrDiagTableSection" class="u-mt-14" style="display:none">
+                <div class="diag-page-nav u-mt-8">
+                  <button id="instrDiagPrevPage" class="btn btn-sm" type="button">◀ 이전</button>
+                  <span id="instrDiagPageLabel" style="font-weight:600;font-size:13px">유닛 1~6</span>
+                  <button id="instrDiagNextPage" class="btn btn-sm" type="button">다음 ▶</button>
+                </div>
+                <div class="table-responsive u-mt-8">
+                  <table class="table att-table">
+                    <thead id="instrDiagThead"></thead>
+                    <tbody id="instrDiagBody"></tbody>
+                  </table>
+                </div>
+                <div class="proj-eval-actions u-mt-8">
+                  <button id="instrDiagSaveBtn" class="btn btn-primary btn-sm" type="button">💾 저장</button>
+                  <span id="instrDiagSaveStatus" class="att-status"></span>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- ═══ 매출 현황 ═══ -->
