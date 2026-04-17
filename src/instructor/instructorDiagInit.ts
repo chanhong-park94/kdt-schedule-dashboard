@@ -239,11 +239,37 @@ function recalcUnit(name: string, unit: number): void {
   }
 }
 
+// ─── dirty state tracking ───────────────────────────────────
+
+let isDirty = false;
+
+function markDirty(): void {
+  if (!isDirty) {
+    isDirty = true;
+    window.addEventListener("beforeunload", warnUnsaved);
+  }
+}
+
+function clearDirty(): void {
+  isDirty = false;
+  window.removeEventListener("beforeunload", warnUnsaved);
+}
+
+function warnUnsaved(e: BeforeUnloadEvent): void {
+  e.preventDefault();
+}
+
+function syncStatus(msg: string): void {
+  const el = $("instrDiagSaveStatus");
+  if (el) el.textContent = msg;
+  const topEl = $("instrDiagSaveStatusTop");
+  if (topEl) topEl.textContent = msg;
+}
+
 // ─── 저장 ────────────────────────────────────────────────────
 
 async function saveData(): Promise<void> {
-  const saveStatus = $("instrDiagSaveStatus");
-  if (saveStatus) saveStatus.textContent = "저장 중...";
+  syncStatus("저장 중...");
 
   try {
     const sb = getClient();
@@ -283,9 +309,10 @@ async function saveData(): Promise<void> {
       });
       if (error) throw new Error(error.message);
     }
-    if (saveStatus) saveStatus.textContent = `✅ ${rows.length}건 저장 완료`;
+    clearDirty();
+    syncStatus(`✅ ${rows.length}건 저장 완료`);
   } catch (e) {
-    if (saveStatus) saveStatus.textContent = `❌ ${e instanceof Error ? e.message : String(e)}`;
+    syncStatus(`❌ ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -298,6 +325,7 @@ export function initInstructorDiag(): void {
   populateFilter();
   $("instrDiagLoadBtn")?.addEventListener("click", () => void loadData());
   $("instrDiagSaveBtn")?.addEventListener("click", () => void saveData());
+  $("instrDiagSaveBtnTop")?.addEventListener("click", () => void saveData());
 
   // 페이지 전환 (유닛 1~6 / 7~12)
   $("instrDiagPrevPage")?.addEventListener("click", () => {
@@ -311,5 +339,11 @@ export function initInstructorDiag(): void {
       currentPage++;
       renderTable();
     }
+  });
+
+  // dirty tracking on score inputs
+  const instrSection = $("sectionInstructorDiag");
+  instrSection?.addEventListener("input", (e) => {
+    if ((e.target as HTMLElement).classList.contains("instr-diag-input")) markDirty();
   });
 }

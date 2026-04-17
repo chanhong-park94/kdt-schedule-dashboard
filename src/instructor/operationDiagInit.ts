@@ -274,11 +274,37 @@ function updateSummary(): void {
   if (convEl) convEl.textContent = `평균 ${avgConverted}점`;
 }
 
+// ─── dirty state tracking ───────────────────────────────────
+
+let isDirty = false;
+
+function markDirty(): void {
+  if (!isDirty) {
+    isDirty = true;
+    window.addEventListener("beforeunload", warnUnsaved);
+  }
+}
+
+function clearDirty(): void {
+  isDirty = false;
+  window.removeEventListener("beforeunload", warnUnsaved);
+}
+
+function warnUnsaved(e: BeforeUnloadEvent): void {
+  e.preventDefault();
+}
+
+function syncStatus(msg: string): void {
+  const el = $("opDiagSaveStatus");
+  if (el) el.textContent = msg;
+  const topEl = $("opDiagSaveStatusTop");
+  if (topEl) topEl.textContent = msg;
+}
+
 // ─── 저장 ────────────────────────────────────────────────────
 
 async function saveData(): Promise<void> {
-  const saveStatus = $("opDiagSaveStatus");
-  if (saveStatus) saveStatus.textContent = "저장 중...";
+  syncStatus("저장 중...");
 
   try {
     const sb = getClient();
@@ -308,9 +334,10 @@ async function saveData(): Promise<void> {
       onConflict: "train_pr_id,degr,trainee_name,unit_number,diagnosis_date",
     });
     if (error) throw new Error(error.message);
-    if (saveStatus) saveStatus.textContent = `✅ ${rows.length}건 저장 완료`;
+    clearDirty();
+    syncStatus(`✅ ${rows.length}건 저장 완료`);
   } catch (e) {
-    if (saveStatus) saveStatus.textContent = `❌ ${e instanceof Error ? e.message : String(e)}`;
+    syncStatus(`❌ ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -323,7 +350,14 @@ export function initOperationDiag(): void {
   populateFilter();
   $("opDiagLoadBtn")?.addEventListener("click", () => void loadData());
   $("opDiagSaveBtn")?.addEventListener("click", () => void saveData());
+  $("opDiagSaveBtnTop")?.addEventListener("click", () => void saveData());
   ($("opDiagUnit") as HTMLSelectElement)?.addEventListener("change", () => {
     if (currentTrainPrId && currentDegr) void loadData();
+  });
+
+  // dirty tracking on score selects
+  const diagSection = $("sectionOperationDiag");
+  diagSection?.addEventListener("change", (e) => {
+    if ((e.target as HTMLElement).classList.contains("diag-score-select")) markDirty();
   });
 }

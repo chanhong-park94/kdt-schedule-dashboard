@@ -220,9 +220,33 @@ function renderTable(evalMap: Map<string, EvalRow>): void {
 
 // ─── 저장 ────────────────────────────────────────────────────
 
+let isDirty = false;
+
+function markDirty(): void {
+  if (!isDirty) {
+    isDirty = true;
+    window.addEventListener("beforeunload", warnUnsaved);
+  }
+}
+
+function clearDirty(): void {
+  isDirty = false;
+  window.removeEventListener("beforeunload", warnUnsaved);
+}
+
+function warnUnsaved(e: BeforeUnloadEvent): void {
+  e.preventDefault();
+}
+
+function syncStatus(msg: string): void {
+  const s1 = $("projEvalSaveStatus");
+  const s2 = $("projEvalSaveStatusTop");
+  if (s1) s1.textContent = msg;
+  if (s2) s2.textContent = msg;
+}
+
 async function saveData(): Promise<void> {
-  const saveStatus = $("projEvalSaveStatus");
-  if (saveStatus) saveStatus.textContent = "저장 중...";
+  syncStatus("저장 중...");
 
   try {
     const rows: EvalRow[] = [];
@@ -250,15 +274,10 @@ async function saveData(): Promise<void> {
     });
 
     await upsertEvals(rows);
-    if (saveStatus) {
-      saveStatus.textContent = `✅ ${rows.length}명 저장 완료`;
-      saveStatus.className = "att-status";
-    }
+    syncStatus(`✅ ${rows.length}명 저장 완료`);
+    clearDirty();
   } catch (e) {
-    if (saveStatus) {
-      saveStatus.textContent = `❌ ${e instanceof Error ? e.message : String(e)}`;
-      saveStatus.className = "att-status";
-    }
+    syncStatus(`❌ ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -272,8 +291,17 @@ export function initProjectEval(): void {
 
   $("projEvalLoadBtn")?.addEventListener("click", () => void loadData());
   $("projEvalSaveBtn")?.addEventListener("click", () => void saveData());
+  $("projEvalSaveBtnTop")?.addEventListener("click", () => void saveData());
 
-  // 프로젝트 번호 변경 시 자동 재조회 (데이터가 이미 로드된 경우)
+  // 입력 변경 감지 → dirty
+  document.getElementById("sectionProjectEval")?.addEventListener("input", (e) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains("proj-eval-score") || target.classList.contains("proj-eval-feedback")) {
+      markDirty();
+    }
+  });
+
+  // 프로젝트 번호 변경 시 자동 재조회
   ($("projEvalProject") as HTMLSelectElement)?.addEventListener("change", () => {
     if (currentTrainPrId && currentDegr) void loadData();
   });

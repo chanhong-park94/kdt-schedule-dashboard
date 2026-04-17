@@ -217,11 +217,35 @@ function renderTable(): void {
     .join("");
 }
 
+// ─── dirty state tracking ───────────────────────────────────
+
+let isDirty = false;
+
+function markDirty(): void {
+  if (!isDirty) {
+    isDirty = true;
+    window.addEventListener("beforeunload", warnUnsaved);
+  }
+}
+
+function clearDirty(): void {
+  isDirty = false;
+  window.removeEventListener("beforeunload", warnUnsaved);
+}
+
+function warnUnsaved(e: BeforeUnloadEvent): void {
+  e.preventDefault();
+}
+
+function syncStatus(msg: string): void {
+  const el = $("projRewardSaveStatus");
+  if (el) el.textContent = msg;
+}
+
 // ─── 저장 ────────────────────────────────────────────────────
 
 async function saveExecutionDates(): Promise<void> {
-  const saveStatus = $("projRewardSaveStatus");
-  if (saveStatus) saveStatus.textContent = "저장 중...";
+  syncStatus("저장 중...");
 
   try {
     const sb = getClient();
@@ -250,9 +274,10 @@ async function saveExecutionDates(): Promise<void> {
       });
       if (error) throw new Error(error.message);
     }
-    if (saveStatus) saveStatus.textContent = `✅ ${rows.length}건 저장 완료`;
+    clearDirty();
+    syncStatus(`✅ ${rows.length}건 저장 완료`);
   } catch (e) {
-    if (saveStatus) saveStatus.textContent = `❌ ${e instanceof Error ? e.message : String(e)}`;
+    syncStatus(`❌ ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -304,4 +329,10 @@ export function initProjectReward(): void {
   $("projRewardLoadBtn")?.addEventListener("click", () => void loadData());
   $("projRewardSaveBtn")?.addEventListener("click", () => void saveExecutionDates());
   $("projRewardCsvBtn")?.addEventListener("click", downloadCsv);
+
+  // dirty tracking on execution date inputs
+  const rewardSection = $("sectionProjectReward");
+  rewardSection?.addEventListener("input", (e) => {
+    if ((e.target as HTMLElement).classList.contains("proj-reward-exec")) markDirty();
+  });
 }

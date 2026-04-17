@@ -3300,7 +3300,13 @@
 
               <!-- 평가 테이블 -->
               <div id="projEvalTableSection" class="u-mt-14" style="display:none">
-                <h4 class="section-title" id="projEvalTableTitle">학습자 평가</h4>
+                <div class="proj-eval-header-row">
+                  <h4 class="section-title" id="projEvalTableTitle">학습자 평가</h4>
+                  <div class="proj-eval-actions">
+                    <button id="projEvalSaveBtnTop" class="btn btn-primary btn-sm" type="button">💾 저장</button>
+                    <span id="projEvalSaveStatusTop" class="att-status"></span>
+                  </div>
+                </div>
                 <div class="table-responsive u-mt-8">
                   <table class="table att-table">
                     <thead>
@@ -3422,7 +3428,13 @@
               </div>
 
               <div id="opDiagTableSection" class="u-mt-14" style="display:none">
-                <h4 class="section-title" id="opDiagTableTitle">유닛 진단</h4>
+                <div class="proj-eval-header-row">
+                  <h4 class="section-title" id="opDiagTableTitle">유닛 진단</h4>
+                  <div class="proj-eval-actions">
+                    <button id="opDiagSaveBtnTop" class="btn btn-primary btn-sm" type="button">💾 저장</button>
+                    <span id="opDiagSaveStatusTop" class="att-status"></span>
+                  </div>
+                </div>
                 <div class="diag-summary-row u-mt-8">
                   <div class="rev-template-summary-item"><span class="rev-template-summary-label">주계</span><span class="rev-template-summary-value" id="opDiagWeekTotal">-</span></div>
                   <div class="rev-template-summary-item"><span class="rev-template-summary-label">환산점수</span><span class="rev-template-summary-value" id="opDiagConverted">-</span></div>
@@ -3470,10 +3482,16 @@
               </div>
 
               <div id="instrDiagTableSection" class="u-mt-14" style="display:none">
-                <div class="diag-page-nav u-mt-8">
-                  <button id="instrDiagPrevPage" class="btn btn-sm" type="button">◀ 이전</button>
-                  <span id="instrDiagPageLabel" style="font-weight:600;font-size:13px">유닛 1~6</span>
-                  <button id="instrDiagNextPage" class="btn btn-sm" type="button">다음 ▶</button>
+                <div class="proj-eval-header-row">
+                  <div class="diag-page-nav">
+                    <button id="instrDiagPrevPage" class="btn btn-sm" type="button">◀ 이전</button>
+                    <span id="instrDiagPageLabel" style="font-weight:600;font-size:13px">유닛 1~6</span>
+                    <button id="instrDiagNextPage" class="btn btn-sm" type="button">다음 ▶</button>
+                  </div>
+                  <div class="proj-eval-actions">
+                    <button id="instrDiagSaveBtnTop" class="btn btn-primary btn-sm" type="button">💾 저장</button>
+                    <span id="instrDiagSaveStatusTop" class="att-status"></span>
+                  </div>
                 </div>
                 <div class="table-responsive u-mt-8">
                   <table class="table att-table">

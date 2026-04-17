@@ -9112,6 +9112,13 @@ dialog {
   gap: 10px;
   align-items: center;
 }
+.proj-eval-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
 /* ═══ 진단 공통 ═══ */
 .diag-criteria-grid {
