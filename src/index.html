@@ -3272,7 +3272,55 @@
               </div>
             </div>
             <div id="projEvalStatus" class="att-status u-mt-8"></div>
-            <div id="projEvalContent"></div>
+            <div id="projEvalContent">
+              <!-- 과정/기수 선택 (운매 모드에서만 보임, 강사모드에서는 자동 세팅) -->
+              <div id="projEvalCourseFilter" class="proj-eval-filters u-mt-8">
+                <select id="projEvalCourse" class="hrd-input" style="max-width:250px"></select>
+                <select id="projEvalDegr" class="hrd-input" style="max-width:100px"></select>
+                <select id="projEvalProject" class="hrd-input" style="max-width:200px">
+                  <option value="1">프로젝트 1</option>
+                  <option value="2">프로젝트 2</option>
+                  <option value="3">프로젝트 3</option>
+                  <option value="4">프로젝트 4</option>
+                </select>
+                <button id="projEvalLoadBtn" class="btn btn-primary btn-sm" type="button">📊 조회</button>
+              </div>
+
+              <!-- 평가기준 (루브릭) -->
+              <div id="projEvalRubric" class="proj-eval-rubric u-mt-14" style="display:none">
+                <h4 class="section-title">평가기준</h4>
+                <table class="table att-table u-mt-8" id="projEvalRubricTable">
+                  <thead>
+                    <tr><th>#</th><th>평가항목</th><th>배점</th></tr>
+                  </thead>
+                  <tbody id="projEvalRubricBody"></tbody>
+                  <tfoot><tr style="font-weight:700"><td></td><td>총점</td><td>100</td></tr></tfoot>
+                </table>
+              </div>
+
+              <!-- 평가 테이블 -->
+              <div id="projEvalTableSection" class="u-mt-14" style="display:none">
+                <h4 class="section-title" id="projEvalTableTitle">학습자 평가</h4>
+                <div class="table-responsive u-mt-8">
+                  <table class="table att-table">
+                    <thead>
+                      <tr>
+                        <th style="width:40px">#</th>
+                        <th style="width:100px">학습자명</th>
+                        <th style="width:80px">상태</th>
+                        <th style="width:100px">점수 (100)</th>
+                        <th>피드백</th>
+                      </tr>
+                    </thead>
+                    <tbody id="projEvalBody"></tbody>
+                  </table>
+                </div>
+                <div class="proj-eval-actions u-mt-8">
+                  <button id="projEvalSaveBtn" class="btn btn-primary btn-sm" type="button">💾 저장</button>
+                  <span id="projEvalSaveStatus" class="att-status"></span>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- ═══ 프로젝트 보상 (운매 전용) ═══ -->

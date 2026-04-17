@@ -9074,6 +9074,45 @@ dialog {
   }
 }
 
+/* ═══ 프로젝트 평가 ═══ */
+.proj-eval-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.proj-eval-rubric {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.proj-eval-rubric .section-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.proj-eval-row.proj-eval-dropout {
+  opacity: 0.45;
+  background: var(--surface-hover);
+}
+.proj-eval-row.proj-eval-dropout td {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-secondary);
+}
+.proj-eval-score {
+  width: 80px !important;
+  text-align: center;
+}
+.proj-eval-feedback {
+  width: 100% !important;
+  min-width: 200px;
+}
+.proj-eval-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 /* ═══ 과정 건강도 ═══ */
 .health-header {
   display: flex;
