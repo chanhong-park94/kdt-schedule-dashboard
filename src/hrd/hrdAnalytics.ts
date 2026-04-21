@@ -15,6 +15,12 @@ import type { HrdRawTrainee, HrdRawAttendance, HrdConfig, HrdCourse, TraineeGend
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus, isEarlyLeaveStatus, calcAbsentDays } from "./hrdTypes";
 import type { TraineeAnalysis, AnalyticsSummary, InsightCard } from "./hrdAnalyticsTypes";
 import { getAgeGroup } from "./hrdAnalyticsTypes";
+import {
+  computeCohortStats,
+  renderCohortNoteSection,
+  hydrateCohortNoteSection,
+  getLocalRisk,
+} from "./hrdAnalyticsNotes";
 
 // ─── Supabase Client (성별 조회용) ──────────────────────────
 const _anaUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
@@ -149,7 +155,8 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
         if (isClassDay) weekdaysPassed++;
         cursor.setDate(cursor.getDate() + 1);
       }
-      courseProgressRate = courseStatusFromDate === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
+      courseProgressRate =
+        courseStatusFromDate === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
     }
     for (const degr of course.degrs) {
       done++;
@@ -314,8 +321,8 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
             if (maxAbsent === 0) return "safe";
             const remainRate = remainingAbsent / maxAbsent;
             if (remainRate <= 0.15) return "danger";
-            if (remainRate <= 0.30) return "warning";
-            if (remainRate <= 0.60) return "caution";
+            if (remainRate <= 0.3) return "warning";
+            if (remainRate <= 0.6) return "caution";
             return "safe";
           })();
 
@@ -744,6 +751,9 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
       }
     }
 
+    // 필터별 컬럼 수 (상세 패널 colspan)
+    const colspan = filter === "진행중" ? 9 : 8;
+
     statusBody.innerHTML = groups
       .map((g) => {
         const cnt = g.list.length;
@@ -764,6 +774,14 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
         const riskClass = noData ? "" : atRisk === 0 ? "ana-cell-good" : atRisk <= 2 ? "ana-cell-warn" : "ana-cell-bad";
         const courseTd = `<td>${g.course.length > 18 ? g.course.slice(0, 18) + "…" : g.course}</td>`;
 
+        // ── 모든 필터 공통: 확장 패널 ID + 메모 섹션 ──
+        const rowId = `anaRow_${g.course.replace(/[^a-zA-Z0-9가-힣]/g, "")}_${g.degr}`;
+        const cohortStats = computeCohortStats(g.list);
+        const localRisk = getLocalRisk(g.course, g.degr);
+        const noteSectionHtml = renderCohortNoteSection(g.course, g.degr, cohortStats, localRisk);
+
+        let mainRowHtml = "";
+        let detailInnerHtml = "";
         if (filter === "종강") {
           // 수료율 계산
           const completed = g.list.filter(
@@ -782,8 +800,7 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
             const color = diff > 0 ? "#dc2626" : diff < 0 ? "#059669" : "#6b7280";
             prevCompare = `<span style="color:${color};font-weight:600;">${sign}${diff.toFixed(1)}%p</span>`;
           }
-          const rowId = `anaRow_${g.course.replace(/[^a-zA-Z0-9가-힣]/g, "")}_${g.degr}`;
-          return `<tr class="ana-expandable-row" data-row-id="${rowId}" style="cursor:pointer;" title="클릭하여 상세 보기">
+          mainRowHtml = `<tr class="ana-expandable-row" data-row-id="${rowId}" style="cursor:pointer;" title="클릭하여 상세 보기">
             ${courseTd}
             <td>${g.degr}기</td>
             <td>${g.category}</td>
@@ -792,14 +809,12 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
             <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
             <td>${prevCompare}</td>
             <td class="${rateClass}">${fmtRate(avgRate)}</td>
-          </tr>
-          <tr class="ana-detail-panel" id="${rowId}" style="display:none;">
-            <td colspan="8">${renderCourseDetailPanel(g)}</td>
           </tr>`;
+          detailInnerHtml = renderCourseDetailPanel(g) + noteSectionHtml;
         } else if (filter === "진행중") {
           const progClass =
             g.progressRate >= 70 ? "ana-cell-good" : g.progressRate >= 40 ? "ana-cell-warn" : "ana-cell-bad";
-          return `<tr>
+          mainRowHtml = `<tr class="ana-expandable-row" data-row-id="${rowId}" style="cursor:pointer;" title="클릭하여 상세 보기">
             ${courseTd}
             <td>${g.degr}기</td>
             <td>${g.category}</td>
@@ -810,8 +825,9 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
             <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
             <td class="${riskClass}">${noData ? "-" : atRisk + "명"}</td>
           </tr>`;
+          detailInnerHtml = noteSectionHtml;
         } else {
-          return `<tr>
+          mainRowHtml = `<tr class="ana-expandable-row" data-row-id="${rowId}" style="cursor:pointer;" title="클릭하여 상세 보기">
             ${courseTd}
             <td>${g.degr}기</td>
             <td>${g.category}</td>
@@ -821,24 +837,31 @@ function renderOverviewTab(data: TraineeAnalysis[], summary: AnalyticsSummary): 
             <td class="${dropClass}">${dropRate.toFixed(1)}%</td>
             <td class="${riskClass}">${noData ? "-" : atRisk + "명"}</td>
           </tr>`;
+          detailInnerHtml = noteSectionHtml;
         }
+
+        return `${mainRowHtml}
+          <tr class="ana-detail-panel" id="${rowId}" style="display:none;">
+            <td colspan="${colspan}">${detailInnerHtml}</td>
+          </tr>`;
       })
       .join("");
 
-    // 종강 행 클릭 이벤트 (상세 패널 토글)
-    if (filter === "종강") {
-      statusBody.querySelectorAll<HTMLElement>(".ana-expandable-row").forEach((row) => {
-        row.addEventListener("click", () => {
-          const panelId = row.dataset.rowId || "";
-          const panel = document.getElementById(panelId);
-          if (panel) {
-            const isHidden = panel.style.display === "none";
-            panel.style.display = isHidden ? "" : "none";
-            row.classList.toggle("ana-row-expanded", isHidden);
-          }
-        });
+    // ── 모든 필터 공통: 행 클릭 시 상세 패널 토글 + 메모 섹션 hydrate ──
+    statusBody.querySelectorAll<HTMLElement>(".ana-expandable-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const panelId = row.dataset.rowId || "";
+        const panel = document.getElementById(panelId);
+        if (!panel) return;
+        const isHidden = panel.style.display === "none";
+        panel.style.display = isHidden ? "" : "none";
+        row.classList.toggle("ana-row-expanded", isHidden);
+        if (isHidden) {
+          const section = panel.querySelector<HTMLElement>(".ana-note-section");
+          if (section) void hydrateCohortNoteSection(section);
+        }
       });
-    }
+    });
 
     // 합계 행
     if (statusFoot) {
@@ -1936,7 +1959,19 @@ export function initAnalytics(): void {
       alert("내보낼 위험군 학생이 없습니다.");
       return;
     }
-    const columns = ["이름", "성별", "과정", "기수", "출결률(%)", "결석일수", "지각일수", "조퇴일수", "위험등급", "연속결석", "경보사유"] as const;
+    const columns = [
+      "이름",
+      "성별",
+      "과정",
+      "기수",
+      "출결률(%)",
+      "결석일수",
+      "지각일수",
+      "조퇴일수",
+      "위험등급",
+      "연속결석",
+      "경보사유",
+    ] as const;
     const rows = riskStudents.map((d) => [
       d.name,
       d.gender || "-",
@@ -1946,7 +1981,13 @@ export function initAnalytics(): void {
       String(d.absentDays),
       String(d.lateDays),
       String(d.earlyLeaveDays),
-      d.riskLevel === "danger" ? "위험" : d.riskLevel === "warning" ? "경고" : d.riskLevel === "caution" ? "주의" : "안전",
+      d.riskLevel === "danger"
+        ? "위험"
+        : d.riskLevel === "warning"
+          ? "경고"
+          : d.riskLevel === "caution"
+            ? "주의"
+            : "안전",
       String(d.currentConsecutiveAbsent),
       d.alertReasons.join(", "),
     ]);
