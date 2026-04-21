@@ -1213,9 +1213,15 @@ function renderSlackScheduleUI(config: HrdConfig): void {
   if (footerInput) footerInput.value = schedule.footerText || DEFAULT_SLACK_SCHEDULE.footerText;
 }
 
-/** Google Workspace 로그인(admin-mode) 상태로 API 키 섹션 접근 제어 */
+/**
+ * @modulabs.co.kr Google Workspace 로그인 여부로 API 키 섹션 접근 제어.
+ * 이전에는 admin-mode body class에 의존했으나, 해당 클래스는
+ * production에서 resolveShowAdvancedPolicy에 의해 항상 false가 되어
+ * 배포 환경에서 게이트가 열리지 않는 문제가 있었다.
+ */
 function isAdminMode(): boolean {
-  return document.body.classList.contains("admin-mode");
+  const email = sessionStorage.getItem("kdt_auth_email") || "";
+  return email.endsWith("@modulabs.co.kr");
 }
 
 export function setupSettingsHandlers(): void {
