@@ -159,3 +159,55 @@ export function removeCourse(index: number): void {
 export function getDefaultAuthKey(): string {
   return DEFAULT_KEY;
 }
+
+/**
+ * 보조강사 세션(Supabase 공유)의 과정·기수를 로컬 hrdConfig에 보장.
+ *
+ * 배경:
+ *  - `hrdConfig.courses`는 브라우저 localStorage 전용이라 새 기수(degr)가
+ *    관리자 기기에서만 업데이트되면 보조강사 쪽 dropdown에는 안 뜬다.
+ *  - select 요소의 표준 동작상 존재하지 않는 value를 세팅하면 조용히 빈 문자열이
+ *    되어 "과정과 기수를 선택해주세요" 오류가 발생한다.
+ *
+ * 이 함수는:
+ *  - 과정이 없으면 세션 정보로 최소 스펙을 만들어 추가
+ *  - 과정은 있지만 해당 기수가 degrs에 없으면 추가
+ *  - DEFAULT_COURSES에 동일 trainPrId가 있으면 속성(totalDays 등)을 상속
+ *
+ * @returns 변경되었는지 여부 (호출자가 filter 재렌더 결정용)
+ */
+export function ensureCourseAndDegr(trainPrId: string, degr: string, courseName: string): boolean {
+  if (!trainPrId || !degr) return false;
+  const config = loadHrdConfig();
+  let updated = false;
+
+  let course = config.courses.find((c) => c.trainPrId === trainPrId);
+  if (!course) {
+    // 과정 자체가 없으면 최소 정보로 신규 추가 (DEFAULT_COURSES 속성 상속)
+    const def = DEFAULT_COURSES.find((d) => d.trainPrId === trainPrId);
+    const newCourse: HrdCourse = def
+      ? { ...def, degrs: [...def.degrs] }
+      : {
+          name: courseName || "(신규 과정)",
+          trainPrId,
+          degrs: [],
+          startDate: "",
+          totalDays: 120,
+          endTime: "18:00",
+          category: "실업자",
+          trainingHoursPerDay: 8,
+        };
+    if (!newCourse.degrs.includes(degr)) newCourse.degrs.push(degr);
+    newCourse.degrs.sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+    config.courses.push(newCourse);
+    updated = true;
+  } else if (!course.degrs.includes(degr)) {
+    // 과정은 있으나 해당 기수가 없으면 추가
+    course.degrs.push(degr);
+    course.degrs.sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+    updated = true;
+  }
+
+  if (updated) saveHrdConfig(config);
+  return updated;
+}

@@ -11,7 +11,7 @@ import { Chart, registerables } from "chart.js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readClientEnv } from "../core/env";
 import { fetchRoster, fetchDailyAttendance, testConnection, discoverDegrs } from "./hrdApi";
-import { loadHrdConfig, saveHrdConfig, DEFAULT_COURSES } from "./hrdConfig";
+import { loadHrdConfig, saveHrdConfig, DEFAULT_COURSES, ensureCourseAndDegr } from "./hrdConfig";
 import type {
   HrdRawTrainee,
   HrdRawAttendance,
@@ -1654,6 +1654,14 @@ function populateFilters(): void {
   const degrSelect = $("attFilterDegr") as HTMLSelectElement | null;
   if (!courseSelect) return;
 
+  // 방어: 보조강사 세션의 과정·기수가 localStorage에 없으면 먼저 추가
+  // (applyAssistantMode보다 populateFilters가 먼저 실행되는 경로가 있을 수 있으므로
+  //  여기서도 한 번 더 확인한다 — defense in depth)
+  const assistantSession = getAssistantSession();
+  if (assistantSession) {
+    ensureCourseAndDegr(assistantSession.trainPrId, assistantSession.degr, assistantSession.courseName);
+  }
+
   currentConfig = loadHrdConfig();
   courseSelect.innerHTML = currentConfig.courses
     .map((c) => `<option value="${c.trainPrId}">${c.name}</option>`)
@@ -1675,8 +1683,7 @@ function populateFilters(): void {
       : '<option value="">-</option>';
   }
 
-  // 보조강사 모드: 과정/기수 고정
-  const assistantSession = getAssistantSession();
+  // 보조강사 모드: 과정/기수 고정 (위에서 이미 ensureCourseAndDegr로 동기화됨)
   if (assistantSession && courseSelect) {
     courseSelect.value = assistantSession.trainPrId;
     courseSelect.disabled = true;

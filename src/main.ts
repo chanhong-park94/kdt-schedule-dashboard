@@ -10,6 +10,7 @@ import {
   signOutGoogle,
 } from "./auth/assistantAuth";
 import { initAssistantCheck } from "./hrd/hrdAssistantCheck";
+import { ensureCourseAndDegr } from "./hrd/hrdConfig";
 import { initContacts } from "./hrd/hrdContactsUI";
 import { initExcusedAbsence } from "./hrd/hrdExcusedAbsence";
 import { createTableElement } from "./ui/utils/dom";
@@ -451,12 +452,18 @@ function applyAssistantMode(courseName: string, degr: string): void {
   const modeLabel = document.getElementById("assistantModeLabel");
   if (modeLabel) modeLabel.textContent = `📋 ${courseName} ${degr}기 — 강사 모드`;
 
-  // 출결현황 탭으로 강제 이동
+  // 세션의 과정·기수가 localStorage hrdConfig에 없으면 동기화
+  // (관리자는 Supabase assistant_codes만 업데이트하므로 다른 브라우저에서는 stale)
+  const session = getAssistantSession();
+  if (session) {
+    ensureCourseAndDegr(session.trainPrId, session.degr, session.courseName);
+  }
+
+  // 출결현황 탭으로 강제 이동 (이 시점에 populateFilters가 최신 config로 실행됨)
   const attNavBtn = document.querySelector('[data-nav-key="attendance"]') as HTMLElement | null;
   attNavBtn?.click();
 
   // 과정/기수 드롭다운 고정
-  const session = getAssistantSession();
   if (session) {
     const courseSelect = document.getElementById("attFilterCourse") as HTMLSelectElement | null;
     const degrSelect = document.getElementById("attFilterDegr") as HTMLSelectElement | null;
