@@ -848,47 +848,119 @@ export function navigateToTraineeHistory(name: string, courseName: string, train
 
 // ─── Init ───────────────────────────────────────────────
 
-async function loadAndRender(): Promise<void> {
+// 대시보드 결과 캐시 (stale-while-revalidate)
+// 40+ 기수 순차 조회가 느리므로 최근 결과를 즉시 표시 + 백그라운드 갱신
+const DASHBOARD_CACHE_KEY = "kdt_dashboard_cache_v1";
+const DASHBOARD_CACHE_TTL = 6 * 60 * 60 * 1000; // 6시간
+
+interface DashboardCacheEntry {
+  courseData: DashCourseData[];
+  trainees: DashTrainee[];
+  timestamp: number;
+}
+
+function readDashboardCache(year: string): DashboardCacheEntry | null {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) return null;
+    const all = JSON.parse(raw) as Record<string, DashboardCacheEntry>;
+    const entry = all[year];
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > DASHBOARD_CACHE_TTL) return null;
+    return entry;
+  } catch {
+    return null;
+  }
+}
+
+function writeDashboardCache(
+  year: string,
+  courseData: DashCourseData[],
+  trainees: DashTrainee[],
+): void {
+  try {
+    const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    const all: Record<string, DashboardCacheEntry> = raw ? JSON.parse(raw) : {};
+    all[year] = { courseData, trainees, timestamp: Date.now() };
+    localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(all));
+  } catch {
+    // quota 초과 등 캐시 저장 실패는 무시 (조회 자체는 성공)
+  }
+}
+
+function renderAll(
+  courseData: DashCourseData[],
+  trainees: DashTrainee[],
+  config: HrdConfig,
+): void {
+  destroyCharts();
+  renderKpiCards(courseData, trainees);
+  renderHealthScorePanel(courseData, trainees);
+  renderDonutChart(courseData);
+  renderStatsPanel(courseData, trainees);
+  renderProgressChart(courseData, filterCoursesByYear(config.courses, currentYearFilter));
+  renderRiskStudentList(trainees);
+  renderCompletedCourseResults(courseData);
+  renderCompareCharts(courseData, trainees);
+  renderIntegrityWarnings(courseData);
+
+  const descEl = $("dashFilterDesc");
+  if (descEl) {
+    const labels: Record<string, string> = {
+      training: "훈련 중인 과정의 핵심 KPI를 한눈에 확인합니다.",
+      all: "전체 과정(종강 포함)의 KPI를 한눈에 확인합니다.",
+    };
+    descEl.textContent =
+      labels[currentYearFilter] ?? `${currentYearFilter}년 개강 과정의 KPI를 한눈에 확인합니다.`;
+  }
+}
+
+function formatCacheAge(ms: number): string {
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "방금 전";
+  if (mins < 60) return `${mins}분 전`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}시간 전`;
+}
+
+async function fetchAndRefresh(config: HrdConfig, hasCached: boolean): Promise<void> {
   const loading = $("dashboardLoading");
   const loadingMsg = $("dashboardLoadingMsg");
-
-  if (loading) loading.style.display = "block";
-
   try {
-    const config = loadHrdConfig();
     const { courseData, trainees } = await fetchDashboardData(config, (msg) => {
-      if (loadingMsg) loadingMsg.textContent = msg;
+      if (loadingMsg) loadingMsg.textContent = hasCached ? `최신 데이터 ${msg}` : msg;
     });
-
-    destroyCharts();
-    renderKpiCards(courseData, trainees);
-    renderHealthScorePanel(courseData, trainees);
-    renderDonutChart(courseData);
-    renderStatsPanel(courseData, trainees);
-    renderProgressChart(courseData, filterCoursesByYear(config.courses, currentYearFilter));
-    renderRiskStudentList(trainees);
-    renderCompletedCourseResults(courseData);
-    renderCompareCharts(courseData, trainees);
-    renderIntegrityWarnings(courseData);
-
-    // 필터 설명 업데이트
-    const descEl = $("dashFilterDesc");
-    if (descEl) {
-      const labels: Record<string, string> = {
-        training: "훈련 중인 과정의 핵심 KPI를 한눈에 확인합니다.",
-        all: "전체 과정(종강 포함)의 KPI를 한눈에 확인합니다.",
-      };
-      descEl.textContent =
-        labels[currentYearFilter] ?? `${currentYearFilter}년 개강 과정의 KPI를 한눈에 확인합니다.`;
-    }
+    writeDashboardCache(currentYearFilter, courseData, trainees);
+    renderAll(courseData, trainees, config);
   } catch (e) {
-    const container = $("dashboardKpiCards");
-    if (container)
-      container.innerHTML = `<div class="dash-empty">데이터를 불러올 수 없습니다. 설정을 확인해주세요.</div>`;
+    // 캐시가 있으면 그대로 유지, 없을 때만 에러 표시
+    if (!hasCached) {
+      const container = $("dashboardKpiCards");
+      if (container)
+        container.innerHTML = `<div class="dash-empty">데이터를 불러올 수 없습니다. 설정을 확인해주세요.</div>`;
+    }
     console.warn("[Dashboard] Error:", e);
   } finally {
     if (loading) loading.style.display = "none";
   }
+}
+
+async function loadAndRender(): Promise<void> {
+  const loading = $("dashboardLoading");
+  const config = loadHrdConfig();
+
+  // ① 캐시 있으면 즉시 표시 + 백그라운드 갱신 (await 없이) — 탭 로더가 빨리 resolve
+  const cached = readDashboardCache(currentYearFilter);
+  if (cached) {
+    renderAll(cached.courseData, cached.trainees, config);
+    if (loading) loading.style.display = "none";
+    void fetchAndRefresh(config, true); // fire-and-forget
+    return;
+  }
+
+  // ② 캐시 없으면 동기 로드
+  if (loading) loading.style.display = "block";
+  await fetchAndRefresh(config, false);
 }
 
 function setupYearFilter(): void {
