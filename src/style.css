@@ -2641,13 +2641,26 @@ body.management-inline-mode #notificationDrawer.drawer {
     font-size: 18px;
   }
 
+  /* 헤더 액션 버튼: 모바일에서는 아이콘 + 짧은 라벨로 컴팩트하게 */
   .icon-btn--label {
-    min-width: 0;
-    width: calc(50% - 5px);
+    min-width: 44px;
+    width: auto;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+    gap: 4px;
+    border-radius: 10px;
+  }
+
+  .app-header-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .header-runtime-panel {
     order: -1;
+    flex: 1 1 100%;
   }
 
   .quick-admin-index-head {
@@ -2666,6 +2679,63 @@ body.management-inline-mode #notificationDrawer.drawer {
   body.management-inline-mode #instructorDrawer.drawer {
     border-radius: 12px;
     padding: 12px;
+  }
+
+  /* 카드 좌우 패딩 축소 — 모바일에서 더 많은 콘텐츠 표시 */
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  /* 가로 오버플로 차단 — 화면 폭 초과 콘텐츠는 카드 내부에서만 스크롤 */
+  .app-shell.app-shell--jibble {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  .card,
+  .dash-panel {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 섹션 제목·본문 타이포 가독성 향상 */
+  .section-heading {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+  .card-title {
+    font-size: 15px;
+  }
+
+  /* 패치노트 드롭다운 — 모바일에서 화면 폭에 맞춤 */
+  .patch-note-dropdown {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: 60px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: 70vh;
+  }
+}
+
+/* 초소형 디바이스 (≤ 380px iPhone SE 등) */
+@media (max-width: 380px) {
+  .icon-btn--label {
+    padding: 0 8px;
+    font-size: 11px;
+  }
+  /* 헤더 버튼 텍스트 라벨 숨김 — 아이콘 + aria-label 만 노출 */
+  .app-header-actions .icon-btn--label > span:not([aria-hidden="true"]):not(.patch-note-badge) {
+    display: none;
+  }
+  .mobile-bottom-nav-item {
+    min-width: 54px;
+    padding: 6px 2px;
+  }
+  .mobile-bottom-nav-label {
+    font-size: 10px;
   }
 }
 
@@ -3369,10 +3439,10 @@ tbody tr:hover {
     right: 0;
     z-index: 900;
     background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
-    padding: 4px 0;
-    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--card-border);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    padding: 6px 4px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -3381,18 +3451,22 @@ tbody tr:hover {
 
   .mobile-bottom-nav-item {
     flex: 0 0 auto;
-    min-width: 56px;
+    min-width: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 6px 6px;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 4px;
     border: none;
     background: none;
-    color: var(--text-muted);
-    font-size: 10px;
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: color 0.15s;
+    transition: color 0.15s, transform 0.1s;
+  }
+
+  .mobile-bottom-nav-item:active {
+    transform: scale(0.92);
   }
 
   .mobile-bottom-nav-item.is-active {
@@ -3400,28 +3474,33 @@ tbody tr:hover {
   }
 
   .mobile-bottom-nav-icon {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1;
   }
 
   .mobile-nav-svg {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
+    color: currentColor;
   }
 
   .mobile-bottom-nav-label {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
+    line-height: 1.1;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 56px;
+    color: inherit;
+    letter-spacing: -0.01em;
+  }
+
+  .mobile-bottom-nav-item.is-active .mobile-bottom-nav-label {
+    font-weight: 700;
   }
 
   /* Add bottom padding to main content so it's not covered by nav */
   .app-shell.app-shell--jibble {
-    padding-bottom: 72px;
+    padding-bottom: 80px;
   }
 }
 
