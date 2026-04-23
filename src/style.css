@@ -2641,15 +2641,20 @@ body.management-inline-mode #notificationDrawer.drawer {
     font-size: 18px;
   }
 
-  /* 헤더 액션 버튼: 모바일에서는 아이콘 + 짧은 라벨로 컴팩트하게 */
+  /* 헤더 액션 버튼: 모바일에서는 알약형 칩 (아이콘+라벨 유지) */
   .icon-btn--label {
-    min-width: 44px;
+    min-width: 0;
     width: auto;
-    height: 36px;
+    height: 30px;
     padding: 0 10px;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
     gap: 4px;
-    border-radius: 10px;
+    border-radius: 999px;
+    line-height: 1;
+  }
+  .icon-btn--label > span[aria-hidden="true"] {
+    font-size: 13px;
   }
 
   .app-header-actions {
@@ -2723,12 +2728,13 @@ body.management-inline-mode #notificationDrawer.drawer {
 /* 초소형 디바이스 (≤ 380px iPhone SE 등) */
 @media (max-width: 380px) {
   .icon-btn--label {
+    height: 28px;
     padding: 0 8px;
-    font-size: 11px;
+    font-size: 10px;
+    gap: 3px;
   }
-  /* 헤더 버튼 텍스트 라벨 숨김 — 아이콘 + aria-label 만 노출 */
-  .app-header-actions .icon-btn--label > span:not([aria-hidden="true"]):not(.patch-note-badge) {
-    display: none;
+  .icon-btn--label > span[aria-hidden="true"] {
+    font-size: 12px;
   }
   .mobile-bottom-nav-item {
     min-width: 54px;
