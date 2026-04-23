@@ -2288,6 +2288,24 @@ tbody tr:hover {
     min-width: 0;
   }
 
+  /* 네비게이션·필터·칩 형태의 버튼은 콘텐츠 너비 유지 (가로 정렬 보존) */
+  .dash-year-btn,
+  .mobile-bottom-nav-item,
+  .mobile-more-btn,
+  .tab-btn,
+  .kpi-tab-btn,
+  .att-tab,
+  .jibble-segment,
+  .jibble-mode-chip,
+  .jibble-filter-chip,
+  .jibble-management-tab,
+  .jibble-nav-item,
+  [data-mobile-nav],
+  [data-dash-year],
+  [data-nav-key] {
+    width: auto;
+  }
+
   .risk-grid {
     grid-template-columns: 1fr;
   }
