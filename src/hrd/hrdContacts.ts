@@ -6,9 +6,12 @@ import { loadHrdConfig } from "./hrdConfig";
 import type { HrdRawTrainee } from "./hrdTypes";
 
 // ─── Supabase Client ────────────────────────────────────────
-// 개인정보(연락처) CRUD는 Google OAuth 인증된 세션(authenticated role)으로만 동작해야 함.
-// spec/sql/010_secure_trainee_contacts.sql 의 RLS가 anon 접근을 차단하므로
-// persistSession: true 로 OAuth 세션을 자동 복원해서 authenticated JWT 를 전달해야 함.
+// ⚠️ 동일 Supabase URL 로 여러 createClient 가 persistSession:true + detectSessionInUrl:true
+// 를 함께 가지면 OAuth 콜백 파싱과 storage lock 이 충돌해서 운매/강사 모드 모두에서
+// 출결현황 데이터 조회가 실패한다. 따라서 이 클라이언트는 세션을 보유하지 않고 anon
+// 으로만 작동시킨다. RLS 강화(010_secure_trainee_contacts.sql)를 적용할 때는 별도
+// 작업에서 assistantAuth.ts 의 authClient(이미 persistSession:true 보유)를 공유하는
+// 패턴으로 전환해야 함.
 const rawUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
 const rawKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
 const supabaseUrl = typeof rawUrl === "string" ? rawUrl.trim() : "";
@@ -16,7 +19,7 @@ const supabaseKey = typeof rawKey === "string" ? rawKey.trim() : "";
 const hasConfig = supabaseUrl.length > 0 && supabaseKey.length > 0;
 const sbClient: SupabaseClient | null = hasConfig
   ? createClient(supabaseUrl, supabaseKey, {
-      auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true },
+      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
     })
   : null;
 
