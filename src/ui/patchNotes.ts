@@ -16,6 +16,13 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.5.1",
+    date: "2026-04-29",
+    items: [
+      { tag: "fix", text: "[핫픽스] 출결현황 조회 실패 — Supabase 클라이언트 두 개가 OAuth 콜백을 동시 파싱하면서 토큰 storage 락이 충돌해 운매/강사 모드 모두에서 데이터 로드가 실패하던 문제 해결 (v3.5.0 회귀)" },
+    ],
+  },
+  {
     version: "v3.5.0",
     date: "2026-04-29",
     items: [
