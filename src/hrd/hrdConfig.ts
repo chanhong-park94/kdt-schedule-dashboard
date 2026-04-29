@@ -25,7 +25,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "AI 활용 서비스 기획/개발",
     trainPrId: "AIG20250000501545",
-    degrs: ["1", "2", "3", "4", "5"],
+    degrs: ["1", "2", "3", "4", "5", "6"],
     startDate: "",
     totalDays: 60,
     endTime: "18:00",
@@ -94,8 +94,26 @@ export function loadHrdConfig(): HrdConfig {
       if (config.courses.length === 0) {
         config.courses = [...DEFAULT_COURSES];
       }
-      // 기존 저장된 과정의 totalDays/category를 DEFAULT_COURSES 기준으로 동기화
       let updated = false;
+
+      // 같은 trainPrId가 중복 등록된 경우 첫 항목만 유지하고 degrs는 합집합으로 병합
+      // (과거 등록 + 신규 추가 충돌 방지 — dropdown/설정 카드 중복 표시 회귀 가드)
+      const seen = new Map<string, HrdCourse>();
+      for (const c of config.courses) {
+        const existing = seen.get(c.trainPrId);
+        if (existing) {
+          const merged = Array.from(new Set([...existing.degrs, ...c.degrs])).sort(
+            (a, b) => (parseInt(a) || 0) - (parseInt(b) || 0),
+          );
+          existing.degrs = merged;
+          updated = true;
+        } else {
+          seen.set(c.trainPrId, c);
+        }
+      }
+      if (updated) config.courses = Array.from(seen.values());
+
+      // 기존 저장된 과정의 totalDays/category를 DEFAULT_COURSES 기준으로 동기화
       for (const course of config.courses) {
         const def = DEFAULT_COURSES.find((d) => d.trainPrId === course.trainPrId);
         if (def) {
@@ -110,6 +128,15 @@ export function loadHrdConfig(): HrdConfig {
           }
           if (!course.trainingHoursPerDay && def.trainingHoursPerDay) {
             course.trainingHoursPerDay = def.trainingHoursPerDay;
+            updated = true;
+          }
+          // DEFAULT에 새 기수가 추가된 경우 사용자 저장본에도 합집합으로 반영
+          // (사용자가 직접 추가한 기수는 보존)
+          const missingDegrs = def.degrs.filter((d) => !course.degrs.includes(d));
+          if (missingDegrs.length > 0) {
+            course.degrs = Array.from(new Set([...course.degrs, ...missingDegrs])).sort(
+              (a, b) => (parseInt(a) || 0) - (parseInt(b) || 0),
+            );
             updated = true;
           }
         }
