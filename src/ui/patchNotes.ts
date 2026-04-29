@@ -16,6 +16,25 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.5.0",
+    date: "2026-04-29",
+    items: [
+      { tag: "fix", text: "강사 대시보드 가로 스크롤 — 운영진단/교강사진단/프로젝트보상 표가 카드 밖으로 잘리던 문제 해결 (.table-responsive CSS 신설)" },
+      { tag: "fix", text: "강사 대시보드 컬럼 고정 — 가로 스크롤 시 #/학습자명 컬럼 sticky 좌측 고정으로 누구의 점수인지 항상 식별 가능" },
+      { tag: "fix", text: "운영진단 미진단 표시 — default 10점이 미진단과 구별되지 않던 문제 해결, 빈 셀은 '-' 표시 + 환산 점수도 평가된 일자만 분모로 사용" },
+      { tag: "fix", text: "운영진단 stale 데이터 차단 — 미진단 셀은 DB 저장 제외 (기존: 모든 셀 default 10점으로 자동 INSERT)" },
+      { tag: "fix", text: "교강사진단 페이지네이션 제거 — 12유닛 한 화면 통합 + 페이지 전환 시 미저장 입력이 손실되던 버그 해결" },
+      { tag: "fix", text: "프로젝트평가 점수 클램프 — 0~100 범위 강제 (기존: 음수/100 초과 저장 가능)" },
+      { tag: "improve", text: "프로젝트평가 피드백 textarea — 한 줄 input → 2행 textarea (vertical resize)" },
+      { tag: "improve", text: "강사 대시보드 입력 필드 — 점수 select/input 폭 50px → 64px (모바일 터치 영역 확보)" },
+      { tag: "improve", text: "운영진단 강사모드 자동조회 — 다른 탭과 일관성 (기존: 매번 '조회' 클릭 필요)" },
+      { tag: "fix", text: "[보안] 훈련생 연락처 RLS 강화 — anon key로 전체 phone/email 일괄 다운로드가 가능했던 정보노출 취약점 차단 (010_secure_trainee_contacts.sql 적용 필요)" },
+      { tag: "fix", text: "[보안] 연락처 탭 XSS 방어 — name/phone/email/status innerHTML 주입 시 escapeHtml 적용 (악성 phone 값으로 stored XSS 가능했던 경로 차단)" },
+      { tag: "feat", text: "[보안] 강사 모드 SMS/이메일 발송 차단 — 학습자 개인정보 발송은 운매(Google 로그인) 권한 전용. 보조강사 코드 로그인 사용자는 발송 함수/모달/자동 스케줄러 진입 자체 차단" },
+      { tag: "improve", text: "Supabase 클라이언트 OAuth 세션 자동 복원 — persistSession 활성화로 RLS authenticated role 정상 동작" },
+    ],
+  },
+  {
     version: "v3.4.0",
     date: "2026-04-17",
     items: [
