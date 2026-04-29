@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+> ⚠️ **출결조회는 이 앱의 핵심 기능입니다.** 출결현황 / hrdApi / Supabase 클라이언트
+> / OAuth / 인증 흐름과 닿는 변경을 작업할 때는 반드시 [docs/ATTENDANCE_CRITICAL.md](docs/ATTENDANCE_CRITICAL.md)
+> 를 먼저 읽고, 해당 문서 끝의 **회귀 방지 체크리스트**를 통과시킨 뒤 머지하세요.
+> v3.5.0 회귀 사례(Supabase 클라이언트 OAuth 콜백 충돌)를 막기 위한 가드입니다.
+
 ## 프로젝트 개요
 KDT(K-디지털 트레이닝) 교육과정 스케줄 관리 대시보드.
 훈련 일정 타임라인, HRD 출결 분석, KPI 리포트, 훈련생 관리 기능을 제공하는 SPA.
