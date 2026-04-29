@@ -62,13 +62,15 @@ describe("ensureCourseAndDegr", () => {
       ],
     });
 
-    const updated = ensureCourseAndDegr("AIG20250000501545", "6", "AI 활용 서비스 기획/개발");
+    // DEFAULT_COURSES에 1~6기가 등록돼 있어 loadHrdConfig 시점에 6기까지 자동 합집합됨.
+    // "DEFAULT에 없는 기수" 추가가 ensureCourseAndDegr의 진짜 의미이므로 7기로 검증.
+    const updated = ensureCourseAndDegr("AIG20250000501545", "7", "AI 활용 서비스 기획/개발");
     expect(updated).toBe(true);
 
     const config = loadHrdConfig();
     const course = config.courses.find((c) => c.trainPrId === "AIG20250000501545");
-    expect(course?.degrs).toContain("6");
-    expect(course?.degrs).toEqual(["1", "2", "3", "4", "5", "6"]);
+    expect(course?.degrs).toContain("7");
+    expect(course?.degrs).toEqual(["1", "2", "3", "4", "5", "6", "7"]);
   });
 
   test("이미 존재하는 기수는 중복 추가하지 않음", () => {
