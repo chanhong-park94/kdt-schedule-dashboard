@@ -6,6 +6,9 @@ import { loadHrdConfig } from "./hrdConfig";
 import type { HrdRawTrainee } from "./hrdTypes";
 
 // ─── Supabase Client ────────────────────────────────────────
+// 개인정보(연락처) CRUD는 Google OAuth 인증된 세션(authenticated role)으로만 동작해야 함.
+// spec/sql/010_secure_trainee_contacts.sql 의 RLS가 anon 접근을 차단하므로
+// persistSession: true 로 OAuth 세션을 자동 복원해서 authenticated JWT 를 전달해야 함.
 const rawUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
 const rawKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
 const supabaseUrl = typeof rawUrl === "string" ? rawUrl.trim() : "";
@@ -13,7 +16,7 @@ const supabaseKey = typeof rawKey === "string" ? rawKey.trim() : "";
 const hasConfig = supabaseUrl.length > 0 && supabaseKey.length > 0;
 const sbClient: SupabaseClient | null = hasConfig
   ? createClient(supabaseUrl, supabaseKey, {
-      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+      auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true },
     })
   : null;
 
@@ -62,7 +65,12 @@ export async function loadContacts(trainPrId: string, degr: string): Promise<Map
     const { data, error } = await sbClient.from(TABLE).select("id,train_pr_id,degr,trainee_name,phone,email").eq("train_pr_id", trainPrId).eq("degr", degr);
 
     if (error) {
-      console.warn("[Contacts] Load error:", error.message);
+      // RLS 차단(권한 없음) — Google 로그인 안 된 상태이거나 강사 모드
+      if (error.code === "42501" || error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
+        console.warn("[Contacts] Permission denied — Google Workspace login required");
+      } else {
+        console.warn("[Contacts] Load error:", error.message);
+      }
       return contactCache;
     }
 
@@ -99,7 +107,7 @@ export async function saveContact(
   if (!sbClient) return;
 
   try {
-    await sbClient.from(TABLE).upsert(
+    const { error } = await sbClient.from(TABLE).upsert(
       {
         train_pr_id: trainPrId,
         degr,
@@ -109,8 +117,16 @@ export async function saveContact(
       },
       { onConflict: "train_pr_id,degr,trainee_name" },
     );
+    if (error) {
+      // RLS 차단 시 사용자에게 명확한 메시지 (Google 로그인 안 된 강사 모드 등)
+      if (error.code === "42501" || error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
+        throw new Error("연락처 저장 권한이 없습니다. Google Workspace 계정으로 로그인 후 다시 시도하세요.");
+      }
+      throw new Error(error.message);
+    }
   } catch (e) {
     console.warn("[Contacts] Save failed:", e);
+    throw e;
   }
 }
 

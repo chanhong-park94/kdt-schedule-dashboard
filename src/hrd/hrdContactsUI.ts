@@ -2,6 +2,7 @@
 import { loadContactsWithRoster, saveContact, bulkUpsertContacts, type ContactDisplay } from "./hrdContacts";
 import { initNotifyModal, openNotifyModal } from "./hrdNotify";
 import { loadHrdConfig } from "./hrdConfig";
+import { escapeHtml } from "../core/escape";
 
 function $(id: string): HTMLElement | null {
   return document.getElementById(id);
@@ -85,16 +86,19 @@ async function loadAndRenderContacts(): Promise<void> {
     if (tbody) {
       tbody.innerHTML = currentContacts
         .map((c, i) => {
+          const safeName = escapeHtml(c.name);
+          const safePhone = escapeHtml(c.phone);
+          const safeEmail = escapeHtml(c.email);
           return `<tr>
             <td>${i + 1}</td>
-            <td><strong>${c.name}</strong></td>
+            <td><strong>${safeName}</strong></td>
             <td>
-              <input class="contact-input" type="tel" data-name="${c.name}" data-field="phone"
-                     value="${c.phone}" placeholder="010-0000-0000" />
+              <input class="contact-input" type="tel" data-name="${safeName}" data-field="phone"
+                     value="${safePhone}" placeholder="010-0000-0000" />
             </td>
             <td>
-              <input class="contact-input" type="email" data-name="${c.name}" data-field="email"
-                     value="${c.email}" placeholder="email@example.com" />
+              <input class="contact-input" type="email" data-name="${safeName}" data-field="email"
+                     value="${safeEmail}" placeholder="email@example.com" />
             </td>
             <td>${statusBadge(c.status)}</td>
           </tr>`;
@@ -175,7 +179,7 @@ function statusBadge(st: string): string {
   else if (st.includes("조기취업")) cls = "th-status-early-employ";
   else if (st.includes("80%이상수료")) cls = "th-status-partial";
   else if (st.includes("수료") || st.includes("정상수료") || st.includes("수료후취업")) cls = "th-status-complete";
-  return `<span class="th-detail-badge ${cls}">${st}</span>`;
+  return `<span class="th-detail-badge ${cls}">${escapeHtml(st)}</span>`;
 }
 
 // ─── 일괄 등록 ─────────────────────────────────────────────
