@@ -9356,7 +9356,13 @@ dialog {
 }
 .proj-eval-feedback {
   width: 100% !important;
-  min-width: 200px;
+  min-width: 240px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.4;
+}
+textarea.proj-eval-feedback {
+  min-height: 44px;
 }
 .proj-eval-actions {
   display: flex;
@@ -9420,6 +9426,70 @@ dialog {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* ═══ Responsive table wrapper (강사 대시보드 / 매출 등 가로폭이 큰 표) ═══ */
+.table-responsive {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  -webkit-overflow-scrolling: touch;
+  background: var(--card-bg);
+}
+.table-responsive .att-table {
+  min-width: max-content;
+  /* 전역 `table { overflow: hidden }` 가 sticky containing block을 가두는 것을 차단 */
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+}
+.table-responsive .att-table thead th:first-child,
+.table-responsive .att-table tbody td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--surface-hover);
+  z-index: 2;
+}
+.table-responsive .att-table thead th:nth-child(2),
+.table-responsive .att-table tbody td:nth-child(2) {
+  position: sticky;
+  left: 40px;
+  background: var(--card-bg);
+  z-index: 2;
+}
+.table-responsive .att-table thead th:first-child,
+.table-responsive .att-table thead th:nth-child(2) {
+  background: var(--surface-hover);
+  z-index: 3;
+}
+.table-responsive .att-table tbody tr:hover td:first-child,
+.table-responsive .att-table tbody tr:hover td:nth-child(2) {
+  background: var(--surface-hover);
+}
+.table-responsive .att-table tbody tr.proj-eval-dropout td:first-child,
+.table-responsive .att-table tbody tr.proj-eval-dropout td:nth-child(2) {
+  background: var(--surface-hover);
+}
+
+/* 진단/평가 입력 필드 — 터치 영역 확보 */
+.diag-score-select {
+  min-width: 64px;
+  width: 64px !important;
+}
+.instr-diag-input {
+  min-width: 64px !important;
+  width: 64px !important;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    border-radius: 8px;
+  }
+  .table-responsive .att-table thead th,
+  .table-responsive .att-table tbody td {
+    padding: 8px 10px;
+  }
 }
 
 /* ═══ 과정 건강도 ═══ */

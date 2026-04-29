@@ -212,7 +212,7 @@ function renderTable(evalMap: Map<string, EvalRow>): void {
       <td>${escapeHtml(t.name)}</td>
       <td>${t.dropout ? '<span style="color:var(--danger)">중도탈락</span>' : '<span style="color:var(--success,#059669)">훈련중</span>'}</td>
       <td><input type="number" class="proj-eval-score hrd-input" min="0" max="100" value="${score}" ${disabled} data-name="${escapeHtml(t.name)}" /></td>
-      <td><input type="text" class="proj-eval-feedback hrd-input" value="${escapeHtml(feedback)}" placeholder="피드백 입력" ${disabled} data-name="${escapeHtml(t.name)}" /></td>
+      <td><textarea class="proj-eval-feedback hrd-input" rows="2" placeholder="피드백 입력" ${disabled} data-name="${escapeHtml(t.name)}">${escapeHtml(feedback)}</textarea></td>
     </tr>`;
     })
     .join("");
@@ -259,15 +259,17 @@ async function saveData(): Promise<void> {
       const trainee = currentTrainees.find((t) => t.name === name);
       if (trainee?.dropout) return; // 중도탈락 제외
 
-      const feedbackInput = document.querySelector<HTMLInputElement>(
+      const feedbackInput = document.querySelector<HTMLTextAreaElement | HTMLInputElement>(
         `.proj-eval-feedback[data-name="${CSS.escape(name)}"]`,
       );
+      const rawScore = parseInt(input.value, 10);
+      const safeScore = isNaN(rawScore) ? 0 : Math.max(0, Math.min(100, rawScore));
       rows.push({
         train_pr_id: currentTrainPrId,
         degr: currentDegr,
         trainee_name: name,
         project_number: currentProject,
-        score: parseInt(input.value, 10) || 0,
+        score: safeScore,
         feedback: feedbackInput?.value?.trim() || "",
         evaluated_by: evaluatedBy,
       });

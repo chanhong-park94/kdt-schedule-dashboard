@@ -80,6 +80,7 @@ function populateFilter(): void {
     if (degrSelEl) degrSelEl.style.display = "none";
     currentTrainPrId = session.trainPrId;
     currentDegr = session.degr;
+    void loadData();
     return;
   }
 
@@ -177,7 +178,7 @@ function renderTable(diagMap: Map<string, Map<string, DiagRow>>): void {
     ${days.map(() => "<th>출석</th><th>태도</th><th>소통</th><th>소계</th>").join("")}
   </tr>`;
 
-  // 바디
+  // 바디 — 미저장 셀은 빈 값으로 표시 (default 10점 misleading 문제 해결)
   tbody.innerHTML = currentTrainees
     .map((t, i) => {
       const dropCls = t.dropout ? " proj-eval-dropout" : "";
@@ -185,27 +186,34 @@ function renderTable(diagMap: Map<string, Map<string, DiagRow>>): void {
       const traineeData = diagMap.get(t.name);
 
       let weekTotal = 0;
+      let evaluatedDays = 0;
       const dayCells = days
         .map((day) => {
           const existing = traineeData?.get(day);
-          const att = existing?.attendance_score ?? 10;
-          const atti = existing?.attitude_score ?? att;
-          const comm = existing?.communication_score ?? att;
-          const sub = att + atti + comm;
-          weekTotal += sub;
+          const hasData = !!existing;
+          const att = hasData ? existing.attendance_score : null;
+          const atti = hasData ? existing.attitude_score : null;
+          const comm = hasData ? existing.communication_score : null;
+          const sub = hasData ? (att! + atti! + comm!) : null;
+          if (hasData) {
+            weekTotal += sub!;
+            evaluatedDays++;
+          }
+          const subText = sub !== null ? String(sub) : "-";
 
           return `<td><select class="diag-score-select" data-name="${escapeHtml(t.name)}" data-day="${day}" data-field="attendance" ${disabled}>${scoreOptions(att)}</select></td>
         <td><select class="diag-score-select" data-name="${escapeHtml(t.name)}" data-day="${day}" data-field="attitude" ${disabled}>${scoreOptions(atti)}</select></td>
         <td><select class="diag-score-select" data-name="${escapeHtml(t.name)}" data-day="${day}" data-field="communication" ${disabled}>${scoreOptions(comm)}</select></td>
-        <td class="diag-subtotal" data-name="${escapeHtml(t.name)}" data-day="${day}">${sub}</td>`;
+        <td class="diag-subtotal" data-name="${escapeHtml(t.name)}" data-day="${day}">${subText}</td>`;
         })
         .join("");
 
-      const converted = days.length > 0 ? Math.round((weekTotal * 100) / (days.length * 30)) : 0;
+      const weekText = evaluatedDays > 0 ? String(weekTotal) : "-";
+      const convertedText = evaluatedDays > 0 ? String(Math.round((weekTotal * 100) / (evaluatedDays * 30))) : "-";
 
       return `<tr class="${dropCls}"><td>${i + 1}</td><td>${escapeHtml(t.name)}</td>${dayCells}
-      <td class="diag-week-total" data-name="${escapeHtml(t.name)}" style="font-weight:700">${weekTotal}</td>
-      <td class="diag-converted" data-name="${escapeHtml(t.name)}" style="font-weight:700">${converted}</td></tr>`;
+      <td class="diag-week-total" data-name="${escapeHtml(t.name)}" style="font-weight:700">${weekText}</td>
+      <td class="diag-converted" data-name="${escapeHtml(t.name)}" style="font-weight:700">${convertedText}</td></tr>`;
     })
     .join("");
 
@@ -217,40 +225,65 @@ function renderTable(diagMap: Map<string, Map<string, DiagRow>>): void {
   updateSummary();
 }
 
-function scoreOptions(selected: number): string {
-  return [10, 5, 0].map((v) => `<option value="${v}" ${v === selected ? "selected" : ""}>${v}</option>`).join("");
+function scoreOptions(selected: number | null): string {
+  const empty = `<option value="" ${selected === null ? "selected" : ""}>-</option>`;
+  return empty + [10, 5, 0].map((v) => `<option value="${v}" ${v === selected ? "selected" : ""}>${v}</option>`).join("");
 }
 
 function recalcRow(name: string): void {
   const days = getUnitDates(currentUnit);
   let weekTotal = 0;
+  let evaluatedDays = 0;
 
   for (const day of days) {
-    const att = getSelectValue(name, day, "attendance");
-    const atti = getSelectValue(name, day, "attitude");
-    const comm = getSelectValue(name, day, "communication");
-    const sub = att + atti + comm;
-    weekTotal += sub;
+    const att = getSelectRaw(name, day, "attendance");
+    const atti = getSelectRaw(name, day, "attitude");
+    const comm = getSelectRaw(name, day, "communication");
 
     const subEl = document.querySelector(`.diag-subtotal[data-name="${CSS.escape(name)}"][data-day="${CSS.escape(day)}"]`);
-    if (subEl) subEl.textContent = String(sub);
+    if (att !== null && atti !== null && comm !== null) {
+      const sub = att + atti + comm;
+      weekTotal += sub;
+      evaluatedDays++;
+      if (subEl) subEl.textContent = String(sub);
+    } else {
+      if (subEl) subEl.textContent = "-";
+    }
   }
 
   const weekEl = document.querySelector(`.diag-week-total[data-name="${CSS.escape(name)}"]`);
-  if (weekEl) weekEl.textContent = String(weekTotal);
-
-  const converted = days.length > 0 ? Math.round((weekTotal * 100) / (days.length * 30)) : 0;
   const convEl = document.querySelector(`.diag-converted[data-name="${CSS.escape(name)}"]`);
-  if (convEl) convEl.textContent = String(converted);
+  if (evaluatedDays > 0) {
+    if (weekEl) weekEl.textContent = String(weekTotal);
+    if (convEl) convEl.textContent = String(Math.round((weekTotal * 100) / (evaluatedDays * 30)));
+  } else {
+    if (weekEl) weekEl.textContent = "-";
+    if (convEl) convEl.textContent = "-";
+  }
 
   updateSummary();
 }
 
-function getSelectValue(name: string, day: string, field: string): number {
+function getSelectRaw(name: string, day: string, field: string): number | null {
   const sel = document.querySelector<HTMLSelectElement>(
     `.diag-score-select[data-name="${CSS.escape(name)}"][data-day="${CSS.escape(day)}"][data-field="${field}"]`,
   );
-  return parseInt(sel?.value || "0", 10);
+  if (!sel) return null;
+  const v = sel.value;
+  if (v === "" || v === undefined) return null;
+  return parseInt(v, 10);
+}
+
+function getSelectValue(name: string, day: string, field: string): number {
+  return getSelectRaw(name, day, field) ?? 0;
+}
+
+function isDayEvaluated(name: string, day: string): boolean {
+  return (
+    getSelectRaw(name, day, "attendance") !== null &&
+    getSelectRaw(name, day, "attitude") !== null &&
+    getSelectRaw(name, day, "communication") !== null
+  );
 }
 
 function updateSummary(): void {
@@ -258,20 +291,21 @@ function updateSummary(): void {
   let sum = 0;
   let count = 0;
   weekTotals.forEach((el) => {
-    const v = parseInt(el.textContent || "0", 10);
-    if (v > 0) {
+    const txt = (el.textContent || "").trim();
+    const v = parseInt(txt, 10);
+    if (txt !== "-" && !isNaN(v) && v >= 0) {
       sum += v;
       count++;
     }
   });
   const avg = count > 0 ? Math.round(sum / count) : 0;
   const days = getUnitDates(currentUnit);
-  const avgConverted = days.length > 0 ? Math.round((avg * 100) / (days.length * 30)) : 0;
+  const avgConverted = days.length > 0 && count > 0 ? Math.round((avg * 100) / (days.length * 30)) : 0;
 
   const weekEl = $("opDiagWeekTotal");
   const convEl = $("opDiagConverted");
-  if (weekEl) weekEl.textContent = `평균 ${avg}점`;
-  if (convEl) convEl.textContent = `평균 ${avgConverted}점`;
+  if (weekEl) weekEl.textContent = count > 0 ? `평균 ${avg}점 (${count}명)` : "-";
+  if (convEl) convEl.textContent = count > 0 ? `평균 ${avgConverted}점` : "-";
 }
 
 // ─── dirty state tracking ───────────────────────────────────
@@ -316,6 +350,8 @@ async function saveData(): Promise<void> {
     for (const t of currentTrainees) {
       if (t.dropout) continue;
       for (const day of days) {
+        // 비어 있는 셀(미진단)은 저장하지 않음 — DB에 stale 10점이 쌓이는 문제 방지
+        if (!isDayEvaluated(t.name, day)) continue;
         rows.push({
           train_pr_id: currentTrainPrId,
           degr: currentDegr,

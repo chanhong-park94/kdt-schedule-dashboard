@@ -15,7 +15,7 @@ import { escapeHtml } from "../core/escape";
 import type { HrdCourse } from "../hrd/hrdTypes";
 
 const TABLE = "instructor_diagnosis";
-const UNITS_PER_PAGE = 6; // 유닛 1~6 first page, 7~12 second (too wide otherwise)
+const TOTAL_UNITS = 12;
 
 // Supabase client
 const rawUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
@@ -53,7 +53,6 @@ let initialized = false;
 let currentTrainees: TraineeInfo[] = [];
 let currentTrainPrId = "";
 let currentDegr = "";
-let currentPage = 1; // 1 = units 1~6, 2 = units 7~12
 let diagData: Map<string, Map<number, DiagRow>> = new Map(); // name -> unit -> row
 
 // ─── 과정/기수 드롭다운 ─────────────────────────────────────
@@ -136,7 +135,6 @@ async function loadData(): Promise<void> {
     }
 
     // 3) 렌더링
-    currentPage = 1;
     renderTable();
     if (tableSection) tableSection.style.display = "";
     if (statusEl) statusEl.textContent = "";
@@ -151,8 +149,7 @@ async function loadData(): Promise<void> {
 // ─── 렌더링 ──────────────────────────────────────────────────
 
 function getUnitRange(): number[] {
-  const start = (currentPage - 1) * UNITS_PER_PAGE + 1;
-  return Array.from({ length: UNITS_PER_PAGE }, (_, i) => start + i);
+  return Array.from({ length: TOTAL_UNITS }, (_, i) => i + 1);
 }
 
 function renderTable(): void {
@@ -187,9 +184,9 @@ function renderTable(): void {
           const converted = avg !== "-" ? Math.round((parseFloat(avg) / 5) * 100) : "-";
 
           return `<td><input type="number" class="instr-diag-input" step="0.1" min="0" max="5" value="${first || ""}"
-        data-name="${escapeHtml(t.name)}" data-unit="${u}" data-field="first" ${disabled} style="width:50px;text-align:center" /></td>
+        data-name="${escapeHtml(t.name)}" data-unit="${u}" data-field="first" ${disabled} /></td>
         <td><input type="number" class="instr-diag-input" step="0.1" min="0" max="5" value="${second || ""}"
-        data-name="${escapeHtml(t.name)}" data-unit="${u}" data-field="second" ${disabled} style="width:50px;text-align:center" /></td>
+        data-name="${escapeHtml(t.name)}" data-unit="${u}" data-field="second" ${disabled} /></td>
         <td class="instr-avg" data-name="${escapeHtml(t.name)}" data-unit="${u}">${avg}</td>
         <td class="instr-conv" data-name="${escapeHtml(t.name)}" data-unit="${u}" style="font-weight:600">${converted}</td>`;
         })
@@ -209,10 +206,6 @@ function renderTable(): void {
       recalcUnit(name, parseInt(unit, 10));
     });
   });
-
-  // 페이지 표시 업데이트
-  const pageLabel = $("instrDiagPageLabel");
-  if (pageLabel) pageLabel.textContent = `유닛 ${unitRange[0]}~${unitRange[unitRange.length - 1]}`;
 }
 
 function recalcUnit(name: string, unit: number): void {
@@ -326,20 +319,6 @@ export function initInstructorDiag(): void {
   $("instrDiagLoadBtn")?.addEventListener("click", () => void loadData());
   $("instrDiagSaveBtn")?.addEventListener("click", () => void saveData());
   $("instrDiagSaveBtnTop")?.addEventListener("click", () => void saveData());
-
-  // 페이지 전환 (유닛 1~6 / 7~12)
-  $("instrDiagPrevPage")?.addEventListener("click", () => {
-    if (currentPage > 1) {
-      currentPage--;
-      renderTable();
-    }
-  });
-  $("instrDiagNextPage")?.addEventListener("click", () => {
-    if (currentPage < 2) {
-      currentPage++;
-      renderTable();
-    }
-  });
 
   // dirty tracking on score inputs
   const instrSection = $("sectionInstructorDiag");
