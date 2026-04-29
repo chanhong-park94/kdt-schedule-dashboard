@@ -393,7 +393,13 @@ async function checkAndSend(): Promise<void> {
 
   // ─── 자동 SMS 에스컬레이션 ───
   let smsSentCount = 0;
-  if (schedule.autoSmsEnabled && reportEntries.length > 0) {
+  // 강사 모드(보조강사 코드 로그인)에서는 자동 SMS 차단 — 개인정보 보호
+  const { getAssistantSession } = await import("../auth/assistantAuth");
+  const assistantSession = getAssistantSession();
+  if (assistantSession) {
+    console.warn("[Scheduler] Auto-SMS blocked — 강사 모드에서는 SMS 발송 불가");
+  }
+  if (!assistantSession && schedule.autoSmsEnabled && reportEntries.length > 0) {
     try {
       const { renderTemplate, loadNotifyTemplates, sendNotification } = await import("./hrdNotify");
       const { getContact } = await import("./hrdContacts");

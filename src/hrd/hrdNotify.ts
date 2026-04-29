@@ -2,6 +2,7 @@
 import { readClientEnv } from "../core/env";
 import { getContact } from "./hrdContacts";
 import { loadHrdConfig } from "./hrdConfig";
+import { getAssistantSession } from "../auth/assistantAuth";
 import type { AttendanceStudent } from "./hrdTypes";
 
 function esc(s: string): string {
@@ -163,12 +164,39 @@ async function callEdgeFunction(body: object): Promise<{ ok: boolean; error?: st
   }
 }
 
+/**
+ * 강사 모드(보조강사 코드 로그인) 차단 — 학습자 개인정보(전화/이메일) 발송은
+ * 운매(Google Workspace 로그인) 권한으로만 허용. 개인정보보호법 안전성 확보 조치.
+ */
+function isAssistantBlocked(): { blocked: boolean; reason: string } {
+  const session = getAssistantSession();
+  if (session) {
+    return {
+      blocked: true,
+      reason: "강사 모드에서는 SMS/이메일 발송이 차단됩니다. 운매(Google 로그인)에 발송을 요청하세요.",
+    };
+  }
+  return { blocked: false, reason: "" };
+}
+
 export async function sendNotification(
   target: NotifyTarget,
   method: NotifyMethod,
   smsFrom?: string,
 ): Promise<SendResult[]> {
   const results: SendResult[] = [];
+
+  // 강사 모드 차단 (개인정보보호 — anon role + assistant_codes 로그인 사용자)
+  const guard = isAssistantBlocked();
+  if (guard.blocked) {
+    results.push({
+      name: target.student.name,
+      method,
+      success: false,
+      error: guard.reason,
+    });
+    return results;
+  }
 
   if ((method === "sms" || method === "both") && target.phone) {
     const res = await callEdgeFunction({
@@ -232,6 +260,13 @@ let currentTargets: NotifyTarget[] = [];
 let currentMethod: NotifyMethod = "sms";
 
 export function openNotifyModal(students: AttendanceStudent[]): void {
+  // 강사 모드 차단 — 개인정보 발송은 운매 권한 전용
+  const guard = isAssistantBlocked();
+  if (guard.blocked) {
+    alert(guard.reason);
+    return;
+  }
+
   currentTargets = prepareTargets(students);
   currentMethod = "sms";
 
