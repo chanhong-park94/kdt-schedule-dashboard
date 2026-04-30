@@ -10,6 +10,13 @@ interface GuideStep {
   text: string;
 }
 
+interface GuideSubsection {
+  title: string;
+  emoji: string;
+  steps: GuideStep[];
+  tips?: string[];
+}
+
 interface GuideSection {
   title: string;
   emoji: string;
@@ -17,6 +24,7 @@ interface GuideSection {
   steps: GuideStep[];
   tips: string[];
   setup?: string; // 필요한 사전 설정
+  subsections?: GuideSubsection[]; // 추가 세부 가이드
 }
 
 // ─── 탭별 가이드 데이터 ──────────────────────────────────────
@@ -110,7 +118,7 @@ const GUIDES: Record<string, GuideSection> = {
       { icon: "3️⃣", text: "'조회' 버튼을 클릭합니다" },
       { icon: "4️⃣", text: "훈련생 테이블에서 출석률과 위험 등급을 확인합니다" },
       { icon: "5️⃣", text: "훈련생 이름을 클릭하면 상세 출결 기록을 볼 수 있습니다" },
-      { icon: "6️⃣", text: "위험군 학생에게 SMS/이메일 알림을 발송할 수 있습니다" },
+      { icon: "6️⃣", text: "위험군 학생에게 SMS/이메일 알림을 발송할 수 있습니다 (아래 '📱 관리대상 문자/이메일 발송' 섹션 참고)" },
     ],
     tips: [
       "위험 등급: 🔴 제적위험(잔여 ≤15%) → 🟠 경고(잔여 ≤30%) → 🟡 주의(잔여 ≤60%) — 허용 결석일 대비 비율",
@@ -118,6 +126,30 @@ const GUIDES: Record<string, GuideSection> = {
       "공결 처리는 출결 테이블 하단 '공결 관리' 섹션에서 가능합니다",
     ],
     setup: "설정 → API 연동 → HRD-Net API 키 + 과정 등록 필요",
+    subsections: [
+      {
+        title: "관리대상 문자/이메일 발송",
+        emoji: "📱",
+        steps: [
+          { icon: "1️⃣", text: "과정/기수 조회 후 출결 테이블 상단의 '📱 안내 발송' 버튼을 클릭합니다" },
+          { icon: "2️⃣", text: "발송 방식 선택: 문자(SMS) / 이메일 / 둘 다 — 위험군 학생이 자동으로 추출됩니다" },
+          { icon: "3️⃣", text: "상단 헤더에서 SMS 발신번호와 이메일 발신자를 확인합니다 — 발신번호는 즉석 수정 + '과정 기본값으로 저장' 가능" },
+          { icon: "4️⃣", text: "각 학생의 메시지 textarea를 직접 편집할 수 있습니다 — 우측 카운터로 SMS(≤90B) / LMS(≤2000B) 분류 확인" },
+          { icon: "5️⃣", text: "수정 후 원래 템플릿으로 되돌리려면 '템플릿 복원' 버튼 클릭" },
+          { icon: "6️⃣", text: "체크박스로 발송할 학생만 선별합니다" },
+          { icon: "7️⃣", text: "'📱 N명에게 발송' 클릭 → 발신번호/대상 수/예상 비용 확인 다이얼로그 → 확인 시 발송" },
+          { icon: "8️⃣", text: "발송 직후 모달 하단에 학생별 ✅/❌ 결과가 표시됩니다 — '📜 최근 발송 이력 보기'로 과거 발송 상세 조회" },
+        ],
+        tips: [
+          "메시지 템플릿은 위험 등급별 3종(긴급/경고/주의)으로 자동 적용 — 발신명은 모두 '모두의연구소 KDT 운영팀'으로 통일됩니다",
+          "솔라피 SMS 비용: SMS 약 8.4원, LMS 약 31.9원 — 발송 전 확인 다이얼로그에 합계가 표시됩니다",
+          "발신번호는 솔라피 콘솔에 사전 등록된 번호여야 발송이 성공합니다",
+          "이메일 발신자(Apps Script SMTP 계정)는 환경변수 VITE_NOTIFY_EMAIL_FROM 으로 표시값을 바꿀 수 있습니다",
+          "강사 모드(보조강사 코드 로그인)에서는 개인정보 보호를 위해 발송이 차단됩니다 — 운매(Google 로그인) 권한에서만 가능",
+          "발송 이력 최근 20건은 localStorage에 자동 저장되며, 연락처는 마스킹된 형태로 보존됩니다",
+        ],
+      },
+    ],
   },
   analytics: {
     title: "출결 리스크",
@@ -283,7 +315,27 @@ function renderGuideModal(guide: GuideSection): string {
       <ul class="guide-tips">
         ${guide.tips.map((t) => `<li>${esc(t)}</li>`).join("")}
       </ul>
-    </div>`;
+    </div>
+    ${
+      guide.subsections && guide.subsections.length > 0
+        ? guide.subsections
+            .map(
+              (sub) => `
+      <div class="guide-subsection">
+        <h4>${sub.emoji} ${esc(sub.title)}</h4>
+        <div class="guide-steps">
+          ${sub.steps.map((s) => `<div class="guide-step"><span class="guide-step-icon">${s.icon}</span><span>${esc(s.text)}</span></div>`).join("")}
+        </div>
+        ${
+          sub.tips && sub.tips.length > 0
+            ? `<ul class="guide-tips">${sub.tips.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`
+            : ""
+        }
+      </div>`,
+            )
+            .join("")
+        : ""
+    }`;
 }
 
 // ─── 초기화 ─────────────────────────────────────────────────

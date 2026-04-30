@@ -8518,6 +8518,27 @@ dialog {
   margin-bottom: 4px;
 }
 
+/* 가이드 서브섹션 (예: 출결현황 → 관리대상 문자/이메일 발송) */
+.guide-subsection {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--surface-hover, #f5f3f8);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+}
+.guide-subsection h4 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-strong, var(--text, #1e1e2e));
+  margin: 0 0 10px;
+}
+.guide-subsection .guide-steps {
+  margin-bottom: 10px;
+}
+.guide-subsection .guide-step {
+  background: var(--card-bg, #ffffff);
+}
+
 /* ═══ 패치노트 ═══ */
 .patch-note-badge {
   position: absolute;

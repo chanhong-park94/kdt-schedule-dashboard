@@ -31,9 +31,9 @@ export interface NotifyTemplate {
 }
 
 const DEFAULT_TEMPLATES: NotifyTemplate = {
-  danger: `[KDT 출결 긴급안내] {name}님, 현재 결석 {absences}회로 제적 위험 상태입니다. 잔여 허용 결석일이 {remaining}일 남았습니다. 즉시 출석 관리가 필요합니다. 문의: 운영팀`,
-  warning: `[KDT 출결안내] {name}님, 현재 결석 {absences}회입니다. 잔여 허용 결석일 {remaining}일입니다. 출석에 유의해주세요. 문의: 운영팀`,
-  caution: `[KDT 출결안내] {name}님, 결석일이 {absences}회 누적되었습니다. 지속적인 출석 관리 부탁드립니다. 문의: 운영팀`,
+  danger: `[KDT 출결 긴급안내] {name}님, 현재 결석 {absences}회로 제적 위험 상태입니다. 잔여 허용 결석일이 {remaining}일 남았습니다. 즉시 출석 관리가 필요합니다. 문의: 모두의연구소 KDT 운영팀`,
+  warning: `[KDT 출결안내] {name}님, 현재 결석 {absences}회입니다. 잔여 허용 결석일 {remaining}일입니다. 출석에 유의해주세요. 문의: 모두의연구소 KDT 운영팀`,
+  caution: `[KDT 출결안내] {name}님, 결석일이 {absences}회 누적되었습니다. 지속적인 출석 관리 부탁드립니다. 문의: 모두의연구소 KDT 운영팀`,
 };
 
 export function loadTemplates(): NotifyTemplate {
@@ -262,7 +262,7 @@ export async function sendNotification(
     const res = await callEdgeFunction({
       type: "email",
       to: target.email,
-      subject: "[KDT 출결안내] 출석 관리 안내",
+      subject: "[모두의연구소 KDT 운영팀] 출석 관리 안내",
       message: target.message,
     });
     results.push({ name: target.student.name, method: "email", success: res.ok, error: res.error });
