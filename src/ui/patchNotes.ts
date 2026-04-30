@@ -16,6 +16,18 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.5.2",
+    date: "2026-04-30",
+    items: [
+      { tag: "feat", text: "출결안내 발송 모달 — 학생별 메시지 textarea 인라인 편집 + SMS/LMS 바이트 카운터 + '템플릿 복원' 버튼" },
+      { tag: "feat", text: "발송 모달 상단 헤더 — SMS 발신번호(인라인 수정 + '과정 기본값으로 저장' 옵션) / 이메일 발신자 표시" },
+      { tag: "feat", text: "발송 직전 최종 확인 다이얼로그 — 대상 수, 발신번호, SMS·LMS 분류, 솔라피 예상 비용 요약" },
+      { tag: "feat", text: "발송 결과 상세 — 학생별 ✅/❌ 모달 하단 표시 + localStorage 발송 이력에 마스킹된 연락처 + '📜 최근 발송 이력 보기'" },
+      { tag: "improve", text: "메시지/이메일 발신명 통일 — '운영팀' → '모두의연구소 KDT 운영팀' (SMS 템플릿 3종 + 이메일 제목 + Edge Function 기본값)" },
+      { tag: "improve", text: "업무 가이드 — 출결현황 가이드에 '📱 관리대상 문자/이메일 발송' 서브섹션 신설 (단계 8개 + 팁 6개)" },
+    ],
+  },
+  {
     version: "v3.5.1",
     date: "2026-04-29",
     items: [

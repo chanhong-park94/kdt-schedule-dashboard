@@ -146,7 +146,7 @@ serve(async (req) => {
     if (type === "sms") {
       result = await sendSolapi(to, from || "", message);
     } else if (type === "email") {
-      result = await sendEmail(to, subject || "[KDT 출결안내]", message);
+      result = await sendEmail(to, subject || "[모두의연구소 KDT 운영팀] 출결안내", message);
     } else {
       result = { ok: false, error: `지원하지 않는 타입: ${type}` };
     }
