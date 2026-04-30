@@ -422,7 +422,7 @@ async function checkAndSend(): Promise<void> {
           const message = renderTemplate(tpl, student);
           try {
             await sendNotification(
-              { student, phone: contact.phone, email: "", message },
+              { student, phone: contact.phone, email: "", message, selected: true },
               "sms",
               smsFrom,
             );
