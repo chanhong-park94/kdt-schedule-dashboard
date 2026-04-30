@@ -8008,6 +8008,182 @@ dialog {
   border-radius: 4px;
   white-space: pre-wrap;
 }
+.notify-target-edit {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.notify-target-edit:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.notify-target-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.notify-counter {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--surface-hover);
+}
+.notify-counter-ok {
+  color: #10b981;
+}
+.notify-counter-warn {
+  color: #f59e0b;
+}
+.notify-counter-error {
+  color: #ef4444;
+  font-weight: 600;
+}
+.notify-restore-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.notify-restore-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+/* -- 발신정보 헤더 블록 ------------------------------------------------- */
+.notify-sender-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.notify-sender-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+}
+.notify-sender-label {
+  font-weight: 600;
+  min-width: 110px;
+}
+.notify-sender-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.notify-sender-input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.notify-sender-fixed {
+  flex: 1;
+  min-width: 180px;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+}
+.notify-sender-save {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.notify-sender-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+.notify-sender-warn {
+  font-size: 12px;
+  color: #f59e0b;
+  margin-top: -2px;
+}
+
+/* -- 전송 결과 상세 ----------------------------------------------------- */
+.notify-results-section {
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.notify-results-head {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.notify-results-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.notify-result-row {
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.notify-result-row.ok {
+  color: var(--text);
+}
+.notify-result-row.fail {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+.notify-result-err {
+  font-size: 11px;
+  color: #ef4444;
+  opacity: 0.85;
+}
+.notify-results-foot {
+  margin-top: 8px;
+  text-align: right;
+}
+.notify-link-btn {
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
 .notify-actions {
   margin-top: 16px;
   display: flex;
