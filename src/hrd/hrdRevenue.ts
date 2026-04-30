@@ -2,33 +2,141 @@
  * 매출 계산 엔진
  *
  * HRD-Net 출결 데이터를 기반으로 과정/기수별 훈련비 매출을 산정합니다.
- * - 인당 시간당 훈련비: 18,150원
+ * - 인당 시간당 훈련비: 18,150원 (모든 과정 공통)
  * - 단위기간: 개강일 기준 매월 (예: 1/15~2/14)
  * - 단위기간 내 80%+ 출석 → 전체 훈련비, 미만 → 출석일만 산정
  * - 공결은 출석 인정 (훈련비 산정 포함)
+ *
+ * 수업일 판정:
+ *   - 과거(오늘 미만): HRD-Net 출결 데이터에 일자가 존재하면 수업일 (자체 휴강 자동 반영)
+ *   - 미래/오늘: 요일별 수업 패턴 + 한국 공휴일 API (date.nager.at)
+ *
+ * 요일별 시간 (점심시간 1h 제외):
+ *   - 실업자: 월~금 7h
+ *   - 재직자 LLM/데이터: 화~금 2.5h, 토 7h
+ *   - 재직자 기획/개발: 화~금 2.0h, 토 7h
+ *   - course.dowHours 가 명시되면 자동 매핑보다 우선
  */
-import type { HrdConfig, HrdCourse, AttendanceDayRecord, AttendanceStudent, CourseCategory } from "./hrdTypes";
+import type {
+  HrdCourse,
+  AttendanceDayRecord,
+  AttendanceStudent,
+  CourseCategory,
+  DayOfWeekHours,
+  EmployedSubCategory,
+} from "./hrdTypes";
 import { isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import type { UnitPeriod, TraineeUnitRevenue, PeriodRevenue, CohortRevenue, RevenueSummary } from "./hrdRevenueTypes";
+import type {
+  UnitPeriod,
+  TraineeUnitRevenue,
+  PeriodRevenue,
+  CohortRevenue,
+} from "./hrdRevenueTypes";
 
-// 인당 시간당 훈련비 (원)
+// 인당 시간당 훈련비 (원) — 모든 과정 공통
 export const COST_PER_PERSON_HOUR = 18_150;
 // 단위기간 출석 기준
 const UNIT_PERIOD_THRESHOLD = 0.8;
 
-// ─── 단위기간 생성 ──────────────────────────────────────────
+// ─── 요일별 시간 매핑 (운영 정책 default) ──────────────────
 
-/** 특정 날짜가 수업일인지 판단 */
-function isClassDay(date: Date, category: CourseCategory): boolean {
-  const day = date.getDay();
-  return category === "재직자" ? day >= 2 && day <= 6 : day >= 1 && day <= 5;
+const DEFAULT_DOW_UNEMPLOYED: DayOfWeekHours = {
+  "1": 7, "2": 7, "3": 7, "4": 7, "5": 7,
+};
+const DEFAULT_DOW_EMPLOYED_2_5H: DayOfWeekHours = {
+  "2": 2.5, "3": 2.5, "4": 2.5, "5": 2.5, "6": 7,
+};
+const DEFAULT_DOW_EMPLOYED_2_0H: DayOfWeekHours = {
+  "2": 2.0, "3": 2.0, "4": 2.0, "5": 2.0, "6": 7,
+};
+
+/** degr 코드 10의 자리 → 재직자 sub-category 자동 판별
+ *  parseCohortCode 와 동일 규칙: 0→LLM, 1→데이터, 2→기획개발 */
+export function parseEmployedSubCategoryFromDegr(degr: string): EmployedSubCategory | null {
+  const num = parseInt(degr.replace(/[^0-9]/g, ""), 10);
+  if (!Number.isFinite(num)) return null;
+  const prefix = Math.floor(num / 10);
+  if (prefix === 0) return "LLM";
+  if (prefix === 1) return "데이터";
+  if (prefix === 2) return "기획개발";
+  return null;
 }
 
-/** 개강일 기준 단위기간 목록 생성 */
+/** 카테고리 + sub-category 기반 default 시간 매핑 */
+export function getDefaultDowHours(
+  category: CourseCategory,
+  sub: EmployedSubCategory | null,
+): DayOfWeekHours {
+  if (category === "실업자") return { ...DEFAULT_DOW_UNEMPLOYED };
+  if (sub === "기획개발") return { ...DEFAULT_DOW_EMPLOYED_2_0H };
+  // LLM, 데이터, 또는 미판별 — 보수적으로 2.5h
+  return { ...DEFAULT_DOW_EMPLOYED_2_5H };
+}
+
+/** 과정+기수에 적용될 요일별 시간 결정
+ *  우선순위: course.dowHours > course.employedSubCategory > degr 코드 자동 판별 > 카테고리 default */
+export function resolveDowHours(course: HrdCourse, degr: string): DayOfWeekHours {
+  if (course.dowHours && Object.keys(course.dowHours).length > 0) {
+    return { ...course.dowHours };
+  }
+  const category = course.category || "실업자";
+  if (category === "실업자") {
+    return getDefaultDowHours(category, null);
+  }
+  // 재직자: sub 명시 > degr 코드 자동 판별
+  const sub = course.employedSubCategory || parseEmployedSubCategoryFromDegr(degr);
+  return getDefaultDowHours(category, sub);
+}
+
+/** 특정 요일의 훈련시간 (없으면 0) */
+function hoursForDow(dow: DayOfWeekHours, day: number): number {
+  const v = dow[String(day) as keyof DayOfWeekHours];
+  return typeof v === "number" && v > 0 ? v : 0;
+}
+
+// ─── 수업일 판정 ──────────────────────────────────────────
+
+/** 요일이 수업 가능한 요일인지 — 카테고리별 기본 (공휴일/휴강 미고려) */
+function isPotentialClassDay(date: Date, dowHours: DayOfWeekHours): boolean {
+  return hoursForDow(dowHours, date.getDay()) > 0;
+}
+
+/** YYYY-MM-DD 포맷 */
+function fmt(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// ─── 단위기간 생성 (async — 공휴일 API + HRD SSOT) ────────
+
+export interface ClassDayContext {
+  /** HRD-Net 출결 데이터에 1건이라도 존재한 날짜 set (YYYY-MM-DD) — 과거 시점 SSOT */
+  hrdAttendanceDates: Set<string>;
+  /** 공휴일 set (YYYY-MM-DD) */
+  holidays: Set<string>;
+  /** "오늘" 기준일 — 이 날 이전은 HRD SSOT 우선, 이후는 요일+공휴일 추정 */
+  today: Date;
+}
+
+/** 특정 날짜가 수업일인지 — HRD SSOT(과거) + 요일·공휴일(미래) 하이브리드 */
+function isClassDay(date: Date, dowHours: DayOfWeekHours, ctx: ClassDayContext): boolean {
+  const dStr = fmt(date);
+  const isPast = date < ctx.today;
+  if (isPast) {
+    // 과거: HRD-Net에 그 날 출결 기록이 있으면 수업일 (자체 휴강 자동 반영)
+    return ctx.hrdAttendanceDates.has(dStr);
+  }
+  // 미래/오늘: 요일 + 공휴일 (자체 휴강은 미래엔 알 수 없음)
+  if (!isPotentialClassDay(date, dowHours)) return false;
+  if (ctx.holidays.has(dStr)) return false;
+  return true;
+}
+
+/** 개강일 기준 단위기간 목록 생성 — totalDays까지 누적 */
 export function generateUnitPeriods(
   startDateStr: string,
   totalDays: number,
-  category: CourseCategory,
+  dowHours: DayOfWeekHours,
+  ctx: ClassDayContext,
 ): UnitPeriod[] {
   if (!startDateStr) return [];
   const start = new Date(startDateStr);
@@ -39,19 +147,25 @@ export function generateUnitPeriods(
   let periodStart = new Date(start);
 
   while (cumulativeDays < totalDays) {
-    // 단위기간 종료일: 시작일 + 1개월 - 1일
-    const periodEnd = new Date(periodStart);
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
-    periodEnd.setDate(periodEnd.getDate() - 1);
+    // 단위기간 종료일 = 시작일 + 1개월 - 1일 (JS setMonth 경계 함정 회피)
+    let periodEnd = addOneMonthMinusOneDay(periodStart);
 
-    // 이 기간 내 수업일 카운트
+    // 이 기간 내 수업일 카운트 + 마지막 수업일 추적 (totalDays cap 도달 시 periodEnd 클램프용)
     let trainingDays = 0;
+    let lastClassDay: Date | null = null;
     const cursor = new Date(periodStart);
     while (cursor <= periodEnd && cumulativeDays + trainingDays < totalDays) {
-      if (isClassDay(cursor, category)) {
+      if (isClassDay(cursor, dowHours, ctx)) {
         trainingDays++;
+        lastClassDay = new Date(cursor);
       }
       cursor.setDate(cursor.getDate() + 1);
+    }
+
+    // totalDays cap 에 정확히 도달 → 마지막 수업일까지로 periodEnd 잘라줌
+    // (sumPeriodHours 가 cap 너머 시간까지 합산되는 버그 방지)
+    if (cumulativeDays + trainingDays >= totalDays && lastClassDay) {
+      periodEnd = lastClassDay;
     }
 
     if (trainingDays > 0) {
@@ -64,7 +178,8 @@ export function generateUnitPeriods(
     }
 
     cumulativeDays += trainingDays;
-    // 다음 기간 시작
+    if (trainingDays === 0) break; // 무한 루프 방지 — 더 이상 수업일이 없음
+
     periodStart = new Date(periodEnd);
     periodStart.setDate(periodStart.getDate() + 1);
   }
@@ -72,23 +187,64 @@ export function generateUnitPeriods(
   return periods;
 }
 
-function fmt(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** d + 1개월 - 1일 — 1/31 + 1개월 = 2월 말일이 되도록 클램프 */
+function addOneMonthMinusOneDay(d: Date): Date {
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const day = d.getDate();
+  // 다음달 같은 날(또는 그 달 말일) → 거기서 -1일
+  const targetMonth = m + 1;
+  const lastOfTargetMonth = new Date(y, targetMonth + 1, 0).getDate();
+  const safeDay = Math.min(day, lastOfTargetMonth);
+  const result = new Date(y, targetMonth, safeDay);
+  result.setDate(result.getDate() - 1);
+  return result;
 }
 
 // ─── 훈련생별 단위기간 매출 ──────────────────────────────────
 
-/** 특정 기간 내 훈련생 출결 기록 필터 */
 function getRecordsForPeriod(records: AttendanceDayRecord[], period: UnitPeriod): AttendanceDayRecord[] {
   return records.filter((r) => r.date >= period.startDate && r.date <= period.endDate);
 }
 
-/** 훈련생 1명의 단위기간 매출 계산 */
+/** 단위기간 내 모든 수업일의 시간 합 */
+function sumPeriodHours(period: UnitPeriod, dowHours: DayOfWeekHours, ctx: ClassDayContext): number {
+  let total = 0;
+  const cursor = new Date(period.startDate);
+  const end = new Date(period.endDate);
+  while (cursor <= end) {
+    if (isClassDay(cursor, dowHours, ctx)) {
+      total += hoursForDow(dowHours, cursor.getDay());
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return total;
+}
+
+/** 출석/공결한 날들의 시간 합 */
+function sumPaidHours(
+  records: AttendanceDayRecord[],
+  period: UnitPeriod,
+  dowHours: DayOfWeekHours,
+): number {
+  const paidRecords = getRecordsForPeriod(records, period).filter(
+    (r) => isAttendedStatus(r.status) || isExcusedStatus(r.status),
+  );
+  let total = 0;
+  for (const r of paidRecords) {
+    const d = new Date(r.date);
+    total += hoursForDow(dowHours, d.getDay());
+  }
+  return total;
+}
+
+/** 훈련생 1명의 단위기간 매출 계산 (요일별 시간 가중) */
 export function calcTraineeUnitRevenue(
   name: string,
   records: AttendanceDayRecord[],
   period: UnitPeriod,
-  hoursPerDay: number,
+  dowHours: DayOfWeekHours,
+  ctx: ClassDayContext,
 ): TraineeUnitRevenue {
   const periodRecords = getRecordsForPeriod(records, period);
   // 출석 + 공결 = 훈련비 인정일
@@ -96,25 +252,29 @@ export function calcTraineeUnitRevenue(
   const attendanceRatio = period.trainingDays > 0 ? paidDays / period.trainingDays : 0;
   const meetsThreshold = attendanceRatio >= UNIT_PERIOD_THRESHOLD;
 
-  // 80% 이상: 전체 훈련일 × 시간 × 단가, 미만: 출석일만
-  const billableDays = meetsThreshold ? period.trainingDays : paidDays;
-  const revenue = billableDays * hoursPerDay * COST_PER_PERSON_HOUR;
+  // 80% 이상: 단위기간 전체 시간, 미만: 출석/공결한 날의 시간만
+  const billableHours = meetsThreshold
+    ? sumPeriodHours(period, dowHours, ctx)
+    : sumPaidHours(records, period, dowHours);
+  const revenue = billableHours * COST_PER_PERSON_HOUR;
 
   return { traineeName: name, paidDays, periodDays: period.trainingDays, attendanceRatio, meetsThreshold, revenue };
 }
 
 // ─── 과정/기수별 매출 ────────────────────────────────────────
 
-/** 과정/기수 단위 매출 계산 */
+/** 과정/기수 단위 매출 계산
+ *  ⚠️ ctx.hrdAttendanceDates 는 호출자가 해당 과정/기수의 모든 학생 출결을 union 한 set 이어야 함 */
 export function calcCohortRevenue(
   course: HrdCourse,
   degr: string,
   students: AttendanceStudent[],
   dailyRecordsMap: Map<string, AttendanceDayRecord[]>,
+  ctx: ClassDayContext,
 ): CohortRevenue {
   const category = course.category || "실업자";
-  const hoursPerDay = course.trainingHoursPerDay || 8;
-  const periods = generateUnitPeriods(course.startDate, course.totalDays, category);
+  const dowHours = resolveDowHours(course, degr);
+  const periods = generateUnitPeriods(course.startDate, course.totalDays, dowHours, ctx);
 
   const activeStudents = students.filter((s) => !s.dropout);
   const dropoutStudents = students.filter((s) => s.dropout);
@@ -122,11 +282,12 @@ export function calcCohortRevenue(
   const periodRevenues: PeriodRevenue[] = periods.map((period) => {
     const trainees: TraineeUnitRevenue[] = activeStudents.map((s) => {
       const records = dailyRecordsMap.get(s.name.replace(/\s+/g, "")) || [];
-      return calcTraineeUnitRevenue(s.name, records, period, hoursPerDay);
+      return calcTraineeUnitRevenue(s.name, records, period, dowHours, ctx);
     });
 
     const totalRevenue = trainees.reduce((sum, t) => sum + t.revenue, 0);
-    const maxRevenue = activeStudents.length * period.trainingDays * hoursPerDay * COST_PER_PERSON_HOUR;
+    const periodHourSum = sumPeriodHours(period, dowHours, ctx);
+    const maxRevenue = activeStudents.length * periodHourSum * COST_PER_PERSON_HOUR;
 
     return {
       period,
@@ -137,40 +298,51 @@ export function calcCohortRevenue(
     };
   });
 
-  // 하차 손실: 탈락자의 잔여 기간 예상 매출
+  // 하차 손실: 마지막 출석/공결 기록일 다음부터 종강일까지의 시간 합
   let dropoutLoss = 0;
   for (const s of dropoutStudents) {
     const records = dailyRecordsMap.get(s.name.replace(/\s+/g, "")) || [];
-    const lastDate = records.length > 0 ? records[records.length - 1].date : "";
-    // 마지막 출석일 이후 기간의 매출을 손실로 계산
+    // 출석/공결 기록 중 가장 마지막 일자만 유효 (결석 일자는 의미 없음)
+    const paidDates = records
+      .filter((r) => isAttendedStatus(r.status) || isExcusedStatus(r.status))
+      .map((r) => r.date)
+      .sort();
+    const lastPaidDate = paidDates.length > 0 ? paidDates[paidDates.length - 1] : "";
     for (const period of periods) {
-      if (period.startDate > lastDate) {
-        dropoutLoss += period.trainingDays * hoursPerDay * COST_PER_PERSON_HOUR;
-      } else if (period.endDate > lastDate && lastDate >= period.startDate) {
-        // 기간 중간에 하차 → 남은 수업일 계산
-        const remainStart = new Date(lastDate);
-        remainStart.setDate(remainStart.getDate() + 1);
-        const periodEndDate = new Date(period.endDate);
-        let remainDays = 0;
-        const cursor = new Date(remainStart);
-        while (cursor <= periodEndDate) {
-          if (isClassDay(cursor, category)) remainDays++;
+      if (period.startDate > lastPaidDate) {
+        // 기간 전체 손실
+        dropoutLoss += sumPeriodHours(period, dowHours, ctx) * COST_PER_PERSON_HOUR;
+      } else if (period.endDate > lastPaidDate && lastPaidDate >= period.startDate) {
+        // 기간 중간 하차 — lastPaidDate 다음날 ~ periodEnd 까지 손실
+        const start = new Date(lastPaidDate);
+        start.setDate(start.getDate() + 1);
+        const end = new Date(period.endDate);
+        let lostHours = 0;
+        const cursor = new Date(start);
+        while (cursor <= end) {
+          if (isClassDay(cursor, dowHours, ctx)) {
+            lostHours += hoursForDow(dowHours, cursor.getDay());
+          }
           cursor.setDate(cursor.getDate() + 1);
         }
-        dropoutLoss += remainDays * hoursPerDay * COST_PER_PERSON_HOUR;
+        dropoutLoss += lostHours * COST_PER_PERSON_HOUR;
       }
     }
   }
 
   const totalRevenue = periodRevenues.reduce((sum, p) => sum + p.totalRevenue, 0);
   const maxRevenue = periodRevenues.reduce((sum, p) => sum + p.maxRevenue, 0);
+  // hoursPerDay 필드는 deprecated — 평균 시간으로 후방호환 표시
+  const avgHoursPerDay = periods.length > 0
+    ? periods.reduce((s, p) => s + sumPeriodHours(p, dowHours, ctx) / Math.max(1, p.trainingDays), 0) / periods.length
+    : 0;
 
   return {
     courseName: course.name,
     trainPrId: course.trainPrId,
     degr,
     category,
-    hoursPerDay,
+    hoursPerDay: avgHoursPerDay,
     periods: periodRevenues,
     totalRevenue,
     maxRevenue,
@@ -179,84 +351,6 @@ export function calcCohortRevenue(
     activeTrainees: activeStudents.length,
     dropoutCount: dropoutStudents.length,
   };
-}
-
-// ─── 전체 매출 요약 ──────────────────────────────────────────
-
-/** 전체 과정/기수 매출 요약 계산 */
-export function calcRevenueSummary(
-  config: HrdConfig,
-  allStudents: AttendanceStudent[],
-  allDailyRecords: Map<string, AttendanceDayRecord[]>,
-): RevenueSummary {
-  const cohorts: CohortRevenue[] = [];
-
-  for (const course of config.courses) {
-    if (!course.startDate) continue; // 개강일 미설정 → 매출 계산 불가
-
-    for (const degr of course.degrs) {
-      // 해당 과정/기수 학생 필터 (이름 기반으로 매칭 — fetchAllAttendanceData 순서 의존)
-      // buildStudents가 과정/기수별로 호출되므로, allStudents에서 인접 그룹으로 존재
-      // 안전하게: 모든 학생 대상으로 계산 (과정별 개별 호출이 더 정확하지만 현재 구조상 이 방식)
-      const students = allStudents.filter((s) => {
-        // trainPrId/degr 기반 필터가 없으므로 이름 기반으로 매칭
-        // → fetchAllAttendanceData에서 과정별로 순차 추가됨
-        return true; // 아래에서 과정별 개별 조회로 대체
-      });
-
-      // TODO: 과정별 개별 조회가 필요 → initRevenue에서 과정별로 호출
-      void students;
-    }
-  }
-
-  // 일매출: 오늘 출석한 학생 기준
-  const today = fmt(new Date());
-  let dailyRevenue = 0;
-  for (const course of config.courses) {
-    if (!course.startDate) continue;
-    const hoursPerDay = course.trainingHoursPerDay || 8;
-    for (const [, records] of allDailyRecords) {
-      const todayRecord = records.find((r) => r.date === today);
-      if (todayRecord && (isAttendedStatus(todayRecord.status) || isExcusedStatus(todayRecord.status))) {
-        // 학생이 어느 과정인지 구분 어려움 → hoursPerDay 8 기본값 사용
-        dailyRevenue += hoursPerDay * COST_PER_PERSON_HOUR;
-        break; // 한 학생당 한 번만 카운트 (중복 방지)
-      }
-    }
-  }
-
-  const totalRevenue = cohorts.reduce((sum, c) => sum + c.totalRevenue, 0);
-  const totalLost = cohorts.reduce((sum, c) => sum + c.lostRevenue, 0);
-  const dropoutLoss = cohorts.reduce((sum, c) => sum + c.dropoutLoss, 0);
-  const maxRevenue = cohorts.reduce((sum, c) => sum + c.maxRevenue, 0);
-
-  return { totalRevenue, dailyRevenue, totalLost, dropoutLoss, maxRevenue, cohorts };
-}
-
-// ─── 과정별 개별 매출 계산 (initRevenue에서 사용) ──────────────
-
-/** 개별 과정/기수의 출결 데이터로 매출 계산 (API 재호출 없이) */
-export function calcCohortRevenueFromStudents(
-  course: HrdCourse,
-  degr: string,
-  students: AttendanceStudent[],
-  dailyRecordsMap: Map<string, AttendanceDayRecord[]>,
-): CohortRevenue {
-  return calcCohortRevenue(course, degr, students, dailyRecordsMap);
-}
-
-/** 일매출 계산: 오늘 출석/공결 학생수 × 시간 × 단가 */
-export function calcDailyRevenue(
-  allStudents: AttendanceStudent[],
-  config: HrdConfig,
-): number {
-  // 오늘 날짜에 출석/공결 상태인 활동 학생
-  const todayAttended = allStudents.filter(
-    (s) => !s.dropout && (isAttendedStatus(s.status) || isExcusedStatus(s.status)),
-  );
-  // 과정별 시간이 다르므로 기본 8시간으로 통일 (정확한 매칭은 initRevenue에서 처리)
-  const defaultHours = config.courses[0]?.trainingHoursPerDay || 8;
-  return todayAttended.length * defaultHours * COST_PER_PERSON_HOUR;
 }
 
 // ─── 금액 포맷 ──────────────────────────────────────────────

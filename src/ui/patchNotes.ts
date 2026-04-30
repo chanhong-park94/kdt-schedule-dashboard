@@ -16,6 +16,22 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.5.3",
+    date: "2026-04-30",
+    items: [
+      { tag: "fix", text: "[매출 자동계산 P1] 같은 과정의 모든 기수가 1기 데이터로 계산되던 버그 수정 — fetchAllMonthsAttendance(course, degr) 시그니처에 degr 인자 추가" },
+      { tag: "fix", text: "[매출 자동계산 P1] 공휴일/임시공휴일/대체휴일이 수업일로 카운트되어 매출이 과대 계상되던 문제 해결 — date.nager.at API 연동" },
+      { tag: "fix", text: "[매출 자동계산 P1] 자체 휴강이 매출에 반영되지 않던 문제 해결 — 과거 시점은 HRD-Net 출결 SSOT(있는 날만 수업일), 미래는 요일+공휴일 추정 하이브리드" },
+      { tag: "fix", text: "[매출 자동계산 P1] 요일별 시간 차등 미반영 — 실업자 평일 7h, 재직자 LLM/데이터 화~금 2.5h+토 7h, 재직자 기획개발 화~금 2h+토 7h. degr 코드 패턴 자동 판별 + course.dowHours/employedSubCategory override 지원" },
+      { tag: "fix", text: "[매출 자동계산] totalDays cap 도달 시 단위기간 종료일이 그대로라 sumPeriodHours가 cap 너머 시간까지 합산되던 누적 버그 해결" },
+      { tag: "fix", text: "[매출 자동계산] 하차 손실 — 마지막 출석/공결 일자 기준으로 정확히 산정 (결석 일자 포함되던 underestimate 해결)" },
+      { tag: "fix", text: "[매출 자동계산] 단위기간 종료일 setMonth 경계 함정(1/31 +1m=3/3) 해결 — 일자 안전 클램프" },
+      { tag: "improve", text: "[매출] HrdCourse 타입에 dowHours/employedSubCategory 필드 추가 — 운영 정책 변경 시 운영자가 직접 override 가능" },
+      { tag: "improve", text: "[매출] 매출 단위 테스트 19건 신설 — 5월 공휴일/요일별 시간/degr 자동 분리/HRD SSOT/80% 임계값/통합 시나리오 (전체 168 테스트 통과)" },
+      { tag: "improve", text: "[매출] 미사용 dead code(calcDailyRevenue, calcRevenueSummary 절반 구현) 정리" },
+    ],
+  },
+  {
     version: "v3.5.2",
     date: "2026-04-30",
     items: [

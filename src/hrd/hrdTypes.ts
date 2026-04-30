@@ -36,6 +36,18 @@ export interface HrdRawAttendance {
 
 export type CourseCategory = "재직자" | "실업자";
 
+/** 재직자 과정 세부 분류 — degr 코드 10의 자리로 자동 판별 (parseCohortCode 참고)
+ *  0X → LLM, 1X → 데이터, 2X → 기획개발 */
+export type EmployedSubCategory = "LLM" | "데이터" | "기획개발";
+
+/** 요일별 훈련시간 (점심시간 제외 기준) — 0=일, 1=월, ..., 6=토
+ *  현장 운영 정책 (점심 1시간 제외):
+ *    실업자       : 월~금 7h
+ *    재직자 LLM/데이터  : 화~금 2.5h, 토 7h
+ *    재직자 기획/개발  : 화~금 2.0h, 토 7h
+ */
+export type DayOfWeekHours = Partial<Record<"0" | "1" | "2" | "3" | "4" | "5" | "6", number>>;
+
 export interface HrdCourse {
   name: string;
   trainPrId: string; // srchTrprId
@@ -45,7 +57,11 @@ export interface HrdCourse {
   endTime: string; // 수업 종료시간 HH:MM (퇴실 미체크 판단용)
   category?: CourseCategory; // 재직자/실업자 구분
   smsFrom?: string; // 과정별 SMS 발신번호 (운영매니저 법인폰)
-  trainingHoursPerDay?: number; // 1일 훈련시간 (매출 산정용, 기본 8)
+  trainingHoursPerDay?: number; // 1일 훈련시간 (매출 산정용, deprecated → dowHours 사용 권장)
+  /** 요일별 훈련시간 — 명시적으로 지정하면 dowHours가 우선, 없으면 카테고리/sub로 자동 매핑 */
+  dowHours?: DayOfWeekHours;
+  /** 재직자 과정 세부 분류 (수동 override). 미지정 시 degr 코드 패턴으로 자동 판별 */
+  employedSubCategory?: EmployedSubCategory;
 }
 
 export interface SlackScheduleConfig {

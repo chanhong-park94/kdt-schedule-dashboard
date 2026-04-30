@@ -8,14 +8,16 @@ import { Chart, registerables } from "chart.js";
 import { loadHrdConfig } from "./hrdConfig";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
 import { isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import type { AttendanceStudent, AttendanceDayRecord, HrdCourse } from "./hrdTypes";
+import type { AttendanceDayRecord, AttendanceStudent, HrdCourse } from "./hrdTypes";
 import type { CohortRevenue } from "./hrdRevenueTypes";
 import {
   COST_PER_PERSON_HOUR,
-  generateUnitPeriods,
-  calcTraineeUnitRevenue,
+  calcCohortRevenue,
+  resolveDowHours,
   formatRevenue,
+  type ClassDayContext,
 } from "./hrdRevenue";
+import { fetchPublicHolidaysKR } from "../core/holidays";
 import { initRevenueTemplate } from "./hrdRevenueTemplate";
 
 Chart.register(...registerables);
@@ -24,14 +26,7 @@ const $ = (id: string) => document.getElementById(id);
 let chartInstance: Chart | null = null;
 let initialized = false;
 
-// ─── 간이 buildStudentsForRevenue ────────────────────────────
-
-interface SimpleStudent {
-  name: string;
-  dropout: boolean;
-  status: string;
-  attendanceRate: number;
-}
+// ─── 출결 데이터 정규화 ──────────────────────────────────────
 
 function resolveStatus(raw: { atendSttusNm?: string; atendSttusCd?: string }): string {
   return (raw.atendSttusNm || "").trim() || "-";
@@ -42,7 +37,14 @@ function normalizeName(name: string): string {
 }
 
 function buildDailyRecords(
-  dailyData: Array<{ atendDe?: string; atendSttusNm?: string; atendSttusCd?: string; cstmrNm?: string; trneeCstmrNm?: string; trneNm?: string; lpsilTime?: string; atendTmIn?: string; levromTime?: string; atendTmOut?: string }>,
+  dailyData: Array<{
+    atendDe?: string;
+    atendSttusNm?: string;
+    atendSttusCd?: string;
+    cstmrNm?: string;
+    trneeCstmrNm?: string;
+    trneNm?: string;
+  }>,
 ): Map<string, AttendanceDayRecord[]> {
   const map = new Map<string, AttendanceDayRecord[]>();
   for (const raw of dailyData) {
@@ -61,6 +63,37 @@ function buildDailyRecords(
   return map;
 }
 
+/** 모든 학생 출결 기록의 union 일자 set — HRD SSOT */
+function unionAttendanceDates(map: Map<string, AttendanceDayRecord[]>): Set<string> {
+  const set = new Set<string>();
+  for (const [, records] of map) {
+    for (const r of records) set.add(r.date);
+  }
+  return set;
+}
+
+// ─── 공휴일 캐시 (5월 매출 시점에 공휴일 API가 안 잡히면 빈 set 폴백) ──
+async function loadHolidaysForRange(startDate: string, endDate: string): Promise<Set<string>> {
+  const set = new Set<string>();
+  if (!startDate) return set;
+  const startY = new Date(startDate).getFullYear();
+  const endY = new Date(endDate).getFullYear();
+  if (!Number.isFinite(startY) || !Number.isFinite(endY)) return set;
+  const years = new Set<number>();
+  for (let y = startY; y <= endY; y++) years.add(y);
+  await Promise.all(
+    [...years].map(async (y) => {
+      try {
+        const list = await fetchPublicHolidaysKR(y);
+        for (const h of list) set.add(h.date);
+      } catch {
+        // 네트워크 실패 — 폴백: 빈 set (요일만으로 판정)
+      }
+    }),
+  );
+  return set;
+}
+
 // ─── 초기화 ──────────────────────────────────────────────────
 
 export function initRevenue(): void {
@@ -72,6 +105,43 @@ export function initRevenue(): void {
 
   // 매출상세표 양식 초기화 (엑셀 통합템플릿 대응)
   initRevenueTemplate();
+}
+
+/** AttendanceStudent 최소 셋 — 매출 엔진에 필요한 필드만 */
+function buildStudentsForRevenue(
+  roster: Array<Record<string, unknown>>,
+  dailyRecords: Map<string, AttendanceDayRecord[]>,
+): AttendanceStudent[] {
+  return roster.map((raw) => {
+    const nm = normalizeName(
+      ((raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm) ?? "").toString(),
+    );
+    const stNm = ((raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm) ?? "").toString();
+    const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
+    const records = dailyRecords.get(nm) || [];
+    const attended = records.filter((r) => isAttendedStatus(r.status) || isExcusedStatus(r.status)).length;
+    const rate = records.length > 0 ? (attended / records.length) * 100 : 0;
+    return {
+      name: nm,
+      birth: "",
+      status: "-",
+      inTime: "",
+      outTime: "",
+      dropout,
+      traineeStatus: "훈련중",
+      hrdStatusRaw: stNm,
+      riskLevel: "safe",
+      totalDays: 0,
+      attendedDays: attended,
+      absentDays: 0,
+      excusedDays: 0,
+      maxAbsent: 0,
+      remainingAbsent: 0,
+      attendanceRate: rate,
+      missingCheckout: false,
+      gender: "",
+    } as unknown as AttendanceStudent;
+  });
 }
 
 async function loadRevenueData(): Promise<void> {
@@ -107,77 +177,41 @@ async function loadRevenueData(): Promise<void> {
       try {
         const [roster, daily] = await Promise.all([
           fetchRoster(config, course.trainPrId, degr),
-          fetchAllMonthsAttendance(config, course),
+          fetchAllMonthsAttendance(config, course, degr),
         ]);
 
         if (roster.length === 0) continue;
 
-        const dailyRecords = buildDailyRecords(daily);
-        const category = course.category || "실업자";
-        const hoursPerDay = course.trainingHoursPerDay || 8;
+        const dailyRecords = buildDailyRecords(daily as Array<Record<string, unknown>>);
+        const dowHours = resolveDowHours(course, degr);
 
-        // 학생 목록 구성
-        const students: SimpleStudent[] = roster.map((raw) => {
-          const nm = normalizeName((raw.trneeCstmrNm || raw.trneNm || raw.trneNm1 || raw.cstmrNm || "").toString());
-          const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
-          const dropout = stNm.includes("중도탈락") || stNm.includes("수료포기");
-          const records = dailyRecords.get(nm) || [];
-          const attended = records.filter((r) => isAttendedStatus(r.status) || isExcusedStatus(r.status)).length;
-          const rate = records.length > 0 ? (attended / records.length) * 100 : 0;
+        // 공휴일 set — 개강~오늘+여유기간
+        const periodEnd = course.totalDays
+          ? addDaysFromStart(course.startDate, Math.ceil(course.totalDays / 5) * 7)
+          : today;
+        const holidays = await loadHolidaysForRange(course.startDate, periodEnd);
 
-          // 오늘 출석 확인 → 일매출
-          const todayRec = records.find((r) => r.date === today);
-          if (todayRec && !dropout && (isAttendedStatus(todayRec.status) || isExcusedStatus(todayRec.status))) {
-            dailyRevenue += hoursPerDay * COST_PER_PERSON_HOUR;
-          }
+        const ctx: ClassDayContext = {
+          hrdAttendanceDates: unionAttendanceDates(dailyRecords),
+          holidays,
+          today: new Date(today),
+        };
 
-          return { name: nm, dropout, status: stNm, attendanceRate: rate };
-        });
+        const students = buildStudentsForRevenue(roster as Array<Record<string, unknown>>, dailyRecords);
+        const cohortRevenue = calcCohortRevenue(course, degr, students, dailyRecords, ctx);
+        cohorts.push(cohortRevenue);
 
-        // 단위기간별 매출 계산
-        const periods = generateUnitPeriods(course.startDate, course.totalDays, category);
-        const activeStudents = students.filter((s) => !s.dropout);
-        const dropoutStudents = students.filter((s) => s.dropout);
-
-        const periodRevenues = periods.map((period) => {
-          const trainees = activeStudents.map((s) => {
-            const records = dailyRecords.get(s.name) || [];
-            return calcTraineeUnitRevenue(s.name, records, period, hoursPerDay);
-          });
-          const totalRev = trainees.reduce((sum, t) => sum + t.revenue, 0);
-          const maxRev = activeStudents.length * period.trainingDays * hoursPerDay * COST_PER_PERSON_HOUR;
-          return { period, trainees, totalRevenue: totalRev, maxRevenue: maxRev, lostRevenue: maxRev - totalRev };
-        });
-
-        // 하차 손실
-        let dropoutLoss = 0;
-        for (const s of dropoutStudents) {
+        // 일매출: 오늘 출석/공결한 학생 수 × 오늘 요일 시간 × 단가
+        const todayDow = new Date(today).getDay();
+        const todayHours = (dowHours[String(todayDow) as "0" | "1" | "2" | "3" | "4" | "5" | "6"] ?? 0);
+        for (const s of students) {
+          if (s.dropout) continue;
           const records = dailyRecords.get(s.name) || [];
-          const lastDate = records.length > 0 ? records[records.length - 1].date : "";
-          for (const period of periods) {
-            if (period.startDate > lastDate) {
-              dropoutLoss += period.trainingDays * hoursPerDay * COST_PER_PERSON_HOUR;
-            }
+          const todayRec = records.find((r) => r.date === today);
+          if (todayRec && (isAttendedStatus(todayRec.status) || isExcusedStatus(todayRec.status))) {
+            dailyRevenue += todayHours * COST_PER_PERSON_HOUR;
           }
         }
-
-        const totalRevenue = periodRevenues.reduce((sum, p) => sum + p.totalRevenue, 0);
-        const maxRevenue = periodRevenues.reduce((sum, p) => sum + p.maxRevenue, 0);
-
-        cohorts.push({
-          courseName: course.name,
-          trainPrId: course.trainPrId,
-          degr,
-          category,
-          hoursPerDay,
-          periods: periodRevenues,
-          totalRevenue,
-          maxRevenue,
-          lostRevenue: maxRevenue - totalRevenue,
-          dropoutLoss,
-          activeTrainees: activeStudents.length,
-          dropoutCount: dropoutStudents.length,
-        });
       } catch (e) {
         console.warn(`[Revenue] ${course.name} ${degr}기 실패:`, e);
       }
@@ -203,11 +237,12 @@ async function loadRevenueData(): Promise<void> {
   if (scopeEl) scopeEl.textContent = `(${cohorts.length}개 과정/기수)`;
 }
 
-// ─── 전체 월 출결 데이터 가져오기 ────────────────────────────
+// ─── 전체 월 출결 데이터 가져오기 (degr별) ────────────────────
 
 async function fetchAllMonthsAttendance(
   config: ReturnType<typeof loadHrdConfig>,
   course: HrdCourse,
+  degr: string,
 ): Promise<Array<Record<string, unknown>>> {
   if (!course.startDate) return [];
   const start = new Date(course.startDate);
@@ -218,8 +253,7 @@ async function fetchAllMonthsAttendance(
   while (cursor <= now) {
     const month = `${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, "0")}`;
     try {
-      // degr는 loadRevenueData에서 개별 호출하므로, 여기서는 첫 기수 기준
-      const data = await fetchDailyAttendance(config, course.trainPrId, course.degrs[0], month);
+      const data = await fetchDailyAttendance(config, course.trainPrId, degr, month);
       allData.push(...(data as Array<Record<string, unknown>>));
     } catch {
       // 월 데이터 없으면 스킵
@@ -229,14 +263,27 @@ async function fetchAllMonthsAttendance(
   return allData;
 }
 
+function addDaysFromStart(startDateStr: string, days: number): string {
+  const d = new Date(startDateStr);
+  d.setDate(d.getDate() + days);
+  return fmtDate(d);
+}
+
 // ─── KPI 카드 렌더링 ─────────────────────────────────────────
 
-function renderKpiCards(summary: { totalRevenue: number; dailyRevenue: number; totalLost: number; dropoutLoss: number; maxRevenue: number }): void {
+function renderKpiCards(summary: {
+  totalRevenue: number;
+  dailyRevenue: number;
+  totalLost: number;
+  dropoutLoss: number;
+  maxRevenue: number;
+}): void {
   const container = $("revKpiCards");
   if (!container) return;
   container.style.display = "";
 
-  const revenueRate = summary.maxRevenue > 0 ? ((summary.totalRevenue / summary.maxRevenue) * 100).toFixed(1) : "0";
+  const revenueRate =
+    summary.maxRevenue > 0 ? ((summary.totalRevenue / summary.maxRevenue) * 100).toFixed(1) : "0";
 
   container.innerHTML = `
     <div class="rev-kpi-card">
@@ -278,7 +325,15 @@ function renderCohortTable(cohorts: CohortRevenue[]): void {
     <td>${c.degr}기</td>
     <td><span class="course-tag ${c.category === "재직자" ? "course-tag-employed" : "course-tag-unemployed"}">${c.category}</span></td>
     <td>${c.activeTrainees}명 ${c.dropoutCount > 0 ? `<span style="color:var(--danger)">(하차 ${c.dropoutCount})</span>` : ""}</td>
-    <td>${c.periods.length > 0 ? (c.periods.reduce((s, p) => s + p.trainees.reduce((ss, t) => ss + t.attendanceRatio, 0), 0) / Math.max(1, c.periods.reduce((s, p) => s + p.trainees.length, 0)) * 100).toFixed(1) + "%" : "-"}</td>
+    <td>${
+      c.periods.length > 0
+        ? (
+            (c.periods.reduce((s, p) => s + p.trainees.reduce((ss, t) => ss + t.attendanceRatio, 0), 0) /
+              Math.max(1, c.periods.reduce((s, p) => s + p.trainees.length, 0))) *
+              100
+          ).toFixed(1) + "%"
+        : "-"
+    }</td>
     <td style="font-weight:600">${formatRevenue(c.totalRevenue)}</td>
     <td style="color:var(--danger)">${c.lostRevenue > 0 ? formatRevenue(c.lostRevenue) : "-"}</td>
     <td style="color:var(--danger)">${c.dropoutLoss > 0 ? formatRevenue(c.dropoutLoss) : "-"}</td>
@@ -353,7 +408,7 @@ function renderTrendChart(cohorts: CohortRevenue[]): void {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${formatRevenue(ctx.parsed.y)}`,
+            label: (ctx) => `${ctx.dataset.label}: ${formatRevenue(Number(ctx.parsed.y ?? 0))}`,
           },
         },
       },
