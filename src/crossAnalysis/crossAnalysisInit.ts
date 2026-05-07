@@ -81,6 +81,10 @@ let currentStudentData: StudentCrossData[] = [];
 let currentCohortData: CohortCrossData[] = [];
 let allCohortData: CohortCrossData[] = []; // 필터 전 전체 기수 데이터
 
+// 과정·기수 의존 관계 (학생 매칭 데이터에서 추출한 (과정, 기수) 쌍 기준)
+let cohortsByCourse = new Map<string, Set<string>>();
+let coursesByCohort = new Map<string, Set<string>>();
+
 // ── 출결 데이터 조회 ──────────────────────────────────────
 
 /** 캐시된 출결 데이터 반환 (이미 로드된 경우) */
@@ -172,17 +176,88 @@ function fillSelect(select: HTMLSelectElement, placeholder: string, items: strin
   if (prev && items.includes(prev)) select.value = prev;
 }
 
+/** 학생 매칭 데이터에서 (과정, 기수) 쌍 관계 맵 갱신 */
+function rebuildPairMaps(students: StudentCrossData[]): void {
+  cohortsByCourse = new Map();
+  coursesByCohort = new Map();
+  for (const s of students) {
+    if (!s.과정 || !s.기수) continue;
+    if (!cohortsByCourse.has(s.과정)) cohortsByCourse.set(s.과정, new Set());
+    cohortsByCourse.get(s.과정)!.add(s.기수);
+    if (!coursesByCohort.has(s.기수)) coursesByCohort.set(s.기수, new Set());
+    coursesByCohort.get(s.기수)!.add(s.과정);
+  }
+}
+
+/** 전체 과정 목록과 전체 기수 목록 (필터 미적용 기준) */
+function allCoursesAndCohorts(): { courses: string[]; cohorts: string[] } {
+  const courses = [...cohortsByCourse.keys()].sort();
+  const cohorts = [...new Set([...cohortsByCourse.values()].flatMap((set) => [...set]))].sort();
+  return { courses, cohorts };
+}
+
+/**
+ * 과정/기수 dropdown cascade 갱신.
+ * trigger: 직전에 변경된 dropdown ("course" | "cohort" | "init")
+ *  - "course": 과정 선택을 우선 보존하고, 기수가 해당 과정에 없으면 기수만 리셋
+ *  - "cohort": 기수 선택을 우선 보존하고, 과정이 해당 기수에 없으면 과정만 리셋
+ *  - "init":   양쪽 모두 보존 시도, 어느 쪽이든 무효면 리셋
+ */
+function refreshDependentOptions(trigger: "course" | "cohort" | "init" = "init"): void {
+  const courseSelect = $("crossFilterCourse") as HTMLSelectElement | null;
+  const cohortSelect = $("crossFilterCohort") as HTMLSelectElement | null;
+  if (!courseSelect || !cohortSelect) return;
+
+  let selectedCourse = courseSelect.value;
+  let selectedCohort = cohortSelect.value;
+  const { courses: allCourses, cohorts: allCohorts } = allCoursesAndCohorts();
+
+  // trigger에 따라 무효 조합일 때 한쪽만 리셋
+  if (trigger === "course" && selectedCourse && selectedCohort) {
+    const validCohorts = cohortsByCourse.get(selectedCourse) ?? new Set();
+    if (!validCohorts.has(selectedCohort)) {
+      cohortSelect.value = "";
+      selectedCohort = "";
+    }
+  } else if (trigger === "cohort" && selectedCourse && selectedCohort) {
+    const validCourses = coursesByCohort.get(selectedCohort) ?? new Set();
+    if (!validCourses.has(selectedCourse)) {
+      courseSelect.value = "";
+      selectedCourse = "";
+    }
+  }
+
+  // 옵션 목록 산출 (선택된 한쪽이 다른 쪽 dropdown 옵션을 좁힘)
+  const cohortItems = selectedCourse
+    ? [...(cohortsByCourse.get(selectedCourse) ?? new Set<string>())].sort()
+    : allCohorts;
+  const courseItems = selectedCohort
+    ? [...(coursesByCohort.get(selectedCohort) ?? new Set<string>())].sort()
+    : allCourses;
+
+  // 데이터 재로드 후 init: 선택값이 더 이상 존재하지 않으면 정리
+  if (selectedCourse && !courseItems.includes(selectedCourse)) courseSelect.value = "";
+  if (selectedCohort && !cohortItems.includes(selectedCohort)) cohortSelect.value = "";
+
+  fillSelect(courseSelect, "전체 과정", courseItems);
+  fillSelect(cohortSelect, "전체 기수", cohortItems);
+}
+
 function populateFilters(students: StudentCrossData[]): void {
-  const courses = [...new Set(students.map((s) => s.과정))].sort();
-  const cohorts = [...new Set(students.map((s) => s.기수))].sort();
+  rebuildPairMaps(students);
 
   const courseSelect = $("crossFilterCourse") as HTMLSelectElement | null;
   const cohortSelect = $("crossFilterCohort") as HTMLSelectElement | null;
   const cohortCourseSelect = $("crossCohortFilterCourse") as HTMLSelectElement | null;
 
-  if (courseSelect) fillSelect(courseSelect, "전체 과정", courses);
-  if (cohortSelect) fillSelect(cohortSelect, "전체 기수", cohorts);
-  if (cohortCourseSelect) fillSelect(cohortCourseSelect, "전체 과정", courses);
+  // 학생 상관분석: 의존 관계를 반영해 옵션 채우기
+  if (courseSelect && cohortSelect) refreshDependentOptions();
+
+  // 기수 비교 분석: 학생 매칭에 포함된 과정만 표시
+  if (cohortCourseSelect) {
+    const courses = [...cohortsByCourse.keys()].sort();
+    fillSelect(cohortCourseSelect, "전체 과정", courses);
+  }
 }
 
 // ── 학생 교차분석 렌더링 ──────────────────────────────────
@@ -544,12 +619,22 @@ function setupEvents(): void {
     analyzeBtn.addEventListener("click", () => void runAnalysis());
   }
 
-  // 학생 필터 변경 → 재분석 (debounce로 연속 변경 시 마지막만 실행)
+  // 학생 필터 변경 → 의존 dropdown 갱신 후 재분석 (debounce로 연속 변경 시 마지막만 실행)
   const debouncedAnalysis = debounce(() => void runAnalysis(), 300);
   const courseFilter = $("crossFilterCourse");
   const cohortFilter = $("crossFilterCohort");
-  if (courseFilter) courseFilter.addEventListener("change", debouncedAnalysis);
-  if (cohortFilter) cohortFilter.addEventListener("change", debouncedAnalysis);
+  if (courseFilter) {
+    courseFilter.addEventListener("change", () => {
+      refreshDependentOptions("course");
+      debouncedAnalysis();
+    });
+  }
+  if (cohortFilter) {
+    cohortFilter.addEventListener("change", () => {
+      refreshDependentOptions("cohort");
+      debouncedAnalysis();
+    });
+  }
 
   // 기수 필터 변경 → 기수 분석만 재실행
   const cohortCourseFilter = $("crossCohortFilterCourse");
