@@ -897,6 +897,7 @@ async function fetchAndRenderDropout(): Promise<void> {
     renderCourseChart();
     renderCategoryChart();
     renderDegrChart();
+    void refreshInsights();
 
     const overall = getOverallSummary();
     if (statusEl)
@@ -905,6 +906,17 @@ async function fetchAndRenderDropout(): Promise<void> {
     if (contentEl) contentEl.style.display = "block";
   } catch (e) {
     if (statusEl) statusEl.textContent = classifyApiError(e);
+  }
+}
+
+/** 인사이트 섹션 lazy-load 갱신 — 컨테이너 없으면 no-op */
+async function refreshInsights(): Promise<void> {
+  if (!document.getElementById("sectionDropoutInsights")) return;
+  try {
+    const mod = await import("./hrdDropoutInsightsView");
+    mod.renderDropoutInsights();
+  } catch (e) {
+    console.warn("[Insights] 렌더 실패:", e);
   }
 }
 
@@ -949,6 +961,7 @@ export function initDropoutDashboard(): void {
     renderCourseChart();
     renderCategoryChart();
     renderDegrChart();
+    void refreshInsights();
 
     if (emptyEl) emptyEl.style.display = "none";
     if (contentEl) contentEl.style.display = "block";

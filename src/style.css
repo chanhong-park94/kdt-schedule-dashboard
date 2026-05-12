@@ -9904,3 +9904,181 @@ textarea.proj-eval-feedback {
   padding: 4px;
   font-size: 12px;
 }
+
+/* ═══ 하차방어율 개선 인사이트 (Dropout Insights) ═══════════
+   docs/plans/2026-05-12-dropout-insights-design.md */
+.di-root {
+  margin-bottom: 24px;
+}
+.di-empty {
+  padding: 32px 16px;
+  text-align: center;
+  background: var(--card-bg, #ffffff);
+  border: 1px dashed var(--border, #e5e7eb);
+  border-radius: 8px;
+  color: var(--text, #6b7280);
+}
+.di-empty-icon { font-size: 32px; margin-bottom: 8px; }
+.di-empty-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.di-empty-desc { font-size: 13px; }
+
+/* ── 헤더 ── */
+.di-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02));
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 8px 8px 0 0;
+}
+.di-header-title { font-size: 15px; font-weight: 600; color: var(--text-strong, #1e1e2e); }
+.di-header-sub { font-size: 12px; font-weight: 400; color: var(--text, #6b7280); }
+.di-header-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text, #6b7280); }
+.di-cutoff-display { font-weight: 600; color: var(--text-strong, #1e1e2e); }
+.di-cutoff-edit {
+  background: transparent;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text, #6b7280);
+}
+.di-cutoff-edit:hover { background: var(--surface-hover, #f3f4f6); border-color: #6366f1; color: #6366f1; }
+.di-header-divider { color: #d1d5db; }
+.di-cohort-count strong { color: var(--text-strong, #1e1e2e); }
+
+/* ── Hero 카드 ── */
+.di-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-top: none;
+  border-radius: 0;
+}
+.di-hero-incomplete {
+  background: #fafafa;
+  color: var(--text, #6b7280);
+}
+.di-hero-main { flex: 1; min-width: 0; }
+.di-hero-label { font-size: 12px; color: var(--text, #6b7280); margin-bottom: 4px; }
+.di-hero-rate {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-strong, #1e1e2e);
+}
+.di-hero-before { color: #9ca3af; }
+.di-hero-arrow { color: #6b7280; font-size: 18px; }
+.di-hero-after { color: var(--text-strong, #1e1e2e); }
+.di-hero-delta { font-size: 18px; }
+.di-hero-sub { font-size: 11px; color: var(--text, #6b7280); margin-top: 4px; }
+.di-hero-side {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+  font-size: 12px;
+}
+.di-hero-saved { color: #16a34a; font-weight: 600; }
+.di-hero-aux { color: var(--text, #6b7280); }
+.di-hero-aux-warn { color: #d97706; }
+.di-hero-aux strong { color: var(--text-strong, #1e1e2e); }
+.di-hero-sample { color: #9ca3af; font-size: 10px; }
+
+.di-positive { color: #16a34a; }
+.di-negative { color: #dc2626; }
+.di-neutral { color: #6b7280; }
+
+/* ── 미니 카드 그리드 ── */
+.di-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-top: none;
+}
+@media (max-width: 900px) {
+  .di-mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.di-mini-card {
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  text-align: center;
+}
+.di-mini-empty {
+  background: #f9fafb;
+  color: #9ca3af;
+}
+.di-mini-label { font-size: 11px; color: var(--text, #6b7280); margin-bottom: 6px; font-weight: 500; }
+.di-mini-value { font-size: 20px; font-weight: 700; color: var(--text-strong, #1e1e2e); margin-bottom: 2px; }
+.di-mini-value-empty { font-size: 14px; color: #9ca3af; margin: 8px 0; }
+.di-mini-delta { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.di-mini-sub { font-size: 10px; color: var(--text, #6b7280); }
+
+/* ── 진단 경고 ── */
+.di-warnings {
+  padding: 8px 16px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-top: none;
+  font-size: 12px;
+  color: #92400e;
+}
+.di-warn-item { padding: 2px 0; }
+.di-warn-detail {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #fcd34d;
+  font-size: 11px;
+  color: #b45309;
+}
+
+/* ── 시계열 추이 토글 ── */
+.di-trend-wrap {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+.di-trend-toggle {
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text, #6b7280);
+}
+.di-trend-toggle:hover { background: var(--surface-hover, #f3f4f6); color: #6366f1; }
+.di-trend-body { padding: 16px; border-top: 1px solid var(--border, #e5e7eb); }
+.di-trend-chart { height: 240px; position: relative; }
+.di-trend-empty {
+  padding: 24px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+.di-trend-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+}
