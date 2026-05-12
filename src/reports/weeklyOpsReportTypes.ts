@@ -16,6 +16,8 @@ export interface DataDiagnostics {
   hasDropout: boolean;
   hasAnalytics: boolean;
   hasKpi: boolean;
+  /** 종강(end date 경과)으로 자동 제외된 "과정명 N기" 라벨 목록 */
+  excludedCohorts?: string[];
 }
 
 // ─── Page 3: 출결·관리대상 현황 ─────────────────────────────

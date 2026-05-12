@@ -153,6 +153,11 @@ body {
   border: 1px solid #fcd34d;
   color: #d97706;
 }
+.diag-info {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  color: #2563eb;
+}
 
 /* ── 페이지 헤더 ── */
 .page-header {
@@ -352,6 +357,12 @@ function buildHeader(config: WeeklyOpsReportConfig, diagnostics: DataDiagnostics
       ? '<span class="diag-badge diag-ok">&#9679; KPI 데이터</span>'
       : '<span class="diag-badge diag-warn">&#9675; KPI 데이터 없음</span>',
   );
+  if (diagnostics.excludedCohorts && diagnostics.excludedCohorts.length > 0) {
+    const list = diagnostics.excludedCohorts.map(esc).join(", ");
+    diagItems.push(
+      `<span class="diag-badge diag-info" title="${list}">&#8709; 종강 제외: ${diagnostics.excludedCohorts.length}개 (${list})</span>`,
+    );
+  }
 
   return `
 <div class="report-header">

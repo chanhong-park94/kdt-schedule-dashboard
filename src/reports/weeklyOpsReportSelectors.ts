@@ -2,7 +2,7 @@
 import { getCachedAttendanceStudents, getCachedDailyRecords, getCachedHrdConfig } from "../hrd/hrdAttendance";
 import { getCachedDropoutData } from "../hrd/hrdDropout";
 import { getCachedAnalysisData } from "../hrd/hrdAnalytics";
-import type { AttendanceStudent, AttendanceDayRecord, HrdConfig, DropoutRosterEntry } from "../hrd/hrdTypes";
+import type { AttendanceStudent, AttendanceDayRecord, HrdConfig, DropoutRosterEntry, HrdCourse } from "../hrd/hrdTypes";
 import type { TraineeAnalysis } from "../hrd/hrdAnalyticsTypes";
 import type { KpiAllData, AchievementSummary, FormativeSummary, FieldAppSummary } from "../kpi/kpiTypes";
 import type {
@@ -37,6 +37,84 @@ export function checkDataAvailability(): DataDiagnostics {
   };
 }
 
+// ─── 종강 과정 자동 제외 ───────────────────────────────────
+// 패턴: hrdDashboard.ts isTrainingCourse() — startDate + (totalDays/5)*7 일 경과 시 종강 처리.
+// startDate/totalDays 미설정은 판단 불가 → 포함(보수적).
+
+export function isCourseEndedByDate(
+  course: Pick<HrdCourse, "startDate" | "totalDays">,
+  now: Date = new Date(),
+): boolean {
+  if (!course.startDate || !course.totalDays) return false;
+  const start = new Date(course.startDate);
+  if (isNaN(start.getTime())) return false;
+  const end = new Date(start);
+  end.setDate(end.getDate() + Math.ceil((course.totalDays / 5) * 7));
+  return end < now;
+}
+
+export interface ExclusionResult {
+  hrdConfig: HrdConfig;
+  dropoutEntries: DropoutRosterEntry[];
+  analysisData: TraineeAnalysis[];
+  excludedCohorts: string[];
+}
+
+/**
+ * 주간보고팩에서 종강된 과정 데이터를 자동 제외.
+ * 기준:
+ *   - hrdConfig.courses: startDate + 추정 종강일 < now 이면 제외 (degr별로 체크)
+ *   - dropoutEntries: 위에서 제외된 (courseName, degr) 매칭 시 제외
+ *   - analysisData: courseStatus === "종강" 이거나 위 매칭 시 제외
+ */
+export function excludeCompletedCourses(
+  hrdConfig: HrdConfig,
+  dropoutEntries: DropoutRosterEntry[],
+  analysisData: TraineeAnalysis[],
+  now: Date = new Date(),
+): ExclusionResult {
+  const ended = isCourseEndedByDate;
+  const activeCourses = hrdConfig.courses.filter((c) => !ended(c, now));
+
+  // 활성 과정 키 집합 (과정명 + 기수)
+  const activeKeys = new Set<string>();
+  for (const c of activeCourses) {
+    for (const d of c.degrs) activeKeys.add(`${c.name}__${d}`);
+  }
+
+  // 제외 라벨 — "과정명 N기" 형태
+  const excludedCohorts: string[] = [];
+  for (const c of hrdConfig.courses) {
+    if (!ended(c, now)) continue;
+    for (const d of c.degrs) excludedCohorts.push(`${c.name} ${d}기`);
+  }
+
+  // dropoutEntries 필터: 활성 키와 매칭 안 되면 제외
+  // (단, hrdConfig에 없는 과정은 보수적으로 포함)
+  const filteredDropout = dropoutEntries.filter((e) => {
+    const key = `${e.courseName}__${e.degr}`;
+    const inConfig = hrdConfig.courses.some((c) => c.name === e.courseName && c.degrs.includes(e.degr));
+    if (!inConfig) return true;
+    return activeKeys.has(key);
+  });
+
+  // analysisData 필터: courseStatus 우선, 없으면 키 매칭
+  const filteredAnalysis = analysisData.filter((a) => {
+    if (a.courseStatus === "종강") return false;
+    const key = `${a.courseName}__${a.degr}`;
+    const inConfig = hrdConfig.courses.some((c) => c.name === a.courseName && c.degrs.includes(a.degr));
+    if (!inConfig) return true;
+    return activeKeys.has(key);
+  });
+
+  return {
+    hrdConfig: { ...hrdConfig, courses: activeCourses },
+    dropoutEntries: filteredDropout,
+    analysisData: filteredAnalysis,
+    excludedCohorts,
+  };
+}
+
 // ─── Main Collection ────────────────────────────────────────
 
 export function collectWeeklyOpsReportData(
@@ -45,15 +123,20 @@ export function collectWeeklyOpsReportData(
 ): WeeklyOpsReportData {
   const students = getCachedAttendanceStudents();
   const dailyRecords = getCachedDailyRecords();
-  const hrdConfig = getCachedHrdConfig();
-  const dropoutEntries = getCachedDropoutData();
-  const analysisData = getCachedAnalysisData();
+  const rawHrdConfig = getCachedHrdConfig();
+  const rawDropoutEntries = getCachedDropoutData();
+  const rawAnalysisData = getCachedAnalysisData();
+
+  // 종강 과정 자동 제외 (날짜 기준)
+  const filtered = excludeCompletedCourses(rawHrdConfig, rawDropoutEntries, rawAnalysisData);
+  const { hrdConfig, dropoutEntries, analysisData, excludedCohorts } = filtered;
 
   const diagnostics: DataDiagnostics = {
     hasAttendance: students.length > 0,
     hasDropout: dropoutEntries.length > 0,
     hasAnalytics: analysisData.length > 0,
     hasKpi: kpiData !== null && kpiData.achievement.length > 0,
+    excludedCohorts: excludedCohorts.length > 0 ? excludedCohorts : undefined,
   };
 
   const result: WeeklyOpsReportData = { config, diagnostics };

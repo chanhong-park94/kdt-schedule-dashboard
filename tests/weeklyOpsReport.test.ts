@@ -13,6 +13,8 @@ import {
   generatePage3Comments,
   generatePage4Comments,
   generatePage5Comments,
+  excludeCompletedCourses,
+  isCourseEndedByDate,
 } from "../src/reports/weeklyOpsReportSelectors";
 import { buildWeeklyOpsReportHtml } from "../src/reports/weeklyOpsReportPrint";
 import { getWeekLabel } from "../src/reports/weeklyOpsReport";
@@ -281,5 +283,139 @@ describe("getWeekLabel", () => {
     const label = getWeekLabel(new Date(2026, 0, 5)); // Monday Jan 5
     expect(label).toContain("2026년");
     expect(label).toMatch(/제\d+주차/);
+  });
+});
+
+// ─── 종강 과정 자동 제외 ─────────────────────────────────────
+
+describe("isCourseEndedByDate", () => {
+  const now = new Date("2026-05-12T00:00:00Z");
+
+  it("startDate + (totalDays/5)*7일 < now 이면 종강", () => {
+    // 100일 과정 → 약 140일(20주) 후 종강. 2025-12-01 시작 → 2026-04-20경 종강 → now < 종강일 → false?
+    // 2025-09-01 시작이면 → 2026-01-19경 → ended (true)
+    expect(isCourseEndedByDate({ startDate: "2025-09-01", totalDays: 100 }, now)).toBe(true);
+    expect(isCourseEndedByDate({ startDate: "2026-04-01", totalDays: 100 }, now)).toBe(false);
+  });
+
+  it("startDate 또는 totalDays 미설정 시 false (보수적 포함)", () => {
+    expect(isCourseEndedByDate({ startDate: "", totalDays: 100 }, now)).toBe(false);
+    expect(isCourseEndedByDate({ startDate: "2025-09-01", totalDays: 0 }, now)).toBe(false);
+  });
+
+  it("잘못된 날짜는 false", () => {
+    expect(isCourseEndedByDate({ startDate: "invalid", totalDays: 100 }, now)).toBe(false);
+  });
+});
+
+describe("excludeCompletedCourses", () => {
+  const now = new Date("2026-05-12T00:00:00Z");
+
+  function makeCourse(name: string, degr: string, startDate: string, totalDays: number) {
+    return { name, degrs: [degr], trainPrId: `T_${name}_${degr}`, category: "재직자" as const, startDate, totalDays, endTime: "18:00" };
+  }
+
+  it("종강된 과정은 hrdConfig.courses에서 제외되고 excludedCohorts에 라벨링", () => {
+    const hrdConfig: HrdConfig = {
+      courses: [
+        makeCourse("재직자LLM5기", "5", "2026-02-03", 65), // 종강 ~ 2026-05-02
+        makeCourse("재직자기획/개발4기", "4", "2025-12-22", 65), // 종강 ~ 2026-03-24
+        makeCourse("재직자LLM6기", "6", "2026-03-10", 65), // 진행중
+      ],
+      authKey: "", proxy: "",
+    } as HrdConfig;
+
+    const result = excludeCompletedCourses(hrdConfig, [], [], now);
+
+    expect(result.hrdConfig.courses.map((c) => c.name)).toEqual(["재직자LLM6기"]);
+    expect(result.excludedCohorts).toEqual(
+      expect.arrayContaining(["재직자LLM5기 5기", "재직자기획/개발4기 4기"]),
+    );
+    expect(result.excludedCohorts).toHaveLength(2);
+  });
+
+  it("dropoutEntries에서 종강 과정 매칭 시 제외", () => {
+    const hrdConfig: HrdConfig = {
+      courses: [
+        makeCourse("재직자LLM5기", "5", "2026-02-03", 65), // 종강
+        makeCourse("재직자LLM6기", "6", "2026-03-10", 65), // 진행중
+      ],
+      authKey: "", proxy: "",
+    } as HrdConfig;
+    const dropouts: DropoutRosterEntry[] = [
+      { courseName: "재직자LLM5기", trainPrId: "T1", degr: "5", category: "재직자",
+        total: 10, dropout: 1, active: 9, defenseRate: 90, startDate: "2026-02-03" },
+      { courseName: "재직자LLM6기", trainPrId: "T2", degr: "6", category: "재직자",
+        total: 10, dropout: 0, active: 10, defenseRate: 100, startDate: "2026-03-10" },
+      { courseName: "외부미설정과정", trainPrId: "T3", degr: "1", category: "실업자",
+        total: 5, dropout: 0, active: 5, defenseRate: 100, startDate: "2026-04-01" }, // 보수적 포함
+    ];
+
+    const result = excludeCompletedCourses(hrdConfig, dropouts, [], now);
+
+    const names = result.dropoutEntries.map((e) => e.courseName).sort();
+    expect(names).toEqual(["외부미설정과정", "재직자LLM6기"]);
+  });
+
+  it("analysisData에서 courseStatus='종강' 또는 종강 과정 매칭 시 제외", () => {
+    const hrdConfig: HrdConfig = {
+      courses: [
+        makeCourse("재직자LLM5기", "5", "2026-02-03", 65), // 종강
+        makeCourse("재직자LLM6기", "6", "2026-03-10", 65), // 진행중
+      ],
+      authKey: "", proxy: "",
+    } as HrdConfig;
+    const analysis: TraineeAnalysis[] = [
+      // courseStatus가 명시적으로 종강이면 제외
+      makeTraineeAnalysis({ name: "A", courseName: "재직자LLM6기", degr: "6", courseStatus: "종강" }),
+      // 종강 과정 매칭으로 제외
+      makeTraineeAnalysis({ name: "B", courseName: "재직자LLM5기", degr: "5", courseStatus: "진행중" }),
+      // 진행중 → 포함
+      makeTraineeAnalysis({ name: "C", courseName: "재직자LLM6기", degr: "6", courseStatus: "진행중" }),
+    ];
+
+    const result = excludeCompletedCourses(hrdConfig, [], analysis, now);
+
+    expect(result.analysisData.map((a) => a.name)).toEqual(["C"]);
+  });
+
+  it("빈 입력은 빈 결과 + 빈 excludedCohorts", () => {
+    const hrdConfig: HrdConfig = { courses: [], authKey: "", proxy: "" } as HrdConfig;
+    const result = excludeCompletedCourses(hrdConfig, [], [], now);
+    expect(result.hrdConfig.courses).toEqual([]);
+    expect(result.dropoutEntries).toEqual([]);
+    expect(result.analysisData).toEqual([]);
+    expect(result.excludedCohorts).toEqual([]);
+  });
+
+  it("하차방어율: 종강 과정 제외 후 buildPage4Data overallDefenseRate가 변경됨", () => {
+    // 종강 과정(낮은 방어율) + 진행중 과정(높은 방어율)
+    const hrdConfig: HrdConfig = {
+      courses: [
+        makeCourse("재직자LLM5기", "5", "2026-02-03", 65), // 종강 — 방어율 50%
+        makeCourse("재직자LLM6기", "6", "2026-03-10", 65), // 진행중 — 방어율 100%
+      ],
+      authKey: "", proxy: "",
+    } as HrdConfig;
+    const dropouts: DropoutRosterEntry[] = [
+      { courseName: "재직자LLM5기", trainPrId: "T1", degr: "5", category: "재직자",
+        total: 10, dropout: 5, active: 5, defenseRate: 50, startDate: "2026-02-03" },
+      { courseName: "재직자LLM6기", trainPrId: "T2", degr: "6", category: "재직자",
+        total: 10, dropout: 0, active: 10, defenseRate: 100, startDate: "2026-03-10" },
+    ];
+
+    // 필터 없이 직접 계산 — overallDefenseRate = 15/20 = 75%
+    const unfiltered = buildPage4Data(dropouts, []);
+    expect(unfiltered.overallDefenseRate).toBe(75);
+    expect(unfiltered.categorySummaries[0].dropout).toBe(5);
+    expect(unfiltered.underperformingTop5).toHaveLength(1); // LLM5기 50% < 75% target
+
+    // 종강 제외 적용 후 — overallDefenseRate = 10/10 = 100%
+    const filtered = excludeCompletedCourses(hrdConfig, dropouts, [], now);
+    const filteredPage4 = buildPage4Data(filtered.dropoutEntries, []);
+    expect(filteredPage4.overallDefenseRate).toBe(100);
+    expect(filteredPage4.categorySummaries[0].dropout).toBe(0); // 종강 LLM5기 5명 빠짐
+    expect(filteredPage4.categorySummaries[0].total).toBe(10); // 진행중 LLM6기만
+    expect(filteredPage4.underperformingTop5).toHaveLength(0); // 미달 과정 없음
   });
 });
