@@ -16,6 +16,20 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.6.0",
+    date: "2026-05-12",
+    items: [
+      { tag: "feat", text: "📈 하차방어율 개선 인사이트 신설 — 도입 전/후 방어율 비교 Hero 카드 + leading 지표 4종(위험군 회복률·신규 위험군 발생률·연속결석 끊기·NPS 평균) + 추정 절감 인원 + 월별 시계열 토글" },
+      { tag: "feat", text: "인사이트 cutoff 인라인 수정 — 헤더에서 클릭 한 번으로 cutoff 날짜 변경 (default 2026-03-01, localStorage 저장)" },
+      { tag: "feat", text: "IA 단순화 Phase 1 — 강사 4종 탭(프로젝트 평가/보상, 운영 진단, 교강사 진단)을 단일 '강사' 탭의 가로 pill sub-tab으로 통합 (사이드바 19→16개). 마지막 sub-tab 자동 기억" },
+      { tag: "feat", text: "주간보고팩 종강 과정 자동 제외 — 도입 startDate + 추정 종강일 < 오늘 이면 자동 제외, 헤더에 '종강 제외' 뱃지 표시. 하차방어율/조기경보 정확도 개선" },
+      { tag: "fix", text: "[보안] Supabase RLS 강화 적용 — excused_absence_requests(strict insert + DELETE 차단), 강사 4종 테이블(입력 검증 + DELETE 차단), trainee_contacts(authenticated only — PII 익명 다운로드 차단)" },
+      { tag: "fix", text: "[보안] Supabase 클라이언트 통합 — hrdContacts/hrdAnalyticsNotes의 중복 createClient를 assistantAuth.ts authClient로 통합. v3.5.0 OAuth 콜백/storage 락 충돌 회귀 추가 방지" },
+      { tag: "improve", text: "사이드바 메뉴 설정 v5 → v6 — IA 변경에 맞춰 default 순서 1회 리셋 (사용자 정의 라벨/아이콘은 신규 키 'instructor'만 default 적용)" },
+      { tag: "improve", text: "강사 모드 사이드바 화이트리스트 정리 — attendance + instructor 2개만 노출 (기존 4개 → 1개 통합 자동 반영)" },
+    ],
+  },
+  {
     version: "v3.5.2",
     date: "2026-04-30",
     items: [

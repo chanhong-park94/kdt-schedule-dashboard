@@ -100,7 +100,23 @@ src/
 
 ---
 
-## 🔄 작업 현황 (마지막 업데이트: 2026-04-17)
+## 🔄 작업 현황 (마지막 업데이트: 2026-05-12)
+
+### ✅ 완료 (v3.6.0) — IA 단순화 + 하차방어율 인사이트 + Supabase 보안 강화 (2026-05-12)
+- **하차방어율 개선 인사이트 신설** — 도입 전/후 비교 Hero 카드 + leading 지표 4종(위험군 회복/발생/연속결석 끊기/NPS 평균) + 추정 절감 인원 + 월별 시계열 토글
+  - cutoff 인라인 수정 (default 2026-03-01, localStorage `kdt_dropout_insights_config_v1`)
+  - 신규 파일: `src/hrd/hrdDropoutInsights.ts` (계산) + `hrdDropoutInsightsView.ts` (DOM)
+  - 설계: `docs/plans/2026-05-12-dropout-insights-design.md`
+- **IA Phase 1 — 강사 4종 탭 통합** (사이드바 19→16개)
+  - projectEval/projectReward/operationDiag/instructorDiag → 단일 `instructor` 탭 (가로 pill sub-tab)
+  - 신규 파일: `src/instructor/instructorHubInit.ts` (sub-tab 라우팅 + lazy init + localStorage)
+  - 사이드바 메뉴 설정 v5 → v6 (1회 리셋)
+- **주간보고팩 종강 과정 자동 제외** — 종강일 경과 cohort를 hrdConfig/dropoutEntries/analysisData 3개 소스에서 자동 필터링, 진단 줄에 "종강 제외" 뱃지
+- **[보안] Supabase RLS 강화 적용 완료** (production DB):
+  - `007_security_phase_a.sql` — `excused_absence_requests` strict_insert + DELETE 차단
+  - `008b_harden_instructor_dashboard.sql` — 강사 4종 테이블 입력 검증 + DELETE 차단
+  - `010_secure_trainee_contacts.sql` — `trainee_contacts` authenticated-only (anon PII 다운로드 차단)
+- **[보안 Phase B 부분 완료] Supabase 클라이언트 통합** — hrdContacts + hrdAnalyticsNotes를 assistantAuth.ts의 공유 `authClient`로 전환 (createClient 10곳 중 2곳 통합)
 
 ### ✅ 완료 (v3.4.0) — 강사 대시보드
 - 보조강사/교강사 모드에 4개 탭 추가: 프로젝트 평가, 프로젝트 보상, 운영 진단, 교강사 진단
@@ -141,21 +157,26 @@ src/
   - `edgeFunctionAvailable` 캐시: 세션 중 1회만 시도 후 결정
   - ⚠️ `corsproxy.io` 유료 전환됨 (2순위 프록시 사용 불가)
 - `src/core/escape.ts` escapeHtml 유틸 추가
-- `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단
-- ⚠️ **사용자 미완료 조치**:
-  - Edge Function 배포: `supabase/functions/hrd-proxy/DEPLOY.md` 참고
-  - `007_security_phase_a.sql` SQL Editor 실행
-  - `008_create_instructor_dashboard.sql` SQL Editor 실행
+- `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단 ✅ 적용 (2026-05-12)
+- `spec/sql/008_create_instructor_dashboard.sql` + `008b_harden_*.sql` ✅ 적용 (2026-05-12)
+- `spec/sql/010_secure_trainee_contacts.sql` ✅ 적용 (2026-05-12)
+- ⚠️ **남은 사용자 조치**:
+  - Edge Function 배포: `supabase/functions/hrd-proxy/DEPLOY.md` 참고 — DEFAULT_KEY 하드코딩 노출 종결
+  - HRD-Net authKey 로테이션 (현재 공개 GitHub 노출 중: `gL1rEteJ...`)
+  - Airtable PAT → Edge Function `Deno.env`로 이전
 
 ### 🔜 다음 작업
-1. **강사 대시보드 Phase 6** — 종합 진단 (기술60%+운영40% 합산, 경험치) 자동 조회 탭
-2. **[보안 Phase B] Supabase 클라이언트 세션 통합** — 10+곳 `createClient` 중복 → 싱글톤, RLS 강화
-3. **[보안] 218개 innerHTML에 escapeHtml 일괄 적용**
-4. **main.ts 추가 분리** — 700KB → 500KB 이하
-5. **HWPX 내보내기** — 한글 공문서 (훈련 보고서, 훈련일지)
-6. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
-7. **이메일 발송** — Google SMTP 계정 확보 후 연동
-8. **CI 타입 체크 수정** — 기존 코드 tsc --noEmit 에러 정리
+1. **🔥 HRD-Net authKey 로테이션 + Edge Function 배포** — 가장 시급. 현재 공개 노출 상태
+2. **강사 대시보드 Phase 6** — 종합 진단 (기술60%+운영40% 합산, 경험치) 자동 조회 탭
+3. **IA Phase 2~4** — 출결·이탈 통합 (4→1) → 학습품질 (3→1) → 운영도구 (3→1). 사이드바 16→9
+4. **[보안 Phase B 잔여] Supabase 클라이언트 통합 8곳** — 1회차에 2곳(hrdContacts, hrdAnalyticsNotes) 완료. 잔여 createClient를 싱글톤 팩토리로
+5. **admin-mode 트리거 점검** — Google JWT 세션 있으나 `body.admin-mode` 클래스 미활성 사례 발견 (별도 진단 필요)
+6. **[보안] 218개 innerHTML에 escapeHtml 일괄 적용**
+7. **main.ts 추가 분리** — 700KB → 500KB 이하
+8. **HWPX 내보내기** — 한글 공문서 (훈련 보고서, 훈련일지)
+9. **재직자 유닛리포트 API** — 팀장님 API URL 제공 대기 중
+10. **이메일 발송** — Google SMTP 계정 확보 후 연동
+11. **CI 타입 체크 수정** — 기존 코드 tsc --noEmit 에러 정리
 
 ### 📌 주요 URL
 - 배포: https://chanhong-park94.github.io/kdt-schedule-dashboard/
