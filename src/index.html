@@ -213,21 +213,10 @@
             <span class="jibble-nav-label">문서자동화</span>
           </button>
 
-          <button class="jibble-nav-item" type="button" data-scroll-target="sectionProjectEval" data-nav-key="projectEval" data-nav-icon="project" data-default-label="프로젝트 평가">
-            <span class="jibble-nav-emoji" aria-hidden="true">🎯</span>
-            <span class="jibble-nav-label">프로젝트 평가</span>
-          </button>
-          <button class="jibble-nav-item" type="button" data-scroll-target="sectionProjectReward" data-nav-key="projectReward" data-nav-icon="reward" data-default-label="프로젝트 보상">
-            <span class="jibble-nav-emoji" aria-hidden="true">🏆</span>
-            <span class="jibble-nav-label">프로젝트 보상</span>
-          </button>
-          <button class="jibble-nav-item" type="button" data-scroll-target="sectionOperationDiag" data-nav-key="operationDiag" data-nav-icon="diagnosis" data-default-label="운영 진단">
-            <span class="jibble-nav-emoji" aria-hidden="true">📋</span>
-            <span class="jibble-nav-label">운영 진단</span>
-          </button>
-          <button class="jibble-nav-item" type="button" data-scroll-target="sectionInstructorDiag" data-nav-key="instructorDiag" data-nav-icon="teacher" data-default-label="교강사 진단">
+          <!-- 강사 4종 통합 (Phase 1 IA 단순화) -->
+          <button class="jibble-nav-item" type="button" data-scroll-target="sectionInstructorHub" data-nav-key="instructor" data-nav-icon="teacher" data-default-label="강사">
             <span class="jibble-nav-emoji" aria-hidden="true">👨‍🏫</span>
-            <span class="jibble-nav-label">교강사 진단</span>
+            <span class="jibble-nav-label">강사</span>
           </button>
 
           <button
@@ -3266,8 +3255,20 @@
           </div>
           <!-- /instructorDrawer -->
 
+          <!-- ═══ 강사 허브 (Phase 1 IA 통합 — 4개 강사 기능 sub-tab) ═══ -->
+          <section id="sectionInstructorHub" class="card card-span-12 u-mt-14" data-page-group="instructor">
+            <div class="instructor-hub-header">
+              <h2 class="instructor-hub-title">👨‍🏫 강사 대시보드</h2>
+              <nav class="instructor-tabs" role="tablist" aria-label="강사 기능 sub-tab">
+                <button type="button" class="instructor-tab-btn is-active" role="tab" aria-selected="true" data-sub-tab="projectEval">🎯 프로젝트 평가</button>
+                <button type="button" class="instructor-tab-btn admin-only" role="tab" aria-selected="false" data-sub-tab="projectReward">🏆 프로젝트 보상</button>
+                <button type="button" class="instructor-tab-btn" role="tab" aria-selected="false" data-sub-tab="operationDiag">📋 운영 진단</button>
+                <button type="button" class="instructor-tab-btn" role="tab" aria-selected="false" data-sub-tab="instructorDiag">👨‍🏫 교강사 진단</button>
+              </nav>
+            </div>
+
           <!-- ═══ 프로젝트 평가 ═══ -->
-          <section id="sectionProjectEval" class="card card-span-12 u-mt-14" data-page-group="projectEval">
+          <section id="sectionProjectEval" class="card card-span-12 u-mt-14">
             <div class="card-header">
               <div class="card-header-left">
                 <h2 class="card-title">🎯 프로젝트 평가</h2>
@@ -3333,7 +3334,7 @@
           </section>
 
           <!-- ═══ 프로젝트 보상 (운매 전용) ═══ -->
-          <section id="sectionProjectReward" class="card card-span-12 u-mt-14" data-page-group="projectReward">
+          <section id="sectionProjectReward" class="card card-span-12 u-mt-14" style="display:none">
             <div class="card-header">
               <div class="card-header-left">
                 <h2 class="card-title">🏆 프로젝트 보상</h2>
@@ -3384,7 +3385,7 @@
           </section>
 
           <!-- ═══ 운영 진단 ═══ -->
-          <section id="sectionOperationDiag" class="card card-span-12 u-mt-14" data-page-group="operationDiag">
+          <section id="sectionOperationDiag" class="card card-span-12 u-mt-14" style="display:none">
             <div class="card-header">
               <div class="card-header-left">
                 <h2 class="card-title">📋 운영 진단</h2>
@@ -3457,7 +3458,7 @@
           </section>
 
           <!-- ═══ 교강사 진단 ═══ -->
-          <section id="sectionInstructorDiag" class="card card-span-12 u-mt-14" data-page-group="instructorDiag">
+          <section id="sectionInstructorDiag" class="card card-span-12 u-mt-14" style="display:none">
             <div class="card-header">
               <div class="card-header-left">
                 <h2 class="card-title">👨‍🏫 교강사 진단</h2>
@@ -3505,6 +3506,8 @@
               </div>
             </div>
           </section>
+          </section>
+          <!-- /sectionInstructorHub -->
 
           <!-- ═══ 매출 현황 ═══ -->
           <section id="sectionRevenue" class="card card-span-12 u-mt-14" data-page-group="revenue">

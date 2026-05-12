@@ -6167,10 +6167,11 @@ tbody tr:hover {
 }
 
 /* ── Assistant Mode ── */
-.assistant-mode .jibble-nav-item:not([data-nav-key="attendance"]):not([data-nav-key="projectEval"]):not([data-nav-key="operationDiag"]):not([data-nav-key="instructorDiag"]) {
+/* v6 IA: 강사 4종이 'instructor' 단일 탭으로 통합됨 — 강사모드는 attendance + instructor만 노출 */
+.assistant-mode .jibble-nav-item:not([data-nav-key="attendance"]):not([data-nav-key="instructor"]) {
   display: none !important;
 }
-.assistant-mode .mobile-bottom-nav button:not([data-nav-key="attendance"]):not([data-nav-key="projectEval"]):not([data-nav-key="operationDiag"]):not([data-nav-key="instructorDiag"]) {
+.assistant-mode .mobile-bottom-nav button:not([data-nav-key="attendance"]):not([data-nav-key="instructor"]) {
   display: none !important;
 }
 .assistant-mode .jibble-logo {
@@ -10081,4 +10082,53 @@ textarea.proj-eval-feedback {
   font-size: 11px;
   color: #9ca3af;
   text-align: right;
+}
+
+/* ═══ 강사 허브 sub-tab (Phase 1 IA 통합) ═══════════════════
+   재사용 패턴 — 향후 출결·학습품질·운영도구 통합에도 적용 예정 */
+.instructor-hub-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+.instructor-hub-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-strong, #1e1e2e);
+}
+.instructor-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  padding-bottom: 0;
+}
+.instructor-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text, #6b7280);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: background 0.15s, color 0.15s;
+}
+.instructor-tab-btn:hover {
+  background: var(--surface-hover, #f3f4f6);
+  color: var(--text-strong, #1e1e2e);
+}
+.instructor-tab-btn.is-active {
+  background: var(--card-bg, #ffffff);
+  border-color: var(--border, #e5e7eb);
+  color: #6366f1;
+  font-weight: 600;
+}
+/* assistant-mode에서 'admin-only' sub-tab 숨김 (예: 프로젝트 보상) */
+.assistant-mode .instructor-tab-btn.admin-only {
+  display: none;
 }

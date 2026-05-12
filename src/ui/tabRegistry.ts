@@ -50,21 +50,10 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
     const { initDocAutomation } = await import("../docAutomation/docAutomationInit");
     initDocAutomation();
   }),
-  projectEval: createTabLoader(async () => {
-    const { initProjectEval } = await import("../instructor/projectEvalInit");
-    initProjectEval();
-  }),
-  projectReward: createTabLoader(async () => {
-    const { initProjectReward } = await import("../instructor/projectRewardInit");
-    initProjectReward();
-  }),
-  operationDiag: createTabLoader(async () => {
-    const { initOperationDiag } = await import("../instructor/operationDiagInit");
-    initOperationDiag();
-  }),
-  instructorDiag: createTabLoader(async () => {
-    const { initInstructorDiag } = await import("../instructor/instructorDiagInit");
-    initInstructorDiag();
+  instructor: createTabLoader(async () => {
+    // v6 IA — 강사 4종 통합 허브 (sub-tab으로 lazy init)
+    const { initInstructorHub } = await import("../instructor/instructorHubInit");
+    await initInstructorHub();
   }),
   settings: createTabLoader(async () => {
     const { initSettings } = await import("../hrd/settingsInit");

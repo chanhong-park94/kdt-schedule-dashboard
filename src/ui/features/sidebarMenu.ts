@@ -15,7 +15,8 @@ export function initSidebarMenuFeature(nextDeps: SidebarMenuDeps): void {
   deps = nextDeps;
 }
 
-const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v5";
+// v6: IA Phase 1 — 강사 4종(projectEval/projectReward/operationDiag/instructorDiag) → 'instructor' 단일 통합
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v6";
 
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "dashboard",
@@ -32,10 +33,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "crossAnalysis",
   "revenue",
   "docAutomation",
-  "projectEval",
-  "projectReward",
-  "operationDiag",
-  "instructorDiag",
+  "instructor",
   "settings",
 ];
 
@@ -54,10 +52,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   crossAnalysis: "교차분석",
   revenue: "매출",
   docAutomation: "문서자동화",
-  projectEval: "프로젝트 평가",
-  projectReward: "프로젝트 보상",
-  operationDiag: "운영 진단",
-  instructorDiag: "교강사 진단",
+  instructor: "강사",
   settings: "설정",
 };
 
@@ -76,10 +71,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   crossAnalysis: "compare",
   revenue: "coin",
   docAutomation: "document",
-  projectEval: "project",
-  projectReward: "reward",
-  operationDiag: "diagnosis",
-  instructorDiag: "teacher",
+  instructor: "teacher",
   settings: "settings",
 };
 
@@ -115,10 +107,7 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       crossAnalysis: config.labels.crossAnalysis,
       revenue: config.labels.revenue,
       docAutomation: config.labels.docAutomation,
-      projectEval: config.labels.projectEval,
-      projectReward: config.labels.projectReward,
-      operationDiag: config.labels.operationDiag,
-      instructorDiag: config.labels.instructorDiag,
+      instructor: config.labels.instructor,
       settings: config.labels.settings,
     },
     icons: {
@@ -136,10 +125,7 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       crossAnalysis: config.icons.crossAnalysis,
       revenue: config.icons.revenue,
       docAutomation: config.icons.docAutomation,
-      projectEval: config.icons.projectEval,
-      projectReward: config.icons.projectReward,
-      operationDiag: config.icons.operationDiag,
-      instructorDiag: config.icons.instructorDiag,
+      instructor: config.icons.instructor,
       settings: config.icons.settings,
     },
   };
@@ -190,10 +176,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       crossAnalysis: normalizeSidebarMenuLabel("crossAnalysis", config.labels.crossAnalysis),
       revenue: normalizeSidebarMenuLabel("revenue", config.labels.revenue),
       docAutomation: normalizeSidebarMenuLabel("docAutomation", config.labels.docAutomation),
-      projectEval: normalizeSidebarMenuLabel("projectEval", config.labels.projectEval),
-      projectReward: normalizeSidebarMenuLabel("projectReward", config.labels.projectReward),
-      operationDiag: normalizeSidebarMenuLabel("operationDiag", config.labels.operationDiag),
-      instructorDiag: normalizeSidebarMenuLabel("instructorDiag", config.labels.instructorDiag),
+      instructor: normalizeSidebarMenuLabel("instructor", config.labels.instructor),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
@@ -211,10 +194,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       crossAnalysis: normalizeSidebarMenuIcon("crossAnalysis", config.icons.crossAnalysis),
       revenue: normalizeSidebarMenuIcon("revenue", config.icons.revenue),
       docAutomation: normalizeSidebarMenuIcon("docAutomation", config.icons.docAutomation),
-      projectEval: normalizeSidebarMenuIcon("projectEval", config.icons.projectEval),
-      projectReward: normalizeSidebarMenuIcon("projectReward", config.icons.projectReward),
-      operationDiag: normalizeSidebarMenuIcon("operationDiag", config.icons.operationDiag),
-      instructorDiag: normalizeSidebarMenuIcon("instructorDiag", config.icons.instructorDiag),
+      instructor: normalizeSidebarMenuIcon("instructor", config.icons.instructor),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };
@@ -238,10 +218,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       crossAnalysis: DEFAULT_PRIMARY_SIDEBAR_LABELS.crossAnalysis,
       revenue: DEFAULT_PRIMARY_SIDEBAR_LABELS.revenue,
       docAutomation: DEFAULT_PRIMARY_SIDEBAR_LABELS.docAutomation,
-      projectEval: DEFAULT_PRIMARY_SIDEBAR_LABELS.projectEval,
-      projectReward: DEFAULT_PRIMARY_SIDEBAR_LABELS.projectReward,
-      operationDiag: DEFAULT_PRIMARY_SIDEBAR_LABELS.operationDiag,
-      instructorDiag: DEFAULT_PRIMARY_SIDEBAR_LABELS.instructorDiag,
+      instructor: DEFAULT_PRIMARY_SIDEBAR_LABELS.instructor,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
@@ -259,10 +236,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       crossAnalysis: DEFAULT_PRIMARY_SIDEBAR_ICONS.crossAnalysis,
       revenue: DEFAULT_PRIMARY_SIDEBAR_ICONS.revenue,
       docAutomation: DEFAULT_PRIMARY_SIDEBAR_ICONS.docAutomation,
-      projectEval: DEFAULT_PRIMARY_SIDEBAR_ICONS.projectEval,
-      projectReward: DEFAULT_PRIMARY_SIDEBAR_ICONS.projectReward,
-      operationDiag: DEFAULT_PRIMARY_SIDEBAR_ICONS.operationDiag,
-      instructorDiag: DEFAULT_PRIMARY_SIDEBAR_ICONS.instructorDiag,
+      instructor: DEFAULT_PRIMARY_SIDEBAR_ICONS.instructor,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
     },
   };
@@ -342,23 +316,9 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
         "docAutomation",
         typeof parsed.labels?.docAutomation === "string" ? parsed.labels.docAutomation : fallback.labels.docAutomation,
       ),
-      projectEval: normalizeSidebarMenuLabel(
-        "projectEval",
-        typeof parsed.labels?.projectEval === "string" ? parsed.labels.projectEval : fallback.labels.projectEval,
-      ),
-      projectReward: normalizeSidebarMenuLabel(
-        "projectReward",
-        typeof parsed.labels?.projectReward === "string" ? parsed.labels.projectReward : fallback.labels.projectReward,
-      ),
-      operationDiag: normalizeSidebarMenuLabel(
-        "operationDiag",
-        typeof parsed.labels?.operationDiag === "string" ? parsed.labels.operationDiag : fallback.labels.operationDiag,
-      ),
-      instructorDiag: normalizeSidebarMenuLabel(
-        "instructorDiag",
-        typeof parsed.labels?.instructorDiag === "string"
-          ? parsed.labels.instructorDiag
-          : fallback.labels.instructorDiag,
+      instructor: normalizeSidebarMenuLabel(
+        "instructor",
+        typeof parsed.labels?.instructor === "string" ? parsed.labels.instructor : fallback.labels.instructor,
       ),
       settings: normalizeSidebarMenuLabel(
         "settings",
@@ -423,21 +383,9 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
         "docAutomation",
         typeof parsed.icons?.docAutomation === "string" ? parsed.icons.docAutomation : fallback.icons.docAutomation,
       ),
-      projectEval: normalizeSidebarMenuIcon(
-        "projectEval",
-        typeof parsed.icons?.projectEval === "string" ? parsed.icons.projectEval : fallback.icons.projectEval,
-      ),
-      projectReward: normalizeSidebarMenuIcon(
-        "projectReward",
-        typeof parsed.icons?.projectReward === "string" ? parsed.icons.projectReward : fallback.icons.projectReward,
-      ),
-      operationDiag: normalizeSidebarMenuIcon(
-        "operationDiag",
-        typeof parsed.icons?.operationDiag === "string" ? parsed.icons.operationDiag : fallback.icons.operationDiag,
-      ),
-      instructorDiag: normalizeSidebarMenuIcon(
-        "instructorDiag",
-        typeof parsed.icons?.instructorDiag === "string" ? parsed.icons.instructorDiag : fallback.icons.instructorDiag,
+      instructor: normalizeSidebarMenuIcon(
+        "instructor",
+        typeof parsed.icons?.instructor === "string" ? parsed.icons.instructor : fallback.icons.instructor,
       ),
       settings: normalizeSidebarMenuIcon(
         "settings",
@@ -464,6 +412,7 @@ const NAV_SECTION_GROUPS: { label: string; keys: PrimarySidebarNavKey[] }[] = [
   { label: "메인", keys: ["dashboard", "timeline"] },
   { label: "HRD 운영", keys: ["generator", "kpi", "dropout"] },
   { label: "훈련생 관리", keys: ["attendance", "analytics", "traineeHistory"] },
+  { label: "강사", keys: ["instructor"] },
 ];
 
 // Cache original SVG innerHTML per nav-key so we can restore default icons
