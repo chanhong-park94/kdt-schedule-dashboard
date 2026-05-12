@@ -44,6 +44,18 @@ function getAuthClient(): SupabaseClient {
   return authClient;
 }
 
+/**
+ * Google OAuth 세션을 보유한 Supabase 클라이언트 공유 export.
+ * RLS가 authenticated만 허용하는 테이블(trainee_contacts 등)에 접근하려면
+ * 이 클라이언트를 통해 호출해야 JWT가 전달됨.
+ *
+ * 주의: 동일 URL로 또 다른 createClient(persistSession:true)를 만들면
+ * OAuth 콜백/storage lock이 충돌하므로(v3.5.0 회귀 사례) 반드시 이 함수를 재사용한다.
+ */
+export function getSharedAuthClient(): SupabaseClient | null {
+  return authClient;
+}
+
 // ─── DB Row type ─────────────────────────────────────────────
 
 type AssistantCodeRow = {

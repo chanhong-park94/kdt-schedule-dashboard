@@ -5,8 +5,8 @@
  * - localStorage 폴백: 위험도만 (특이사항은 DB 필수 — 민감정보 보호)
  * - 자동 계산 값(평균출석률/남은결석가능일수)은 저장하지 않음
  */
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { readClientEnv } from "../core/env";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSharedAuthClient } from "../auth/assistantAuth";
 import { escapeHtml, escapeAttr } from "../core/escape";
 import type { TraineeAnalysis } from "./hrdAnalyticsTypes";
 
@@ -31,27 +31,15 @@ export interface CohortAutoStats {
 }
 
 // ─── Supabase 클라이언트 (authClient 재사용 패턴) ──────────────
-
-const rawUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
-const rawKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
-const supabaseUrl = typeof rawUrl === "string" ? rawUrl.trim() : "";
-const supabaseKey = typeof rawKey === "string" ? rawKey.trim() : "";
-const hasConfig = supabaseUrl.length > 0 && supabaseKey.length > 0;
+// assistantAuth.ts의 authClient를 공유 — 동일 URL로 별도 createClient 금지
+// (v3.5.0 OAuth 콜백/storage lock 충돌 회귀 사례)
 
 const TABLE = "course_cohort_notes";
 const LS_KEY = "kdt_cohort_notes_risk_v1";
 const ALLOWED_DOMAIN = "modulabs.co.kr";
 
-// auth 세션을 공유하기 위해 persistSession: true
-let authClient: SupabaseClient | null = null;
 function getClient(): SupabaseClient | null {
-  if (!hasConfig) return null;
-  if (!authClient) {
-    authClient = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: true, detectSessionInUrl: true },
-    });
-  }
-  return authClient;
+  return getSharedAuthClient();
 }
 
 // ─── 자동 계산 ──────────────────────────────────────────────────

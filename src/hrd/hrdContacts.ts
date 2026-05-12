@@ -1,27 +1,21 @@
 /** 훈련생 연락처 관리 모듈 — Supabase CRUD + 캐시 */
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { readClientEnv } from "../core/env";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSharedAuthClient } from "../auth/assistantAuth";
 import { fetchRoster } from "./hrdApi";
 import { loadHrdConfig } from "./hrdConfig";
 import type { HrdRawTrainee } from "./hrdTypes";
 
 // ─── Supabase Client ────────────────────────────────────────
-// ⚠️ 동일 Supabase URL 로 여러 createClient 가 persistSession:true + detectSessionInUrl:true
-// 를 함께 가지면 OAuth 콜백 파싱과 storage lock 이 충돌해서 운매/강사 모드 모두에서
-// 출결현황 데이터 조회가 실패한다. 따라서 이 클라이언트는 세션을 보유하지 않고 anon
-// 으로만 작동시킨다. RLS 강화(010_secure_trainee_contacts.sql)를 적용할 때는 별도
-// 작업에서 assistantAuth.ts 의 authClient(이미 persistSession:true 보유)를 공유하는
-// 패턴으로 전환해야 함.
-const rawUrl = readClientEnv(["NEXT_PUBLIC_SUPABASE_URL", "VITE_SUPABASE_URL"]);
-const rawKey = readClientEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
-const supabaseUrl = typeof rawUrl === "string" ? rawUrl.trim() : "";
-const supabaseKey = typeof rawKey === "string" ? rawKey.trim() : "";
-const hasConfig = supabaseUrl.length > 0 && supabaseKey.length > 0;
-const sbClient: SupabaseClient | null = hasConfig
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
-    })
-  : null;
+// 010_secure_trainee_contacts.sql RLS 강화 후 authenticated만 CRUD 가능 →
+// Google 로그인 JWT가 전달되어야 하므로 assistantAuth.ts의 authClient를 공유.
+// (자체 createClient(persistSession:true) 생성 금지 — v3.5.0 OAuth 콜백 충돌 회귀 사례)
+//
+// 모드별 동작:
+//   - 운매(admin-mode, Google 로그인): JWT 보유 → CRUD 정상
+//   - 강사(assistant-mode, code 로그인): JWT 없음 → DB 호출 RLS 차단됨.
+//     단 강사 화면은 hrdContactsUI를 안 쓰므로 영향 없음. 메모리 캐시(getContact)만
+//     쓰는 hrdNotify/hrdScheduler는 캐시가 비어 있어도 graceful 동작.
+const sbClient: SupabaseClient | null = getSharedAuthClient();
 
 const TABLE = "trainee_contacts";
 
