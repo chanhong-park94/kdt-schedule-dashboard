@@ -412,7 +412,7 @@ const NAV_SECTION_GROUPS: { label: string; keys: PrimarySidebarNavKey[] }[] = [
   { label: "메인", keys: ["dashboard", "timeline"] },
   { label: "HRD 운영", keys: ["generator", "kpi", "dropout"] },
   { label: "훈련생 관리", keys: ["attendance", "analytics", "traineeHistory"] },
-  { label: "강사", keys: ["instructor"] },
+  { label: "교육사업관리", keys: ["instructor"] },
 ];
 
 // Cache original SVG innerHTML per nav-key so we can restore default icons
