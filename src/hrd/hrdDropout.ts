@@ -957,7 +957,8 @@ export function initDropoutDashboard(): void {
   setupDropoutTabs();
   setupFilterHandlers();
 
-  // ── 캐시 자동 로드: 이전 데이터가 있으면 즉시 표시 ──
+  // ── 캐시 자동 로드: 이전 데이터가 있으면 즉시 표시 (네트워크 호출은 하지 않음) ──
+  // ⚠️ 사용자 요청 (2026-05-13): 진입 시 자동 조회 금지. "전체 조회" 클릭만으로 fetch.
   const cached = loadDropoutCache();
   if (cached && cached.data.length > 0) {
     dropoutData = cached.data;
@@ -975,12 +976,7 @@ export function initDropoutDashboard(): void {
     if (emptyEl) emptyEl.style.display = "none";
     if (contentEl) contentEl.style.display = "block";
     if (statusEl)
-      statusEl.textContent = `캐시 데이터 ${dropoutData.length}개 기수 표시 중 (${formatCacheAge(cached.timestamp)})`;
-
-    // 백그라운드 갱신 (UI 차단 없이)
-    fetchAndRenderDropout().catch(() => {/* 실패 시 캐시 유지 */});
-  } else {
-    // 캐시 없으면 자동 조회 시작
-    void fetchAndRenderDropout();
+      statusEl.textContent = `캐시 데이터 ${dropoutData.length}개 기수 표시 중 (${formatCacheAge(cached.timestamp)}) — 최신화는 [전체 조회]`;
   }
+  // 캐시가 없으면 doEmptyState 가 그대로 보이고, 사용자가 [전체 조회] 클릭 시 fetch 한다.
 }
