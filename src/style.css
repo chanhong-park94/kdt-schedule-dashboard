@@ -10084,6 +10084,266 @@ textarea.proj-eval-feedback {
   text-align: right;
 }
 
+/* ═══ 하차방어율 운영 중 기수 주차별 트래커 (Dropout Weekly) ═══ */
+.dw-root { margin: 24px 0; }
+
+.dw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(249,115,22,0.06), rgba(249,115,22,0.02));
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: 8px 8px 0 0;
+}
+.dw-header-title { font-size: 15px; font-weight: 600; color: var(--text-strong, #1e1e2e); }
+.dw-header-sub { font-size: 12px; font-weight: 400; color: var(--text, #6b7280); margin-left: 4px; }
+.dw-header-meta { font-size: 12px; color: var(--text, #6b7280); }
+.dw-header-meta strong { color: var(--text-strong, #1e1e2e); }
+
+/* ── 입력 폼 ── */
+.dw-form-wrap {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-top: none;
+}
+.dw-form-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong, #1e1e2e);
+  cursor: pointer;
+}
+.dw-form-toggle:hover { background: var(--surface-hover, #f3f4f6); }
+.dw-form { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.dw-form-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.dw-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+.dw-field-small { flex: 0 0 120px; }
+.dw-field-wide { flex: 2; min-width: 240px; }
+.dw-field-label { font-size: 11px; font-weight: 600; color: var(--text, #6b7280); }
+.dw-input {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text-strong, #1e1e2e);
+}
+.dw-input:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 2px rgba(249,115,22,0.15); }
+.dw-form-actions { display: flex; align-items: center; gap: 12px; }
+.dw-btn {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dw-btn-primary { background: #f97316; color: #fff; }
+.dw-btn-primary:hover { background: #ea580c; }
+.dw-form-hint { font-size: 11px; color: var(--text, #6b7280); }
+
+/* ── Empty State ── */
+.dw-empty {
+  padding: 32px 16px;
+  text-align: center;
+  background: var(--card-bg, #ffffff);
+  border: 1px dashed var(--border, #e5e7eb);
+  border-top: none;
+  color: var(--text, #6b7280);
+}
+.dw-empty-icon { font-size: 32px; margin-bottom: 8px; }
+.dw-empty-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--text-strong, #1e1e2e); }
+.dw-empty-desc { font-size: 13px; }
+
+/* ── 신호등 테이블 ── */
+.dw-table-wrap {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-top: none;
+  padding: 12px 16px;
+}
+.dw-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.dw-table thead th {
+  text-align: left;
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text, #6b7280);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.dw-table tbody td {
+  padding: 8px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+.dw-row { cursor: pointer; transition: background 0.12s; }
+.dw-row:hover { background: rgba(249,115,22,0.05); }
+.dw-row-selected { background: rgba(249,115,22,0.10); }
+.dw-row-selected:hover { background: rgba(249,115,22,0.14); }
+.dw-cell-alias { font-weight: 600; color: var(--text-strong, #1e1e2e); }
+.dw-cell-course { font-size: 11px; color: var(--text, #6b7280); margin-top: 2px; }
+.dw-target { color: var(--text, #6b7280); font-size: 11px; }
+.dw-rate-below strong { color: #dc2626; }
+.dw-delta-up { color: #16a34a; font-weight: 600; }
+.dw-delta-down { color: #dc2626; font-weight: 600; }
+.dw-table-hint { margin-top: 8px; font-size: 11px; color: #9ca3af; text-align: right; }
+
+/* ── 신호등 dot ── */
+.dw-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.dw-dot-green { background: #16a34a; }
+.dw-dot-yellow { background: #f59e0b; }
+.dw-dot-red { background: #dc2626; }
+.dw-dot-gray { background: #d1d5db; }
+
+/* ── 차트 ── */
+.dw-chart-wrap {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-top: none;
+  padding: 16px;
+}
+.dw-chart-title { font-size: 13px; margin-bottom: 8px; color: var(--text-strong, #1e1e2e); }
+.dw-chart-title strong { color: #f97316; }
+.dw-chart-canvas { height: 240px; position: relative; }
+.dw-chart-canvas canvas { max-height: 240px; }
+.dw-chart-empty { padding: 32px; text-align: center; font-size: 13px; color: #9ca3af; }
+.dw-chart-legend {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--text, #6b7280);
+}
+.dw-legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.dw-legend-line {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: #6366f1;
+}
+.dw-legend-target {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed #16a34a;
+}
+
+/* ── 타임라인 (선택 기수의 액션 기록) ── */
+.dw-timeline {
+  list-style: none;
+  padding: 12px 0 0;
+  margin: 12px 0 0;
+  border-top: 1px solid var(--border, #e5e7eb);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dw-tl-item {
+  padding: 8px 10px;
+  background: #fafafa;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.dw-tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.dw-tl-week { font-weight: 700; color: #f97316; }
+.dw-tl-rate { font-weight: 600; color: var(--text-strong, #1e1e2e); }
+.dw-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.dw-tag-module { background: rgba(99,102,241,0.12); color: #4338ca; }
+.dw-tag-signal { background: rgba(245,158,11,0.15); color: #b45309; }
+.dw-tl-del {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 6px;
+  font-size: 11px;
+}
+.dw-tl-del:hover { color: #dc2626; border-color: #dc2626; }
+.dw-tl-action { color: var(--text-strong, #1e1e2e); }
+.dw-tl-plan { color: var(--text, #6b7280); margin-top: 2px; }
+.dw-tl-action strong, .dw-tl-plan strong { color: #f97316; font-weight: 600; }
+.dw-tl-note { margin-top: 4px; font-size: 11px; color: #9ca3af; font-style: italic; }
+
+/* ── 액션 카드 그리드 (이번 주 / 다음 주) ── */
+.dw-actions-wrap {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 16px;
+}
+.dw-actions-title { font-size: 13px; font-weight: 600; color: var(--text-strong, #1e1e2e); margin-bottom: 10px; }
+.dw-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.dw-action-card {
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+}
+.dw-action-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; flex-wrap: wrap; }
+.dw-action-alias { font-weight: 700; color: var(--text-strong, #1e1e2e); }
+.dw-action-week { color: var(--text, #6b7280); }
+.dw-action-rate { margin-left: auto; font-weight: 700; color: #f97316; }
+.dw-action-line { font-size: 12px; margin-top: 4px; }
+.dw-action-tag-done {
+  display: inline-block;
+  background: #16a34a;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-right: 4px;
+  font-weight: 600;
+}
+.dw-action-tag-plan {
+  display: inline-block;
+  background: #6366f1;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .dw-form-row { flex-direction: column; gap: 8px; }
+  .dw-field, .dw-field-small, .dw-field-wide { flex: 1; min-width: 0; }
+  .dw-table { font-size: 11px; }
+}
+
 /* ═══ 강사 허브 sub-tab (Phase 1 IA 통합) ═══════════════════
    재사용 패턴 — 향후 출결·학습품질·운영도구 통합에도 적용 예정 */
 .instructor-hub-header {

@@ -15,7 +15,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "재직자 LLM",
     trainPrId: "AIG20240000498389",
-    degrs: ["1", "2", "3", "4", "5", "6"],
+    degrs: ["1", "2", "3", "4", "5", "6", "7"],
     startDate: "",
     totalDays: 60,
     endTime: "18:00",
@@ -25,7 +25,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "AI 활용 서비스 기획/개발",
     trainPrId: "AIG20250000501545",
-    degrs: ["1", "2", "3", "4", "5", "6"],
+    degrs: ["1", "2", "3", "4", "5", "6", "7"],
     startDate: "",
     totalDays: 60,
     endTime: "18:00",
@@ -35,7 +35,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "데이터 기반 의사결정",
     trainPrId: "AIG20250000501393",
-    degrs: ["1", "2", "3", "4", "5"],
+    degrs: ["1", "2", "3", "4", "5", "6", "7"],
     startDate: "",
     totalDays: 45,
     endTime: "18:00",
@@ -66,7 +66,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "[아이펠]딥러닝 개발자 도약 과정",
     trainPrId: "AIG20240000459187",
-    degrs: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+    degrs: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
     startDate: "",
     totalDays: 120,
     endTime: "18:00",
@@ -76,7 +76,7 @@ export const DEFAULT_COURSES: HrdCourse[] = [
   {
     name: "AI 기반 지능형 서비스 개발 전문가 과정",
     trainPrId: "AIG20250000501638",
-    degrs: ["1", "2"],
+    degrs: ["1", "2", "3"],
     startDate: "",
     totalDays: 120,
     endTime: "18:00",

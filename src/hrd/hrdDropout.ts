@@ -911,12 +911,21 @@ async function fetchAndRenderDropout(): Promise<void> {
 
 /** 인사이트 섹션 lazy-load 갱신 — 컨테이너 없으면 no-op */
 async function refreshInsights(): Promise<void> {
-  if (!document.getElementById("sectionDropoutInsights")) return;
-  try {
-    const mod = await import("./hrdDropoutInsightsView");
-    mod.renderDropoutInsights();
-  } catch (e) {
-    console.warn("[Insights] 렌더 실패:", e);
+  if (document.getElementById("sectionDropoutInsights")) {
+    try {
+      const mod = await import("./hrdDropoutInsightsView");
+      mod.renderDropoutInsights();
+    } catch (e) {
+      console.warn("[Insights] 렌더 실패:", e);
+    }
+  }
+  if (document.getElementById("sectionDropoutWeekly")) {
+    try {
+      const mod = await import("./hrdDropoutWeeklyView");
+      mod.renderDropoutWeekly();
+    } catch (e) {
+      console.warn("[WeeklyTracker] 렌더 실패:", e);
+    }
   }
 }
 
