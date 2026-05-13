@@ -22,17 +22,26 @@ import {
   type RiskSignal,
   type SignalLight,
 } from "./hrdDropoutWeekly";
+import { runSeedIfNeeded, SEED_VERSION } from "./hrdDropoutWeeklySeed";
 
 Chart.register(...registerables);
 
 let chart: Chart | null = null;
 let selectedAlias: string | null = null;
+/** 최근 자동 시드 결과 — 1회만 안내 표시 후 dismiss */
+let pendingSeedToast: { added: number; updated: number } | null = null;
 
 // ─── 진입점 ─────────────────────────────────────────────────
 
 export function renderDropoutWeekly(): void {
   const root = document.getElementById("sectionDropoutWeekly");
   if (!root) return;
+
+  // 첫 렌더 시 (또는 SEED_VERSION 변경 시) 엑셀 데이터 자동 임포트
+  const seed = runSeedIfNeeded();
+  if (seed.ran) {
+    pendingSeedToast = { added: seed.added, updated: seed.updated };
+  }
 
   const statuses = computeActiveCohortStatuses();
   const allOptions = getAllCohortOptions();
@@ -47,6 +56,7 @@ export function renderDropoutWeekly(): void {
 
   root.innerHTML = `
     ${renderHeader(statuses.length)}
+    ${renderSeedToast()}
     ${renderInputForm(allOptions)}
     ${renderSignalTable(statuses)}
     ${renderChartSection()}
@@ -57,8 +67,37 @@ export function renderDropoutWeekly(): void {
   bindFormSubmit();
   bindRowClick();
   bindDeleteButtons();
+  bindSeedToastDismiss();
 
   if (selectedAlias) renderLineChart(selectedAlias);
+}
+
+function renderSeedToast(): string {
+  if (!pendingSeedToast) return "";
+  const { added, updated } = pendingSeedToast;
+  if (added === 0 && updated === 0) return "";
+  const parts: string[] = [];
+  if (added > 0) parts.push(`신규 <strong>${added}</strong>건`);
+  if (updated > 0) parts.push(`기존 <strong>${updated}</strong>건 갱신`);
+  return `
+    <div class="dw-toast" id="dwSeedToast">
+      <span class="dw-toast-icon">📥</span>
+      <span class="dw-toast-msg">
+        그룹회의 스프레드시트(${escapeHtml(SEED_VERSION)} 스냅샷)에서 ${parts.join(", ")} 자동 임포트 완료.
+        위험 모듈/액션 등 직접 입력하신 메타 데이터는 그대로 유지됐습니다.
+      </span>
+      <button class="dw-toast-close" id="dwSeedToastClose" type="button" aria-label="닫기">✕</button>
+    </div>`;
+}
+
+function bindSeedToastDismiss(): void {
+  const btn = document.getElementById("dwSeedToastClose");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    pendingSeedToast = null;
+    const el = document.getElementById("dwSeedToast");
+    if (el) el.remove();
+  });
 }
 
 // ─── Sub-render ─────────────────────────────────────────────
