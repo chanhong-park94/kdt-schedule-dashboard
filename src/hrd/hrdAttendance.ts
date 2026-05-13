@@ -1506,6 +1506,10 @@ export function setupSettingsHandlers(): void {
   });
 
   // ─── Slack 자동 알림 토글 ───────────────────────
+  // ⚠️ 토글은 즉시 자동 저장 — 사용자가 [저장] 클릭을 잊어도 enabled 상태가
+  //    localStorage 에 반영되도록. 다른 필드(시간/대상/매니저)는 기존처럼
+  //    [저장] 버튼으로 영구화. (2026-05-13 사용자 피드백: 매일 로그인 시
+  //    Slack 알림 설정이 풀려있다 — 토글 변경 후 저장 미클릭으로 추정)
   const scheduleToggle = $("slackScheduleEnabled") as HTMLInputElement | null;
   scheduleToggle?.addEventListener("change", () => {
     const toggleLabel = $("slackScheduleToggleLabel");
@@ -1513,6 +1517,22 @@ export function setupSettingsHandlers(): void {
     updateSlackBadge(scheduleToggle.checked);
     if (toggleLabel) toggleLabel.textContent = scheduleToggle.checked ? "활성화" : "비활성화";
     if (settingsPanel) settingsPanel.style.display = scheduleToggle.checked ? "block" : "none";
+
+    // 토글 상태만 즉시 영구화 (다른 필드는 기존 저장값 유지)
+    const cfg = loadHrdConfig();
+    const prev = cfg.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
+    cfg.slackSchedule = { ...prev, enabled: scheduleToggle.checked };
+    saveHrdConfig(cfg);
+    currentConfig = cfg;
+    restartScheduler();
+
+    const statusEl = $("slackScheduleStatus");
+    if (statusEl) {
+      statusEl.textContent = scheduleToggle.checked
+        ? "✅ 자동 활성화됨 — 시간·대상 변경 시 [저장] 버튼 클릭"
+        : "ℹ️ 자동 비활성화됨";
+      statusEl.className = `slack-schedule-status ${scheduleToggle.checked ? "slack-schedule-success" : "slack-schedule-info"}`;
+    }
   });
 
   // ─── Slack 알림 설정 저장 ───────────────────────
