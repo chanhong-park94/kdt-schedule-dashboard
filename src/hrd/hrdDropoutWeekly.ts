@@ -241,6 +241,44 @@ export function getWeeklySeries(alias: string): WeeklyDropoutEntry[] {
     .sort((a, b) => a.weekNum - b.weekNum);
 }
 
+// ─── 만족도 데이터 (그룹회의 스프레드시트 R16/R17) ───────────
+
+const SATISFACTION_STORAGE_KEY = "kdt_dropout_satisfaction_v1";
+
+export interface CohortSatisfaction {
+  alias: string;
+  /** 과정만족도 평균 (D열) — null 이면 미입력 */
+  courseAvg: number | null;
+  /** 과정만족도 목표 (스프레드시트 기준 통상 45) */
+  courseTarget: number;
+  /** [모듈번호, 점수] 정렬됨 */
+  courseModules: Array<[number, number]>;
+  /** 강사만족도 평균 — null 이면 미입력 */
+  instructorAvg: number | null;
+  /** 강사만족도 목표 (스프레드시트 기준 통상 50) */
+  instructorTarget: number;
+  instructorModules: Array<[number, number]>;
+}
+
+export function loadSatisfactionMap(): Record<string, CohortSatisfaction> {
+  try {
+    const raw = localStorage.getItem(SATISFACTION_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSatisfactionMap(map: Record<string, CohortSatisfaction>): void {
+  localStorage.setItem(SATISFACTION_STORAGE_KEY, JSON.stringify(map));
+}
+
+export function getSatisfaction(alias: string): CohortSatisfaction | null {
+  return loadSatisfactionMap()[alias] ?? null;
+}
+
 // ─── 분석 도출 ──────────────────────────────────────────────
 
 export type SignalLight = "green" | "yellow" | "red" | "gray";

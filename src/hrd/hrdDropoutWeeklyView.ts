@@ -15,6 +15,7 @@ import {
   computeActiveCohortStatuses,
   deleteWeeklyEntry,
   getAllCohortOptions,
+  getSatisfaction,
   getWeeklySeries,
   parseAlias,
   type CohortMatch,
@@ -68,6 +69,7 @@ export function renderDropoutWeekly(): void {
   bindRowClick();
   bindDeleteButtons();
   bindSeedToastDismiss();
+  bindCellAddButtons();
 
   if (selectedAlias) renderLineChart(selectedAlias);
 }
@@ -98,6 +100,50 @@ function bindSeedToastDismiss(): void {
     const el = document.getElementById("dwSeedToast");
     if (el) el.remove();
   });
+}
+
+function bindCellAddButtons(): void {
+  document.querySelectorAll<HTMLElement>(".dw-cell-add").forEach((btn) => {
+    btn.addEventListener("click", (ev) => {
+      ev.stopPropagation(); // 행 클릭 이벤트 방지
+      const alias = btn.dataset.aliasAdd;
+      const week = btn.dataset.week;
+      if (!alias) return;
+      openFormForCohort(alias, week);
+    });
+  });
+}
+
+/** 폼을 펼치고 기수·주차를 자동 선택해서 사용자가 액션만 빠르게 추가하도록 */
+function openFormForCohort(alias: string, weekHint?: string): void {
+  selectedAlias = alias;
+  const form = document.getElementById("dwForm") as HTMLFormElement | null;
+  const toggleBtn = document.getElementById("dwFormToggleBtn");
+  if (form && form.style.display === "none") {
+    form.style.display = "block";
+    if (toggleBtn) {
+      toggleBtn.setAttribute("aria-expanded", "true");
+      toggleBtn.innerHTML = "▼ 주차 데이터 입력 / 수정";
+    }
+  }
+  if (form) {
+    const aliasSelect = form.querySelector<HTMLSelectElement>('[name="alias"]');
+    const weekInput = form.querySelector<HTMLInputElement>('[name="weekNum"]');
+    const rateInput = form.querySelector<HTMLInputElement>('[name="defenseRate"]');
+    if (aliasSelect) aliasSelect.value = alias;
+    if (weekInput && weekHint) weekInput.value = weekHint;
+    // 기존 입력값으로 defenseRate 채워주기
+    if (rateInput && weekHint) {
+      const wn = parseInt(weekHint, 10);
+      const series = getWeeklySeries(alias);
+      const found = series.find((e) => e.weekNum === wn);
+      if (found) rateInput.value = String(found.defenseRate);
+    }
+    // 위험 모듈 입력으로 포커스
+    const riskInput = form.querySelector<HTMLInputElement>('[name="riskModule"]');
+    riskInput?.focus();
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 // ─── Sub-render ─────────────────────────────────────────────
@@ -214,16 +260,17 @@ function renderSignalTable(statuses: CohortStatus[]): string {
             <th>신호</th>
             <th>기수</th>
             <th>최근 주차</th>
-            <th>현재율 / 목표</th>
+            <th>방어율 / 목표</th>
             <th>Δ 직전</th>
+            <th>과정만족도</th>
+            <th>강사만족도</th>
             <th>위험 모듈</th>
             <th>이번 주 액션</th>
-            <th>입력 수</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="dw-table-hint">행을 클릭하면 아래 차트에 해당 기수의 추이가 표시됩니다.</div>
+      <div class="dw-table-hint">행을 클릭하면 아래 차트·만족도 패널이 갱신됩니다. 빈 액션 칸의 <strong>+ 입력</strong>을 누르면 폼이 열리고 해당 기수가 자동 선택됩니다.</div>
     </div>`;
 }
 
@@ -237,6 +284,17 @@ function renderSignalRow(s: CohortStatus): string {
   const deltaStr = s.delta3w === null ? "-" : `${s.delta3w > 0 ? "+" : ""}${s.delta3w}pp`;
   const deltaClass = s.delta3w === null ? "" : s.delta3w < 0 ? "dw-delta-down" : s.delta3w > 0 ? "dw-delta-up" : "";
 
+  const sat = getSatisfaction(s.match.alias);
+  const courseSat = renderSatisfactionCell(sat?.courseAvg ?? null, sat?.courseTarget ?? 45);
+  const instrSat = renderSatisfactionCell(sat?.instructorAvg ?? null, sat?.instructorTarget ?? 50);
+
+  const riskModuleCell = latest?.riskModule
+    ? `<span class="dw-cell-filled">${escapeHtml(latest.riskModule)}</span>`
+    : `<button type="button" class="dw-cell-add" data-alias-add="${escapeHtml(s.match.alias)}" data-week="${latest?.weekNum ?? ""}">+ 입력</button>`;
+  const actionCell = latest?.actionTaken
+    ? `<span class="dw-cell-filled">${escapeHtml(latest.actionTaken)}</span>`
+    : `<button type="button" class="dw-cell-add" data-alias-add="${escapeHtml(s.match.alias)}" data-week="${latest?.weekNum ?? ""}">+ 입력</button>`;
+
   return `
     <tr class="dw-row ${isSelected ? "dw-row-selected" : ""}" data-alias="${escapeHtml(s.match.alias)}">
       <td><span class="${dotClass}" title="${labelForSignal(s.signal)}"></span></td>
@@ -247,10 +305,26 @@ function renderSignalRow(s: CohortStatus): string {
       <td>${latest ? `${latest.weekNum}주` : "-"}</td>
       <td class="${rateClass}"><strong>${rate}</strong> <span class="dw-target">/ ${target}</span></td>
       <td class="${deltaClass}">${deltaStr}</td>
-      <td>${escapeHtml(latest?.riskModule || "-")}</td>
-      <td>${escapeHtml(latest?.actionTaken || "-")}</td>
-      <td>${s.entryCount}건</td>
+      <td>${courseSat}</td>
+      <td>${instrSat}</td>
+      <td>${riskModuleCell}</td>
+      <td>${actionCell}</td>
     </tr>`;
+}
+
+function renderSatisfactionCell(avg: number | null, target: number): string {
+  if (avg === null || avg === undefined) {
+    return `<span class="dw-sat-empty">-</span>`;
+  }
+  const isBelow = avg < target;
+  const delta = Math.round((avg - target) * 10) / 10;
+  const sign = delta > 0 ? "+" : "";
+  const cls = isBelow ? "dw-sat-below" : "dw-sat-ok";
+  return `<div class="dw-sat-cell">
+    <span class="${cls}"><strong>${avg.toFixed(1)}</strong></span>
+    <span class="dw-sat-target">/ ${target}</span>
+    <span class="dw-sat-delta ${cls}">(${sign}${delta})</span>
+  </div>`;
 }
 
 function renderChartSection(): string {
@@ -271,8 +345,106 @@ function renderChartSection(): string {
         <span class="dw-legend-item"><span class="dw-legend-target"></span> 목표선</span>
         <span class="dw-legend-item">📌 액션 입력 주차</span>
       </div>
+      ${renderInsightLine(selectedAlias)}
+      ${renderSatisfactionPanel(selectedAlias)}
       ${renderActionTimeline(selectedAlias)}
     </div>`;
+}
+
+function renderInsightLine(alias: string): string {
+  const sat = getSatisfaction(alias);
+  const match = parseAlias(alias);
+  const series = getWeeklySeries(alias);
+  if (!match || series.length === 0) return "";
+  const latest = series[series.length - 1];
+  const messages: string[] = [];
+
+  if (latest.defenseRate < match.target) {
+    const gap = Math.round((match.target - latest.defenseRate) * 10) / 10;
+    messages.push(`🔴 방어율 ${latest.defenseRate.toFixed(2)}% — 목표 ${match.target}% 대비 -${gap}pp`);
+  }
+
+  if (sat?.courseAvg !== null && sat?.courseAvg !== undefined) {
+    const cGap = Math.round((sat.courseAvg - sat.courseTarget) * 10) / 10;
+    if (sat.courseAvg < sat.courseTarget) {
+      messages.push(`📉 과정만족도 ${sat.courseAvg.toFixed(1)} — 목표 ${sat.courseTarget} 대비 ${cGap}pp → 방어율 동반 하락 신호`);
+    }
+  }
+  if (sat?.instructorAvg !== null && sat?.instructorAvg !== undefined) {
+    if (sat.instructorAvg < sat.instructorTarget) {
+      const iGap = Math.round((sat.instructorAvg - sat.instructorTarget) * 10) / 10;
+      messages.push(`👨‍🏫 강사만족도 ${sat.instructorAvg.toFixed(1)} — 목표 ${sat.instructorTarget} 대비 ${iGap}pp`);
+    }
+  }
+
+  // 최저 모듈 발굴
+  if (sat?.courseModules && sat.courseModules.length > 0) {
+    const lowest = sat.courseModules.reduce((min, cur) => (cur[1] < min[1] ? cur : min));
+    if (lowest[1] < sat.courseTarget) {
+      messages.push(`⚠️ 최저 과정만족도: 모듈${lowest[0]} ${lowest[1]}점 — 위험 모듈 후보`);
+    }
+  }
+
+  if (messages.length === 0) {
+    messages.push(`🟢 ${alias}: 방어율·만족도 모두 목표 충족`);
+  }
+
+  return `
+    <div class="dw-insight">
+      <div class="dw-insight-title">💡 자동 진단</div>
+      <ul class="dw-insight-list">
+        ${messages.map((m) => `<li>${m}</li>`).join("")}
+      </ul>
+    </div>`;
+}
+
+function renderSatisfactionPanel(alias: string): string {
+  const sat = getSatisfaction(alias);
+  if (!sat) {
+    return `
+      <div class="dw-sat-panel dw-sat-empty-panel">
+        <div class="dw-sat-panel-title">📊 만족도 (스프레드시트 R16·R17)</div>
+        <div class="dw-sat-empty-msg">아직 만족도 데이터가 등록되지 않았습니다.</div>
+      </div>`;
+  }
+  return `
+    <div class="dw-sat-panel">
+      <div class="dw-sat-panel-title">📊 만족도 모듈별 분포</div>
+      <div class="dw-sat-panel-body">
+        ${renderSatBarGroup("과정만족도", sat.courseAvg, sat.courseTarget, sat.courseModules)}
+        ${renderSatBarGroup("강사만족도", sat.instructorAvg, sat.instructorTarget, sat.instructorModules)}
+      </div>
+    </div>`;
+}
+
+function renderSatBarGroup(label: string, avg: number | null, target: number, modules: Array<[number, number]>): string {
+  const header = avg === null || avg === undefined
+    ? `<div class="dw-sat-group-header"><span class="dw-sat-group-label">${escapeHtml(label)}</span><span class="dw-sat-group-empty">데이터 없음</span></div>`
+    : `<div class="dw-sat-group-header">
+        <span class="dw-sat-group-label">${escapeHtml(label)}</span>
+        <span class="dw-sat-group-avg ${avg < target ? "dw-sat-below" : "dw-sat-ok"}">평균 <strong>${avg.toFixed(1)}</strong></span>
+        <span class="dw-sat-group-target">/ 목표 ${target}</span>
+      </div>`;
+  if (modules.length === 0) {
+    return `<div class="dw-sat-group">${header}</div>`;
+  }
+  // x축 라벨 범위: 모듈 번호 최소~최대
+  const maxScore = 100;
+  const bars = modules.map(([mod, score]) => {
+    const widthPct = Math.max(0, Math.min(100, (score / maxScore) * 100));
+    const isBelow = score < target;
+    const targetPct = (target / maxScore) * 100;
+    return `
+      <div class="dw-sat-row">
+        <span class="dw-sat-mod">모듈${mod}</span>
+        <div class="dw-sat-track">
+          <div class="dw-sat-bar ${isBelow ? "dw-sat-bar-below" : "dw-sat-bar-ok"}" style="width: ${widthPct}%"></div>
+          <div class="dw-sat-target-mark" style="left: ${targetPct}%" title="목표 ${target}"></div>
+        </div>
+        <span class="dw-sat-score ${isBelow ? "dw-sat-below" : "dw-sat-ok"}">${score}</span>
+      </div>`;
+  }).join("");
+  return `<div class="dw-sat-group">${header}<div class="dw-sat-bars">${bars}</div></div>`;
 }
 
 function renderActionTimeline(alias: string): string {

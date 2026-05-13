@@ -14,9 +14,16 @@
  *  - (C) 차후 xlsx 직접 업로드 기능 추가
  */
 
-import { addOrUpdateWeeklyEntry, parseAlias, loadWeeklyEntries } from "./hrdDropoutWeekly";
+import {
+  addOrUpdateWeeklyEntry,
+  parseAlias,
+  loadWeeklyEntries,
+  loadSatisfactionMap,
+  saveSatisfactionMap,
+  type CohortSatisfaction,
+} from "./hrdDropoutWeekly";
 
-export const SEED_VERSION = "2026-05-13";
+export const SEED_VERSION = "2026-05-13-v2";
 const SEED_VERSION_KEY = "kdt_dropout_weekly_seed_version";
 
 /** [alias, weekNum, defenseRate] — 17개 기수, 257건 */
@@ -64,6 +71,20 @@ const SEED_TUPLES: ReadonlyArray<readonly [string, number, number]> = [
   ["RESEARCH16",10,89.47], ["RESEARCH16",11,89.47], ["RESEARCH16",12,89.47], ["RESEARCH16",13,89.47], ["RESEARCH16",14,84.21], ["RESEARCH16",15,84.21],
   ["RESEARCH16",16,84.21], ["RESEARCH16",17,78.95], ["RESEARCH16",18,78.95], ["RESEARCH17",1,100], ["RESEARCH17",2,100], ["RESEARCH17",3,100],
   ["RESEARCH17",4,100], ["RESEARCH17",5,100], ["RESEARCH17",6,100], ["RESEARCH17",7,93.33], ["RESEARCH17",8,93.33],
+];
+
+/** R16/R17 만족도 시드 — 그룹회의 스프레드시트 평균 + 모듈별 */
+const SEED_SATISFACTION: ReadonlyArray<CohortSatisfaction> = [
+  { alias: "DS6", courseAvg: 66.1, courseTarget: 45, courseModules: [[1,63],[2,53],[3,76],[4,83],[5,56],[6,75],[7,50],[8,60],[9,79],[10,93],[11,86],[12,92]], instructorAvg: null, instructorTarget: 50, instructorModules: [] },
+  { alias: "DS7", courseAvg: 79.1, courseTarget: 45, courseModules: [[1,43],[2,80],[3,83],[4,83],[5,83],[6,80],[7,60],[8,100],[9,100],[10,80],[11,67],[12,80]], instructorAvg: null, instructorTarget: 50, instructorModules: [] },
+  { alias: "DS8", courseAvg: 69.7, courseTarget: 45, courseModules: [[1,89],[2,56],[3,78],[4,78],[5,63],[6,56],[7,67],[8,78],[9,62.5],[10,63],[11,63],[12,63]], instructorAvg: 100, instructorTarget: 50, instructorModules: [[9,100],[10,75],[11,88],[12,88]] },
+  { alias: "ENGR1", courseAvg: 63.6, courseTarget: 45, courseModules: [[1,50],[2,58.8],[3,50],[4,70.6],[5,66.7],[6,72.2],[7,56.3],[8,66.7],[9,81.2],[10,82],[11,86.7],[12,73]], instructorAvg: 80.4, instructorTarget: 50, instructorModules: [[8,73.3],[9,87.5],[10,82],[11,86.7],[12,87]] },
+  { alias: "ENGR2", courseAvg: 48.7, courseTarget: 45, courseModules: [[1,78.6],[2,64.3],[3,37.9],[4,32.1],[5,35.7],[6,44.4],[7,48]], instructorAvg: 73.9, instructorTarget: 50, instructorModules: [[1,82.1],[2,89.3],[3,75.9],[4,71.4],[5,67.9],[6,63],[7,68]] },
+  { alias: "PDA4", courseAvg: 25, courseTarget: 45, courseModules: [[1,38],[2,31],[3,42],[4,33],[5,18],[6,0],[7,22.2],[8,33],[9,0],[10,33]], instructorAvg: null, instructorTarget: 50, instructorModules: [] },
+  { alias: "PDA5", courseAvg: 66.9, courseTarget: 45, courseModules: [[1,70],[2,64],[3,48],[4,64],[5,55],[6,79],[7,79],[8,68],[9,75]], instructorAvg: 76.2, instructorTarget: 50, instructorModules: [[5,73],[6,71],[7,84],[8,73],[9,80]] },
+  { alias: "RESEARCH15", courseAvg: 51.2, courseTarget: 45, courseModules: [[1,33],[2,23.5],[3,52.9],[4,40],[5,50],[6,36],[7,83],[8,91]], instructorAvg: null, instructorTarget: 50, instructorModules: [] },
+  { alias: "RESEARCH16", courseAvg: 48, courseTarget: 45, courseModules: [[1,55],[2,53],[3,44],[4,53],[5,58],[6,33],[7,46],[8,42]], instructorAvg: 64.5, instructorTarget: 50, instructorModules: [[5,75],[6,75],[7,58],[8,50]] },
+  { alias: "RESEARCH17", courseAvg: 68.5, courseTarget: 45, courseModules: [[1,67],[2,67],[3,73],[4,67]], instructorAvg: 78, instructorTarget: 50, instructorModules: [[1,87],[2,60],[3,82],[4,83]] },
 ];
 
 export interface SeedRunResult {
@@ -114,8 +135,33 @@ export function runSeedIfNeeded(): SeedRunResult {
     else updated++;
   }
 
+  // 만족도 시드 — 평균/모듈만 덮어쓰기 (사용자가 수기 보강한 모듈은 보존)
+  let satAdded = 0;
+  let satUpdated = 0;
+  const satMap = loadSatisfactionMap();
+  for (const sat of SEED_SATISFACTION) {
+    const prev = satMap[sat.alias];
+    if (prev) {
+      const merged: CohortSatisfaction = {
+        ...prev,
+        courseAvg: sat.courseAvg ?? prev.courseAvg,
+        courseTarget: sat.courseTarget,
+        courseModules: sat.courseModules.length > 0 ? sat.courseModules : prev.courseModules,
+        instructorAvg: sat.instructorAvg ?? prev.instructorAvg,
+        instructorTarget: sat.instructorTarget,
+        instructorModules: sat.instructorModules.length > 0 ? sat.instructorModules : prev.instructorModules,
+      };
+      satMap[sat.alias] = merged;
+      satUpdated++;
+    } else {
+      satMap[sat.alias] = sat;
+      satAdded++;
+    }
+  }
+  saveSatisfactionMap(satMap);
+
   writeVersion(SEED_VERSION);
-  return { ran: true, added, updated, total: loadWeeklyEntries().length };
+  return { ran: true, added: added + satAdded, updated: updated + satUpdated, total: loadWeeklyEntries().length };
 }
 
 function readVersion(): string | null {

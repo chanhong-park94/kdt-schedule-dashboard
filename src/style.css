@@ -10128,6 +10128,147 @@ textarea.proj-eval-feedback {
 }
 .dw-toast-close:hover { color: #dc2626; }
 
+/* ── 만족도 셀 (표 안) ── */
+.dw-sat-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 12px;
+}
+.dw-sat-cell strong { font-size: 13px; }
+.dw-sat-ok { color: #16a34a; }
+.dw-sat-below { color: #dc2626; }
+.dw-sat-target { color: var(--text, #6b7280); font-size: 10px; }
+.dw-sat-delta { font-size: 10px; font-weight: 600; }
+.dw-sat-empty { color: #d1d5db; font-size: 12px; }
+
+/* ── 빈 액션·위험모듈 셀의 + 입력 버튼 ── */
+.dw-cell-add {
+  display: inline-block;
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px dashed #f97316;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f97316;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dw-cell-add:hover { background: rgba(249,115,22,0.12); }
+.dw-cell-filled { color: var(--text-strong, #1e1e2e); font-size: 12px; }
+
+/* ── 인사이트 진단 줄 (차트 아래) ── */
+.dw-insight {
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: rgba(99,102,241,0.06);
+  border: 1px solid rgba(99,102,241,0.18);
+  border-radius: 6px;
+}
+.dw-insight-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4338ca;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dw-insight-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-strong, #1e1e2e);
+}
+.dw-insight-list li { line-height: 1.4; }
+
+/* ── 만족도 모듈별 패널 ── */
+.dw-sat-panel {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+}
+.dw-sat-panel-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-strong, #1e1e2e);
+  margin-bottom: 10px;
+}
+.dw-sat-empty-msg {
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 12px;
+}
+.dw-sat-panel-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .dw-sat-panel-body { grid-template-columns: 1fr; }
+}
+.dw-sat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dw-sat-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.dw-sat-group-label { font-weight: 600; color: var(--text-strong, #1e1e2e); font-size: 12px; }
+.dw-sat-group-avg { font-size: 12px; }
+.dw-sat-group-avg strong { font-size: 13px; }
+.dw-sat-group-target { color: var(--text, #6b7280); font-size: 11px; }
+.dw-sat-group-empty { color: #9ca3af; }
+.dw-sat-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dw-sat-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 36px;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.dw-sat-mod { color: var(--text, #6b7280); font-weight: 500; }
+.dw-sat-track {
+  position: relative;
+  height: 14px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: visible;
+}
+.dw-sat-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.25s;
+}
+.dw-sat-bar-ok { background: #16a34a; }
+.dw-sat-bar-below { background: #dc2626; }
+.dw-sat-target-mark {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: #1f2937;
+  opacity: 0.55;
+}
+.dw-sat-score { text-align: right; font-weight: 600; }
+
+
 /* ── 입력 폼 ── */
 .dw-form-wrap {
   background: var(--card-bg, #ffffff);
