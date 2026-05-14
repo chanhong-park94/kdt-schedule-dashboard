@@ -1505,79 +1505,50 @@ export function setupSettingsHandlers(): void {
     if (excusedSlackTestBtn instanceof HTMLButtonElement) excusedSlackTestBtn.disabled = false;
   });
 
-  // ─── Slack 자동 알림 토글 ───────────────────────
-  // ⚠️ 토글은 즉시 자동 저장 — 사용자가 [저장] 클릭을 잊어도 enabled 상태가
-  //    localStorage 에 반영되도록. 다른 필드(시간/대상/매니저)는 기존처럼
-  //    [저장] 버튼으로 영구화. (2026-05-13 사용자 피드백: 매일 로그인 시
-  //    Slack 알림 설정이 풀려있다 — 토글 변경 후 저장 미클릭으로 추정)
-  const scheduleToggle = $("slackScheduleEnabled") as HTMLInputElement | null;
-  scheduleToggle?.addEventListener("change", () => {
-    const toggleLabel = $("slackScheduleToggleLabel");
-    const settingsPanel = $("slackScheduleSettings");
-    updateSlackBadge(scheduleToggle.checked);
-    if (toggleLabel) toggleLabel.textContent = scheduleToggle.checked ? "활성화" : "비활성화";
-    if (settingsPanel) settingsPanel.style.display = scheduleToggle.checked ? "block" : "none";
+  // ─── Slack 자동 알림 — 광범위 자동 저장 ──────────────────────
+  // 2026-05-14 사용자 피드백: [알림 설정 저장] 클릭 후에도 다음날 풀린다는 보고.
+  // 추정 원인: localStorage wipe(브라우저 청소) 후 사용자가 토글만 다시 ON 누름 →
+  //   어제 토글-only 자동저장이 DEFAULT 값을 spread해서 시간/대상이 default 로 reset.
+  // 대응: 토글 + 시간 + 요일 + 헤더/푸터 + 대상과정 + 매니저 + SMS 옵션 등 모든
+  //   입력 필드의 change/input 발생 시 즉시 전체 schedule 저장. [알림 설정 저장]
+  //   버튼은 명시적 확인용으로 유지.
 
-    // 토글 상태만 즉시 영구화 (다른 필드는 기존 저장값 유지)
-    const cfg = loadHrdConfig();
-    const prev = cfg.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
-    cfg.slackSchedule = { ...prev, enabled: scheduleToggle.checked };
-    saveHrdConfig(cfg);
-    currentConfig = cfg;
-    restartScheduler();
+  /** UI 상태에서 schedule 을 수집해 localStorage 저장. Slack UI 미렌더면 no-op. */
+  const persistSlackScheduleFromUI = (opts: { manual?: boolean } = {}): boolean => {
+    const toggleEl = $("slackScheduleEnabled") as HTMLInputElement | null;
+    if (!toggleEl) return false; // UI 미렌더 (다른 탭 등)
 
-    const statusEl = $("slackScheduleStatus");
-    if (statusEl) {
-      statusEl.textContent = scheduleToggle.checked
-        ? "✅ 자동 활성화됨 — 시간·대상 변경 시 [저장] 버튼 클릭"
-        : "ℹ️ 자동 비활성화됨";
-      statusEl.className = `slack-schedule-status ${scheduleToggle.checked ? "slack-schedule-success" : "slack-schedule-info"}`;
-    }
-  });
-
-  // ─── Slack 알림 설정 저장 ───────────────────────
-  const scheduleSaveBtn = $("slackScheduleSave");
-  scheduleSaveBtn?.addEventListener("click", () => {
     const config = loadHrdConfig();
-    const toggle = $("slackScheduleEnabled") as HTMLInputElement | null;
     const hourSel = $("slackScheduleHour") as HTMLSelectElement | null;
     const minSel = $("slackScheduleMinute") as HTMLSelectElement | null;
     const weekdaySel = $("slackScheduleWeekdays") as HTMLSelectElement | null;
     const headerInput = $("slackScheduleHeader") as HTMLInputElement | null;
     const footerInput = $("slackScheduleFooter") as HTMLInputElement | null;
     const coursesContainer = $("slackScheduleCourses");
+    const autoSmsCheck = $("autoSmsEnabled") as HTMLInputElement | null;
+    const autoSmsLevel = document.querySelector<HTMLInputElement>("input[name='autoSmsLevel']:checked");
 
-    // 대상 과정 + 매니저 수집
     const targetCourses: string[] = [];
     const courseManagers: Record<string, string> = {};
     if (coursesContainer) {
       const checkboxes = coursesContainer.querySelectorAll("input[type='checkbox']");
-      const allChecked = Array.from(checkboxes).every((cb) => (cb as HTMLInputElement).checked);
+      const allChecked = checkboxes.length > 0
+        && Array.from(checkboxes).every((cb) => (cb as HTMLInputElement).checked);
       if (!allChecked) {
         checkboxes.forEach((cb) => {
-          if ((cb as HTMLInputElement).checked) {
-            targetCourses.push((cb as HTMLInputElement).value);
-          }
+          if ((cb as HTMLInputElement).checked) targetCourses.push((cb as HTMLInputElement).value);
         });
       }
       // allChecked → 빈 배열 = 전체 과정
-
-      // 매니저 입력 수집
       coursesContainer.querySelectorAll<HTMLInputElement>(".slack-course-manager-input").forEach((input) => {
         const courseId = input.dataset.courseId;
         const val = input.value.trim();
-        if (courseId && val) {
-          courseManagers[courseId] = val;
-        }
+        if (courseId && val) courseManagers[courseId] = val;
       });
     }
 
-    // 자동 SMS 설정
-    const autoSmsCheck = $("autoSmsEnabled") as HTMLInputElement | null;
-    const autoSmsLevel = document.querySelector<HTMLInputElement>("input[name='autoSmsLevel']:checked");
-
     const schedule: SlackScheduleConfig = {
-      enabled: toggle?.checked || false,
+      enabled: toggleEl.checked,
       hour: parseInt(hourSel?.value || "10"),
       minute: parseInt(minSel?.value || "0"),
       weekdaysOnly: weekdaySel?.value !== "daily",
@@ -1593,18 +1564,79 @@ export function setupSettingsHandlers(): void {
     config.slackSchedule = schedule;
     saveHrdConfig(config);
     currentConfig = config;
-
-    // 스케줄러 재시작
     restartScheduler();
 
     const statusEl = $("slackScheduleStatus");
     if (statusEl) {
       const timeStr = `${String(schedule.hour).padStart(2, "0")}:${String(schedule.minute).padStart(2, "0")}`;
-      statusEl.textContent = schedule.enabled
-        ? `✅ 설정 저장됨 — ${schedule.weekdaysOnly ? "평일" : "매일"} ${timeStr} 자동 전송`
-        : "ℹ️ 자동 전송 비활성화됨";
+      if (opts.manual) {
+        statusEl.textContent = schedule.enabled
+          ? `✅ 설정 저장됨 — ${schedule.weekdaysOnly ? "평일" : "매일"} ${timeStr} 자동 전송`
+          : "ℹ️ 자동 전송 비활성화됨";
+      } else {
+        statusEl.textContent = schedule.enabled
+          ? `💾 자동 저장됨 — ${schedule.weekdaysOnly ? "평일" : "매일"} ${timeStr} 예약`
+          : "ℹ️ 비활성화 자동 저장됨";
+      }
       statusEl.className = `slack-schedule-status ${schedule.enabled ? "slack-schedule-success" : "slack-schedule-info"}`;
     }
+    return true;
+  };
+
+  /** debounce: 빠른 연속 입력(타이핑 등)에 한 번만 저장 */
+  let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  const autoSaveSlackSchedule = (): void => {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+      persistSlackScheduleFromUI();
+      autoSaveTimer = null;
+    }, 250);
+  };
+
+  // ─── 토글 ON/OFF — 즉시 자동 저장 + 패널 표시 토글 ──────────
+  const scheduleToggle = $("slackScheduleEnabled") as HTMLInputElement | null;
+  scheduleToggle?.addEventListener("change", () => {
+    const toggleLabel = $("slackScheduleToggleLabel");
+    const settingsPanel = $("slackScheduleSettings");
+    updateSlackBadge(scheduleToggle.checked);
+    if (toggleLabel) toggleLabel.textContent = scheduleToggle.checked ? "활성화" : "비활성화";
+    if (settingsPanel) settingsPanel.style.display = scheduleToggle.checked ? "block" : "none";
+    persistSlackScheduleFromUI(); // 토글도 전체 schedule 함께 저장
+  });
+
+  // ─── 시간/요일/헤더/푸터/SMS — 변경 즉시 자동 저장 ──────────
+  $("slackScheduleHour")?.addEventListener("change", autoSaveSlackSchedule);
+  $("slackScheduleMinute")?.addEventListener("change", autoSaveSlackSchedule);
+  $("slackScheduleWeekdays")?.addEventListener("change", autoSaveSlackSchedule);
+  $("slackScheduleHeader")?.addEventListener("input", autoSaveSlackSchedule);
+  $("slackScheduleFooter")?.addEventListener("input", autoSaveSlackSchedule);
+  $("autoSmsEnabled")?.addEventListener("change", autoSaveSlackSchedule);
+  document.querySelectorAll<HTMLInputElement>("input[name='autoSmsLevel']").forEach((r) => {
+    r.addEventListener("change", autoSaveSlackSchedule);
+  });
+
+  // 대상 과정 체크박스 + 매니저 입력 — 동적 렌더라 이벤트 위임
+  const coursesDelegateContainer = $("slackScheduleCourses");
+  if (coursesDelegateContainer && !coursesDelegateContainer.dataset.autoSaveBound) {
+    coursesDelegateContainer.dataset.autoSaveBound = "1";
+    coursesDelegateContainer.addEventListener("change", (e) => {
+      const t = e.target as HTMLElement;
+      if (t && t.tagName === "INPUT" && (t as HTMLInputElement).type === "checkbox") {
+        autoSaveSlackSchedule();
+      }
+    });
+    coursesDelegateContainer.addEventListener("input", (e) => {
+      const t = e.target as HTMLElement;
+      if (t && t.classList && t.classList.contains("slack-course-manager-input")) {
+        autoSaveSlackSchedule();
+      }
+    });
+  }
+
+  // ─── [알림 설정 저장] 버튼 — 수동 확정 (backward compat) ──────
+  const scheduleSaveBtn = $("slackScheduleSave");
+  scheduleSaveBtn?.addEventListener("click", () => {
+    persistSlackScheduleFromUI({ manual: true });
   });
 
   // ─── Slack 수동 전송 테스트 ─────────────────────
