@@ -40,12 +40,15 @@ export interface HrdCourse {
   name: string;
   trainPrId: string; // srchTrprId
   degrs: string[]; // 기수 목록 ["1","2",...]
-  startDate: string; // 개강일 YYYY-MM-DD
+  startDate: string; // 개강일 YYYY-MM-DD (course 전체 대표값, 개별 기수는 degrStartDates 참조)
   totalDays: number; // 총 훈련일수
   endTime: string; // 수업 종료시간 HH:MM (퇴실 미체크 판단용)
   category?: CourseCategory; // 재직자/실업자 구분
   smsFrom?: string; // 과정별 SMS 발신번호 (운영매니저 법인폰)
   trainingHoursPerDay?: number; // 1일 훈련시간 (매출 산정용, 기본 8)
+  /** 개별 기수별 학사 시작일 (YYYY-MM-DD) — 미래 기수 dropdown 필터링·운영중 판별에 사용.
+   *  키 미존재 시 필터링 안 됨 (안전 default). 종강 기수는 채워두지 않아도 무방. */
+  degrStartDates?: Record<string, string>;
 }
 
 export interface SlackScheduleConfig {

@@ -11,7 +11,7 @@ import { Chart, registerables } from "chart.js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readClientEnv } from "../core/env";
 import { fetchRoster, fetchDailyAttendance, testConnection, discoverDegrs } from "./hrdApi";
-import { loadHrdConfig, saveHrdConfig, DEFAULT_COURSES, ensureCourseAndDegr } from "./hrdConfig";
+import { loadHrdConfig, saveHrdConfig, DEFAULT_COURSES, ensureCourseAndDegr, getActiveDegrs } from "./hrdConfig";
 import type {
   HrdRawTrainee,
   HrdRawAttendance,
@@ -1730,9 +1730,15 @@ function populateFilters(): void {
     if (!degrSelect) return;
     const selected = courseSelect!.value;
     const course = currentConfig.courses.find((c) => c.trainPrId === selected);
-    degrSelect.innerHTML = course
-      ? course.degrs.map((d) => `<option value="${d}">${d}기</option>`).join("")
-      : '<option value="">-</option>';
+    if (!course) {
+      degrSelect.innerHTML = '<option value="">-</option>';
+      return;
+    }
+    // 미래 기수(개강 전) 제외 — degrStartDates 기준
+    const visibleDegrs = getActiveDegrs(course);
+    degrSelect.innerHTML = visibleDegrs.length > 0
+      ? visibleDegrs.map((d) => `<option value="${d}">${d}기</option>`).join("")
+      : '<option value="">(개강 예정 기수만 등록됨)</option>';
   }
 
   // 보조강사 모드: 과정/기수 고정 (위에서 이미 ensureCourseAndDegr로 동기화됨)

@@ -9,7 +9,9 @@ const STORAGE_KEY = "academic_schedule_manager_hrd_config_v1";
 // ⚠️ Edge Function 배포 완료 후 이 기본값을 ""로 변경할 것
 const DEFAULT_KEY = "gL1rEteJnyrvfy3KmafcvPfrhT2E7rgz";
 
-/** 기본 운영 과정 목록 (API 확인 완료) */
+/** 기본 운영 과정 목록 (API 확인 완료).
+ *  degrStartDates: 그룹회의 스프레드시트(2026-05-14 스냅샷)의 학사 기간 시작일.
+ *  미래 기수는 dropdown에서 자동 제외됨. */
 export const DEFAULT_COURSES: HrdCourse[] = [
   // ─── 재직자 과정 ───
   {
@@ -21,6 +23,11 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "재직자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "5": "2026-02-03",
+      "6": "2026-03-10",
+      "7": "2026-05-26",
+    },
   },
   {
     name: "AI 활용 서비스 기획/개발",
@@ -31,6 +38,12 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "재직자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "4": "2025-12-22",
+      "5": "2026-03-24",
+      "6": "2026-04-21",
+      "7": "2026-07-14",
+    },
   },
   {
     name: "데이터 기반 의사결정",
@@ -41,6 +54,12 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "재직자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "4": "2025-12-22",
+      "5": "2026-03-17",
+      "6": "2026-04-28",
+      "7": "2026-07-07",
+    },
   },
   // ─── 실업자 과정 ───
   {
@@ -52,6 +71,11 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "실업자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "6": "2025-09-15",
+      "7": "2025-11-10",
+      "8": "2025-12-15",
+    },
   },
   {
     name: "데이터분석",
@@ -62,6 +86,10 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "실업자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "4": "2025-10-20",
+      "5": "2025-12-29",
+    },
   },
   {
     name: "[아이펠]딥러닝 개발자 도약 과정",
@@ -72,6 +100,13 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "실업자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "7": "2025-09-17",  // RESEARCH15
+      "8": "2025-12-29",  // RESEARCH16
+      "9": "2026-03-11",  // RESEARCH17
+      "10": "2026-05-11", // RESEARCH18 — 신규
+      "11": "2026-07-01", // RESEARCH19 — 미래 (dropdown 제외 대상)
+    },
   },
   {
     name: "AI 기반 지능형 서비스 개발 전문가 과정",
@@ -82,8 +117,38 @@ export const DEFAULT_COURSES: HrdCourse[] = [
     endTime: "18:00",
     category: "실업자",
     trainingHoursPerDay: 8,
+    degrStartDates: {
+      "1": "2025-12-29", // ENGR1
+      "2": "2026-03-11", // ENGR2
+      "3": "2026-05-11", // ENGR3 — 신규
+    },
   },
 ];
+
+// ─── 헬퍼: 기수 시작일 조회 + 미래 기수 판별 ─────────────────
+
+/** 해당 기수의 학사 시작일 반환. 등록 안 됐으면 null (안전 default). */
+export function getDegrStartDate(course: HrdCourse, degr: string): string | null {
+  return course.degrStartDates?.[degr] ?? null;
+}
+
+/** 오늘 기준 아직 개강 전인 기수인지 판정.
+ *  - degrStartDates 미등록 → false (안전 default, 표시 유지)
+ *  - 등록일이 오늘 이후 → true (필터링 대상) */
+export function isDegrFuture(course: HrdCourse, degr: string, now: Date = new Date()): boolean {
+  const start = getDegrStartDate(course, degr);
+  if (!start) return false;
+  const d = new Date(start);
+  if (isNaN(d.getTime())) return false;
+  // 오늘 00:00 기준 비교 — 개강일이 오늘이면 표시(이미 시작)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return d > today;
+}
+
+/** course.degrs 중 오늘 기준 개강한 기수만 반환 (개강 전 미래 기수 제외). */
+export function getActiveDegrs(course: HrdCourse, now: Date = new Date()): string[] {
+  return course.degrs.filter((d) => !isDegrFuture(course, d, now));
+}
 
 export function loadHrdConfig(): HrdConfig {
   try {
@@ -138,6 +203,18 @@ export function loadHrdConfig(): HrdConfig {
               (a, b) => (parseInt(a) || 0) - (parseInt(b) || 0),
             );
             updated = true;
+          }
+          // degrStartDates 동기화 — DEFAULT 값을 기준으로 사용자 저장본 갱신/병합
+          // (사용자가 직접 수정한 시작일이 있으면 유지)
+          if (def.degrStartDates) {
+            const cur = course.degrStartDates ?? {};
+            for (const [degr, date] of Object.entries(def.degrStartDates)) {
+              if (cur[degr] !== date) {
+                cur[degr] = date;
+                updated = true;
+              }
+            }
+            course.degrStartDates = cur;
           }
         }
       }
