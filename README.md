@@ -1,227 +1,175 @@
-# 학사일정관리 (Next.js + TypeScript)
+# KDT 교육과정 운영 대시보드
 
-기존 HTML 프로토타입과 TypeScript DOM 로직을 Next.js(App Router) 기반으로 마이그레이션한 프로젝트입니다.
+> K-디지털 트레이닝(KDT) 교육과정의 일정 / 출결 / 학업성취도 / 만족도 / 매출 / 문의응대를 통합 관리하는 SPA 대시보드
 
-## 프로젝트 구조
+[![Deploy](https://img.shields.io/badge/deploy-GitHub%20Pages-181717?logo=github)](https://chanhong-park94.github.io/kdt-schedule-dashboard/)
+![Version](https://img.shields.io/badge/version-v3.6.0-blue)
+![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?logo=vite)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase)
 
-```text
-.
-├─ app/
-├─ src/
-│  ├─ core/
-│  ├─ ui/
-│  ├─ index.html
-│  ├─ main.ts
-│  └─ style.css
-├─ public/
-├─ tests/
-├─ package.json
-├─ tsconfig.json
-├─ next.config.mjs
-└─ vite.config.mts (Vitest 설정용)
-```
+🚀 **배포**: <https://chanhong-park94.github.io/kdt-schedule-dashboard/>
 
-## 설치
+---
+
+## 📌 개요
+
+모듈러스 KDT 교육사업의 운영 데이터를 한 곳에서 다루기 위한 내부용 대시보드입니다.
+HRD-Net · Google Apps Script · Airtable · Supabase · Slack 등 외부 데이터 소스를 통합해
+일정 수립 → 출결 모니터링 → 학업성취도/만족도 분석 → 매출 산정 → Slack 자동 리포트까지 한 화면에서 처리합니다.
+
+## ✨ 주요 기능 (v3.6.0)
+
+| 영역 | 설명 |
+|------|------|
+| 📅 **학사일정 / HRD 시간표** | 코호트·과정·강사·주간·월간 5종 타임라인, 충돌 검사(시간/일/staffing) |
+| 👥 **출결현황 / 훈련생 분석** | HRD-Net API 기반 출석률, 위험등급, 조퇴/지각 자동 환산 |
+| 🎯 **하차방어율 인사이트** | 도입 전/후 비교 + 위험군 회복/발생/연속결석/NPS 4종 leading 지표 + 추정 절감 인원 |
+| 📊 **학업성취도 (실업자/재직자)** | Apps Script 기반 유닛 리포트, Excel 내보내기 |
+| 😊 **만족도** | 모듈/프로젝트별 7점 척도 분석, HRD 중간만족도 연동 |
+| 💬 **문의응대** | Airtable 기반 티켓 관리 |
+| 💰 **매출 관리** | 출결 기반 훈련비 자동 산정, 100/80/75/70% 시나리오 예측 |
+| 👨‍🏫 **강사 대시보드** | 프로젝트 평가/보상, 운영·교강사 진단 4종 통합 sub-tab |
+| 📄 **문서자동화** | 출석입력요청대장 / 장려금 확인서 HWPX 자동 생성 |
+| 📨 **Slack 자동 알림** | 출결 리포트 + 위험학생 SMS 에스컬레이션 + 일매출 리포트 |
+| 📰 **주간보고팩** | 진행중/종강 자동 분류, 데이터 자동 조회 |
+
+> 전체 패치 노트는 [CHANGELOG.md](CHANGELOG.md), 작업 현황은 [CLAUDE.md](CLAUDE.md) 참고.
+
+## 🛠 기술 스택
+
+- **빌드**: Vite 5 + TypeScript (strict)
+- **런타임**: Node.js 22.x (LTS) — 24.x 허용
+- **차트**: Chart.js 4.x
+- **DB / 인증**: Supabase (PostgREST + RLS + Edge Functions)
+- **외부 API**: HRD-Net, Google Apps Script, Airtable
+- **배포**: GitHub Actions → GitHub Pages
+- **테스트**: Vitest
+- **포매터/린터**: Prettier + ESLint (typescript-eslint)
+- **인증**: Google Workspace SSO (`@modulabs.co.kr`)
+
+## 🚀 시작하기
 
 ```bash
+# 1. 의존성 설치
 npm install
-```
 
-## 환경 변수 설정
-
-Supabase 동기화를 사용하려면 아래 값을 설정하세요.
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- (호환) `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-
-예시: `.env.example`을 복사해서 `.env`를 만들고 값을 채웁니다.
-
-```bash
+# 2. 환경변수 설정
 cp .env.example .env
+# .env 에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 입력
+
+# 3. 개발 서버 실행 (port 5173)
+npm run dev
 ```
 
-## 런타임 정책
+### 핵심 명령어
 
-- 팀 배포 기준 Node: LTS 라인만 사용 (`22.x` 권장, `24.x` 허용)
-- 저장소 엔진 정책: `package.json`의 `engines.node = ^22.0.0 || ^24.0.0`
+| 명령 | 설명 |
+|------|------|
+| `npm run dev` | Vite 개발 서버 (port 5173) |
+| `npm run build` | 프로덕션 빌드 → `dist/` |
+| `npm run preview` | 빌드 결과 로컬 미리보기 |
+| `npm run test` | Vitest 전체 테스트 |
+| `npm run lint:fix` | ESLint 자동 수정 |
+| `npm run format` | Prettier 포맷 |
 
-## 실행
+## 📁 디렉토리 구조
 
-- 개발 서버: `npm run dev`
-- 프로덕션 빌드: `npm run build`
-- 프로덕션 실행: `npm run start`
-- 테스트 실행: `npm run test` (Vitest가 `tests/**/*.test.ts`를 실제 실행)
+```
+src/
+├── auth/          # Google Workspace 로그인
+├── core/          # 도메인 로직 (캘린더, CSV, 충돌검사, 검증)
+├── hrd/           # HRD 대시보드 (출결, 학업성취도, 만족도, 문의응대, 하차방어율, Slack)
+├── instructor/    # 강사 대시보드 (4종 sub-tab)
+├── kpi/           # KPI 리포트 + PDF
+├── reports/       # 주간보고팩
+├── ui/            # UI 레이어 (lazy-load tabRegistry)
+├── main.ts        # 앱 진입점
+├── index.html     # SPA 메인 HTML
+└── style.css      # 전역 스타일 (라이트 모드, ARC 스타일)
 
-### 강사 동기화 검증 체크리스트
-
-1. `.env`에 Supabase 키를 넣고 `npm run dev`로 실행
-2. 강사 등록 후 저장 버튼 클릭
-3. 브라우저 네트워크 탭에서 `instructors` 테이블 요청(POST/DELETE) 확인
-4. Supabase Studio 또는 SQL Editor에서 아래 쿼리로 반영 확인
-
-```sql
-select *
-from instructors
-order by instructor_code
-limit 20;
+docs/              # 운영 가이드 + Apps Script 원본 + 설계서
+spec/              # 요구사항/스키마/충돌 규칙 + Supabase SQL 마이그레이션
+supabase/          # Edge Functions (HRD-Net 프록시 등)
 ```
 
-5. 같은 `instructor_code` 재등록 시 기존 값이 upsert로 갱신되는지 확인
-6. 강사 삭제 시 해당 row가 삭제되는지 확인
+## 🔐 외부 API 연동
 
-### 강사 동기화가 404(PGRST205)로 실패할 때
+| 기능 | API | 인증 방식 |
+|------|-----|----------|
+| 학업성취도 (실업자/재직자) | Google Apps Script Web App | URL 토큰 |
+| 만족도 | Google Apps Script Web App | URL 토큰 |
+| 문의응대 | Airtable REST API | Personal Access Token |
+| HRD 출결 | HRD-Net API | authKey (Supabase Edge Function 프록시) |
+| Slack 알림 | Slack Incoming Webhook | Webhook URL |
 
-`Could not find the table 'public.instructors' in the schema cache` 오류가 보이면,
-Supabase SQL Editor에서 `spec/sql/001_create_instructors.sql`을 1회 실행해 테이블/정책을 생성하세요.
+> 모든 API 키는 **설정 탭 → API 연동**에서 통합 관리되며, Supabase RLS + Edge Function으로 격리됩니다.
 
-### 과정/교과목/템플릿 관리 테이블 생성
+## 🚢 배포
 
-과정/교과목/템플릿 데이터를 Supabase에 보관하려면 아래 SQL도 1회 실행하세요.
+`main` 브랜치 푸시 시 GitHub Actions(`pages.yml`)가 자동으로:
 
-- `spec/sql/002_create_management_tables.sql`
+1. `npm run test` 통과 확인
+2. `npm run build` → `dist/`
+3. GitHub Pages로 배포 (`/kdt-schedule-dashboard/` base)
 
-## 타임라인 보기 방식 (View)
-
-- `COHORT_TIMELINE` (기본): 기수별 바 형태로 전체 기간을 확인
-- `COURSE_GROUPED`: 과정별 그룹 아래에 기수 바를 묶어 확인 (접기/펼치기 지원)
-- `ASSIGNEE_TIMELINE`: 강사/담당자 관점으로 일정 기간과 충돌 요약 확인
-- `WEEK_GRID`: 주간(월~일) 그리드에서 일자별 수업 여부 확인
-- `MONTH_CALENDAR`: 월간 캘린더에서 수업일/휴일을 함께 확인
-
-타임라인 바/셀 클릭 시 알림 드로어와 연동되어 관련 상태를 빠르게 점검할 수 있습니다.
-
-## 배포 방법
-
-1. `npm run build` 실행
-2. `out` 폴더 생성 확인
-3. 정적 파일 업로드 방식으로 배포
-   - Vercel / Netlify / 사내 S3 / 일반 웹서버(Nginx, Apache)
-   - 핵심은 `out` 전체를 정적 호스팅 루트에 업로드하는 것
-
-### out 배포 패키지(zip) 생성
-
-- 릴리즈 산출물 파일명 규칙: `academic-schedule-manager_v0.1.0_out.zip`
-- Windows PowerShell:
+수동 zip 패키지:
 
 ```powershell
-Compress-Archive -Path "out\*" -DestinationPath "academic-schedule-manager_v0.1.0_out.zip" -Force
+# Windows PowerShell
+Compress-Archive -Path "dist\*" -DestinationPath "academic-schedule-manager_v3.6.0_dist.zip" -Force
 ```
 
-- macOS/Linux:
+## 🎭 역할별 운영 시나리오
 
-```bash
-cd out && zip -r ../academic-schedule-manager_v0.1.0_out.zip .
-```
+### 운영매니저
+1. 기수 일정 생성기에서 개강일/시간표 템플릿으로 일정 생성
+2. 공휴일/자체휴강 반영 후 충돌 계산
+3. 강사 시간/배치 충돌 우선 정리
+4. HRD 검증 통과 후 선택 기수 CSV 다운로드
 
-로컬 개발 실행은 `npm run dev`를 사용합니다.
+### 교퍼팀장
+1. Staffing 배치관리에서 P1/P2/365 자동채우기 실행
+2. 코호트별 trackType(실업자/재직자) 확인
+3. 강사/퍼실/운영 일충돌 탭 확인 후 담당자 재배치
+4. v7e_strict / modules_generic 배치 CSV 내보내기
 
-데이터 저장은 서버가 아닌 **로컬(localStorage + 파일 저장/불러오기)** 방식입니다.
+### 사업팀 팀장
+1. 상단 리스크 요약 카드에서 충돌/HRD/공휴일 상태 확인
+2. 운영 체크리스트 통과 여부 점검
+3. 프린트(PDF) 리포트로 간트/KPI/충돌 요약 공유
 
-데모 샘플 로더는 `?demo=1` 쿼리일 때만 노출됩니다.
-예: `http://localhost:3000/?demo=1`
+## 📜 정책 / 규약
 
-## 참고
+- **HRD CSV 스키마** — 헤더 순서/컬럼 수/포맷은 계약. 변경 시 **major bump**
+- **`v7e_strict` 헤더** — 교퍼팀 v7-E 표준과 1:1 고정. 변경 시 **major bump**
+- **SemVer** — 스키마 변경 = major / 포맷 추가 = minor / 버그 수정 = patch
+- **trackType 정책**:
+  - `UNEMPLOYED` (실업자): 업무일수 월~금
+  - `EMPLOYED` (재직자): 업무일수 월~토
+- **리소스 타입 분리**:
+  - `INSTRUCTOR`: 시간 충돌(세션) + 일 충돌(staffing)
+  - `FACILITATOR` / `OPERATION`: 일 충돌만(staffing, 독립 계산)
 
-- 기존 프로토타입 HTML은 `src/index.html`에 유지되고, Next 페이지(`app/page.tsx`)에서 body 영역을 렌더링합니다.
-- 런타임 부트스트랩은 `app/LegacyBootstrap.tsx`가 `src/main.ts`를 클라이언트에서 로드하는 방식입니다.
+## 🔒 보안
 
-## 명세 문서
+- Supabase RLS 적용 (`007`/`008b`/`010` 마이그레이션)
+- HRD-Net authKey Edge Function 프록시 격리
+- XSS 방어: `escapeHtml` 유틸 일괄 적용 중
+- Google Workspace SSO (`@modulabs.co.kr`)
 
-- 요구사항: [`spec/requirements.md`](spec/requirements.md)
-- 데이터 계약: [`spec/data_contract.md`](spec/data_contract.md)
-- 충돌 규칙: [`spec/conflict_rules.md`](spec/conflict_rules.md)
-- 공휴일 전략: [`spec/holidays.md`](spec/holidays.md)
-- staffing 모델: [`spec/staffing.md`](spec/staffing.md)
-- 상태 저장 스키마: [`spec/state_schema.md`](spec/state_schema.md)
-- 코드 표준화 규칙: [`spec/standardize.md`](spec/standardize.md)
+> 출결 관련 변경 작업은 [docs/ATTENDANCE_CRITICAL.md](docs/ATTENDANCE_CRITICAL.md)의 회귀 방지 체크리스트 통과 필수.
 
-## HRD CSV 안정성 정책
+## 📚 문서
 
-- HRD CSV 컬럼 스키마(헤더 순서/컬럼 수/포맷)는 계약으로 취급합니다.
-- HRD CSV 스키마를 변경해야 할 경우 **major bump**를 수행합니다.
+- 📋 [CLAUDE.md](CLAUDE.md) — 프로젝트 컨텍스트 + 작업 현황
+- 🔧 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — 문제 해결 가이드
+- 📝 [CHANGELOG.md](CHANGELOG.md) — 전체 패치 노트
+- ✅ [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) — 릴리즈 점검표
+- 👥 [TEAM_DEPLOY.md](TEAM_DEPLOY.md) — 팀 배포 가이드
+- ⚠️ [docs/ATTENDANCE_CRITICAL.md](docs/ATTENDANCE_CRITICAL.md) — 출결조회 핵심 가드
+- 🤖 [AGENTS.md](AGENTS.md) — AI 협업 가이드
 
-## v7e_strict 헤더 고정 정책
+---
 
-- `v7e_strict` CSV 헤더 문자열/컬럼 순서는 교퍼팀 v7-E 표준과 1:1 고정입니다.
-- 헤더 문자열이 바뀌는 경우 **major bump**를 수행합니다.
-
-## 새 포맷 추가 방법
-
-1. `src/public/mappings/<format>.json` 파일을 추가/수정합니다.
-2. `header`, `columns(key/label)`, 필요 시 `headerAliases`를 정의합니다.
-3. 내부 표준 레코드(`src/core/schema.ts`의 `InternalV7ERecord`) 키를 `columns[].key`에 매핑합니다.
-4. `tests/v7e.strict.export.snapshot.test.ts` 등 회귀 테스트를 실행해 기존 포맷 영향이 없는지 확인합니다.
-
-## SemVer 정책
-
-- 스키마 변경(상태 스키마/내부 표준 스키마/고정 export 헤더 변경): **major**
-- export 포맷 추가(기존 포맷 호환 유지): **minor**
-- 내부 버그 수정/안정화(외부 계약 불변): **patch**
-
-## 릴리즈 태그 준비
-
-1. `npm run build`, `npm test -- --run`, `npx tsc --noEmit` 통과 확인
-2. `CHANGELOG.md`에 릴리즈 변경사항 반영
-3. `academic-schedule-manager_v0.1.0_out.zip` 생성 및 보관
-4. 버전 확인(`package.json`: `0.1.0` 유지)
-5. 태그 생성 예시
-   - `git tag -a v0.1.0 -m "Release v0.1.0"`
-   - `git push origin v0.1.0`
-
-## 보안 알림 (v0.1.0)
-
-- 현재 `npm audit` 결과: `moderate 5건`
-- 본 릴리즈에서는 기능 배포 마감 우선으로 진행하며, 취약점 처리는 **보안 업데이트 전용 PR**에서 별도로 수행 권장
-
-## 운영 문서
-
-- 문제 해결 가이드: [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)
-- 변경 이력: [`CHANGELOG.md`](CHANGELOG.md)
-- 릴리즈 점검표: [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md)
-- 팀 배포 가이드: [`TEAM_DEPLOY.md`](TEAM_DEPLOY.md)
-
-## 정책 차이 (실업자/재직자)
-
-- `UNEMPLOYED`(실업자): 업무일수 산정 `월~금` (`[1,2,3,4,5]`)
-- `EMPLOYED`(재직자): 업무일수 산정 `월~토` (`[1,2,3,4,5,6]`)
-- 정책은 코호트별 `trackType`으로 고정되고, 퍼실/운영 배치 일수/겹침 계산에 반영됩니다.
-
-## 리소스 타입 차이 (시간 vs 일)
-
-- `INSTRUCTOR`
-  - 시간 충돌: 세션 기반(강사 시간 구간 겹침)
-  - 일 충돌: Staffing 배치 기반(`resourceType=INSTRUCTOR`)
-- `FACILITATOR` / `OPERATION`
-  - 시간 충돌 대상 아님
-  - 일 충돌: Staffing 배치 기반(`resourceType`별 독립 계산)
-
-## 추천 운영 플로우 (1~8)
-
-1. 세션 CSV 업로드 후 파싱 에러를 확인/수정한다.
-2. 코호트별 `trackType`(실업자/재직자)을 확인한다.
-3. 공휴일 자동 로드를 실행하고 필요 시 자체휴강을 추가한다.
-4. 일정 생성기/append로 필요한 세션을 보강한다.
-5. Staffing 배치표(P1/P2/365, resourceType, 담당자, 기간)를 입력/자동채움한다.
-6. 충돌 탭 3종(강사 시간, 강사 일, 퍼실/운영 일)을 각각 점검하고 CSV로 내보낸다.
-7. 운영 체크리스트에서 필수 항목(검증/충돌/정책/공휴일)을 확인한다.
-8. 프린트(PDF) 리포트를 생성해 간트/KPI/선택 충돌 상위 50건을 공유한다.
-
-## 역할별 운영 시나리오
-
-- 운영매니저
-  1. `기수 일정 생성기`에서 개강일/시간표 템플릿으로 일정 생성
-  2. 공휴일/자체휴강 반영 후 충돌 계산
-  3. `강사 시간 충돌`과 `강사 배치(일) 충돌`을 우선 정리
-  4. HRD 검증 통과 후 `선택한 기수 CSV 다운로드`
-
-- 교퍼팀장
-  1. `Staffing 배치관리`에서 P1/P2/365 자동채우기 실행
-  2. 코호트별 trackType(실업자/재직자) 확인
-  3. 강사/퍼실/운영 일충돌 탭 확인 후 담당자 재배치
-  4. 필요 시 `v7e_strict` 또는 `modules_generic` 배치 CSV 내보내기
-
-- 사업팀 팀장
-  1. 상단 `리스크 요약 카드`에서 충돌/HRD/공휴일 상태를 한 번에 확인
-  2. `운영 체크리스트` 통과 여부와 누락 경고를 점검
-  3. 프린트(PDF) 리포트로 간트/KPI/충돌 요약 공유
+🤖 _개발 협업: Claude Code (Opus 4.7) — see [AGENTS.md](AGENTS.md)_
