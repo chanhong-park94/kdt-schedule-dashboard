@@ -360,14 +360,16 @@ async function bootstrapAppAfterAuthLogin(): Promise<void> {
   scheduleTemplateStatus.textContent = "템플릿 준비 완료";
 
   // Slack 스케줄러 조기 시작 — 출결현황 탭을 열지 않아도 예약 발송 동작
-  // 관리자 모드(Google 로그인)에서만 시작. 보조강사 모드는 제외.
-  if (document.body.classList.contains("admin-mode")) {
-    try {
+  // 가드: 보조강사 코드 로그인 모드는 PII 보호로 제외. 그 외 인증된 사용자(Google 로그인 + 운영 코드 인증)는 모두 시작.
+  // (이전 admin-mode 클래스 가드는 "고급 모드 토글" 상태에 의존해 Google 로그인만으론 자동 발송이 안 되는 회귀 발생)
+  try {
+    const { getAssistantSession } = await import("./auth/assistantAuth");
+    if (!getAssistantSession()) {
       const { startScheduler } = await import("./hrd/hrdScheduler");
       startScheduler();
-    } catch (e) {
-      console.warn("[main] 스케줄러 조기 시작 실패:", e);
     }
+  } catch (e) {
+    console.warn("[main] 스케줄러 조기 시작 실패:", e);
   }
 
   if (localStorage.getItem(STORAGE_KEY)) {
