@@ -34,18 +34,20 @@ export function searchGuideline(query: string, sections: GuidelineSection[]): Se
 }
 
 /**
- * 이스케이프 + 검색어 <mark> 강조. 안전한 HTML 문자열 반환.
- * tokens는 toLowerCase 상태이지만 원문 매칭은 대소문자 무시로 처리한다.
+ * 이스케이프 + **bold** 마크다운 → <strong> 변환 + 검색어 <mark> 강조.
+ * 안전한 HTML 문자열 반환. 원문 매칭은 대소문자 무시.
  */
 export function highlight(text: string, tokens: string[]): string {
   const escaped = escapeHtml(text);
-  if (tokens.length === 0) return escaped;
+  // 마크다운 bold: **텍스트** → <strong>텍스트</strong> (개행 없는 텍스트만 한정)
+  const bolded = escaped.replace(/\*\*([^*\n]+?)\*\*/g, "<strong>$1</strong>");
+  if (tokens.length === 0) return bolded;
   const escapedTokens = tokens
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .filter(Boolean);
-  if (escapedTokens.length === 0) return escaped;
+  if (escapedTokens.length === 0) return bolded;
   const pattern = new RegExp(`(${escapedTokens.join("|")})`, "gi");
-  return escaped.replace(pattern, '<mark class="guideline-mark">$1</mark>');
+  return bolded.replace(pattern, '<mark class="guideline-mark">$1</mark>');
 }
 
 export function findItemById(
