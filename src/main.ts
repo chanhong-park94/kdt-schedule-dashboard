@@ -2134,6 +2134,20 @@ function handleWindowKeydown(event: KeyboardEvent): void {
     closeDrawers();
     return;
   }
+  // Alt+G → 운영지침 빠른 검색 모달
+  if (event.altKey && !event.ctrlKey && !event.shiftKey && (event.key === "g" || event.key === "G")) {
+    const active = document.activeElement as HTMLElement | null;
+    const inputType = active?.tagName.toLowerCase();
+    const isEditable =
+      inputType === "input" ||
+      inputType === "textarea" ||
+      inputType === "select" ||
+      (active?.isContentEditable ?? false);
+    if (isEditable) return;
+    event.preventDefault();
+    void openGuidelineQuickSearchModal();
+    return;
+  }
   // Alt+1~9 → 탭 전환
   if (event.altKey && !event.ctrlKey && !event.shiftKey) {
     const num = parseInt(event.key);
@@ -2142,6 +2156,18 @@ function handleWindowKeydown(event: KeyboardEvent): void {
       activatePrimarySidebarPage(TAB_SHORTCUT_KEYS[num - 1]);
     }
   }
+}
+
+async function openGuidelineQuickSearchModal(): Promise<void> {
+  const [{ openGuidelineQuickSearch }, { initGuideline, focusGuidelineItem }] = await Promise.all([
+    import("./guideline/guidelineQuickSearch"),
+    import("./guideline/guidelineInit"),
+  ]);
+  openGuidelineQuickSearch(async (itemId) => {
+    activatePrimarySidebarPage("guideline");
+    await initGuideline();
+    focusGuidelineItem(itemId);
+  });
 }
 
 function handleComputeConflictsClick(): void {

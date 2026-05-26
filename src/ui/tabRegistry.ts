@@ -55,6 +55,11 @@ const tabLoaders: Partial<Record<PrimarySidebarNavKey, () => Promise<void>>> = {
     const { initInstructorHub } = await import("../instructor/instructorHubInit");
     await initInstructorHub();
   }),
+  guideline: createTabLoader(async () => {
+    // v7 — 26년도 KDT 운영지침 매뉴얼
+    const { initGuideline } = await import("../guideline/guidelineInit");
+    await initGuideline();
+  }),
   settings: createTabLoader(async () => {
     const { initSettings } = await import("../hrd/settingsInit");
     await initSettings();

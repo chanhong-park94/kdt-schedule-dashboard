@@ -28,6 +28,7 @@ export type AppSidebarNavKey =
   | "revenue"
   | "docAutomation"
   | "instructor"
+  | "guideline"
   | "settings";
 
 export type AppSidebarMenuConfig = {
@@ -183,6 +184,8 @@ function isSidebarNavKey(value: unknown): value is AppSidebarNavKey {
     value === "crossAnalysis" ||
     value === "revenue" ||
     value === "docAutomation" ||
+    value === "instructor" ||
+    value === "guideline" ||
     value === "settings"
   );
 }
@@ -223,6 +226,8 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
     "crossAnalysis",
     "revenue",
     "docAutomation",
+    "instructor",
+    "guideline",
     "settings",
   ];
 
@@ -263,6 +268,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       revenue: toSidebarLabel(labelsSource.revenue, "매출"),
       docAutomation: toSidebarLabel(labelsSource.docAutomation, "문서자동화"),
       instructor: toSidebarLabel((labelsSource as Record<string, unknown>).instructor, "강사"),
+      guideline: toSidebarLabel((labelsSource as Record<string, unknown>).guideline, "운영지침"),
       settings: toSidebarLabel(labelsSource.settings, "설정"),
     },
     icons: {
@@ -281,6 +287,7 @@ function normalizeSidebarMenuConfig(value: unknown): AppSidebarMenuConfig | null
       revenue: toSidebarIcon(iconsSource.revenue, "💰"),
       docAutomation: toSidebarIcon(iconsSource.docAutomation, "📋"),
       instructor: toSidebarIcon((iconsSource as Record<string, unknown>).instructor, "👨‍🏫"),
+      guideline: toSidebarIcon((iconsSource as Record<string, unknown>).guideline, "📖"),
       settings: toSidebarIcon(iconsSource.settings, "⚙️"),
     },
   };

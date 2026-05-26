@@ -15,8 +15,8 @@ export function initSidebarMenuFeature(nextDeps: SidebarMenuDeps): void {
   deps = nextDeps;
 }
 
-// v6: IA Phase 1 — 강사 4종(projectEval/projectReward/operationDiag/instructorDiag) → 'instructor' 단일 통합
-const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v6";
+// v7: 26년도 KDT 운영지침 매뉴얼 탭(guideline) 신설
+const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v7";
 
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "dashboard",
@@ -34,6 +34,7 @@ export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "revenue",
   "docAutomation",
   "instructor",
+  "guideline",
   "settings",
 ];
 
@@ -53,6 +54,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_LABELS: Record<PrimarySidebarNavKey, string
   revenue: "매출",
   docAutomation: "문서자동화",
   instructor: "강사",
+  guideline: "운영지침",
   settings: "설정",
 };
 
@@ -72,6 +74,7 @@ export const DEFAULT_PRIMARY_SIDEBAR_ICONS: Record<PrimarySidebarNavKey, string>
   revenue: "coin",
   docAutomation: "document",
   instructor: "teacher",
+  guideline: "📖",
   settings: "settings",
 };
 
@@ -108,6 +111,7 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       revenue: config.labels.revenue,
       docAutomation: config.labels.docAutomation,
       instructor: config.labels.instructor,
+      guideline: config.labels.guideline,
       settings: config.labels.settings,
     },
     icons: {
@@ -126,6 +130,7 @@ export function cloneSidebarMenuConfig(config: SidebarMenuConfig): SidebarMenuCo
       revenue: config.icons.revenue,
       docAutomation: config.icons.docAutomation,
       instructor: config.icons.instructor,
+      guideline: config.icons.guideline,
       settings: config.icons.settings,
     },
   };
@@ -177,6 +182,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       revenue: normalizeSidebarMenuLabel("revenue", config.labels.revenue),
       docAutomation: normalizeSidebarMenuLabel("docAutomation", config.labels.docAutomation),
       instructor: normalizeSidebarMenuLabel("instructor", config.labels.instructor),
+      guideline: normalizeSidebarMenuLabel("guideline", config.labels.guideline),
       settings: normalizeSidebarMenuLabel("settings", config.labels.settings),
     },
     icons: {
@@ -195,6 +201,7 @@ export function normalizeSidebarMenuConfig(config: SidebarMenuConfig): SidebarMe
       revenue: normalizeSidebarMenuIcon("revenue", config.icons.revenue),
       docAutomation: normalizeSidebarMenuIcon("docAutomation", config.icons.docAutomation),
       instructor: normalizeSidebarMenuIcon("instructor", config.icons.instructor),
+      guideline: normalizeSidebarMenuIcon("guideline", config.icons.guideline),
       settings: normalizeSidebarMenuIcon("settings", config.icons.settings),
     },
   };
@@ -219,6 +226,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       revenue: DEFAULT_PRIMARY_SIDEBAR_LABELS.revenue,
       docAutomation: DEFAULT_PRIMARY_SIDEBAR_LABELS.docAutomation,
       instructor: DEFAULT_PRIMARY_SIDEBAR_LABELS.instructor,
+      guideline: DEFAULT_PRIMARY_SIDEBAR_LABELS.guideline,
       settings: DEFAULT_PRIMARY_SIDEBAR_LABELS.settings,
     },
     icons: {
@@ -237,6 +245,7 @@ export function getDefaultSidebarMenuConfig(): SidebarMenuConfig {
       revenue: DEFAULT_PRIMARY_SIDEBAR_ICONS.revenue,
       docAutomation: DEFAULT_PRIMARY_SIDEBAR_ICONS.docAutomation,
       instructor: DEFAULT_PRIMARY_SIDEBAR_ICONS.instructor,
+      guideline: DEFAULT_PRIMARY_SIDEBAR_ICONS.guideline,
       settings: DEFAULT_PRIMARY_SIDEBAR_ICONS.settings,
     },
   };
@@ -320,6 +329,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
         "instructor",
         typeof parsed.labels?.instructor === "string" ? parsed.labels.instructor : fallback.labels.instructor,
       ),
+      guideline: normalizeSidebarMenuLabel(
+        "guideline",
+        typeof parsed.labels?.guideline === "string" ? parsed.labels.guideline : fallback.labels.guideline,
+      ),
       settings: normalizeSidebarMenuLabel(
         "settings",
         typeof parsed.labels?.settings === "string" ? parsed.labels.settings : fallback.labels.settings,
@@ -387,6 +400,10 @@ export function loadSidebarMenuConfig(): SidebarMenuConfig {
         "instructor",
         typeof parsed.icons?.instructor === "string" ? parsed.icons.instructor : fallback.icons.instructor,
       ),
+      guideline: normalizeSidebarMenuIcon(
+        "guideline",
+        typeof parsed.icons?.guideline === "string" ? parsed.icons.guideline : fallback.icons.guideline,
+      ),
       settings: normalizeSidebarMenuIcon(
         "settings",
         typeof parsed.icons?.settings === "string" ? parsed.icons.settings : fallback.icons.settings,
@@ -413,6 +430,7 @@ const NAV_SECTION_GROUPS: { label: string; keys: PrimarySidebarNavKey[] }[] = [
   { label: "HRD 운영", keys: ["generator", "kpi", "dropout"] },
   { label: "훈련생 관리", keys: ["attendance", "analytics", "traineeHistory"] },
   { label: "교육사업관리", keys: ["instructor"] },
+  { label: "참고자료", keys: ["guideline"] },
 ];
 
 // Cache original SVG innerHTML per nav-key so we can restore default icons
