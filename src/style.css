@@ -11397,6 +11397,12 @@ body.guideline-quick-open {
   font-size: 11px;
   color: #6b7280;
 }
+.facilitator-update-via {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+  margin-left: 4px;
+}
 .facilitator-update-error {
   padding: 10px 14px;
   background: #fef2f2;

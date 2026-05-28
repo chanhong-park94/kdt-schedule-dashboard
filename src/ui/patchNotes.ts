@@ -16,6 +16,14 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.10.1",
+    date: "2026-05-28",
+    items: [
+      { tag: "fix", text: "🔄 교퍼팀 일정 업데이트 확인 — CORS 차단 시 6단계 프록시 fallback 추가 (direct → allorigins.get → corsproxy.io → allorigins.raw → thingproxy → cors.eu.org). 본문에 const DATA 패턴 유무까지 검증해 false positive 차단" },
+      { tag: "improve", text: "업데이트 결과에 경유 경로 표시 (예: '· 프록시 (corsproxy.io)'). 어떤 프록시로 동기화됐는지 한눈에 확인" },
+    ],
+  },
+  {
     version: "v3.10.0",
     date: "2026-05-28",
     items: [

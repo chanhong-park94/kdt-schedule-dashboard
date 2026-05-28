@@ -343,9 +343,13 @@ function bindHandlers(container: HTMLElement): void {
       ? `변경 발견 — 추가 ${r.added.length} / 변경 ${r.changed.length} / 삭제 ${r.removed.length}`
       : "최신 상태입니다";
     saveLastCheck({ checkedAt: now, status, message, added: r.added.length, changed: r.changed.length, removed: r.removed.length });
+    const viaLabel =
+      r.via === "direct"
+        ? "직접 연결"
+        : `프록시 (${r.via})`;
     if (!hasDiff) {
       result.innerHTML = `<div class="facilitator-update-ok">
-        ✓ 최신 상태입니다 (로컬 ${r.localCount}개 = 원격 ${r.remoteCount}개)
+        ✓ 최신 상태입니다 (로컬 ${r.localCount}개 = 원격 ${r.remoteCount}개) <span class="facilitator-update-via">· ${escapeHtml(viaLabel)}</span>
       </div>`;
     } else {
       const detail: string[] = [];
@@ -353,7 +357,7 @@ function bindHandlers(container: HTMLElement): void {
       if (r.changed.length > 0) detail.push(`<li><strong>변경 ${r.changed.length}건</strong>: ${r.changed.map((c) => escapeHtml(c.name)).join(", ")}</li>`);
       if (r.removed.length > 0) detail.push(`<li><strong>삭제 ${r.removed.length}건</strong>: ${r.removed.map((c) => escapeHtml(c.name)).join(", ")}</li>`);
       result.innerHTML = `<div class="facilitator-update-diff">
-        <strong>외부 사이트에 변경이 있습니다</strong> (로컬 ${r.localCount} → 원격 ${r.remoteCount})
+        <strong>외부 사이트에 변경이 있습니다</strong> (로컬 ${r.localCount} → 원격 ${r.remoteCount}) <span class="facilitator-update-via">· ${escapeHtml(viaLabel)}</span>
         <ul>${detail.join("")}</ul>
         <p class="facilitator-update-note">영구 반영하려면 운영자가 <code>src/timeline/facilitatorData.ts</code>를 갱신하고 PR을 머지하세요.</p>
       </div>`;
