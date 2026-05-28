@@ -16,6 +16,18 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.10.0",
+    date: "2026-05-28",
+    items: [
+      { tag: "feat", text: "📅 학사일정 페이지 sub-tab 신설 — '🏠 기본 타임라인' ↔ '👥 교퍼팀 일정' 전환 pill. 마지막 선택은 localStorage 기억" },
+      { tag: "feat", text: "교퍼팀 일정 모듈 통합 — 교육퍼실리테이터 팀의 ee-aicampus.netlify.app 대시보드(v7-L)를 우리 페이지 안에 4개 섹션으로 재구현: 오늘의 업무·이번 주 일정·과정별 간트차트·인력별 현황" },
+      { tag: "feat", text: "데이터 — 27개 과정(데싸·프데분·리서처·엔지니어·AI데이터·AI에이전트·피지컬AI·프라이빗AI) × P1/P2/P3 페이즈 × 15명 담당자(2026.2~2027.7). src/timeline/facilitatorData.ts 정적 임베드" },
+      { tag: "feat", text: "🔄 업데이트 확인 버튼 — 외부 사이트 fetch + const DATA 추출 + 우리 데이터와 diff 비교. 추가/변경/삭제 회차 수 표시. CORS 차단 시 외부 사이트 열기 안내" },
+      { tag: "feat", text: "간트차트 — 2026.2~2027.8 가로 타임라인, 월 단위 tick, 오늘 위치 빨간 세로선, 페이즈별 담당자 색상 막대 (호버 시 상세 tooltip)" },
+      { tag: "improve", text: "lazy load — 교퍼팀 sub-tab 첫 활성화 시에만 facilitatorInit 동적 import (기본 타임라인 사용자 영향 없음)" },
+    ],
+  },
+  {
     version: "v3.9.0",
     date: "2026-05-28",
     items: [

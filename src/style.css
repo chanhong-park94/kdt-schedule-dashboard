@@ -11227,3 +11227,424 @@ body.guideline-quick-open {
     font-size: 13px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   학사일정 sub-tab pill (기본 ↔ 교퍼팀 일정)
+   ═══════════════════════════════════════════════════════════════ */
+.timeline-subtab-bar {
+  padding: 10px 14px !important;
+}
+.timeline-subtab-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.timeline-subtab-btn {
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--card-bg, #ffffff);
+  color: var(--text, #1f2937);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.timeline-subtab-btn:hover {
+  background: #ede9f3;
+  border-color: #c7d2fe;
+}
+.timeline-subtab-btn.is-active {
+  background: #6366f1;
+  color: #ffffff;
+  border-color: #6366f1;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   교퍼팀 일정 (facilitator)
+   ═══════════════════════════════════════════════════════════════ */
+.facilitator-page {
+  --facilitator-text: var(--text, #1f2937);
+  --facilitator-muted: #6b7280;
+  --facilitator-border: var(--border, #e5e7eb);
+  --facilitator-bg: #f8fafc;
+  font-family: inherit;
+  color: var(--facilitator-text);
+}
+
+.facilitator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--facilitator-border);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.facilitator-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+}
+.facilitator-version {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6366f1;
+  background: #ede9f3;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.facilitator-subtitle {
+  font-size: 12px;
+  color: var(--facilitator-muted);
+  margin: 0;
+}
+.facilitator-subtitle a {
+  color: #6366f1;
+  text-decoration: none;
+}
+.facilitator-subtitle a:hover {
+  text-decoration: underline;
+}
+.facilitator-sync-status {
+  font-size: 12px;
+}
+.facilitator-sync-ok {
+  color: #16a34a;
+  font-weight: 600;
+}
+.facilitator-sync-diff {
+  color: #d97706;
+  font-weight: 600;
+}
+.facilitator-sync-error {
+  color: #dc2626;
+}
+.facilitator-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.facilitator-update-btn {
+  padding: 8px 14px;
+  border: 1px solid #6366f1;
+  background: #6366f1;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.facilitator-update-btn:hover {
+  background: #4f46e5;
+}
+.facilitator-update-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.facilitator-open-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--facilitator-border);
+  background: var(--card-bg, #ffffff);
+  color: var(--facilitator-text);
+  border-radius: 8px;
+  font-size: 13px;
+  text-decoration: none;
+}
+.facilitator-open-btn:hover {
+  background: var(--surface-hover, #f3f4f6);
+}
+
+.facilitator-update-result:empty {
+  display: none;
+}
+.facilitator-update-result {
+  margin-bottom: 16px;
+}
+.facilitator-update-loading {
+  padding: 10px 14px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.facilitator-update-ok {
+  padding: 10px 14px;
+  background: #ecfdf5;
+  color: #166534;
+  border-radius: 8px;
+  font-size: 13px;
+  border-left: 3px solid #16a34a;
+}
+.facilitator-update-diff {
+  padding: 10px 14px;
+  background: #fffbeb;
+  color: #92400e;
+  border-radius: 8px;
+  font-size: 13px;
+  border-left: 3px solid #d97706;
+}
+.facilitator-update-diff ul {
+  margin: 6px 0 0 16px;
+  padding: 0;
+}
+.facilitator-update-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6b7280;
+}
+.facilitator-update-error {
+  padding: 10px 14px;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 8px;
+  font-size: 13px;
+  border-left: 3px solid #dc2626;
+}
+
+.facilitator-section {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--facilitator-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.facilitator-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.facilitator-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--facilitator-muted);
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.facilitator-week-range {
+  font-size: 12px;
+  color: var(--facilitator-muted);
+  font-weight: 500;
+}
+.facilitator-empty {
+  font-size: 13px;
+  color: var(--facilitator-muted);
+  padding: 8px 0;
+  margin: 0;
+}
+
+/* ─── 오늘의 업무 ─── */
+.facilitator-today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.facilitator-task-card {
+  background: var(--facilitator-bg);
+  border: 1px solid var(--facilitator-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+.facilitator-task-row1 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.facilitator-task-person {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #000;
+}
+.facilitator-task-phase {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.facilitator-phase-p1 {
+  background: #3498db;
+}
+.facilitator-phase-p2 {
+  background: #9b59b6;
+}
+.facilitator-phase-p365 {
+  background: #e67e22;
+}
+.facilitator-task-course {
+  font-weight: 600;
+  color: var(--facilitator-text);
+  margin-bottom: 2px;
+}
+.facilitator-task-type {
+  color: var(--facilitator-muted);
+  font-weight: 400;
+}
+.facilitator-task-dates {
+  font-size: 11px;
+  color: var(--facilitator-muted);
+  margin-bottom: 4px;
+}
+.facilitator-progress {
+  height: 5px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.facilitator-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+/* ─── 이번 주 일정 ─── */
+.facilitator-week-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.facilitator-event-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.facilitator-event-tag.start {
+  background: #d1fae5;
+  color: #166534;
+}
+.facilitator-event-tag.end {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ─── 간트차트 / 인력별 현황 ─── */
+.facilitator-gantt {
+  position: relative;
+  overflow-x: auto;
+}
+.facilitator-gantt-axis {
+  position: relative;
+  height: 22px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--facilitator-border);
+  margin-left: 160px;
+}
+.facilitator-gantt-tick {
+  position: absolute;
+  top: 0;
+  bottom: -4px;
+  width: 1px;
+  background: #e5e7eb;
+}
+.facilitator-gantt-tick span {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  font-size: 10px;
+  color: var(--facilitator-muted);
+  white-space: nowrap;
+}
+.facilitator-gantt-rows {
+  position: relative;
+}
+.facilitator-gantt-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dc2626;
+  z-index: 2;
+  margin-left: 160px;
+}
+.facilitator-gantt-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px dashed #f3f4f6;
+}
+.facilitator-gantt-row:last-child {
+  border-bottom: none;
+}
+.facilitator-gantt-label {
+  width: 160px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-left: 3px solid #94a3b8;
+  font-size: 12px;
+  background: var(--card-bg, #ffffff);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+.facilitator-gantt-course-name {
+  display: block;
+  font-weight: 600;
+}
+.facilitator-gantt-course-type {
+  font-size: 10px;
+  color: var(--facilitator-muted);
+}
+.facilitator-gantt-track {
+  position: relative;
+  height: 28px;
+  flex: 1;
+  min-width: 800px;
+  background: linear-gradient(90deg, transparent 0%, transparent 100%);
+}
+.facilitator-gantt-bar {
+  position: absolute;
+  top: 4px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: default;
+}
+.facilitator-gantt-bar:hover {
+  filter: brightness(0.95);
+  z-index: 3;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+  .facilitator-header {
+    flex-direction: column;
+  }
+  .facilitator-today-grid {
+    grid-template-columns: 1fr;
+  }
+  .facilitator-gantt-axis {
+    margin-left: 100px;
+  }
+  .facilitator-gantt-today {
+    margin-left: 100px;
+  }
+  .facilitator-gantt-label {
+    width: 100px;
+    font-size: 11px;
+  }
+  .facilitator-gantt-bar {
+    font-size: 9px;
+  }
+}

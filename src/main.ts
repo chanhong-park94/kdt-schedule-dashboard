@@ -2609,6 +2609,9 @@ menuConfigStatus.textContent = "메뉴 이모지/이름/순서를 변경한 뒤 
 switchInstructorDrawerTab("course");
 setupJibbleSidebarNavigation();
 
+// 학사일정 페이지 sub-tab (기본 ↔ 교퍼팀 일정)
+void import("./ui/features/timelineSubtab").then((m) => m.setupTimelineSubtab());
+
 // 로고 클릭 → 학사일정(홈) 이동
 const jibbleLogo = document.querySelector<HTMLElement>(".jibble-logo");
 if (jibbleLogo) {

@@ -611,7 +611,15 @@
             </div>
           </section>
 
-          <div class="card card-span-12 admin-only u-mt-14" id="sectionRiskSummary" data-page-group="timeline">
+          <!-- ═══ 학사일정 sub-tab 전환 pill (기본 ↔ 교퍼팀 일정) ═══ -->
+          <div class="card card-span-12 u-mt-14 timeline-subtab-bar" data-page-group="timeline">
+            <nav class="timeline-subtab-nav" role="tablist" aria-label="학사일정 보기 전환">
+              <button type="button" class="timeline-subtab-btn is-active" role="tab" aria-selected="true" data-timeline-subtab-btn="default">🏠 기본 타임라인</button>
+              <button type="button" class="timeline-subtab-btn" role="tab" aria-selected="false" data-timeline-subtab-btn="facilitator">👥 교퍼팀 일정</button>
+            </nav>
+          </div>
+
+          <div class="card card-span-12 admin-only u-mt-14" id="sectionRiskSummary" data-page-group="timeline" data-timeline-subtab="default">
             <div class="card-header row u-row-between u-row-center">
               <div>
                 <div class="card-title">🚦 리스크 요약 카드</div>
@@ -646,6 +654,7 @@
             class="card card-span-12 timeline-hero card--timeline u-mt-14"
             id="sectionTimeline"
             data-page-group="timeline"
+            data-timeline-subtab="default"
           >
             <div class="card-header row u-row-between u-row-center">
               <div class="card-title">📅 KDT 학사일정 타임라인</div>
@@ -700,6 +709,17 @@
             </div>
             <div id="timelineDetailPanel" class="warning-box u-hidden u-mt-8"></div>
             <div id="timelineList" class="timeline-list"></div>
+          </div>
+
+          <!-- ═══ 교퍼팀 일정 (학사일정 sub-tab) ═══ -->
+          <div
+            class="card card-span-12 u-mt-14"
+            id="sectionFacilitator"
+            data-page-group="timeline"
+            data-timeline-subtab="facilitator"
+            style="padding: 24px; display: none;"
+          >
+            <div id="facilitatorPage" class="facilitator-page" data-initialized="false"></div>
           </div>
 
           <div
