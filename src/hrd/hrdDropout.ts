@@ -2,7 +2,7 @@
 import { classifyApiError } from "./hrdCacheUtils";
 import { Chart, registerables } from "chart.js";
 import { fetchRoster } from "./hrdApi";
-import { loadHrdConfig } from "./hrdConfig";
+import { loadHrdConfig, getActiveDegrs } from "./hrdConfig";
 import type { HrdConfig, HrdRawTrainee, DropoutRosterEntry, DropoutSummary, CourseCategory } from "./hrdTypes";
 
 Chart.register(...registerables);
@@ -155,14 +155,16 @@ function isActiveCourse(course: { startDate?: string; totalDays?: number }): boo
 
 async function fetchAllRosters(config: HrdConfig, onProgress?: (msg: string) => void, activeOnly = false): Promise<DropoutRosterEntry[]> {
   const results: DropoutRosterEntry[] = [];
-  const total = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
+  // 개강 전 미래 기수는 하차방어율 산정 대상에서 제외 (학생 데이터 없음)
+  const total = config.courses.reduce((sum, c) => sum + getActiveDegrs(c).length, 0);
   let done = 0;
 
   // 과정별 순차, 기수별 병렬 (3개씩 배치)
   for (const course of config.courses) {
     const BATCH = 3;
-    for (let i = 0; i < course.degrs.length; i += BATCH) {
-      const batch = course.degrs.slice(i, i + BATCH);
+    const activeDegrs = getActiveDegrs(course);
+    for (let i = 0; i < activeDegrs.length; i += BATCH) {
+      const batch = activeDegrs.slice(i, i + BATCH);
       const promises = batch.map(async (degr) => {
         try {
           const roster = await fetchRoster(config, course.trainPrId, degr);

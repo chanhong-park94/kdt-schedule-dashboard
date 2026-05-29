@@ -16,6 +16,16 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.10.2",
+    date: "2026-05-29",
+    items: [
+      { tag: "fix", text: "🚨 출결관리 리포트에 개강 전(미래) 기수가 노출되던 회귀 해결 — 사용자 신고: '데이터 기반 의사결정 7기'(2026-07-07 개강)가 5월 시점에 주간보고팩·대시보드 등에 표시됨. v3.7.0에서 dropdown만 필터 적용했으나 7개 리포트·분석 모듈에서 누락" },
+      { tag: "fix", text: "필터 일괄 적용 7곳 — 주간 운영 보고팩(weeklyOpsReportSelectors)·Slack 자동 알림(hrdScheduler)·전체 출결 데이터 수집(hrdAttendance.fetchAllAttendanceData)·대시보드(hrdDashboard)·출결 리스크 분석(hrdAnalytics)·하차방어율(hrdDropout)·하차방어율 주차 트래커(hrdDropoutWeekly)" },
+      { tag: "fix", text: "isDegrFuture 시간대 버그 동반 fix — new Date('YYYY-MM-DD')가 UTC 자정으로 파싱되어 한국 시간대(+9) 차이로 같은 날 개강을 미래로 잘못 판정하던 문제 해결. 자정에 실행되는 Slack 스케줄러에 직접 영향" },
+      { tag: "improve", text: "회귀 방지 단위 테스트 추가 — tests/hrdConfig.futureDegr.test.ts (7개 케이스). DEFAULT_COURSES 데이터 변경 시 같이 갱신" },
+    ],
+  },
+  {
     version: "v3.10.1",
     date: "2026-05-28",
     items: [

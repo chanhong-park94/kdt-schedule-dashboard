@@ -134,15 +134,22 @@ export function getDegrStartDate(course: HrdCourse, degr: string): string | null
 
 /** 오늘 기준 아직 개강 전인 기수인지 판정.
  *  - degrStartDates 미등록 → false (안전 default, 표시 유지)
- *  - 등록일이 오늘 이후 → true (필터링 대상) */
+ *  - 등록일이 오늘 이후 → true (필터링 대상)
+ *
+ *  ※ 시간대 안전성:
+ *    new Date("YYYY-MM-DD")는 UTC 자정으로 파싱되어 한국 시간대에서 9시간 차이 발생.
+ *    따라서 ISO 문자열을 직접 split하여 로컬 자정 Date로 생성, 같은 단위로 비교한다.
+ */
 export function isDegrFuture(course: HrdCourse, degr: string, now: Date = new Date()): boolean {
   const start = getDegrStartDate(course, degr);
   if (!start) return false;
-  const d = new Date(start);
-  if (isNaN(d.getTime())) return false;
-  // 오늘 00:00 기준 비교 — 개강일이 오늘이면 표시(이미 시작)
+  const parts = start.split("-").map((s) => Number(s));
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return false;
+  const [y, m, d] = parts;
+  const startLocalMidnight = new Date(y, m - 1, d);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return d > today;
+  // 개강일이 오늘이면 false (이미 시작), 미래면 true
+  return startLocalMidnight > today;
 }
 
 /** course.degrs 중 오늘 기준 개강한 기수만 반환 (개강 전 미래 기수 제외). */

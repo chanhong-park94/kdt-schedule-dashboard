@@ -1892,11 +1892,12 @@ export async function fetchAllAttendanceData(
 
   currentConfig = config;
   const allStudents: AttendanceStudent[] = [];
-  const totalJobs = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
+  // 개강 전 미래 기수는 API 호출 대상에서 사전 제외 (불필요 호출 + 보고서 노출 차단)
+  const totalJobs = config.courses.reduce((sum, c) => sum + getActiveDegrs(c).length, 0);
   let done = 0;
 
   for (const course of config.courses) {
-    for (const degr of course.degrs) {
+    for (const degr of getActiveDegrs(course)) {
       done++;
       onProgress?.(`${done}/${totalJobs} 조회 중... (${course.name} ${degr}기)`);
 

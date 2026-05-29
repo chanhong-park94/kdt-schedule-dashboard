@@ -2,6 +2,7 @@
 import { getCachedAttendanceStudents, getCachedDailyRecords, getCachedHrdConfig } from "../hrd/hrdAttendance";
 import { getCachedDropoutData } from "../hrd/hrdDropout";
 import { getCachedAnalysisData } from "../hrd/hrdAnalytics";
+import { getActiveDegrs } from "../hrd/hrdConfig";
 import type { AttendanceStudent, AttendanceDayRecord, HrdConfig, DropoutRosterEntry, HrdCourse } from "../hrd/hrdTypes";
 import type { TraineeAnalysis } from "../hrd/hrdAnalyticsTypes";
 import type { KpiAllData, AchievementSummary, FormativeSummary, FieldAppSummary } from "../kpi/kpiTypes";
@@ -261,23 +262,28 @@ function buildCourseSummaries(students: AttendanceStudent[], config: HrdConfig):
   }
 
   // Multiple courses — create a summary per course
-  return config.courses.map((course) => {
-    // We can't directly match students to courses without a join key
-    // Return overall summary with course metadata
-    const withRate = students.filter((s) => s.attendanceRate >= 0);
-    const avgRate = withRate.length > 0 ? withRate.reduce((sum, s) => sum + s.attendanceRate, 0) / withRate.length : 0;
-    return {
-      courseName: course.name,
-      degr: course.degrs.join(","),
-      category: course.category ?? "실업자",
-      totalStudents: students.length,
-      avgAttendanceRate: avgRate,
-      absentCount: students.filter((s) => s.status === "결석").length,
-      lateCount: students.filter((s) => (s.status || "").includes("지각")).length,
-      riskCount: students.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length,
-      missingCheckoutCount: students.filter((s) => s.missingCheckout).length,
-    };
-  });
+  // 개강 전(미래) 기수만 있는 과정은 보고서에서 제외.
+  // 같은 과정 안에서도 미래 기수는 degr 문자열에서 제외 (예: "데이터 기반 의사결정 7기" 미래 → 제외).
+  return config.courses
+    .map((course) => {
+      const activeDegrs = getActiveDegrs(course);
+      if (activeDegrs.length === 0) return null;
+      const withRate = students.filter((s) => s.attendanceRate >= 0);
+      const avgRate =
+        withRate.length > 0 ? withRate.reduce((sum, s) => sum + s.attendanceRate, 0) / withRate.length : 0;
+      return {
+        courseName: course.name,
+        degr: activeDegrs.join(","),
+        category: course.category ?? "실업자",
+        totalStudents: students.length,
+        avgAttendanceRate: avgRate,
+        absentCount: students.filter((s) => s.status === "결석").length,
+        lateCount: students.filter((s) => (s.status || "").includes("지각")).length,
+        riskCount: students.filter((s) => s.riskLevel === "danger" || s.riskLevel === "warning").length,
+        missingCheckoutCount: students.filter((s) => s.missingCheckout).length,
+      };
+    })
+    .filter((s): s is NonNullable<typeof s> => s !== null);
 }
 
 function rankRiskCourses(summaries: CourseAttendanceSummary[], limit: number): CourseRiskSummary[] {

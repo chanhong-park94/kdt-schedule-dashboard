@@ -1,7 +1,7 @@
 /** HRD 대시보드 홈 — 핵심 KPI 요약, 관리대상 목록, 과정별 비교, 트렌드, 도넛 */
 import { Chart, registerables } from "chart.js";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
-import { loadHrdConfig } from "./hrdConfig";
+import { loadHrdConfig, getActiveDegrs } from "./hrdConfig";
 import { isDropout } from "./hrdDropout";
 import { summarizeByCohort } from "./hrdSatisfactionApi";
 import { isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
@@ -160,13 +160,15 @@ async function fetchDashboardData(
   const trainees: DashTrainee[] = [];
 
   const activeCourses = filterCoursesByYear(config.courses, currentYearFilter);
-  const totalDegrs = activeCourses.reduce((s, c) => s + c.degrs.length, 0);
+  // 개강 전 미래 기수는 대시보드 대상에서 제외 (관리대상 노출 차단)
+  const totalDegrs = activeCourses.reduce((s, c) => s + getActiveDegrs(c).length, 0);
   let done = 0;
 
   for (const course of activeCourses) {
     const BATCH = 3;
-    for (let i = 0; i < course.degrs.length; i += BATCH) {
-      const batch = course.degrs.slice(i, i + BATCH);
+    const activeDegrs = getActiveDegrs(course);
+    for (let i = 0; i < activeDegrs.length; i += BATCH) {
+      const batch = activeDegrs.slice(i, i + BATCH);
       const promises = batch.map(async (degr) => {
         try {
           const roster = await fetchRoster(config, course.trainPrId, degr);

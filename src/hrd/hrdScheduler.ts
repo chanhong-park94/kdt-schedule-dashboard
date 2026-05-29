@@ -4,7 +4,7 @@
  * 브라우저가 열려있는 동안 매 분마다 체크하여
  * 지정된 시간(평일)에 자동으로 Slack 리포트를 전송합니다.
  */
-import { loadHrdConfig, saveHrdConfig } from "./hrdConfig";
+import { loadHrdConfig, saveHrdConfig, getActiveDegrs } from "./hrdConfig";
 import { sendSlackReportDirect, buildConsolidatedSlackMessage } from "./hrdSlack";
 import type { CourseReportData } from "./hrdSlack";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
@@ -321,7 +321,8 @@ async function checkAndSend(): Promise<void> {
       continue;
     }
 
-    for (const degr of course.degrs) {
+    // 개강 전 미래 기수는 알림 대상에서 제외 (degrStartDates 기반)
+    for (const degr of getActiveDegrs(course)) {
       try {
         // 먼저 명단 조회 → 훈련상태로 종강 기수 필터
         const roster = await fetchRoster(config, course.trainPrId, degr);

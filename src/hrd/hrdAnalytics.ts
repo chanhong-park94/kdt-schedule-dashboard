@@ -7,7 +7,7 @@
 import { Chart, registerables } from "chart.js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readClientEnv } from "../core/env";
-import { loadHrdConfig } from "./hrdConfig";
+import { loadHrdConfig, getActiveDegrs } from "./hrdConfig";
 import { classifyApiError } from "./hrdCacheUtils";
 import { downloadCsvFile } from "../ui/utils/csv";
 import { fetchRoster, fetchDailyAttendance } from "./hrdApi";
@@ -133,7 +133,7 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
   const genderMap = await loadAllGenderData();
 
   const results: TraineeAnalysis[] = [];
-  const totalJobs = config.courses.reduce((sum, c) => sum + c.degrs.length, 0);
+  const totalJobs = config.courses.reduce((sum, c) => sum + getActiveDegrs(c).length, 0);
   let done = 0;
 
   for (const course of config.courses) {
@@ -158,7 +158,8 @@ async function collectAnalyticsData(onProgress?: (msg: string) => void): Promise
       courseProgressRate =
         courseStatusFromDate === "종강" ? 100 : Math.min((weekdaysPassed / course.totalDays) * 100, 100);
     }
-    for (const degr of course.degrs) {
+    // 개강 전 미래 기수는 분석 대상에서 제외 (학생 데이터 없음)
+    for (const degr of getActiveDegrs(course)) {
       done++;
       onProgress?.(`${done}/${totalJobs} 조회 중... (${course.name} ${degr}기)`);
 

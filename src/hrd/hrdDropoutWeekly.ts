@@ -10,7 +10,7 @@
  *  - RESEARCH 만 +8 offset ("RESEARCH16" = [아이펠]딥러닝 8기), 나머지는 prefix+N 그대로
  */
 
-import { DEFAULT_COURSES } from "./hrdConfig";
+import { DEFAULT_COURSES, getActiveDegrs } from "./hrdConfig";
 
 // ─── 매칭 테이블 ────────────────────────────────────────────
 
@@ -135,7 +135,8 @@ export function getAllCohortOptions(): CohortMatch[] {
   for (const m of COHORT_PREFIX_MAP) {
     const course = DEFAULT_COURSES.find((c) => c.trainPrId === m.trainPrId);
     if (!course) continue;
-    for (const degr of course.degrs) {
+    // 개강 전 미래 기수는 주차 트래커 입력 dropdown에서 제외 (입력할 주차 데이터 없음)
+    for (const degr of getActiveDegrs(course)) {
       const alias = aliasFor(course.trainPrId, degr);
       if (!alias) continue;
       out.push({
