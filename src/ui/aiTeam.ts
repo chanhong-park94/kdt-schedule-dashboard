@@ -22,10 +22,10 @@ const TEAM: AgentProfile[] = [
   },
   {
     avatar: "🧠",
-    name: "Claude Opus 4.7 (1M context)",
+    name: "Claude Opus 4.8 (1M context)",
     role: "AI · 리드 개발자",
     desc: "프론트엔드/백엔드 전체 아키텍처 설계 및 구현을 담당합니다. TypeScript, Vite, Supabase, CSS 전반을 커버하며 1M 토큰 컨텍스트로 대규모 코드베이스를 한 번에 파악합니다.",
-    tags: ["풀스택 개발", "아키텍처", "1M 컨텍스트", "Opus 4.7"],
+    tags: ["풀스택 개발", "아키텍처", "1M 컨텍스트", "Opus 4.8"],
   },
   {
     avatar: "🔍",
