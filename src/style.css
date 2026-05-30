@@ -11654,3 +11654,284 @@ body.guideline-quick-open {
     font-size: 9px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   문의응대 sub-tab (Airtable ↔ 디스코드) + 디스코드 분석
+   ═══════════════════════════════════════════════════════════════ */
+.inquiry-subtab-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.inquiry-subtab-btn {
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--card-bg, #ffffff);
+  color: var(--text, #1f2937);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.inquiry-subtab-btn:hover {
+  background: #ede9f3;
+  border-color: #c7d2fe;
+}
+.inquiry-subtab-btn.is-active {
+  background: #5865f2;
+  color: #fff;
+  border-color: #5865f2;
+  font-weight: 600;
+}
+
+.discord-page {
+  --discord-border: var(--border, #e5e7eb);
+  --discord-muted: #6b7280;
+  font-family: inherit;
+  color: var(--text, #1f2937);
+}
+.discord-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--discord-border);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.discord-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+}
+.discord-subtitle {
+  font-size: 12px;
+  color: var(--discord-muted);
+  margin: 0;
+}
+.discord-sync-btn {
+  padding: 8px 14px;
+  border: 1px solid #5865f2;
+  background: #5865f2;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.discord-sync-btn:hover {
+  background: #4752c4;
+}
+.discord-sync-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.discord-empty {
+  text-align: center;
+  padding: 40px 16px;
+}
+.discord-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+.discord-empty-desc {
+  font-size: 13px;
+  color: var(--discord-muted);
+  margin: 4px 0;
+}
+
+.discord-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.discord-stat-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--discord-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.discord-stat-card.is-warn {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+.discord-stat-label {
+  font-size: 12px;
+  color: var(--discord-muted);
+  margin-bottom: 4px;
+}
+.discord-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.discord-section {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--discord-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.discord-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+.discord-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.discord-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.discord-bar-label {
+  flex-shrink: 0;
+  width: 80px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-align: center;
+}
+.discord-bar-track {
+  flex: 1;
+  height: 14px;
+  background: #f3f4f6;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.discord-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #5865f2, #7c8cf8);
+  border-radius: 7px;
+}
+.discord-bar-count {
+  flex-shrink: 0;
+  width: 36px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+}
+.discord-guide-link {
+  flex-shrink: 0;
+  border: 1px solid #c7d2fe;
+  background: #ede9f3;
+  color: #4338ca;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.discord-guide-link:hover {
+  background: #ddd6fe;
+}
+
+.discord-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.discord-faq-item {
+  border: 1px solid var(--discord-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.discord-faq-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.discord-faq-cat {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.discord-faq-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5865f2;
+}
+.discord-faq-samples {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--discord-muted);
+}
+
+.discord-filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.discord-check {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.discord-table-wrap {
+  max-height: 520px;
+  overflow-y: auto;
+}
+.discord-table {
+  font-size: 12px;
+  width: 100%;
+}
+.discord-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-hover, #f3f4f6);
+  z-index: 1;
+}
+.discord-td-time {
+  white-space: nowrap;
+  color: var(--discord-muted);
+}
+.discord-td-content {
+  max-width: 360px;
+  word-break: break-word;
+}
+.discord-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+}
+.discord-tag.q {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.discord-tag.staff {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.discord-tag.ans {
+  background: #d1fae5;
+  color: #065f46;
+}
+.discord-tag.noans {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .discord-stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

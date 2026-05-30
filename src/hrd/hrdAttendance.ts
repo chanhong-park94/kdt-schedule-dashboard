@@ -1278,6 +1278,8 @@ export function setupSettingsHandlers(): void {
     if (employedSection) employedSection.style.display = "flex";
     const inquirySection = $("inquiryApiSection");
     if (inquirySection) inquirySection.style.display = "flex";
+    const discordSection = $("discordApiSection");
+    if (discordSection) discordSection.style.display = "flex";
     // Auth key, Proxy, Slack Webhook 복원
     const keyInput = $("hrdAuthKey") as HTMLInputElement | null;
     if (keyInput) {

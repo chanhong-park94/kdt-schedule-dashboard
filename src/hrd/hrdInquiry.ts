@@ -278,6 +278,70 @@ function initSettingsInquiry(): void {
     // 문의응대 탭 안내 숨김
     updateConfigNotice();
   });
+
+  // 디스코드 설정
+  initSettingsDiscord();
+}
+
+// ─── 디스코드 설정 (GAS 프록시) ─────────────────────────────
+function parseChannelLines(raw: string): { id: string; label: string }[] {
+  return raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const idx = line.indexOf(",");
+      if (idx < 0) return { id: line, label: line };
+      return { id: line.slice(0, idx).trim(), label: line.slice(idx + 1).trim() };
+    })
+    .filter((c) => c.id.length > 0);
+}
+
+function initSettingsDiscord(): void {
+  const gasInput = $("settingsDiscordGasUrl") as HTMLInputElement | null;
+  const channelsInput = $("settingsDiscordChannels") as HTMLTextAreaElement | null;
+  const staffInput = $("settingsDiscordStaff") as HTMLInputElement | null;
+  const statusEl = $("settingsDiscordTestStatus");
+  if (!gasInput && !channelsInput) return;
+
+  // 기존 값 복원
+  void import("./hrdDiscord").then(({ loadDiscordConfig }) => {
+    const cfg = loadDiscordConfig();
+    if (gasInput) gasInput.value = cfg.gasUrl;
+    if (channelsInput) channelsInput.value = cfg.channels.map((c) => `${c.id},${c.label}`).join("\n");
+    if (staffInput) staffInput.value = cfg.staffAuthorIds.join(", ");
+  });
+
+  const collect = () => ({
+    gasUrl: (gasInput?.value ?? "").trim(),
+    channels: parseChannelLines(channelsInput?.value ?? ""),
+    staffAuthorIds: (staffInput?.value ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  });
+
+  $("settingsDiscordSave")?.addEventListener("click", async () => {
+    const { saveDiscordConfig } = await import("./hrdDiscord");
+    saveDiscordConfig(collect());
+    if (statusEl) {
+      statusEl.textContent = "저장됨 ✓";
+      statusEl.className = "settings-status-msg success";
+    }
+  });
+
+  $("settingsDiscordTestBtn")?.addEventListener("click", async () => {
+    if (statusEl) {
+      statusEl.textContent = "테스트 중...";
+      statusEl.className = "settings-status-msg loading";
+    }
+    const { testDiscordConnection } = await import("./hrdDiscord");
+    const r = await testDiscordConnection(collect());
+    if (statusEl) {
+      statusEl.textContent = r.message;
+      statusEl.className = `settings-status-msg ${r.ok ? "success" : "error"}`;
+    }
+  });
 }
 
 // ─── 설정 미완료 안내 표시/숨김 ─────────────────────────────
@@ -294,6 +358,9 @@ function updateConfigNotice(): void {
 // ─── 초기화 ─────────────────────────────────────────────────
 export function initInquiry(): void {
   currentConfig = loadInquiryConfig();
+
+  // sub-tab 전환 (Airtable ↔ 디스코드)
+  setupInquirySubtab();
 
   // 설정 탭 UI 초기화
   initSettingsInquiry();
@@ -354,4 +421,56 @@ function restoreFromCache(): void {
   const ts = getInquiryCacheTimestamp();
   const age = ts ? ` · ${formatCacheAge(ts)}` : "";
   setStatus(`${allRecords.length}건 (캐시${age})`, "success");
+}
+
+// ─── sub-tab 전환 (Airtable ↔ 디스코드) ─────────────────────
+const INQUIRY_SUBTAB_KEY = "kdt_inquiry_subtab_v1";
+let discordInitialized = false;
+
+function setupInquirySubtab(): void {
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-inquiry-subtab-btn]");
+  if (buttons.length === 0) return;
+
+  const apply = async (target: "airtable" | "discord") => {
+    buttons.forEach((b) => {
+      const on = b.dataset.inquirySubtabBtn === target;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    document.querySelectorAll<HTMLElement>("[data-inquiry-subtab]").forEach((el) => {
+      el.style.display = el.dataset.inquirySubtab === target ? "" : "none";
+    });
+    // airtable 전용 버튼(조회) 표시 토글
+    document.querySelectorAll<HTMLElement>("[data-inquiry-subtab-only]").forEach((el) => {
+      el.style.display = el.dataset.inquirySubtabOnly === target ? "" : "none";
+    });
+    try {
+      localStorage.setItem(INQUIRY_SUBTAB_KEY, target);
+    } catch {
+      /* ignore */
+    }
+    if (target === "discord" && !discordInitialized) {
+      discordInitialized = true;
+      const container = $("discordPage");
+      if (container) {
+        const { renderDiscordPage } = await import("./hrdDiscordView");
+        renderDiscordPage(container);
+      }
+    }
+  };
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      void apply((btn.dataset.inquirySubtabBtn as "airtable" | "discord") ?? "airtable");
+    });
+  });
+
+  // 초기 상태 복원
+  let initial: "airtable" | "discord" = "airtable";
+  try {
+    if (localStorage.getItem(INQUIRY_SUBTAB_KEY) === "discord") initial = "discord";
+  } catch {
+    /* ignore */
+  }
+  void apply(initial);
 }

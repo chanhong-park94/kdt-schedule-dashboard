@@ -16,6 +16,18 @@ interface PatchNote {
 // ─── 패치노트 데이터 (최신이 맨 위) ────────────────────────
 const PATCH_NOTES: PatchNote[] = [
   {
+    version: "v3.11.0",
+    date: "2026-05-29",
+    items: [
+      { tag: "feat", text: "🎮 문의응대 디스코드 sub-tab 신설 — 기수별 강의질의응답 채널의 학생 문의를 수집·분류·분석. 상단 [💬 Airtable 문의] ↔ [🎮 디스코드] 전환 pill (마지막 선택 localStorage 기억)" },
+      { tag: "feat", text: "Apps Script 프록시 연동 — 봇 토큰을 GAS Script Properties에만 보관(정적 사이트 미노출) + 서버사이드 호출로 디스코드 CORS 우회. 배포 가이드: docs/apps-script/discord-proxy.gs" },
+      { tag: "feat", text: "키워드 자동 분류 — 학생 질문을 KDT 카테고리(출결/수강신청/내배카/훈련장려금/중도포기/수업문의/취업/수료)로 분류. 카테고리 분포 막대 + FAQ Top 5 도출" },
+      { tag: "feat", text: "미응답 추적 — 학생 질문 이후 운영자 답변 유무로 응답률·미응답 건수 집계. '미응답만' 필터 + 기수/카테고리 필터" },
+      { tag: "feat", text: "운영지침 연결 — 각 카테고리에서 '📖 가이드' 클릭 시 26년도 운영지침 매뉴얼의 해당 항목으로 바로 점프" },
+      { tag: "improve", text: "문의 분류 키워드 보강 — 출결 카테고리에 '공결·조퇴·외출·QR' 추가 (Airtable 문의 분류에도 동일 적용). 단위 테스트 13종 추가" },
+    ],
+  },
+  {
     version: "v3.10.2",
     date: "2026-05-29",
     items: [

@@ -2128,9 +2128,21 @@
             <div class="row u-row-between u-row-center" style="margin-bottom: 12px">
               <h3>💬 문의응대</h3>
               <div style="display: flex; gap: 8px">
-                <button id="inquiryFetchBtn" class="btn btn--primary btn--sm">조회</button>
+                <button id="inquiryFetchBtn" class="btn btn--primary btn--sm" data-inquiry-subtab-only="airtable">조회</button>
               </div>
             </div>
+
+            <!-- sub-tab 전환 pill (Airtable 문의 ↔ 디스코드) -->
+            <nav class="inquiry-subtab-nav" role="tablist" aria-label="문의응대 보기 전환" style="margin-bottom: 14px">
+              <button type="button" class="inquiry-subtab-btn is-active" role="tab" aria-selected="true" data-inquiry-subtab-btn="airtable">💬 Airtable 문의</button>
+              <button type="button" class="inquiry-subtab-btn" role="tab" aria-selected="false" data-inquiry-subtab-btn="discord">🎮 디스코드</button>
+            </nav>
+
+            <!-- ─── 디스코드 sub-tab (lazy 렌더) ─── -->
+            <div id="discordPage" class="discord-page" data-inquiry-subtab="discord" data-initialized="false" style="display: none"></div>
+
+            <!-- ─── Airtable sub-tab (기존) ─── -->
+            <div data-inquiry-subtab="airtable">
 
             <!-- 설정 미완료 안내 (설정 탭에서 API 연동 설정) -->
             <div id="inquiryConfigNotice" class="kpi-connect-status" style="display: none; margin-bottom: 12px">
@@ -2215,6 +2227,9 @@
               <h4 id="inqDetailTitle" style="margin-bottom: 8px"></h4>
               <div id="inqDetailBody"></div>
             </div>
+
+            </div>
+            <!-- /Airtable sub-tab -->
           </div>
           <!-- /sectionInquiry -->
 
@@ -4109,6 +4124,31 @@
                   <button id="settingsInquiryTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
                 </div>
                 <div id="settingsInquiryTestStatus" class="settings-status-msg u-mt-4"></div>
+              </div>
+
+              <!-- 디스코드 강의질의응답 연동 (GAS 프록시) -->
+              <div id="discordApiSection" class="hrd-settings-row" style="display: none; margin-top: 16px; border-top: 1px solid var(--border-color, #27272a); padding-top: 16px">
+                <div style="flex-basis: 100%; margin-bottom: 8px">
+                  <strong style="font-size: 14px">🎮 디스코드 강의질의응답 (GAS 프록시)</strong>
+                  <div class="muted" style="font-size: 12px; margin-top: 4px">봇 토큰은 GAS Script Properties에만 보관됩니다. 배포 가이드: docs/apps-script/discord-proxy.gs</div>
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>GAS 웹앱 URL</label>
+                  <input type="text" id="settingsDiscordGasUrl" class="hrd-input" placeholder="https://script.google.com/macros/s/.../exec" />
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>채널↔기수 매핑 (한 줄에 <code>채널ID,기수라벨</code>)</label>
+                  <textarea id="settingsDiscordChannels" class="hrd-input" rows="4" placeholder="123456789012345678,데싸 6기&#10;234567890123456789,프데분 5기"></textarea>
+                </div>
+                <div class="hrd-field" style="flex-basis: 100%">
+                  <label>운영자 디스코드 사용자 ID (쉼표 구분)</label>
+                  <input type="text" id="settingsDiscordStaff" class="hrd-input" placeholder="345678901234567890, 456789012345678901" />
+                </div>
+                <div class="hrd-field-actions">
+                  <button id="settingsDiscordSave" class="btn-primary btn-sm" type="button">저장</button>
+                  <button id="settingsDiscordTestBtn" class="btn-sm btn-primary" type="button">연결 테스트</button>
+                </div>
+                <div id="settingsDiscordTestStatus" class="settings-status-msg u-mt-4"></div>
               </div>
 
               <!-- 만족도: 수기입력 전용 (API 연동 제거됨) -->
