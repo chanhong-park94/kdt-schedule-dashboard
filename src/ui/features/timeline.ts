@@ -61,7 +61,7 @@ export function parseTimelineViewType(value: string): TimelineViewType {
   return TIMELINE_VIEW_ORDER.includes(value as TimelineViewType) ? (value as TimelineViewType) : "COHORT_TIMELINE";
 }
 
-export function renderTimelineDetail(title: string, details: string[]): void {
+function renderTimelineDetail(title: string, details: string[]): void {
   if (details.length === 0) {
     domRefs.timelineDetailPanel.style.display = "none";
     domRefs.timelineDetailPanel.textContent = "";
@@ -469,7 +469,7 @@ function renderCourseGroupedTimelineView(
   domRefs.timelineRange.textContent = `기간: ${formatDate(new Date(globalStart))} ~ ${formatDate(new Date(globalEnd))}`;
 }
 
-export function getSessionIsoDate(session: Session): string | null {
+function getSessionIsoDate(session: Session): string | null {
   if (session.normalizedDate && parseIsoDate(session.normalizedDate)) {
     return session.normalizedDate;
   }

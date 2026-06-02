@@ -26,7 +26,7 @@ interface ProxyEntry {
 }
 const CORS_PROXIES: ProxyEntry[] = [
   { prefix: "https://cors.eu.org/", encode: false },
-  { prefix: "https://corsproxy.io/?url=", encode: true },
+  // corsproxy.io 는 2026-04 유료 전환으로 제거 (hrdApi.ts와 동일)
   { prefix: "https://api.allorigins.win/raw?url=", encode: true },
 ];
 

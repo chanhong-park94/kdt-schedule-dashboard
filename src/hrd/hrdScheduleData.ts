@@ -7,13 +7,13 @@
 import type { CohortSummary } from "../core/types";
 import type { TrackType } from "../core/types";
 
-export type KdtInstructorPhase = {
+type KdtInstructorPhase = {
   assignee: string;
   startDate: string; // YYYYMMDD
   endDate: string; // YYYYMMDD
 };
 
-export type KdtCourseSchedule = {
+type KdtCourseSchedule = {
   cohort: string;
   startDate: string; // YYYYMMDD
   endDate: string; // YYYYMMDD

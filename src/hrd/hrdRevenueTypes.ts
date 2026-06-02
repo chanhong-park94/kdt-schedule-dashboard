@@ -42,13 +42,3 @@ export interface CohortRevenue {
   activeTrainees: number;
   dropoutCount: number;
 }
-
-/** 전체 매출 요약 (KPI 카드용) */
-export interface RevenueSummary {
-  totalRevenue: number;
-  dailyRevenue: number;
-  totalLost: number;
-  dropoutLoss: number;
-  maxRevenue: number;
-  cohorts: CohortRevenue[];
-}

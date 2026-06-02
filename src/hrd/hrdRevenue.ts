@@ -9,7 +9,7 @@
  */
 import type { HrdConfig, HrdCourse, AttendanceDayRecord, AttendanceStudent, CourseCategory } from "./hrdTypes";
 import { isAttendedStatus, isExcusedStatus } from "./hrdTypes";
-import type { UnitPeriod, TraineeUnitRevenue, PeriodRevenue, CohortRevenue, RevenueSummary } from "./hrdRevenueTypes";
+import type { UnitPeriod, TraineeUnitRevenue, PeriodRevenue, CohortRevenue } from "./hrdRevenueTypes";
 
 // 인당 시간당 훈련비 (원)
 export const COST_PER_PERSON_HOUR = 18_150;
@@ -179,58 +179,6 @@ export function calcCohortRevenue(
     activeTrainees: activeStudents.length,
     dropoutCount: dropoutStudents.length,
   };
-}
-
-// ─── 전체 매출 요약 ──────────────────────────────────────────
-
-/** 전체 과정/기수 매출 요약 계산 */
-export function calcRevenueSummary(
-  config: HrdConfig,
-  allStudents: AttendanceStudent[],
-  allDailyRecords: Map<string, AttendanceDayRecord[]>,
-): RevenueSummary {
-  const cohorts: CohortRevenue[] = [];
-
-  for (const course of config.courses) {
-    if (!course.startDate) continue; // 개강일 미설정 → 매출 계산 불가
-
-    for (const degr of course.degrs) {
-      // 해당 과정/기수 학생 필터 (이름 기반으로 매칭 — fetchAllAttendanceData 순서 의존)
-      // buildStudents가 과정/기수별로 호출되므로, allStudents에서 인접 그룹으로 존재
-      // 안전하게: 모든 학생 대상으로 계산 (과정별 개별 호출이 더 정확하지만 현재 구조상 이 방식)
-      const students = allStudents.filter((s) => {
-        // trainPrId/degr 기반 필터가 없으므로 이름 기반으로 매칭
-        // → fetchAllAttendanceData에서 과정별로 순차 추가됨
-        return true; // 아래에서 과정별 개별 조회로 대체
-      });
-
-      // TODO: 과정별 개별 조회가 필요 → initRevenue에서 과정별로 호출
-      void students;
-    }
-  }
-
-  // 일매출: 오늘 출석한 학생 기준
-  const today = fmt(new Date());
-  let dailyRevenue = 0;
-  for (const course of config.courses) {
-    if (!course.startDate) continue;
-    const hoursPerDay = course.trainingHoursPerDay || 8;
-    for (const [, records] of allDailyRecords) {
-      const todayRecord = records.find((r) => r.date === today);
-      if (todayRecord && (isAttendedStatus(todayRecord.status) || isExcusedStatus(todayRecord.status))) {
-        // 학생이 어느 과정인지 구분 어려움 → hoursPerDay 8 기본값 사용
-        dailyRevenue += hoursPerDay * COST_PER_PERSON_HOUR;
-        break; // 한 학생당 한 번만 카운트 (중복 방지)
-      }
-    }
-  }
-
-  const totalRevenue = cohorts.reduce((sum, c) => sum + c.totalRevenue, 0);
-  const totalLost = cohorts.reduce((sum, c) => sum + c.lostRevenue, 0);
-  const dropoutLoss = cohorts.reduce((sum, c) => sum + c.dropoutLoss, 0);
-  const maxRevenue = cohorts.reduce((sum, c) => sum + c.maxRevenue, 0);
-
-  return { totalRevenue, dailyRevenue, totalLost, dropoutLoss, maxRevenue, cohorts };
 }
 
 // ─── 과정별 개별 매출 계산 (initRevenue에서 사용) ──────────────
