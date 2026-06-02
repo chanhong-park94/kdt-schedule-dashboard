@@ -62,25 +62,6 @@ export function formatRelativeTime(dateStr: string): string {
   return dateStr;
 }
 
-// ─── Skeleton 로딩 헬퍼 ─────────────────────────────────────
-
-/** 컨테이너에 skeleton placeholder 표시 */
-export function showSkeleton(containerId: string, rows = 5): void {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  const rowsHtml = Array.from({ length: rows }, (_, i) => {
-    const w = 60 + ((i * 17) % 30); // 60~90% 너비 변화
-    return `<div class="skeleton-row" style="width:${w}%"></div>`;
-  }).join("");
-  el.innerHTML = `<div class="skeleton-table">${rowsHtml}</div>`;
-}
-
-/** skeleton placeholder 제거 */
-export function clearSkeleton(containerId: string): void {
-  const el = document.getElementById(containerId);
-  if (el && el.querySelector(".skeleton-table")) el.innerHTML = "";
-}
-
 // ─── 토스트 알림 ────────────────────────────────────────────
 
 /** 우상단 토스트 알림 (3초 후 자동 사라짐) */

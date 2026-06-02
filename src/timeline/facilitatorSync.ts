@@ -1,6 +1,6 @@
 import { FACILITATOR_DATA, FACILITATOR_META, type FacilitatorCourse } from "./facilitatorData";
 
-export type FetchVia = "direct" | "cors.eu.org" | "allorigins.raw" | "allorigins.get" | "corsproxy.io" | "thingproxy";
+export type FetchVia = "direct" | "cors.eu.org" | "allorigins.raw" | "allorigins.get" | "thingproxy";
 
 export interface DiffResult {
   ok: true;
@@ -37,7 +37,6 @@ async function asAllOriginsContents(r: Response): Promise<string> {
 const PROXIES: ProxyEntry[] = [
   { label: "direct", build: (t) => t, parse: asText },
   { label: "allorigins.get", build: (t) => `https://api.allorigins.win/get?url=${encodeURIComponent(t)}`, parse: asAllOriginsContents },
-  { label: "corsproxy.io", build: (t) => `https://corsproxy.io/?${encodeURIComponent(t)}`, parse: asText },
   { label: "allorigins.raw", build: (t) => `https://api.allorigins.win/raw?url=${encodeURIComponent(t)}`, parse: asText },
   { label: "thingproxy", build: (t) => `https://thingproxy.freeboard.io/fetch/${t}`, parse: asText },
   { label: "cors.eu.org", build: (t) => `https://cors.eu.org/${t}`, parse: asText },
@@ -50,10 +49,11 @@ function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
 }
 
 /**
- * 외부 사이트 HTML을 가져온다 — 6단계 fallback.
- * 1) direct  → 2) allorigins.get(JSON)  → 3) corsproxy.io
- * 4) allorigins.raw → 5) thingproxy → 6) cors.eu.org
+ * 외부 사이트 HTML을 가져온다 — 5단계 fallback.
+ * 1) direct  → 2) allorigins.get(JSON)  → 3) allorigins.raw
+ * 4) thingproxy → 5) cors.eu.org
  * 모두 실패하면 마지막 오류 반환.
+ * (corsproxy.io는 2026-04 유료 전환으로 제거 — ATTENDANCE_CRITICAL.md §B)
  */
 async function fetchExternalHtml(): Promise<{ html: string; via: FetchVia } | { error: string }> {
   const errors: string[] = [];

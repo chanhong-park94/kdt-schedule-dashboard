@@ -107,7 +107,7 @@ interface CorsProxyEntry {
 
 const BUILTIN_PROXIES: CorsProxyEntry[] = [
   { prefix: "https://cors.eu.org/", encode: false },
-  { prefix: "https://corsproxy.io/?url=", encode: true },
+  // corsproxy.io 는 2026-04 유료 전환으로 제거 — ATTENDANCE_CRITICAL.md §B "코드에 부활시키지 말 것"
   { prefix: "https://api.allorigins.win/raw?url=", encode: true },
 ];
 

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 out/
+*.zip
 coverage/
 .vite/
 .next/
