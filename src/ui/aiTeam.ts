@@ -22,10 +22,10 @@ const TEAM: AgentProfile[] = [
   },
   {
     avatar: "🧠",
-    name: "Claude Opus 4.8 (1M context)",
+    name: "Claude Fable 5",
     role: "AI · 리드 개발자",
-    desc: "프론트엔드/백엔드 전체 아키텍처 설계 및 구현을 담당합니다. TypeScript, Vite, Supabase, CSS 전반을 커버하며 1M 토큰 컨텍스트로 대규모 코드베이스를 한 번에 파악합니다.",
-    tags: ["풀스택 개발", "아키텍처", "1M 컨텍스트", "Opus 4.8"],
+    desc: "프론트엔드/백엔드 전체 아키텍처 설계 및 구현을 담당합니다. TypeScript, Vite, Supabase, CSS 전반을 커버하며 Anthropic 최신 플래그십 모델로 대규모 코드베이스를 한 번에 파악합니다.",
+    tags: ["풀스택 개발", "아키텍처", "대규모 컨텍스트", "Fable 5"],
   },
   {
     avatar: "🔍",
@@ -40,6 +40,27 @@ const TEAM: AgentProfile[] = [
     role: "AI · 기획/설계 컨설턴트",
     desc: "새 기능 구현 전 요구사항을 탐색하고, 여러 접근법의 트레이드오프를 분석하여 최적의 설계안을 제시합니다.",
     tags: ["요구사항 분석", "설계 리뷰", "대안 제시"],
+  },
+  {
+    avatar: "🛠️",
+    name: "Workflow Orchestrator",
+    role: "AI · 병렬 멀티에이전트 지휘자",
+    desc: "큰 작업을 독립 관점으로 분해해 여러 서브에이전트에게 동시에 분배하고 결과를 교차검증·종합합니다. 전체 코드리뷰, 대규모 감사처럼 한 컨텍스트로 감당 못 하는 작업을 처리합니다.",
+    tags: ["병렬 분석", "교차검증", "대규모 감사"],
+  },
+  {
+    avatar: "🏛️",
+    name: "Agent Council",
+    role: "AI · 다중 AI 자문단",
+    desc: "중요한 의사결정 시 여러 AI 모델의 독립 의견을 수집하고 종합합니다. 단일 모델의 편향을 줄이고 설계·기술 선택의 확신도를 높입니다.",
+    tags: ["다중 모델", "의견 종합", "의사결정 지원"],
+  },
+  {
+    avatar: "🔬",
+    name: "Deep Research Agent",
+    role: "AI · 심층 리서치",
+    desc: "웹 검색을 다각도로 병렬 수행하고 출처를 검증해 인용 포함 리서치 리포트를 작성합니다. 신기술 검토, KDT 정책·지침 조사를 담당합니다.",
+    tags: ["멀티소스 검색", "출처 검증", "리서치 리포트"],
   },
   {
     avatar: "🗺️",
@@ -150,7 +171,7 @@ const TEAM: AgentProfile[] = [
     avatar: "⚡",
     name: "Performance Agent",
     role: "AI · 성능 최적화",
-    desc: "번들 크기 분석, 코드 스플리팅, lazy loading, 캐시 전략, 렌더링 성능을 최적화합니다. 현재 705KB → 500KB 이하 목표.",
+    desc: "번들 크기 분석, 코드 스플리팅, lazy loading, 캐시 전략, 렌더링 성능을 최적화합니다. 현재 713KB → 500KB 이하 목표.",
     tags: ["번들 최적화", "코드 스플리팅", "캐시", "렌더링"],
   },
   {

@@ -172,4 +172,4 @@ Compress-Archive -Path "dist\*" -DestinationPath "academic-schedule-manager_v3.6
 
 ---
 
-🤖 _개발 협업: Claude Code (Opus 4.7) — see [AGENTS.md](AGENTS.md)_
+🤖 _개발 협업: Claude Code (Fable 5) — see [AGENTS.md](AGENTS.md)_
