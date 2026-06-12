@@ -13,6 +13,7 @@ import type { AttendanceStudent, HrdCourse, HrdConfig, HrdRawTrainee, HrdRawAtte
 import { DEFAULT_SLACK_SCHEDULE, isAbsentStatus, isAttendedStatus, isExcusedStatus, calcAbsentDays } from "./hrdTypes";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let isSending = false; // 발송 파이프라인 진행 중 — 동시 재진입 방지
 let statusCallback: ((msg: string, type: "info" | "success" | "error") => void) | null = null;
 let visibilityHandlerRegistered = false;
 
@@ -129,8 +130,8 @@ function getRiskLevel(remainingAbsent: number, totalDays: number): RiskLevel {
   if (maxAbsent === 0) return "safe";
   const remainRate = remainingAbsent / maxAbsent;
   if (remainRate <= 0.15) return "danger";
-  if (remainRate <= 0.30) return "warning";
-  if (remainRate <= 0.60) return "caution";
+  if (remainRate <= 0.3) return "warning";
+  if (remainRate <= 0.6) return "caution";
   return "safe";
 }
 
@@ -184,14 +185,19 @@ async function fetchAttendanceForReport(
     const stNm = (raw.trneeSttusNm || raw.atendSttsNm || raw.stttsCdNm || "").toString();
     const hrdStatusRaw = stNm.trim() || "훈련중";
     const isEarlyEmployment = stNm.includes("조기취업");
-    const graduated =
-      stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
+    const graduated = stNm.includes("80%이상수료") || stNm.includes("정상수료") || stNm.includes("수료후취업");
     const isDropoutStatus = stNm.includes("중도탈락") || stNm.includes("수료포기");
-    let traineeStatus: "훈련중" | "수료" | "조기취업" | "하차" = isEarlyEmployment ? "조기취업" : graduated ? "수료" : isDropoutStatus ? "하차" : "훈련중";
+    let traineeStatus: "훈련중" | "수료" | "조기취업" | "하차" = isEarlyEmployment
+      ? "조기취업"
+      : graduated
+        ? "수료"
+        : isDropoutStatus
+          ? "하차"
+          : "훈련중";
     let dropout = isDropoutStatus;
 
     const todayData = todayMap.get(key);
-    const status = todayData ? resolveStatus(todayData) : (traineeStatus !== "훈련중") ? hrdStatusRaw : "-";
+    const status = todayData ? resolveStatus(todayData) : traineeStatus !== "훈련중" ? hrdStatusRaw : "-";
     const inTime = todayData ? formatTime(todayData.lpsilTime || todayData.atendTmIn) : "";
     const outTime = todayData ? formatTime(todayData.levromTime || todayData.atendTmOut) : "";
 
@@ -252,7 +258,9 @@ async function fetchAttendanceForReport(
 
 // ─── 스케줄 체크 로직 ────────────────────────────────────────
 
-async function checkAndSend(): Promise<void> {
+/** 스케줄 체크 + 발송 — 테스트에서 직접 호출할 수 있도록 export (프로덕션은 startScheduler 경유) */
+export async function checkAndSend(): Promise<void> {
+  if (isSending) return; // 탭 복귀 시 focus+visibilitychange 동시 발화 등 재진입 차단
   const config = loadHrdConfig();
   const schedule = config.slackSchedule ?? DEFAULT_SLACK_SCHEDULE;
   const webhookUrl = config.slackWebhookUrl;
@@ -310,151 +318,160 @@ async function checkAndSend(): Promise<void> {
     return;
   }
 
-  // ─── 전 과정 데이터 수집 → 통합 메시지 1건 전송 ─────
-  const reportEntries: CourseReportData[] = [];
-  let failCount = 0;
-
-  for (const course of activeCourses) {
-    const reportDate = await findLastClassDay(course.category);
-    if (!reportDate) {
-      console.warn(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
-      continue;
-    }
-
-    // 개강 전 미래 기수는 알림 대상에서 제외 (degrStartDates 기반)
-    for (const degr of getActiveDegrs(course)) {
-      try {
-        // 먼저 명단 조회 → 훈련상태로 종강 기수 필터
-        const roster = await fetchRoster(config, course.trainPrId, degr);
-        if (roster.length === 0) {
-          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 명단 없음`);
-          continue;
-        }
-
-        // HRD 명단 훈련상태로 훈련중 기수 판별
-        const hasTraining = roster.some((r) => {
-          const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString().trim();
-          return st === "" || st.includes("훈련중") || st.includes("참여중");
-        });
-        if (!hasTraining) {
-          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 종강/수료 기수`);
-          continue;
-        }
-
-        const students = await fetchAttendanceForReport(config, course, degr, reportDate);
-        if (students.length === 0) {
-          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 출결 데이터 없음`);
-          continue;
-        }
-        const activeStudents = students.filter((s) => !s.dropout);
-        if (activeStudents.length === 0) {
-          console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 훈련중 학생 없음`);
-          continue;
-        }
-
-        const total = students.length;
-        const dropoutCount = students.filter((s) => s.dropout).length;
-        const activeCount = total - dropoutCount;
-        const defenseRate = total > 0 ? (activeCount / total) * 100 : 100;
-
-        // 매니저 ID 조회
-        const managerIds = schedule.courseManagers ? (schedule.courseManagers[course.trainPrId] ?? "") : "";
-
-        reportEntries.push({
-          courseName: course.name,
-          degr,
-          date: reportDate,
-          students,
-          defenseRate,
-          managerIds,
-        });
-        console.warn(
-          `[Scheduler] Collected ${course.name} ${degr}기 (${reportDate}, ${course.category || "실업자"})`,
-        );
-      } catch (e) {
-        failCount++;
-        console.error(`[Scheduler] Failed for ${course.name} ${degr}기:`, e);
-      }
-    }
-  }
-
-  // 통합 메시지 전송 (1건)
-  let sentCount = 0;
-  if (reportEntries.length > 0) {
-    try {
-      const text = buildConsolidatedSlackMessage(reportEntries);
-      await sendSlackReportDirect(webhookUrl, "", "", "", [], undefined, undefined, undefined, text);
-      sentCount = reportEntries.length;
-      console.warn(`[Scheduler] Sent consolidated report — ${sentCount}개 기수 통합`);
-    } catch (e) {
-      failCount += reportEntries.length;
-      console.error(`[Scheduler] Consolidated send failed:`, e);
-    }
-  }
-
-  // ─── 자동 SMS 에스컬레이션 ───
-  let smsSentCount = 0;
-  // 강사 모드(보조강사 코드 로그인)에서는 자동 SMS 차단 — 개인정보 보호
-  const { getAssistantSession } = await import("../auth/assistantAuth");
-  const assistantSession = getAssistantSession();
-  if (assistantSession) {
-    console.warn("[Scheduler] Auto-SMS blocked — 강사 모드에서는 SMS 발송 불가");
-  }
-  if (!assistantSession && schedule.autoSmsEnabled && reportEntries.length > 0) {
-    try {
-      const { renderTemplate, loadNotifyTemplates, sendNotification } = await import("./hrdNotify");
-      const { getContact } = await import("./hrdContacts");
-      const templates = loadNotifyTemplates();
-      const targetLevel = schedule.autoSmsRiskLevel || "danger";
-
-      for (const entry of reportEntries) {
-        const riskStudents = entry.students.filter((s) => {
-          if (s.dropout) return false;
-          if (targetLevel === "danger") return s.riskLevel === "danger";
-          return s.riskLevel === "danger" || s.riskLevel === "warning";
-        });
-
-        const smsFrom = config.courses.find((c) => c.name === entry.courseName)?.smsFrom || "";
-
-        for (const student of riskStudents) {
-          const contact = getContact(student.name);
-          if (!contact?.phone) continue;
-          const tpl = student.riskLevel === "danger" ? templates.danger : templates.warning;
-          const message = renderTemplate(tpl, student);
-          try {
-            await sendNotification(
-              { student, phone: contact.phone, email: "", message, selected: true },
-              "sms",
-              smsFrom,
-            );
-            smsSentCount++;
-          } catch {
-            // SMS 실패는 무시 (Slack은 이미 전송됨)
-          }
-        }
-      }
-      if (smsSentCount > 0) {
-        console.warn(`[Scheduler] Auto-SMS sent to ${smsSentCount} risk students`);
-      }
-    } catch (e) {
-      console.warn("[Scheduler] Auto-SMS failed:", e);
-    }
-  }
-
-  // 전송 완료 기록
+  // 발송 선점 기록 — 완료 후에 기록하면 수집(수십초~수분) 동안 interval/
+  // visibility/focus 트리거나 다른 탭이 중복 체크를 통과해 같은 날 2건 발송됨.
+  // 이 지점까지 await가 없어 탭 내에서는 원자적이며, 다른 탭은 매 호출마다
+  // localStorage를 재조회하므로 즉시 차단된다. (발송 실패 시에도 당일 재시도
+  // 안 함 — 기존 동작과 동일)
+  isSending = true;
   schedule.lastSentDate = today;
   config.slackSchedule = schedule;
   saveHrdConfig(config);
 
-  // 마지막 전송 시간 업데이트
-  const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-  const smsInfo = smsSentCount > 0 ? ` · SMS ${smsSentCount}건` : "";
-  if (failCount === 0 && sentCount > 0) {
-    emitStatus(`✅ ${today} ${timeStr} — ${sentCount}개 기수 전송 완료${smsInfo}`, "success");
-  } else if (sentCount > 0) {
-    emitStatus(`⚠️ ${today} ${timeStr} — 성공 ${sentCount} / 실패 ${failCount}${smsInfo}`, "error");
-  } else {
-    emitStatus(`ℹ️ ${today} ${timeStr} — 전송할 데이터 없음`, "info");
+  try {
+    // ─── 전 과정 데이터 수집 → 통합 메시지 1건 전송 ─────
+    const reportEntries: CourseReportData[] = [];
+    let failCount = 0;
+
+    for (const course of activeCourses) {
+      const reportDate = await findLastClassDay(course.category);
+      if (!reportDate) {
+        console.warn(`[Scheduler] Skipped ${course.name} — 최근 7일 내 수업일 없음`);
+        continue;
+      }
+
+      // 개강 전 미래 기수는 알림 대상에서 제외 (degrStartDates 기반)
+      for (const degr of getActiveDegrs(course)) {
+        try {
+          // 먼저 명단 조회 → 훈련상태로 종강 기수 필터
+          const roster = await fetchRoster(config, course.trainPrId, degr);
+          if (roster.length === 0) {
+            console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 명단 없음`);
+            continue;
+          }
+
+          // HRD 명단 훈련상태로 훈련중 기수 판별
+          const hasTraining = roster.some((r) => {
+            const st = (r.trneeSttusNm || r.atendSttsNm || r.stttsCdNm || "").toString().trim();
+            return st === "" || st.includes("훈련중") || st.includes("참여중");
+          });
+          if (!hasTraining) {
+            console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 종강/수료 기수`);
+            continue;
+          }
+
+          const students = await fetchAttendanceForReport(config, course, degr, reportDate);
+          if (students.length === 0) {
+            console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 출결 데이터 없음`);
+            continue;
+          }
+          const activeStudents = students.filter((s) => !s.dropout);
+          if (activeStudents.length === 0) {
+            console.warn(`[Scheduler] Skipped ${course.name} ${degr}기 — 훈련중 학생 없음`);
+            continue;
+          }
+
+          const total = students.length;
+          const dropoutCount = students.filter((s) => s.dropout).length;
+          const activeCount = total - dropoutCount;
+          const defenseRate = total > 0 ? (activeCount / total) * 100 : 100;
+
+          // 매니저 ID 조회
+          const managerIds = schedule.courseManagers ? (schedule.courseManagers[course.trainPrId] ?? "") : "";
+
+          reportEntries.push({
+            courseName: course.name,
+            degr,
+            date: reportDate,
+            students,
+            defenseRate,
+            managerIds,
+          });
+          console.warn(
+            `[Scheduler] Collected ${course.name} ${degr}기 (${reportDate}, ${course.category || "실업자"})`,
+          );
+        } catch (e) {
+          failCount++;
+          console.error(`[Scheduler] Failed for ${course.name} ${degr}기:`, e);
+        }
+      }
+    }
+
+    // 통합 메시지 전송 (1건)
+    let sentCount = 0;
+    if (reportEntries.length > 0) {
+      try {
+        const text = buildConsolidatedSlackMessage(reportEntries);
+        await sendSlackReportDirect(webhookUrl, "", "", "", [], undefined, undefined, undefined, text);
+        sentCount = reportEntries.length;
+        console.warn(`[Scheduler] Sent consolidated report — ${sentCount}개 기수 통합`);
+      } catch (e) {
+        failCount += reportEntries.length;
+        console.error(`[Scheduler] Consolidated send failed:`, e);
+      }
+    }
+
+    // ─── 자동 SMS 에스컬레이션 ───
+    let smsSentCount = 0;
+    // 강사 모드(보조강사 코드 로그인)에서는 자동 SMS 차단 — 개인정보 보호
+    const { getAssistantSession } = await import("../auth/assistantAuth");
+    const assistantSession = getAssistantSession();
+    if (assistantSession) {
+      console.warn("[Scheduler] Auto-SMS blocked — 강사 모드에서는 SMS 발송 불가");
+    }
+    if (!assistantSession && schedule.autoSmsEnabled && reportEntries.length > 0) {
+      try {
+        const { renderTemplate, loadNotifyTemplates, sendNotification } = await import("./hrdNotify");
+        const { getContact } = await import("./hrdContacts");
+        const templates = loadNotifyTemplates();
+        const targetLevel = schedule.autoSmsRiskLevel || "danger";
+
+        for (const entry of reportEntries) {
+          const riskStudents = entry.students.filter((s) => {
+            if (s.dropout) return false;
+            if (targetLevel === "danger") return s.riskLevel === "danger";
+            return s.riskLevel === "danger" || s.riskLevel === "warning";
+          });
+
+          const smsFrom = config.courses.find((c) => c.name === entry.courseName)?.smsFrom || "";
+
+          for (const student of riskStudents) {
+            const contact = getContact(student.name);
+            if (!contact?.phone) continue;
+            const tpl = student.riskLevel === "danger" ? templates.danger : templates.warning;
+            const message = renderTemplate(tpl, student);
+            try {
+              await sendNotification(
+                { student, phone: contact.phone, email: "", message, selected: true },
+                "sms",
+                smsFrom,
+              );
+              smsSentCount++;
+            } catch {
+              // SMS 실패는 무시 (Slack은 이미 전송됨)
+            }
+          }
+        }
+        if (smsSentCount > 0) {
+          console.warn(`[Scheduler] Auto-SMS sent to ${smsSentCount} risk students`);
+        }
+      } catch (e) {
+        console.warn("[Scheduler] Auto-SMS failed:", e);
+      }
+    }
+
+    // 마지막 전송 시간 표시 (lastSentDate는 발송 시작 시점에 이미 선점 기록됨)
+    const timeStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    const smsInfo = smsSentCount > 0 ? ` · SMS ${smsSentCount}건` : "";
+    if (failCount === 0 && sentCount > 0) {
+      emitStatus(`✅ ${today} ${timeStr} — ${sentCount}개 기수 전송 완료${smsInfo}`, "success");
+    } else if (sentCount > 0) {
+      emitStatus(`⚠️ ${today} ${timeStr} — 성공 ${sentCount} / 실패 ${failCount}${smsInfo}`, "error");
+    } else {
+      emitStatus(`ℹ️ ${today} ${timeStr} — 전송할 데이터 없음`, "info");
+    }
+  } finally {
+    isSending = false;
   }
 }
 
