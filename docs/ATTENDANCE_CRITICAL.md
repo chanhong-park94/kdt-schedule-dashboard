@@ -92,8 +92,12 @@ grep -n "persistSession\|detectSessionInUrl" $(find src -name "*.ts" -exec grep 
 - `corsproxy.io`는 **유료 전환되어 동작하지 않음** (2026-04 이후). 코드에 부활시키지 말 것.
 - `authKey` 는 절대 클라이언트 번들에 하드코딩 금지. Edge Function `Deno.env` 로만 보관.
 - Edge Function 배포 상태 확인: `supabase/functions/hrd-proxy/DEPLOY.md`
-  - ⚠️ **현재 미배포(404)** 라 출결조회가 100% 공개 프록시에 의존 중. 공개 프록시는 집합적으로
-    신뢰 불가(레이트리밋/지연)하므로 **만성 회귀의 근본원인**이다. **영구 해법 = Edge Function 배포.**
+  - ✅ **2026-06-19 배포 완료** — `hrd-proxy` 활성 + `HRD_AUTH_KEY` Secret 등록. roster 조회가
+    HTTP 200 + 실데이터(서버사이드 직행, 프록시 우회)로 동작함을 실측 확인. 앱의 publishable 키가
+    JWT 게이트를 통과(토글 변경 불필요), CORS 는 GitHub Pages origin 허용.
+  - 이제 출결조회 1순위는 Edge Function(서버사이드)이며 공개 프록시는 **이중 안전망 폴백**으로만 남는다.
+    → 만성 회귀(공개 프록시 의존)의 근본원인이 제거됨. CORS 프록시 폴백 로직·풀은 그대로 유지할 것.
+  - ⚠️ 남은 보안 조치: HRD-Net `authKey` 로테이션(현재 키는 공개 GitHub 노출 이력) → 재발급 후 Secret 값만 교체.
 
 ---
 
@@ -147,7 +151,8 @@ PR 머지 전 다음을 모두 통과해야 출결현황 영향 변경으로 분
 | 날짜 | 커밋 | 변경 | 결과 |
 |---|---|---|---|
 | 2026-06-19 | #12 | 프록시 순차→병렬 레이스 + looksLikeHrd 검증 + 신규 .do 엔드포인트 | ✅ 보조강사 "모든 프록시 실패" 회귀 수정 |
-| 2026-06-19 | (관측) | 구 JSP 엔드포인트 → .do 로 302 리다이렉트 확인 / Edge Function 여전히 미배포(404) | ⚠️ 근본원인 = 공개 프록시 의존 |
+| 2026-06-19 | 대시보드 배포 | hrd-proxy Edge Function 배포 + HRD_AUTH_KEY Secret 등록 (roster 200 실데이터 검증) | ✅ 영구 해법 — 프록시 의존 제거, 서버사이드 직행 |
+| 2026-06-19 | (관측) | 구 JSP 엔드포인트 → .do 로 302 리다이렉트 확인 | ⚠️ HRD-Net 엔드포인트 이동 |
 | 2026-04-29 | e428258 | hrdContacts.ts persistSession:false 복귀 | ✅ 회귀 핫픽스 |
 | 2026-04-29 | 0deb11f | hrdContacts.ts persistSession:true 적용 | ❌ 양쪽 모드 출결조회 실패 |
 | 2026-04-16 | (사례없음) | corsproxy.io 유료 전환 | ⚠️ 2순위 프록시 사용 불가 |
