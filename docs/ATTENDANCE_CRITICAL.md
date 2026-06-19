@@ -79,10 +79,21 @@ grep -n "persistSession\|detectSessionInUrl" $(find src -name "*.ts" -exec grep 
 
 ### 🔴 B. HRD-Net 프록시 체인
 
-- [src/hrd/hrdApi.ts](../src/hrd/hrdApi.ts) 의 fallback 우선순위는 **Edge Function → cors.eu.org** 순.
+- [src/hrd/hrdApi.ts](../src/hrd/hrdApi.ts) 의 우선순위: **Edge Function → CORS 프록시 폴백**.
+- **CORS 폴백은 "순차"가 아니라 "병렬 레이스"** (`raceProxies`) 다. 풀(cors.eu.org / allorigins.raw /
+  allorigins.get / codetabs)을 동시에 호출해 **가장 먼저 정상 응답하는 프록시를 채택**한다.
+  → 순차 폴백 시절의 "느린/죽은 프록시가 전체 조회를 막음 → 모든 프록시 실패: signal is aborted"
+    회귀를 막기 위한 구조다. **다시 순차로 되돌리지 말 것.**
+- 응답은 `looksLikeHrd()` 로 검증한다. 프록시가 200 으로 주는 레이트리밋 HTML/빈 래퍼를 채택하지
+  않고 다음 프록시로 넘어간다(조용한 "0명" 실패 차단). Edge·프록시 **양 경로 공통 게이트**.
+- **엔드포인트:** 구 JSP 경로(`/jsp/HRDP/.../HRDPOA60_4.jsp`)는 2026-06 현재 신규
+  `/hrdp/api/apipo/APIPO0104T.do` 로 **302 리다이렉트**된다. 프록시가 302를 못 따라가는 사례가 있어
+  `HRD_BASE` 는 리다이렉트 없는 **`.do` 경로**를 직접 호출한다 (roster/daily 모두 검증). JSP 로 되돌리지 말 것.
 - `corsproxy.io`는 **유료 전환되어 동작하지 않음** (2026-04 이후). 코드에 부활시키지 말 것.
 - `authKey` 는 절대 클라이언트 번들에 하드코딩 금지. Edge Function `Deno.env` 로만 보관.
 - Edge Function 배포 상태 확인: `supabase/functions/hrd-proxy/DEPLOY.md`
+  - ⚠️ **현재 미배포(404)** 라 출결조회가 100% 공개 프록시에 의존 중. 공개 프록시는 집합적으로
+    신뢰 불가(레이트리밋/지연)하므로 **만성 회귀의 근본원인**이다. **영구 해법 = Edge Function 배포.**
 
 ---
 
@@ -135,6 +146,8 @@ PR 머지 전 다음을 모두 통과해야 출결현황 영향 변경으로 분
 
 | 날짜 | 커밋 | 변경 | 결과 |
 |---|---|---|---|
+| 2026-06-19 | #12 | 프록시 순차→병렬 레이스 + looksLikeHrd 검증 + 신규 .do 엔드포인트 | ✅ 보조강사 "모든 프록시 실패" 회귀 수정 |
+| 2026-06-19 | (관측) | 구 JSP 엔드포인트 → .do 로 302 리다이렉트 확인 / Edge Function 여전히 미배포(404) | ⚠️ 근본원인 = 공개 프록시 의존 |
 | 2026-04-29 | e428258 | hrdContacts.ts persistSession:false 복귀 | ✅ 회귀 핫픽스 |
 | 2026-04-29 | 0deb11f | hrdContacts.ts persistSession:true 적용 | ❌ 양쪽 모드 출결조회 실패 |
 | 2026-04-16 | (사례없음) | corsproxy.io 유료 전환 | ⚠️ 2순위 프록시 사용 불가 |
