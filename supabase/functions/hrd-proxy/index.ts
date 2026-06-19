@@ -15,7 +15,9 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const HRD_BASE = "https://hrd.work24.go.kr/jsp/HRDP/HRDPO00/HRDPOA60/HRDPOA60_4.jsp";
+// 구 JSP 경로는 신규 .do 경로로 302 리다이렉트됨(2026-06). Deno fetch는 302를 따라가지만
+// 불필요한 왕복을 줄이기 위해 리다이렉트 없는 .do 경로를 직접 호출한다. (클라이언트 hrdApi.ts와 동일)
+const HRD_BASE = "https://hrd.work24.go.kr/hrdp/api/apipo/APIPO0104T.do";
 const TIMEOUT_MS = 20_000;
 
 const ALLOWED_ORIGINS = [
