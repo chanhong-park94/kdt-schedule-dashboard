@@ -11,7 +11,7 @@
  *   SLACK_WEBHOOK_URL     — 공결신청 전용 채널의 Incoming Webhook URL
  *   SUPABASE_URL          — Supabase 프로젝트 URL (예: https://xxx.supabase.co)
  *   SUPABASE_ANON_KEY     — Supabase anon key
- *   FORM_TYPE             — "application" (공가 신청서) 또는 "evidence" (증빙자료)
+ *   FORM_TYPE             — "application" (공가 신청서) / "evidence" (증빙자료) / "auto" (통합 시트: 컬럼 수로 자동 판별)
  *   FOOTER_TEXT           — 푸터 텍스트 (기본: "📍 모두의연구소 HRD 운영팀")
  *
  * ■ 운영매니저 그룹 태깅:
@@ -61,7 +61,7 @@ function setupTrigger() {
 
 function onFormSubmit(e) {
   try {
-    var formType = getProp("FORM_TYPE", "application");
+    var formType = detectFormType(e);
     var data = parseFormResponse(e, formType);
 
     if (!data) {
@@ -79,6 +79,30 @@ function onFormSubmit(e) {
   } catch (err) {
     Logger.log("❌ onFormSubmit 에러: " + err.message);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 폼 종류 자동 판별
+// ═══════════════════════════════════════════════════════════════
+//
+// 한 스프레드시트에 "공가 신청"(7컬럼)과 "증빙자료"(5컬럼) 두 폼이 함께 들어오는
+// 통합 응답 시트를 지원한다. 제출된 컬럼 수로 폼 종류를 자동 판별한다.
+//   - 공가 신청서: 타임스탬프|동의|과정명|이름|생년월일|사유|날짜  = 7컬럼
+//   - 증빙자료    : 타임스탬프|동의|과정명|이름|증빙자료            = 5컬럼
+//
+// 기존 "단일 폼 1시트" 설정과의 호환:
+//   - FORM_TYPE 스크립트 속성이 "application"/"evidence" 로 명시돼 있으면 그 값을 우선한다.
+//   - 통합 시트는 FORM_TYPE 을 "auto"(또는 미설정)로 두면 제출마다 자동 판별한다.
+function detectFormType(e) {
+  var explicit = getProp("FORM_TYPE", "");
+  if (explicit === "application" || explicit === "evidence") return explicit;
+
+  var v = (e && e.values) || [];
+  // 생년월일/사유/날짜가 있는 신청서는 6컬럼 이상, 증빙자료는 5컬럼.
+  if (v.length >= 6) return "application";
+  if (v.length >= 1) return "evidence";
+
+  return "application"; // 값이 비면 안전한 기본값
 }
 
 // ═══════════════════════════════════════════════════════════════
