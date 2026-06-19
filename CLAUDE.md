@@ -160,13 +160,13 @@ src/
 - `spec/sql/007_security_phase_a.sql` — `excused_absence_requests` anon DELETE 차단 ✅ 적용 (2026-05-12)
 - `spec/sql/008_create_instructor_dashboard.sql` + `008b_harden_*.sql` ✅ 적용 (2026-05-12)
 - `spec/sql/010_secure_trainee_contacts.sql` ✅ 적용 (2026-05-12)
+- ✅ **hrd-proxy Edge Function 배포 완료 (2026-06-19)** — `HRD_AUTH_KEY` Secret 등록, roster 200 실데이터 검증. 출결조회가 서버사이드로 직행(공개 프록시 우회).
 - ⚠️ **남은 사용자 조치**:
-  - Edge Function 배포: `supabase/functions/hrd-proxy/DEPLOY.md` 참고 — DEFAULT_KEY 하드코딩 노출 종결
-  - HRD-Net authKey 로테이션 (현재 공개 GitHub 노출 중: `gL1rEteJ...`)
+  - HRD-Net authKey 로테이션 (현재 공개 GitHub 노출 중: `gL1rEteJ...`) → 재발급 후 Supabase Secret `HRD_AUTH_KEY` 값만 교체
   - Airtable PAT → Edge Function `Deno.env`로 이전
 
 ### 🔜 다음 작업
-1. **🔥 HRD-Net authKey 로테이션 + Edge Function 배포** — 가장 시급. 현재 공개 노출 상태
+1. **🔥 HRD-Net authKey 로테이션** — Edge Function 배포는 완료(2026-06-19). 잔여: 노출된 `gL1rEteJ...` 키 재발급 → Supabase Secret `HRD_AUTH_KEY` 교체로 종결
 2. **강사 대시보드 Phase 6** — 종합 진단 (기술60%+운영40% 합산, 경험치) 자동 조회 탭
 3. **IA Phase 2~4** — 출결·이탈 통합 (4→1) → 학습품질 (3→1) → 운영도구 (3→1). 사이드바 16→9
 4. **[보안 Phase B 잔여] Supabase 클라이언트 통합 8곳** — 1회차에 2곳(hrdContacts, hrdAnalyticsNotes) 완료. 잔여 createClient를 싱글톤 팩토리로
