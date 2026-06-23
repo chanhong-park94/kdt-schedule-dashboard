@@ -2692,16 +2692,12 @@ startCacheFreshnessMonitor();
 
 // Lazy-load modal UI modules
 void import("./ui/patchNotes").then(({ initPatchNotes }) => initPatchNotes());
-void import("./ui/aiTeam").then(({ initAiTeam }) => initAiTeam());
 void import("./ui/userGuide").then(({ initUserGuide }) => initUserGuide());
 
 // 모바일 더보기 토글
 document.getElementById("mobileMoreBtn")?.addEventListener("click", () => {
   document.getElementById("mobileBottomNav")?.classList.toggle("is-expanded");
 });
-
-// ─── 주간 운영회의 보고팩 (lazy — settings 탭 내부) ───
-void import("./reports/reportsInit").then(({ initWeeklyReport }) => initWeeklyReport());
 
 if (hasAuthSession) {
   void bootstrapAppAfterAuthLogin();

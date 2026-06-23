@@ -123,13 +123,8 @@ export function activatePrimarySidebarPage(
   setPageGroupVisibility(navKey);
   void ensureTabLoaded(navKey);
 
-  // 설정 페이지에 과정 정보입력(management) 콘텐츠가 통합됨
-  const showManagement = navKey === "settings";
-  setJibbleManagementSubmenuVisible(showManagement);
-  if (showManagement && options.openManagementTab === true) {
-    setJibbleManagementSubmenuActive("course");
-    openInstructorDrawerWithTab("course");
-  }
+  // 정보 입력(과정/교과목/강사 관리) UI 제거 — 서브메뉴·드로어 자동 표시 비활성화
+  setJibbleManagementSubmenuVisible(false);
 
   if (options.scrollToTop !== false) {
     window.scrollTo({ top: 0, behavior: "smooth" });

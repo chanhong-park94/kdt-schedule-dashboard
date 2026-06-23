@@ -102,6 +102,12 @@ src/
 
 ## 🔄 작업 현황 (마지막 업데이트: 2026-06-23)
 
+### ✅ 완료 (v3.6.2) — 설정 페이지 정리: AI 팀소개·정보 입력·주간보고팩 제거 (2026-06-23)
+- **AI 에이전트 팀소개 삭제** — `index.html` 카드 + `main.ts`의 `aiTeam` lazy import 제거 (모듈/CSS는 유지, tree-shake)
+- **주간 운영회의 보고팩 삭제** — `index.html` `#settingsWeeklyReport` 섹션 + `reports/reportsInit` lazy import 제거 (reports/* 모듈 유지, tree-shake)
+- **정보 입력(과정/교과목/강사 관리) UI 숨김** — `#instructorDrawer`·서브메뉴·바로가기·헤더버튼을 `style.css` `display:none !important`로 숨김 (DOM/domRefs는 유지 — `getRequiredElement`라 삭제 시 부팅 깨짐). `navigation.ts`에서 management 서브메뉴/드로어 자동 표시 비활성화(모바일 설정 클릭 시 빈 백드롭 글리치 방지)
+- **출결 영향 없음**: hrdApi/hrdAttendance/createClient/OAuth 미변경. build ✓ / test 207 ✓ / persistSession:true 1개 유지
+
 ### ✅ 완료 (v3.6.1) — 사이드바 IA 정리: 미사용 탭 6종 제거 (2026-06-23)
 - **사이드바 6개 탭 제거** (메뉴에서만 숨김 — 타입/모듈/패널/tabRegistry 로더는 유지하여 cross-link 동작 + 되돌리기 용이):
   - 메인: `timeline`(학사일정) / 훈련생 관리: `analytics`(훈련생분석)·`traineeHistory`(훈련생이력) / 참고자료: `inquiry`(문의응대)·`satisfaction`(만족도)·`crossAnalysis`(교차분석)
