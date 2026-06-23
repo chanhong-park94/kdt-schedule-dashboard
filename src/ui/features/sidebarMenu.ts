@@ -18,19 +18,16 @@ export function initSidebarMenuFeature(nextDeps: SidebarMenuDeps): void {
 // v7: 26년도 KDT 운영지침 매뉴얼 탭(guideline) 신설
 const SIDEBAR_MENU_CONFIG_KEY = "academic_schedule_manager_sidebar_menu_v7";
 
+// IA 정리: 학사일정(timeline)·훈련생분석(analytics)·훈련생이력(traineeHistory)·
+// 문의응대(inquiry)·만족도(satisfaction)·교차분석(crossAnalysis) 6개 탭을 사이드바에서 제거.
+// (타입/모듈/패널은 유지 — 메뉴에서만 숨김, cross-link은 계속 동작)
 export const PRIMARY_SIDEBAR_NAV_KEYS: PrimarySidebarNavKey[] = [
   "dashboard",
-  "timeline",
   "generator",
   "kpi",
   "dropout",
   "attendance",
-  "analytics",
-  "traineeHistory",
   "achievement",
-  "inquiry",
-  "satisfaction",
-  "crossAnalysis",
   "revenue",
   "docAutomation",
   "instructor",
@@ -426,9 +423,9 @@ export function getPrimarySidebarButtonByKey(navKey: PrimarySidebarNavKey): HTML
 
 // Section group definitions for sidebar nav
 const NAV_SECTION_GROUPS: { label: string; keys: PrimarySidebarNavKey[] }[] = [
-  { label: "메인", keys: ["dashboard", "timeline"] },
+  { label: "메인", keys: ["dashboard"] },
   { label: "HRD 운영", keys: ["generator", "kpi", "dropout"] },
-  { label: "훈련생 관리", keys: ["attendance", "analytics", "traineeHistory"] },
+  { label: "훈련생 관리", keys: ["attendance"] },
   { label: "교육사업관리", keys: ["instructor"] },
   { label: "참고자료", keys: ["guideline"] },
 ];

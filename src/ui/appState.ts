@@ -152,7 +152,7 @@ export const appState = {
   managementCloudWarning: "",
   isAuthVerified: false,
   hasAppBootstrapped: false,
-  activePrimarySidebarPage: "timeline" as PrimarySidebarNavKey,
+  activePrimarySidebarPage: "attendance" as PrimarySidebarNavKey,
   sidebarMenuConfig: {} as SidebarMenuConfig,
   sidebarMenuDraft: {} as SidebarMenuConfig,
 

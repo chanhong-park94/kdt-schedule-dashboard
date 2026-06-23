@@ -2125,8 +2125,7 @@ function handleMonthNext(): void {
 }
 
 const TAB_SHORTCUT_KEYS: import("./ui/appState").PrimarySidebarNavKey[] = [
-  "dashboard", "timeline", "generator", "kpi", "attendance",
-  "analytics", "traineeHistory", "achievement", "inquiry",
+  "dashboard", "generator", "kpi", "attendance", "achievement",
 ];
 
 function handleWindowKeydown(event: KeyboardEvent): void {
@@ -2612,12 +2611,12 @@ setupJibbleSidebarNavigation();
 // 학사일정 페이지 sub-tab (기본 ↔ 교퍼팀 일정)
 void import("./ui/features/timelineSubtab").then((m) => m.setupTimelineSubtab());
 
-// 로고 클릭 → 학사일정(홈) 이동
+// 로고 클릭 → 출결현황(홈) 이동
 const jibbleLogo = document.querySelector<HTMLElement>(".jibble-logo");
 if (jibbleLogo) {
   jibbleLogo.style.cursor = "pointer";
   jibbleLogo.addEventListener("click", () => {
-    activatePrimarySidebarPage("timeline");
+    activatePrimarySidebarPage("attendance");
   });
 }
 

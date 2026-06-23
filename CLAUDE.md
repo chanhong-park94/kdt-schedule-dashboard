@@ -100,7 +100,15 @@ src/
 
 ---
 
-## 🔄 작업 현황 (마지막 업데이트: 2026-05-12)
+## 🔄 작업 현황 (마지막 업데이트: 2026-06-23)
+
+### ✅ 완료 (v3.6.1) — 사이드바 IA 정리: 미사용 탭 6종 제거 (2026-06-23)
+- **사이드바 6개 탭 제거** (메뉴에서만 숨김 — 타입/모듈/패널/tabRegistry 로더는 유지하여 cross-link 동작 + 되돌리기 용이):
+  - 메인: `timeline`(학사일정) / 훈련생 관리: `analytics`(훈련생분석)·`traineeHistory`(훈련생이력) / 참고자료: `inquiry`(문의응대)·`satisfaction`(만족도)·`crossAnalysis`(교차분석)
+  - `PRIMARY_SIDEBAR_NAV_KEYS` 17→11, `NAV_SECTION_GROUPS`에서 제거, `index.html` 데스크톱 6 + 모바일 5 버튼 삭제
+- **기본 홈 탭 변경**: `timeline` → `attendance`(출결현황). `appState.activePrimarySidebarPage` + 로고 클릭 + `TAB_SHORTCUT_KEYS` 동기화
+  - ⚠️ 부수효과: 일정 충돌/알림 notification의 `sectionTimeline` deep-link는 학사일정 제거로 no-op (크래시 아님)
+- **출결 회귀 체크리스트 통과**: hrdApi/hrdAttendance/Edge Function/OAuth 클라이언트 미변경, createClient 즉시-실행 persistSession:true 1개 유지, build ✓ / test 207 ✓
 
 ### ✅ 완료 (v3.6.0) — IA 단순화 + 하차방어율 인사이트 + Supabase 보안 강화 (2026-05-12)
 - **하차방어율 개선 인사이트 신설** — 도입 전/후 비교 Hero 카드 + leading 지표 4종(위험군 회복/발생/연속결석 끊기/NPS 평균) + 추정 절감 인원 + 월별 시계열 토글
