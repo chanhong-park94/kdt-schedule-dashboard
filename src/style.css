@@ -2985,9 +2985,11 @@ tbody tr:hover {
   margin-top: 1px;
 }
 
-/* 정보입력 바로가기 바 — 설정 페이지 내 중복 UI 제거 */
+/* 정보 입력(과정/교과목/강사 관리) UI 숨김 — 대시보드 정리 (DOM·domRefs는 유지, 화면에서만 제거) */
 .jibble-management-submenu,
-.quick-admin-index {
+.quick-admin-index,
+#instructorDrawer,
+#openInstructorDrawer {
   display: none !important;
 }
 
