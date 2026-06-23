@@ -83,17 +83,6 @@
             <span class="jibble-nav-emoji" aria-hidden="true">📊</span>
             <span class="jibble-nav-label">대시보드</span>
           </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
-            data-scroll-target="sectionTimeline"
-            data-nav-key="timeline"
-            data-nav-icon="calendar"
-            data-default-label="학사일정"
-          >
-            <span class="jibble-nav-emoji" aria-hidden="true">📅</span>
-            <span class="jibble-nav-label">학사일정</span>
-          </button>
 
           <div class="nav-section-label">HRD 운영</div>
           <button
@@ -145,28 +134,6 @@
           <button
             class="jibble-nav-item"
             type="button"
-            data-scroll-target="sectionAnalytics"
-            data-nav-key="analytics"
-            data-nav-icon="analytics"
-            data-default-label="출결 리스크"
-          >
-            <span class="jibble-nav-emoji" aria-hidden="true">🔍</span>
-            <span class="jibble-nav-label">출결 리스크</span>
-          </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
-            data-scroll-target="sectionTraineeHistory"
-            data-nav-key="traineeHistory"
-            data-nav-icon="user"
-            data-default-label="훈련생 이력"
-          >
-            <span class="jibble-nav-emoji" aria-hidden="true">👤</span>
-            <span class="jibble-nav-label">훈련생 이력</span>
-          </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
             data-scroll-target="sectionAchievement"
             data-nav-key="achievement"
             data-nav-icon="star"
@@ -174,39 +141,6 @@
           >
             <span class="jibble-nav-emoji" aria-hidden="true">🎓</span>
             <span class="jibble-nav-label">학업성취도</span>
-          </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
-            data-scroll-target="sectionInquiry"
-            data-nav-key="inquiry"
-            data-nav-icon="chat"
-            data-default-label="문의응대"
-          >
-            <span class="jibble-nav-emoji" aria-hidden="true">💬</span>
-            <span class="jibble-nav-label">문의응대</span>
-          </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
-            data-scroll-target="sectionSatisfaction"
-            data-nav-key="satisfaction"
-            data-nav-icon="star"
-            data-default-label="만족도"
-          >
-            <span class="jibble-nav-emoji" aria-hidden="true">😊</span>
-            <span class="jibble-nav-label">만족도</span>
-          </button>
-          <button
-            class="jibble-nav-item"
-            type="button"
-            data-scroll-target="sectionCrossAnalysis"
-            data-nav-key="crossAnalysis"
-            data-nav-icon="compare"
-            data-default-label="종합 분석 리포트"
-          >
-            <span class="jibble-nav-emoji" aria-hidden="true">📊</span>
-            <span class="jibble-nav-label">종합 분석 리포트</span>
           </button>
           <button class="jibble-nav-item" type="button" data-scroll-target="sectionDocAutomation" data-nav-key="docAutomation" data-nav-icon="doc-automation" data-default-label="문서자동화">
             <span class="jibble-nav-emoji" aria-hidden="true">📋</span>
@@ -253,7 +187,7 @@
       </aside>
 
       <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="모바일 메뉴">
-        <button class="mobile-bottom-nav-item is-active" type="button" data-mobile-nav="dashboard">
+        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="dashboard">
           <svg
             class="mobile-nav-svg"
             viewBox="0 0 24 24"
@@ -269,23 +203,6 @@
             <rect x="14" y="14" width="7" height="7" rx="1" />
           </svg>
           <span class="mobile-bottom-nav-label">대시보드</span>
-        </button>
-        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="timeline">
-          <svg
-            class="mobile-nav-svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span class="mobile-bottom-nav-label">학사일정</span>
         </button>
         <!-- 정보입력: 설정 페이지로 통합됨 -->
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="generator">
@@ -320,7 +237,7 @@
           </svg>
           <span class="mobile-bottom-nav-label">자율성과지표</span>
         </button>
-        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="attendance">
+        <button class="mobile-bottom-nav-item is-active" type="button" data-mobile-nav="attendance">
           <svg
             class="mobile-nav-svg"
             viewBox="0 0 24 24"
@@ -337,35 +254,6 @@
           </svg>
           <span class="mobile-bottom-nav-label">출결현황</span>
         </button>
-        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="analytics">
-          <svg
-            class="mobile-nav-svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          <span class="mobile-bottom-nav-label">출결 리스크</span>
-        </button>
-        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="traineeHistory">
-          <svg
-            class="mobile-nav-svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span class="mobile-bottom-nav-label">훈련생이력</span>
-        </button>
         <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="achievement">
           <svg
             class="mobile-nav-svg"
@@ -380,14 +268,6 @@
             <path d="M6 12v5c0 1 4 3 6 3s6-2 6-3v-5" />
           </svg>
           <span class="mobile-bottom-nav-label">학업성취도</span>
-        </button>
-        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="inquiry">
-          <span class="mobile-nav-svg" style="font-size:20px">💬</span>
-          <span class="mobile-bottom-nav-label">문의응대</span>
-        </button>
-        <button class="mobile-bottom-nav-item" type="button" data-mobile-nav="satisfaction">
-          <span class="mobile-nav-svg" style="font-size:20px">😊</span>
-          <span class="mobile-bottom-nav-label">만족도</span>
         </button>
         <button class="mobile-bottom-nav-item mobile-more-btn" type="button" id="mobileMoreBtn">
           <span style="font-size:20px">⋯</span>
