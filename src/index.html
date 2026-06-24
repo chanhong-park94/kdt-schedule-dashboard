@@ -3861,8 +3861,9 @@
             </div>
           </div>
 
-          <!-- 설정 카드 C: API 연동 (기본 접힘) -->
-          <div class="settings-section" id="settingsApiConnection" data-page-group="settings">
+          <!-- 설정 카드 C: API 연동 (기본 접힘, 고급 모드 전용) -->
+          <!-- admin-only: 일반 대시보드 뷰에서는 숨김. 고급 모드(관리자)에서만 노출 + 키 값은 hrdKeyGate 비밀번호로 이중 보호 -->
+          <div class="settings-section admin-only" id="settingsApiConnection" data-page-group="settings">
             <div class="settings-section-header" role="button" aria-expanded="false" tabindex="0" data-settings-toggle>
               <span class="settings-icon">🔑</span>
               <div class="settings-title">
